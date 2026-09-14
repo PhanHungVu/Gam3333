@@ -96,6 +96,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "AssaultBoost",
+                    "type": "Button",
+                    "id": "44ff1f3b-1f9a-45e0-86fa-aaa23d95b418",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "LockOn",
                     "type": "Button",
                     "id": "c1f7be8f-0d28-42c7-9e5a-65c08ad05d43",
@@ -106,6 +115,17 @@
                 }
             ],
             "bindings": [
+                {
+                    "name": "",
+                    "id": "e177be3a-bb3b-4b2d-98a7-8b32c47a1306",
+                    "path": "<Keyboard>/leftCtrl",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "AssaultBoost",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
                 {
                     "name": "",
                     "id": "978bfe49-cc26-4a3d-ab7b-7d7a29327403",

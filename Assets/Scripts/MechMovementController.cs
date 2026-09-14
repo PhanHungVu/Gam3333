@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 [DisallowMultipleComponent]
 public class MechMovementController : MonoBehaviour
 {
-    public enum MovementState { Grounded, GroundBoost, Airborne, QuickBoost }
+    public enum MovementState { Grounded, GroundBoost, Airborne, QuickBoost, AssaultBoost }
 
     struct MovementInput
     {
@@ -14,10 +14,12 @@ public class MechMovementController : MonoBehaviour
         public bool sprint;
         public bool jump;
         public bool quickBoost;
+        public bool assaultBoost;
     }
 
     [SerializeField] InputActionAsset inputActions;
     [SerializeField] Camera gameplayCamera;
+    [SerializeField] MechEnergyController energy;
     [Header("Ground Locomotion")]
     [SerializeField] float moveSpeed = 6f;
     [SerializeField] float sprintSpeed = 12f;
@@ -39,7 +41,15 @@ public class MechMovementController : MonoBehaviour
         new Keyframe(0.55f, 0.75f),
         new Keyframe(1f, 0.1f));
 
-    [Header("Vertical Movement")]
+    [Header("Ground Assault Boost")]
+    [SerializeField, Min(0f)] float assaultBoostSpeed = 28f;
+    [SerializeField, Min(0f)] float assaultBoostAcceleration = 45f;
+    [SerializeField, Min(0f)] float assaultBoostTurnRate = 90f;
+    [SerializeField, Min(0f)] float assaultBoostEnergyPerSecond = 18f;
+    [SerializeField, Min(0f)] float assaultBoostMinimumEnergy = 10f;
+    [SerializeField, Min(0f)] float quickBoostEnergyCost = 20f;
+
+    [Header("Ground Contact and Existing Jump")]
     [SerializeField] float gravity = -25f;
     [SerializeField] float jumpHeight = 1.5f;
 
@@ -48,6 +58,10 @@ public class MechMovementController : MonoBehaviour
     InputAction sprintAction;
     InputAction jumpAction;
     InputAction quickBoostAction;
+    InputAction assaultBoostAction;
+    Vector3 assaultBoostDirection;
+    bool assaultBoostActive;
+    bool assaultBoostRequiresRelease;
     Vector3 planarVelocity;
     Vector3 quickBoostDirection;
     float verticalVelocity;
@@ -66,7 +80,9 @@ public class MechMovementController : MonoBehaviour
     // Includes the active boost: this is time until another boost may start.
     public float QuickBoostCooldownRemaining => quickBoostRecoveryTimer;
     public bool CanQuickBoost => isActiveAndEnabled && IsGrounded
-        && !IsQuickBoosting && quickBoostRecoveryTimer <= 0f;
+        && !IsQuickBoosting && quickBoostRecoveryTimer <= 0f
+        && (energy == null || energy.CanSpend(quickBoostEnergyCost));
+    public bool IsAssaultBoosting => assaultBoostActive;
 
     public event Action<MovementState, MovementState> StateChanged;
     public event Action<Vector3> QuickBoostStarted;
@@ -74,10 +90,14 @@ public class MechMovementController : MonoBehaviour
     public event Action QuickBoostEnded;
     // Positive downward speed immediately before ground contact, in world units/second.
     public event Action<float> Landed;
+    public event Action AssaultBoostStarted;
+    public event Action AssaultBoostEnded;
 
     void Awake()
     {
         characterController = GetComponent<CharacterController>();
+        if (energy == null)
+            energy = GetComponent<MechEnergyController>();
         if (gameplayCamera == null)
             gameplayCamera = Camera.main;
     }
@@ -91,10 +111,12 @@ public class MechMovementController : MonoBehaviour
         sprintAction = inputActions.FindAction("Player/Sprint", false);
         jumpAction = inputActions.FindAction("Player/Jump", false);
         quickBoostAction = inputActions.FindAction("Player/QuickBoost", false);
+        assaultBoostAction = inputActions.FindAction("Player/AssaultBoost", false);
         moveAction?.Enable();
         sprintAction?.Enable();
         jumpAction?.Enable();
         quickBoostAction?.Enable();
+        assaultBoostAction?.Enable();
     }
 
     void OnDisable()
@@ -103,6 +125,10 @@ public class MechMovementController : MonoBehaviour
         sprintAction?.Disable();
         jumpAction?.Disable();
         quickBoostAction?.Disable();
+        assaultBoostAction?.Disable();
+        bool wasAssaultBoosting = assaultBoostActive;
+        assaultBoostActive = false;
+        assaultBoostRequiresRelease = false;
         bool wasBoosting = IsQuickBoosting;
         quickBoostTimer = 0f;
         quickBoostRecoveryTimer = 0f;
@@ -113,6 +139,8 @@ public class MechMovementController : MonoBehaviour
         SetState(IsGrounded ? MovementState.Grounded : MovementState.Airborne);
         if (wasBoosting)
             QuickBoostEnded?.Invoke();
+        if (wasAssaultBoosting)
+            AssaultBoostEnded?.Invoke();
     }
 
     void Update()
@@ -124,7 +152,9 @@ public class MechMovementController : MonoBehaviour
             move = ReadMoveInput(),
             sprint = ReadSprintInput(),
             jump = WasJumpPressedThisFrame(),
-            quickBoost = WasQuickBoostPressedThisFrame()
+            quickBoost = WasQuickBoostPressedThisFrame(),
+            assaultBoost = assaultBoostAction != null ? assaultBoostAction.IsPressed()
+                : Keyboard.current != null && Keyboard.current.leftCtrlKey.isPressed
         };
         Tick(input, gameplayCamera != null ? gameplayCamera.transform : null, Time.deltaTime);
     }
@@ -139,8 +169,13 @@ public class MechMovementController : MonoBehaviour
         MoveDirection = movementDirection;
         bool boostEnded = UpdateQuickBoostTimers(deltaTime);
         bool boostStarted = input.quickBoost && CanQuickBoost;
+        bool wasAssaultBoosting = assaultBoostActive;
         if (boostStarted)
+        {
+            energy?.TrySpend(quickBoostEnergyCost);
             StartQuickBoost(movementDirection, cameraTransform);
+        }
+        UpdateAssaultBoost(input, movementDirection, cameraTransform, deltaTime);
 
         UpdatePlanarVelocity(input.sprint, movementDirection, deltaTime);
         UpdateFacing(movementDirection, cameraTransform, deltaTime);
@@ -153,8 +188,17 @@ public class MechMovementController : MonoBehaviour
         float landingSpeed = Mathf.Max(0f, -verticalVelocity);
         if ((collisions & CollisionFlags.Above) != 0 && verticalVelocity > 0f)
             verticalVelocity = 0f;
+        if (assaultBoostActive && (!IsGrounded
+            || ((collisions & CollisionFlags.Sides) != 0
+                && Vector3.ProjectOnPlane(Velocity, Vector3.up).magnitude < 1f)))
+        {
+            assaultBoostActive = false;
+            assaultBoostRequiresRelease = true;
+        }
+        energy?.TickRecovery(deltaTime, !IsQuickBoosting && !assaultBoostActive);
 
         SetState(IsQuickBoosting ? MovementState.QuickBoost
+            : assaultBoostActive ? MovementState.AssaultBoost
             : !IsGrounded ? MovementState.Airborne
             : input.sprint && movementDirection.sqrMagnitude > 0.001f ? MovementState.GroundBoost
             : MovementState.Grounded);
@@ -164,6 +208,10 @@ public class MechMovementController : MonoBehaviour
             QuickBoostEnded?.Invoke();
         if (boostStarted)
             QuickBoostStarted?.Invoke(quickBoostDirection);
+        if (wasAssaultBoosting && !assaultBoostActive)
+            AssaultBoostEnded?.Invoke();
+        else if (!wasAssaultBoosting && assaultBoostActive)
+            AssaultBoostStarted?.Invoke();
         if (hasGroundSample && !wasGrounded && IsGrounded)
             Landed?.Invoke(landingSpeed);
         hasGroundSample = true;
@@ -175,6 +223,11 @@ public class MechMovementController : MonoBehaviour
         {
             planarVelocity = quickBoostDirection * (quickBoostCurve.Evaluate(QuickBoostProgress)
                 * quickBoostPeakSpeed * quickBoostDistanceMultiplier);
+        }
+        else if (assaultBoostActive)
+        {
+            planarVelocity = Vector3.MoveTowards(planarVelocity, assaultBoostDirection * assaultBoostSpeed,
+                assaultBoostAcceleration * deltaTime);
         }
         else
         {
@@ -193,6 +246,7 @@ public class MechMovementController : MonoBehaviour
     {
         Vector3 facingDirection = IsQuickBoosting
             ? quickBoostDirection
+            : assaultBoostActive ? assaultBoostDirection
             : GetDesiredFacingDirection(movementDirection, cameraTransform);
         FacingDirection = facingDirection;
         if (facingDirection.sqrMagnitude > 0.001f)
@@ -216,6 +270,43 @@ public class MechMovementController : MonoBehaviour
         {
             verticalVelocity += gravity * deltaTime;
         }
+    }
+
+    void UpdateAssaultBoost(MovementInput input, Vector3 movementDirection,
+        Transform cameraTransform, float deltaTime)
+    {
+        if (!input.assaultBoost)
+            assaultBoostRequiresRelease = false;
+        if (!input.assaultBoost || !IsGrounded || input.jump || IsQuickBoosting)
+        {
+            if (assaultBoostActive && input.assaultBoost)
+                assaultBoostRequiresRelease = true;
+            assaultBoostActive = false;
+            return;
+        }
+        if (assaultBoostRequiresRelease)
+            return;
+        if (!assaultBoostActive)
+        {
+            if (energy != null && !energy.CanSpend(assaultBoostMinimumEnergy))
+            {
+                assaultBoostRequiresRelease = true;
+                return;
+            }
+            assaultBoostDirection = movementDirection.sqrMagnitude > 0.001f
+                ? movementDirection.normalized : GetCameraForward(cameraTransform);
+            assaultBoostActive = true;
+        }
+        if (energy != null && !energy.TrySpend(assaultBoostEnergyPerSecond * deltaTime))
+        {
+            assaultBoostActive = false;
+            assaultBoostRequiresRelease = true;
+            return;
+        }
+        Vector3 steering = movementDirection.sqrMagnitude > 0.001f
+            ? movementDirection.normalized : GetCameraForward(cameraTransform);
+        assaultBoostDirection = Vector3.RotateTowards(assaultBoostDirection, steering,
+            assaultBoostTurnRate * Mathf.Deg2Rad * deltaTime, 0f).normalized;
     }
 
     void SetState(MovementState nextState)
@@ -280,6 +371,12 @@ public class MechMovementController : MonoBehaviour
         rotationSharpness = Mathf.Max(0f, rotationSharpness);
         gravity = Mathf.Min(0f, gravity);
         jumpHeight = Mathf.Max(0f, jumpHeight);
+        assaultBoostSpeed = Mathf.Max(0f, assaultBoostSpeed);
+        assaultBoostAcceleration = Mathf.Max(0f, assaultBoostAcceleration);
+        assaultBoostTurnRate = Mathf.Max(0f, assaultBoostTurnRate);
+        assaultBoostEnergyPerSecond = Mathf.Max(0f, assaultBoostEnergyPerSecond);
+        assaultBoostMinimumEnergy = Mathf.Max(0f, assaultBoostMinimumEnergy);
+        quickBoostEnergyCost = Mathf.Max(0f, quickBoostEnergyCost);
         quickBoostPeakSpeed = Mathf.Max(0f, quickBoostPeakSpeed);
         quickBoostDuration = Mathf.Max(0.01f, quickBoostDuration);
         quickBoostRecovery = Mathf.Max(0f, quickBoostRecovery);

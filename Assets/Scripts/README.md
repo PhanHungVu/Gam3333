@@ -11,12 +11,15 @@ WASD movement is always camera-relative, including while an enemy is selected. M
 - `MechTargetLockController`: owns selection and publishes target changes. Collider storage grows to accommodate crowds and is reused after that. It does not create or modify UI.
 - `LockOnCursor`: projects the selected aim point through the gameplay camera into its actual UI parent. `A33` explicitly assigns its cursor, canvas, camera, and targeting controller. Dynamically spawned HUDs can call `Bind`.
 - `MechTargetable`: supplies an enemy aim position. `AutoMoveTarget` remains an active test-scene helper.
+- `MechEnergyController`: boost costs, delayed recovery, and the energy change signal. The motor advances its recovery exactly once per movement tick.
+- `MechBoostPresentation`: leans only `VisualMech` and manages exhaust/trails. The ignition audio slot is intentionally empty, so dashing is silent. Assign a clip later to enable boost audio; there is no generated fallback sound.
+- `MechEnergyHud`: displays remaining energy on the scene Canvas.
 
 Update order is movement in Update, camera rig in LateUpdate (-100), Cinemachine at its default order, selection (100), then cursor projection (200).
 
 ## Extension points
 
-Movement states currently describe implemented actions only: `Grounded` (idle/walking), `GroundBoost` (sprinting with movement input), `Airborne`, and `QuickBoost`.
+Movement states describe implemented actions only: `Grounded` (idle/walking), `GroundBoost` (sprinting with movement input), `Airborne` (existing jump/fall), `QuickBoost`, and ground-only `AssaultBoost`. There is no flight, sustained ascent, air dodge, or new combat system.
 
 | Signal | Meaning / intended consumer |
 | --- | --- |
@@ -25,6 +28,7 @@ Movement states currently describe implemented actions only: `Grounded` (idle/wa
 | `QuickBoostEnded()` | Completion or controller-disable cancellation; shut down transient effects. |
 | `Landed(impactSpeed)` | Positive downward speed before contact; landing animation, dust, audio, and optional impulse. |
 | `TargetChanged(previous, next)` | Selection changed or cleared; weapons and HUD. A destroyed target compares equal to null under Unity equality. |
+| `AssaultBoostStarted()` / `AssaultBoostEnded()` | Continuous rush presentation; release, dodge, loss of ground, exhaustion, and a blocking wall can end it. |
 
 `Velocity` is actual world displacement per second after collision resolution. `MoveDirection` and `FacingDirection` are separate intentions. `QuickBoostProgress` is normalized while boosting and returns zero when inactive. `QuickBoostCooldownRemaining` includes active boost time. Consumers should subscribe on enable and unsubscribe on disable, and read the current state on subscription.
 
@@ -34,14 +38,27 @@ Per-frame movement events are published after motion and state have been updated
 
 The serialized `normalProfile` name and its members are retained to preserve existing scenes. It is the single active camera settings block; obsolete lock profiles, duplicate inactive fields, and redundant profile blending have been removed. Movement speeds, acceleration, boost curve, duration/recovery, multipliers, and free-look sensitivity are retained.
 
-Build the next features incrementally:
+## Ground movement feature pass
 
-1. Configure camera obstacle avoidance and target line of sight with explicit environment layers, plus an expanded test arena.
-2. Drive Quick Boost presentation from its event and progress. Keep camera rotation manual.
-3. Extend vertical motion with ascent, air dodges, and fast descent, including ceiling/ground contact handling.
-4. Add energy checks at action admission and drain during sustained movement.
-5. Add Assault Boost as its own movement state with explicit transitions and steering rules.
-6. Introduce a visual child/torso rig for banking, recoil, and weapon aiming independently of the motor.
+`A33` includes a slalom west of spawn, a walled camera corridor east of spawn, a gentle ramp southwest, and a marked 100m Assault Boost runway farther east. Course objects live under `Ground Movement Course` and can be edited normally.
+
+| Control | Action |
+| --- | --- |
+| WASD | Camera-relative movement |
+| Left Shift | Ground boost (existing sprint) |
+| Left Alt | Quick Boost, 20 energy |
+| Hold Left Ctrl | Ground Assault Boost; release to cancel |
+| Escape / left click | Release / recapture mouse |
+
+Energy capacity is 100, recovery is 25/second after a 0.6-second delay, and Assault Boost drains 18/second. Normal movement remains available with no energy. A motor without an assigned energy component retains unlimited-energy behavior for standalone prototypes.
+
+Assault Boost accelerates toward 28 units/second, turns at up to 90 degrees/second, and requires 10 energy to start. Quick Boost cancels the rush and uses the normal camera-relative dodge direction. Exhaustion, collision cancellation, and dodge cancellation require releasing Ctrl before starting another rush; holding the key cannot produce automatic restart loops. No enemy data participates in movement.
+
+Camera obstacle handling uses the Default layer and ignores objects tagged Player. New environment colliders should be on an included obstacle layer. The player uses the Player tag. Camera radius and return damping are adjustable. Quick Boost adds a maximum 7-degree FOV pulse; Assault Boost adds up to 10 degrees and 12% follow distance. The Movement Feedback toggle disables these lens/framing effects while retaining free mouse look and collision handling.
+
+The player root is unscaled and keeps the equivalent upright capsule dimensions. The visible mesh is under `VisualMech/Body` with its original dimensions. Presentation never changes the root transform or collider. The old duplicate BoxCollider has been removed.
+
+The next work is tuning this ground prototype in play. Combat and aerial movement are deferred; target line-of-sight changes are also deferred with combat.
 
 Do not introduce camera hard lock, enemy-driven camera framing, target-relative locomotion, or threat-based automatic target switching as part of these extensions.
 

@@ -43,7 +43,7 @@ public static class MechFoundationChecks
         checks++;
     }
     static void Step(MechMovementController motor, Camera view, Vector2 move = default,
-        bool sprint = false, bool jump = false, bool boost = false, float dt = 0.02f)
+        bool sprint = false, bool jump = false, bool boost = false, float dt = 0.02f, bool assault = false)
     {
         Type inputType = typeof(MechMovementController).GetNestedType("MovementInput", BindingFlags.NonPublic);
         object input = Activator.CreateInstance(inputType);
@@ -51,6 +51,7 @@ public static class MechFoundationChecks
         inputType.GetField("sprint").SetValue(input, sprint);
         inputType.GetField("jump").SetValue(input, jump);
         inputType.GetField("quickBoost").SetValue(input, boost);
+        inputType.GetField("assaultBoost").SetValue(input, assault);
         Call(motor, "Tick", input, view.transform, dt);
     }
     static MechTargetable Enemy(Vector3 position)
@@ -70,6 +71,7 @@ public static class MechFoundationChecks
             CheckTargeting(view);
             CheckMovement(view);
             CheckEnemyIndependentMovement(view);
+            CheckGroundFeatures(view);
             Debug.Log("MECH CHECKS COMPLETE: " + checks);
             EditorApplication.Exit(0);
         }
@@ -219,6 +221,129 @@ public static class MechFoundationChecks
         Step(motor, view, boost: true);
         Check(motor.IsQuickBoosting && Vector3.Distance(motor.FacingDirection, forward) < 0.001f,
             "Quick Boost without direction uses camera forward, not enemy direction");
+    }
+
+    static void CheckGroundFeatures(Camera view)
+    {
+        view.transform.rotation = Quaternion.identity;
+        var player = new GameObject("Ground Feature Player");
+        player.tag = "Player";
+        player.transform.position = new Vector3(60, 1.1f, -60);
+        var energy = player.AddComponent<MechEnergyController>();
+        var motor = player.AddComponent<MechMovementController>();
+        Check(energy.Current == 100f && energy.TrySpend(20f) && energy.Current == 80f,
+            "Energy starts full and spends exact costs");
+        Check(!energy.TrySpend(81f) && energy.Current == 80f, "Overspending leaves energy unchanged");
+        energy.TickRecovery(0.5f, true);
+        Check(energy.Current == 80f, "Energy respects recovery delay");
+        energy.TickRecovery(0.5f, true);
+        Check(Mathf.Abs(energy.Current - 90f) < 0.01f, "Recovery integrates only time after the delay");
+        energy.TickRecovery(10f, true);
+        Check(energy.Current == 100f, "Regeneration clamps at capacity");
+        Physics.SyncTransforms();
+        for (int i = 0; i < 30; i++) Step(motor, view);
+        Step(motor, view, Vector2.up, boost: true);
+        Check(motor.IsQuickBoosting && energy.Current == 80f, "Quick Boost spends energy once on admission");
+        for (int i = 0; i < 40; i++) Step(motor, view);
+        energy.TrySpend(energy.Current);
+        Step(motor, view, boost: true);
+        Check(!motor.IsQuickBoosting && !motor.CanQuickBoost, "Empty energy blocks Quick Boost");
+        energy.TickRecovery(10f, true);
+        int started = 0, ended = 0;
+        motor.AssaultBoostStarted += () => started++;
+        motor.AssaultBoostEnded += () => ended++;
+        for (int i = 0; i < 50; i++) Step(motor, view, Vector2.up, assault: true);
+        Check(motor.IsAssaultBoosting && started == 1 && motor.State == MechMovementController.MovementState.AssaultBoost,
+            "Holding Assault Boost enters its state once");
+        Check(Mathf.Abs(motor.Velocity.z - 28f) < 0.02f && energy.Current < 83f && energy.Current > 81f,
+            "Assault Boost reaches sustained speed and drains energy over time");
+        Vector3 priorDirection = motor.FacingDirection;
+        view.transform.rotation = Quaternion.Euler(0, 90, 0);
+        Step(motor, view, Vector2.up, assault: true);
+        float turn = Vector3.Angle(priorDirection, motor.FacingDirection);
+        Check(turn > 1f && turn < 1.81f, "Assault steering is limited to 90 degrees per second");
+        Step(motor, view);
+        Check(!motor.IsAssaultBoosting && ended == 1, "Releasing Assault Boost cancels it");
+        Step(motor, view, assault: true);
+        Check(motor.IsAssaultBoosting && started == 2, "Assault Boost can restart after a release");
+        Step(motor, view, Vector2.left, boost: true, assault: true);
+        Check(motor.IsQuickBoosting && !motor.IsAssaultBoosting && ended == 2,
+            "Quick Boost cancels Assault Boost and uses camera-relative dodge input");
+        for (int i = 0; i < 40; i++) Step(motor, view, assault: true);
+        Check(!motor.IsAssaultBoosting, "Cancelled Assault Boost requires releasing the button");
+        Step(motor, view);
+        energy.TickRecovery(10f, true);
+        for (int i = 0; i < 310; i++) Step(motor, view, assault: true);
+        Check(!motor.IsAssaultBoosting && energy.Current < 10f, "Energy exhaustion ends Assault Boost");
+        energy.TickRecovery(10f, true);
+        Step(motor, view, assault: true);
+        Check(!motor.IsAssaultBoosting, "Recovered energy cannot restart an exhausted held boost automatically");
+        Step(motor, view);
+        var controller = player.GetComponent<CharacterController>();
+        controller.enabled = false;
+        player.transform.position = new Vector3(60, 10, -60);
+        controller.enabled = true;
+        Step(motor, view, assault: true);
+        Check(!motor.IsAssaultBoosting, "Assault Boost cannot start while airborne");
+        for (int i = 0; i < 100; i++) Step(motor, view);
+
+        player.SetActive(false);
+        var visual = new GameObject("VisualMech").transform;
+        visual.SetParent(player.transform, false);
+        var presentation = player.AddComponent<MechBoostPresentation>();
+        Set(presentation, "visualRoot", visual);
+        Set(presentation, "movement", motor);
+        Set(presentation, "playAudio", false);
+        Set(presentation, "boostMaterial", new Material(Shader.Find("Mech/BoostGlow")));
+        player.SetActive(true);
+        for (int i = 0; i < 30; i++) Step(motor, view);
+        energy.TickRecovery(10f, true);
+        Step(motor, view, Vector2.up, boost: true);
+        Vector3 position = player.transform.position;
+        Quaternion rotation = player.transform.rotation;
+        Bounds bounds = controller.bounds;
+        Call(presentation, "UpdatePresentation", 0.02f);
+        Check(Quaternion.Angle(visual.localRotation, Quaternion.identity) > 0.1f,
+            "Boost feedback leans the visual child");
+        Check(player.transform.position == position && player.transform.rotation == rotation && controller.bounds == bounds,
+            "Visual feedback does not move or tilt the root collider");
+        Check(((ParticleSystem)Get(presentation, "thrusters")).emission.enabled,
+            "Thruster emission starts during boost");
+        presentation.enabled = false;
+        Check(visual.localRotation == Quaternion.identity && !((TrailRenderer[])Get(presentation, "trails"))[0].emitting,
+            "Disabling presentation resets lean and stops trails");
+
+        var cameraRoot = new GameObject("Ground Camera");
+        cameraRoot.SetActive(false);
+        cameraRoot.AddComponent<Camera>();
+        var cameraControl = cameraRoot.AddComponent<CameraControlThirdPerson>();
+        Set(cameraControl, "target", player.transform);
+        cameraRoot.SetActive(true);
+        var rig = (CinemachineCamera)Get(cameraControl, "cinemachineCamera");
+        var follow = rig.GetComponent<CinemachineThirdPersonFollow>();
+        Check(follow.AvoidObstacles.Enabled && follow.AvoidObstacles.IgnoreTag == "Player",
+            "Camera avoids obstacles and ignores the player");
+        Set(motor, "quickBoostTimer", 0.24f);
+        Call(cameraControl, "UpdateMovementFeedback", 0.1f);
+        Call(cameraControl, "ApplySettings");
+        Check(rig.Lens.FieldOfView > 60f && rig.Lens.FieldOfView <= 67f, "Quick Boost produces a bounded FOV pulse");
+        Set(motor, "quickBoostTimer", 0f);
+        Call(cameraControl, "UpdateMovementFeedback", 2f);
+        Call(cameraControl, "ApplySettings");
+        Check(Mathf.Abs(rig.Lens.FieldOfView - 60f) < 0.01f, "Camera FOV returns to normal after boost");
+        Call(cameraControl, "UpdateCameraTargetRotation");
+        rig.InternalUpdateCameraState(Vector3.up, -1f);
+        Vector3 anchor = rig.Follow.position;
+        Vector3 clearPosition = rig.State.GetFinalPosition();
+        var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        wall.transform.position = Vector3.Lerp(anchor, clearPosition, 0.55f);
+        wall.transform.rotation = Quaternion.LookRotation(clearPosition - anchor);
+        wall.transform.localScale = new Vector3(20f, 20f, 0.5f);
+        Physics.SyncTransforms();
+        rig.InternalUpdateCameraState(Vector3.up, -1f);
+        Check(Vector3.Distance(rig.State.GetFinalPosition(), anchor) < Vector3.Distance(clearPosition, anchor) - 1f,
+            "A wall physically pulls the camera in front of the obstruction");
+        Object.DestroyImmediate(wall);
     }
 
     static void CheckMovement(Camera view)

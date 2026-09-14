@@ -52,6 +52,23 @@ public class CameraControlThirdPerson : MonoBehaviour
     [SerializeField] float lateralOffsetSpeed = 12f;
     [SerializeField] float lateralOffsetResponse = 0.25f;
 
+    [Header("Obstacle Avoidance")]
+    [SerializeField] bool avoidObstacles = true;
+    [SerializeField] LayerMask obstacleLayers = 1;
+    [SerializeField, Range(0.05f, 1f)] float cameraRadius = 0.35f;
+    [SerializeField, Min(0f)] float obstacleReturnDamping = 0.25f;
+
+    [Header("Movement Feedback")]
+    [SerializeField] bool movementFeedback = true;
+    [SerializeField, Range(30f, 100f)] float baseFieldOfView = 60f;
+    [SerializeField, Range(0f, 15f)] float quickBoostFovKick = 7f;
+    [SerializeField, Range(0f, 20f)] float assaultBoostFovKick = 10f;
+    [SerializeField, Range(1f, 1.3f)] float assaultBoostDistanceMultiplier = 1.12f;
+    [SerializeField] AnimationCurve quickBoostFovCurve = new AnimationCurve(
+        new Keyframe(0f, 0f), new Keyframe(0.2f, 1f), new Keyframe(1f, 0f));
+    float movementFovOffset;
+    float assaultFraming;
+
     CinemachineCamera cinemachineCamera;
     GameObject cameraRigObject;
     CinemachineThirdPersonFollow thirdPersonFollow;
@@ -106,6 +123,8 @@ public class CameraControlThirdPerson : MonoBehaviour
     void OnDisable()
     {
         lookAction?.Disable();
+        movementFovOffset = 0f;
+        assaultFraming = 0f;
         if (cameraRigObject != null)
             cameraRigObject.SetActive(false);
         SetCursorLocked(false);
@@ -122,6 +141,7 @@ public class CameraControlThirdPerson : MonoBehaviour
             return;
 
         UpdateCameraTargetRotation();
+        UpdateMovementFeedback(Time.deltaTime);
         ApplySettings();
 
         float deltaTime = Mathf.Max(Time.deltaTime, 0.0001f);
@@ -140,7 +160,20 @@ public class CameraControlThirdPerson : MonoBehaviour
     void ApplySettings()
     {
         // Gameplay targets never influence camera rotation or framing.
-        thirdPersonFollow.CameraDistance = normalProfile.distance;
+        thirdPersonFollow.CameraDistance = normalProfile.distance
+            * Mathf.Lerp(1f, assaultBoostDistanceMultiplier, assaultFraming);
+        LensSettings lens = cinemachineCamera.Lens;
+        lens.FieldOfView = baseFieldOfView + movementFovOffset;
+        cinemachineCamera.Lens = lens;
+        thirdPersonFollow.AvoidObstacles = new CinemachineThirdPersonFollow.ObstacleSettings
+        {
+            Enabled = avoidObstacles,
+            CollisionFilter = obstacleLayers,
+            IgnoreTag = "Player",
+            CameraRadius = cameraRadius,
+            DampingIntoCollision = 0f,
+            DampingFromCollision = obstacleReturnDamping
+        };
         thirdPersonFollow.CameraSide = 0.5f;
         thirdPersonFollow.VerticalArmLength = shoulderHeight;
         thirdPersonFollow.Damping = movementController != null && movementController.IsQuickBoosting
@@ -175,6 +208,17 @@ public class CameraControlThirdPerson : MonoBehaviour
         cameraPitch = Mathf.Clamp(cameraPitch - lookInput.y * lookSensitivity,
             normalProfile.minimumPitch, normalProfile.maximumPitch);
         cameraTarget.SetPositionAndRotation(target.position, Quaternion.Euler(cameraPitch, cameraYaw, 0f));
+    }
+
+    void UpdateMovementFeedback(float deltaTime)
+    {
+        bool active = movementFeedback && movementController != null && movementController.isActiveAndEnabled;
+        float desiredFov = active && movementController.IsQuickBoosting
+            ? quickBoostFovCurve.Evaluate(movementController.QuickBoostProgress) * quickBoostFovKick
+            : active && movementController.IsAssaultBoosting ? assaultBoostFovKick : 0f;
+        movementFovOffset = Mathf.Lerp(movementFovOffset, desiredFov, 1f - Mathf.Exp(-deltaTime / 0.08f));
+        float desiredFraming = active && movementController.IsAssaultBoosting ? 1f : 0f;
+        assaultFraming = Mathf.Lerp(assaultFraming, desiredFraming, 1f - Mathf.Exp(-deltaTime / 0.2f));
     }
 
     static void SetCursorLocked(bool locked)
