@@ -71,6 +71,7 @@ public static class MechFoundationChecks
             CheckTargeting(view);
             CheckSoftLockIntent(view);
             CheckFreeAimModes(view);
+            CheckLockVerticalLook(view);
             CheckMovement(view);
             CheckEnemyIndependentMovement(view);
             CheckGroundFeatures(view);
@@ -342,6 +343,77 @@ public static class MechFoundationChecks
         player.SetActive(false);
         enemy.gameObject.SetActive(false);
         canvas.gameObject.SetActive(false);
+        cameraRoot.SetActive(false);
+        view.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+    }
+
+    static void CheckLockVerticalLook(Camera view)
+    {
+        var player = new GameObject("Vertical Lock Player");
+        player.transform.position = new Vector3(3000, 0, 0);
+        view.transform.SetPositionAndRotation(player.transform.position, Quaternion.identity);
+        var targeting = player.AddComponent<MechTargetLockController>();
+        Set(targeting, "gameplayCamera", view);
+        var cameraRoot = new GameObject("Vertical Lock Camera");
+        cameraRoot.SetActive(false);
+        cameraRoot.AddComponent<Camera>();
+        var cameraControl = cameraRoot.AddComponent<CameraControlThirdPerson>();
+        Set(cameraControl, "target", player.transform);
+        cameraRoot.SetActive(true);
+        var rig = (CinemachineCamera)Get(cameraControl, "cinemachineCamera");
+        Call(cameraControl, "UpdateCameraOrbit", Vector2.up * 10000, 0.02f);
+        Check(Mathf.Abs((float)Get(cameraControl, "cameraPitch") + 18f) < 0.001f,
+            "Free aim retains its original upward mouse-look limit");
+        targeting.ResumeTargeting();
+        Call(cameraControl, "UpdateCameraOrbit", Vector2.up * 10000, 0.02f);
+        Check(Mathf.Abs((float)Get(cameraControl, "cameraPitch") - 9f) < 0.001f,
+            "Entering soft lock from a low view restores the elevated minimum pitch");
+        Call(cameraControl, "ApplySettings");
+        rig.InternalUpdateCameraState(Vector3.up, -1f);
+        Check(rig.State.GetFinalPosition().y > player.transform.position.y + 1.5f,
+            "Lowest allowed soft-lock view places the camera above mech body height");
+        Call(cameraControl, "UpdateCameraOrbit", Vector2.down * 10000, 0.02f);
+        Check(Mathf.Abs((float)Get(cameraControl, "cameraPitch") - 15f) < 0.001f,
+            "Large downward mouse movement stays within the soft-lock pitch band");
+        Set(cameraControl, "cameraPitch", 12f);
+        float yaw = (float)Get(cameraControl, "cameraYaw");
+        Call(cameraControl, "UpdateCameraOrbit", new Vector2(50, 10), 0.02f);
+        Check(Mathf.Abs((float)Get(cameraControl, "cameraPitch") - 11.7f) < 0.001f,
+            "Soft-lock vertical adjustment uses reduced sensitivity");
+        Check(Mathf.Abs((float)Get(cameraControl, "cameraYaw") - yaw - 6f) < 0.001f,
+            "Soft-lock horizontal mouse look keeps its original sensitivity");
+        Set(cameraControl, "lockOnVerticalRange", 0f);
+        Call(cameraControl, "UpdateCameraOrbit", Vector2.up * 10000, 0.02f);
+        Check(Mathf.Abs((float)Get(cameraControl, "cameraPitch") - 12f) < 0.001f,
+            "Zero vertical range fully fixes soft-lock orbit pitch");
+        Set(cameraControl, "lockOnVerticalRange", 3f);
+        var enemy = Enemy(player.transform.position + Vector3.forward * 20);
+        Physics.SyncTransforms();
+        Call(targeting, "LateUpdate");
+        targeting.ToggleHardLock();
+        for (int i = 0; i < 120; i++) Call(cameraControl, "UpdateCameraOrbit", Vector2.zero, 0.02f);
+        float hardPitch = (float)Get(cameraControl, "cameraPitch");
+        Call(cameraControl, "UpdateCameraOrbit", Vector2.up * 10000, 0.02f);
+        Call(cameraControl, "UpdateCameraOrbit", Vector2.down * 10000, 0.02f);
+        Check(targeting.IsHardLocked && Mathf.Abs((float)Get(cameraControl, "cameraPitch") - hardPitch) < 0.001f,
+            "Hard lock completely ignores up/down mouse movement for camera pitch");
+        targeting.ToggleHardLock();
+        cameraRoot.transform.rotation = Quaternion.Euler(-15, 40, 0);
+        Call(cameraControl, "UpdateCameraOrbit", Vector2.zero, 0.02f);
+        Check((float)Get(cameraControl, "cameraPitch") >= 9f && (float)Get(cameraControl, "cameraPitch") <= 15f,
+            "Returning from hard to soft lock cannot inherit a body-level view");
+        targeting.ToggleHardLock();
+        targeting.EnterFreeAim();
+        enemy.gameObject.SetActive(false);
+        targeting.ResumeTargeting();
+        Call(cameraControl, "UpdateCameraOrbit", Vector2.up * 10000, 0.02f);
+        Check(!targeting.IsFreeAim && !targeting.IsHardLocked && (float)Get(cameraControl, "cameraPitch") >= 9f,
+            "Remembered hard mode waiting for an enemy also limits vertical mouse look");
+        targeting.EnterFreeAim();
+        Call(cameraControl, "UpdateCameraOrbit", Vector2.down * 10000, 0.02f);
+        Check(Mathf.Abs((float)Get(cameraControl, "cameraPitch") - 30f) < 0.001f,
+            "Returning to free aim restores the full downward pitch range");
+        player.SetActive(false);
         cameraRoot.SetActive(false);
         view.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
     }

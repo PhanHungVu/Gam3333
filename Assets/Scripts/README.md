@@ -25,6 +25,8 @@ Update order is camera input/toggle/flick in Update (-100), movement in Update, 
 
 The camera reports actual free-look input through `ReportAimInput` before soft selection. That intent is consumed each selection frame; follow motion and enemy movement do not count as player aim. Hard-lock orbit defaults to a 20-degree downward pitch with a 1.5-unit raised pivot. Close or low enemies steepen the angle to keep the sightline above the mech. `Hard Lock Pitch`, `Hard Lock Height`, and `Hard Lock Orbit Response` on the camera tune this framing; normal soft-lock framing is preserved.
 
+While targeting is enabled, soft-lock mouse pitch is limited to 12 degrees plus/minus 3 degrees (9–15 degrees downward), at 25% of normal vertical sensitivity. This also protects hard mode waiting for an enemy and transitions back from hard to soft lock. Horizontal mouse look is unchanged. Set `Lock On Vertical Range` to zero for a fixed soft-lock pitch. Active hard lock ignores vertical mouse input entirely; automatic enemy tracking and close-range clearance remain active. Free aim retains its original -18 to 30 degree range and full sensitivity. These settings live under `Lock-On Vertical Look` on the camera controller.
+
 ## Extension points
 
 Movement states describe implemented actions only: `Grounded` (idle/walking), `GroundBoost` (sprinting with movement input), `Airborne` (existing jump/fall), `QuickBoost`, and ground-only `AssaultBoost`. There is no flight, sustained ascent, air dodge, or new combat system.

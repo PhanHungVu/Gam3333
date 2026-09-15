@@ -28,6 +28,12 @@ public class CameraControlThirdPerson : MonoBehaviour
     [SerializeField] float lookSensitivity = 0.12f;
     [SerializeField] float initialPitch = 8f;
     [SerializeField] bool lockCursorOnPlay = true;
+    [Header("Lock-On Vertical Look")]
+    [Tooltip("Elevated resting pitch for soft lock and lock mode waiting for an enemy.")]
+    [SerializeField, Range(5f, 40f)] float softLockPitch = 12f;
+    [Tooltip("Allowed mouse adjustment above/below soft-lock pitch. Set to zero to lock it completely.")]
+    [SerializeField, Range(0f, 5f)] float lockOnVerticalRange = 3f;
+    [SerializeField, Range(0f, 1f)] float lockOnVerticalSensitivity = 0.25f;
     [Tooltip("How quickly the camera moves behind the mech when following a locked enemy.")]
     [SerializeField, Min(0.01f)] float hardLockOrbitResponse = 0.12f;
     [Tooltip("Minimum downward orbit angle while locked. Close, low targets use a steeper view to clear the mech.")]
@@ -248,7 +254,9 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     void UpdateCameraOrbit(Vector2 lookInput, float deltaTime)
     {
-        bool hardLocked = targetingController != null && targetingController.IsHardLocked;
+        bool targetingActive = targetingController != null && targetingController.isActiveAndEnabled
+            && !targetingController.IsFreeAim;
+        bool hardLocked = targetingActive && targetingController.IsHardLocked;
         if (hardLocked)
         {
             Vector3 direction = targetingController.CurrentTarget.AimPosition - target.position;
@@ -276,8 +284,13 @@ public class CameraControlThirdPerson : MonoBehaviour
                 cameraPitch = Mathf.DeltaAngle(0f, transform.eulerAngles.x);
             }
             cameraYaw += lookInput.x * lookSensitivity;
-            cameraPitch = Mathf.Clamp(cameraPitch - lookInput.y * lookSensitivity,
-                normalProfile.minimumPitch, normalProfile.maximumPitch);
+            // Constrain soft lock (including a restored hard mode waiting for an enemy).
+            // Free aim retains the full normal pitch range and mouse sensitivity.
+            float minimumPitch = targetingActive ? softLockPitch - lockOnVerticalRange : normalProfile.minimumPitch;
+            float maximumPitch = targetingActive ? softLockPitch + lockOnVerticalRange : normalProfile.maximumPitch;
+            float verticalSensitivity = targetingActive ? lockOnVerticalSensitivity : 1f;
+            cameraPitch = Mathf.Clamp(cameraPitch - lookInput.y * lookSensitivity * verticalSensitivity,
+                minimumPitch, maximumPitch);
             targetingController?.ReportAimInput(lookInput);
             currentLockHeight = Mathf.Lerp(currentLockHeight, 0f,
                 1f - Mathf.Exp(-deltaTime / Mathf.Max(0.01f, hardLockOrbitResponse)));
@@ -307,6 +320,9 @@ public class CameraControlThirdPerson : MonoBehaviour
     void OnValidate()
     {
         lookSensitivity = Mathf.Max(0f, lookSensitivity);
+        softLockPitch = Mathf.Clamp(softLockPitch, 5f, 40f);
+        lockOnVerticalRange = Mathf.Clamp(lockOnVerticalRange, 0f, Mathf.Min(5f, softLockPitch - 1f));
+        lockOnVerticalSensitivity = Mathf.Clamp01(lockOnVerticalSensitivity);
         normalProfile.distance = Mathf.Max(0.1f, normalProfile.distance);
         normalProfile.maximumPitch = Mathf.Max(normalProfile.minimumPitch, normalProfile.maximumPitch);
         normalProfile.damping = Vector3.Max(Vector3.zero, normalProfile.damping);
