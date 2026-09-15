@@ -4185,7 +4185,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 28, y: 12}
-  m_SizeDelta: {x: 740, y: 22}
+  m_SizeDelta: {x: 740, y: 38}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &1904516350
 MonoBehaviour:
@@ -4220,8 +4220,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: WASD  MOVE     SHIFT  GROUND BOOST     ALT  QUICK BOOST     HOLD CTRL 
-    ASSAULT BOOST
+  m_Text: "WASD  MOVE     SHIFT  GROUND BOOST     ALT  QUICK BOOST     HOLD CTRL  ASSAULT BOOST\nMMB  TOGGLE TARGET FOLLOW     MOUSE FLICK  SWITCH TARGET"
 --- !u!222 &1904516351
 CanvasRenderer:
   m_ObjectHideFlags: 0

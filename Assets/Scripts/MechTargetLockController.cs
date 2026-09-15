@@ -13,12 +13,113 @@ public class MechTargetLockController : MonoBehaviour
     [SerializeField, Range(0f, 0.25f)] float targetSwitchRadius = 0.025f;
     [SerializeField] Camera gameplayCamera;
 
+    [Header("Hard Lock Target Switching")]
+    [Tooltip("Mouse travel required within the gesture window to switch targets.")]
+    [SerializeField, Min(1f)] float switchFlickDistance = 80f;
+    [SerializeField, Min(0.01f)] float switchGestureWindow = 0.2f;
+    [Tooltip("Slower movement is ignored and lets the next gesture arm.")]
+    [SerializeField, Min(0f)] float switchMinimumSpeed = 120f;
+    [SerializeField, Min(0.01f)] float switchReleaseTime = 0.1f;
+    [SerializeField, Min(0f)] float switchCooldown = 0.25f;
+    [SerializeField, Range(1f, 89f)] float switchDirectionHalfAngle = 60f;
+
     MechTargetable currentTarget;
     Collider[] candidates = new Collider[32];
+    bool hardLockEnabled;
+    bool switchLatched;
+    Vector2 switchTravel;
+    float gestureTime;
+    float quietTime;
+    float cooldownRemaining;
 
     public MechTargetable CurrentTarget => currentTarget;
     public Camera GameplayCamera => gameplayCamera;
+    public bool IsHardLocked => isActiveAndEnabled && hardLockEnabled && IsTargetInRange(currentTarget);
     public event Action<MechTargetable, MechTargetable> TargetChanged;
+    public event Action<bool> HardLockChanged;
+
+    public void ToggleHardLock()
+    {
+        if (!isActiveAndEnabled) return;
+        if (hardLockEnabled)
+        {
+            SetHardLock(false);
+            return;
+        }
+        if (gameplayCamera == null) gameplayCamera = Camera.main;
+        SelectTarget(gameplayCamera);
+        if (currentTarget != null) SetHardLock(true);
+    }
+
+    // Called once per frame by the camera input owner, before movement and camera updates.
+    public void ProcessSwitchInput(Vector2 mouseDelta, float deltaTime)
+    {
+        if (!IsHardLocked || deltaTime <= 0f) return;
+        cooldownRemaining = Mathf.Max(0f, cooldownRemaining - deltaTime);
+        gestureTime += deltaTime;
+        if (mouseDelta.magnitude / deltaTime < switchMinimumSpeed || mouseDelta == Vector2.zero)
+        {
+            quietTime += deltaTime;
+            if (quietTime >= switchReleaseTime)
+            {
+                switchLatched = false;
+                switchTravel = Vector2.zero;
+                gestureTime = 0f;
+            }
+            return;
+        }
+        quietTime = 0f;
+        if (switchLatched || cooldownRemaining > 0f) return;
+        if (gestureTime > switchGestureWindow || Vector2.Dot(switchTravel, mouseDelta) < 0f)
+        {
+            switchTravel = Vector2.zero;
+            gestureTime = deltaTime;
+        }
+        switchTravel += mouseDelta;
+        if (switchTravel.magnitude < switchFlickDistance) return;
+
+        SwitchInDirection(switchTravel.normalized);
+        // Consume even a gesture toward empty space, so holding it cannot switch later.
+        switchLatched = true;
+        cooldownRemaining = switchCooldown;
+        switchTravel = Vector2.zero;
+        gestureTime = 0f;
+    }
+
+    void SwitchInDirection(Vector2 direction)
+    {
+        if (gameplayCamera == null || !IsHardLocked) return;
+        Vector3 origin = gameplayCamera.WorldToScreenPoint(currentTarget.AimPosition);
+        if (origin.z < gameplayCamera.nearClipPlane) return;
+        float minimumDot = Mathf.Cos(switchDirectionHalfAngle * Mathf.Deg2Rad);
+        MechTargetable next = null;
+        float nearestDistance = float.MaxValue;
+        int count = QueryCandidates();
+        for (int i = 0; i < count; i++)
+        {
+            var candidate = candidates[i].GetComponentInParent<MechTargetable>();
+            if (candidate == currentTarget || !IsValidTarget(candidate, gameplayCamera)) continue;
+            Vector2 offset = (Vector2)gameplayCamera.WorldToScreenPoint(candidate.AimPosition) - (Vector2)origin;
+            if (offset.sqrMagnitude < 1f || Vector2.Dot(offset.normalized, direction) < minimumDot) continue;
+            if (offset.sqrMagnitude < nearestDistance)
+            {
+                nearestDistance = offset.sqrMagnitude;
+                next = candidate;
+            }
+        }
+        Array.Clear(candidates, 0, count);
+        if (next != null) SetTarget(next);
+    }
+
+    void SetHardLock(bool active)
+    {
+        if (hardLockEnabled == active) return;
+        hardLockEnabled = active;
+        switchTravel = Vector2.zero;
+        gestureTime = quietTime = cooldownRemaining = 0f;
+        switchLatched = false;
+        HardLockChanged?.Invoke(active);
+    }
 
     void Awake()
     {
@@ -28,6 +129,7 @@ public class MechTargetLockController : MonoBehaviour
 
     void OnDisable()
     {
+        SetHardLock(false);
         SetTarget(null);
     }
 
@@ -36,6 +138,19 @@ public class MechTargetLockController : MonoBehaviour
         if (gameplayCamera == null)
             gameplayCamera = Camera.main;
 
+        if (hardLockEnabled)
+        {
+            // Keep tracking offscreen enemies while the camera catches up, but release
+            // disabled, destroyed, out-of-range, or no-longer-targetable enemies.
+            bool found = false;
+            int count = QueryCandidates();
+            for (int i = 0; i < count; i++)
+                found |= candidates[i].GetComponentInParent<MechTargetable>() == currentTarget;
+            Array.Clear(candidates, 0, count);
+            if (gameplayCamera != null && IsTargetInRange(currentTarget) && found) return;
+            SetHardLock(false);
+            SetTarget(null);
+        }
         SelectTarget(gameplayCamera);
     }
 
@@ -127,17 +242,25 @@ public class MechTargetLockController : MonoBehaviour
         lockRange = Mathf.Max(0.01f, lockRange);
         screenPadding = Mathf.Clamp(screenPadding, 0f, 0.49f);
         targetSwitchRadius = Mathf.Clamp(targetSwitchRadius, 0f, 0.25f);
+        switchFlickDistance = Mathf.Max(1f, switchFlickDistance);
+        switchGestureWindow = Mathf.Max(0.01f, switchGestureWindow);
+        switchMinimumSpeed = Mathf.Max(0f, switchMinimumSpeed);
+        switchReleaseTime = Mathf.Max(0.01f, switchReleaseTime);
+        switchCooldown = Mathf.Max(0f, switchCooldown);
     }
 
-    bool IsValidTarget(MechTargetable targetable, Camera viewCamera)
+    bool IsTargetInRange(MechTargetable targetable)
     {
         if (targetable == null || !targetable.isActiveAndEnabled
             || targetable.transform.IsChildOf(transform))
             return false;
 
-        if ((targetable.AimPosition - transform.position).sqrMagnitude > lockRange * lockRange)
-            return false;
+        return (targetable.AimPosition - transform.position).sqrMagnitude <= lockRange * lockRange;
+    }
 
+    bool IsValidTarget(MechTargetable targetable, Camera viewCamera)
+    {
+        if (!IsTargetInRange(targetable)) return false;
         Vector3 viewportPosition = viewCamera.WorldToViewportPoint(targetable.AimPosition);
         // Padding affects acquisition only. Keep a selected enemy until it actually exits.
         float padding = targetable == currentTarget ? 0f : screenPadding;

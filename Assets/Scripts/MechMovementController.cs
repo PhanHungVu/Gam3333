@@ -54,6 +54,7 @@ public class MechMovementController : MonoBehaviour
     [SerializeField] float jumpHeight = 1.5f;
 
     CharacterController characterController;
+    MechTargetLockController targetingController;
     InputAction moveAction;
     InputAction sprintAction;
     InputAction jumpAction;
@@ -96,6 +97,7 @@ public class MechMovementController : MonoBehaviour
     void Awake()
     {
         characterController = GetComponent<CharacterController>();
+        targetingController = GetComponent<MechTargetLockController>();
         if (energy == null)
             energy = GetComponent<MechEnergyController>();
         if (gameplayCamera == null)
@@ -248,6 +250,11 @@ public class MechMovementController : MonoBehaviour
             ? quickBoostDirection
             : assaultBoostActive ? assaultBoostDirection
             : GetDesiredFacingDirection(movementDirection, cameraTransform);
+        // Hard lock changes facing only. Input axes, acceleration, and the captured
+        // Quick Boost direction remain entirely under the locomotion code above.
+        if (targetingController != null && targetingController.IsHardLocked)
+            facingDirection = Vector3.ProjectOnPlane(
+                targetingController.CurrentTarget.AimPosition - transform.position, Vector3.up).normalized;
         FacingDirection = facingDirection;
         if (facingDirection.sqrMagnitude > 0.001f)
         {

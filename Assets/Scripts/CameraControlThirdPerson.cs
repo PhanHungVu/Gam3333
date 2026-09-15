@@ -28,6 +28,8 @@ public class CameraControlThirdPerson : MonoBehaviour
     [SerializeField] float lookSensitivity = 0.12f;
     [SerializeField] float initialPitch = 8f;
     [SerializeField] bool lockCursorOnPlay = true;
+    [Tooltip("How quickly the camera moves behind the mech when following a locked enemy.")]
+    [SerializeField, Min(0.01f)] float hardLockOrbitResponse = 0.12f;
 
     [Header("Follow and Framing")]
     // Keep the serialized name and members so existing scene tuning survives cleanup.
@@ -75,7 +77,10 @@ public class CameraControlThirdPerson : MonoBehaviour
     CinemachineRotationComposer rotationComposer;
     Transform cameraTarget;
     MechMovementController movementController;
+    MechTargetLockController targetingController;
     InputAction lookAction;
+    InputAction lockAction;
+    bool wasHardLocked;
     Vector3 previousTargetPosition;
     float currentLateralOffset;
     float cameraYaw;
@@ -98,6 +103,7 @@ public class CameraControlThirdPerson : MonoBehaviour
         cameraTarget = new GameObject("CameraTarget").transform;
         cameraTarget.SetParent(target, false);
         movementController = target.GetComponent<MechMovementController>();
+        targetingController = target.GetComponent<MechTargetLockController>();
         cameraYaw = target.eulerAngles.y;
         cameraPitch = initialPitch;
         cinemachineCamera.Follow = cameraTarget;
@@ -114,6 +120,8 @@ public class CameraControlThirdPerson : MonoBehaviour
     {
         lookAction = inputActions != null ? inputActions.FindAction("Player/Look", false) : null;
         lookAction?.Enable();
+        lockAction = inputActions != null ? inputActions.FindAction("Player/LockOn", false) : null;
+        lockAction?.Enable();
         if (cameraRigObject != null)
             cameraRigObject.SetActive(true);
         if (target != null)
@@ -123,6 +131,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     void OnDisable()
     {
         lookAction?.Disable();
+        lockAction?.Disable();
         movementFovOffset = 0f;
         assaultFraming = 0f;
         if (cameraRigObject != null)
@@ -130,13 +139,26 @@ public class CameraControlThirdPerson : MonoBehaviour
         SetCursorLocked(false);
     }
 
-    void LateUpdate()
+    void Update()
     {
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             SetCursorLocked(false);
         else if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
             SetCursorLocked(true);
 
+        if (Cursor.lockState != CursorLockMode.Locked || Time.timeScale == 0f || targetingController == null)
+            return;
+        bool toggle = lockAction != null ? lockAction.WasPressedThisFrame()
+            : Mouse.current != null && Mouse.current.middleButton.wasPressedThisFrame;
+        if (toggle)
+            targetingController.ToggleHardLock();
+        else
+            targetingController.ProcessSwitchInput(Mouse.current != null ? Mouse.current.delta.ReadValue() : Vector2.zero,
+                Time.unscaledDeltaTime);
+    }
+
+    void LateUpdate()
+    {
         if (target == null || cameraTarget == null)
             return;
 
@@ -159,7 +181,8 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     void ApplySettings()
     {
-        // Gameplay targets never influence camera rotation or framing.
+        bool hardLocked = targetingController != null && targetingController.IsHardLocked;
+        cinemachineCamera.LookAt = hardLocked ? targetingController.CurrentTarget.AimTransform : cameraTarget;
         thirdPersonFollow.CameraDistance = normalProfile.distance
             * Mathf.Lerp(1f, assaultBoostDistanceMultiplier, assaultFraming);
         LensSettings lens = cinemachineCamera.Lens;
@@ -179,15 +202,16 @@ public class CameraControlThirdPerson : MonoBehaviour
         thirdPersonFollow.Damping = movementController != null && movementController.IsQuickBoosting
             ? quickBoostFollowDamping : normalProfile.damping;
         thirdPersonFollow.ShoulderOffset = new Vector3(cameraSide + currentLateralOffset, shoulderHeight, 0f);
-        rotationComposer.TargetOffset = normalProfile.targetOffset;
-        rotationComposer.Damping = rotationDamping;
+        rotationComposer.TargetOffset = hardLocked ? Vector3.zero : normalProfile.targetOffset;
+        // Center the actual camera on the enemy; the only visible cursor remains the existing UI cursor.
+        rotationComposer.Damping = hardLocked ? Vector2.zero : rotationDamping;
         rotationComposer.CenterOnActivate = true;
 
         ScreenComposerSettings composition = rotationComposer.Composition;
-        composition.ScreenPosition = screenPosition;
+        composition.ScreenPosition = hardLocked ? Vector2.zero : screenPosition;
         composition.DeadZone = new ScreenComposerSettings.DeadZoneSettings
         {
-            Enabled = true,
+            Enabled = !hardLocked,
             Size = normalProfile.deadZoneSize
         };
         composition.HardLimits = new ScreenComposerSettings.HardLimitSettings
@@ -202,11 +226,33 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     void UpdateCameraTargetRotation()
     {
-        Vector2 lookInput = lookAction != null ? lookAction.ReadValue<Vector2>()
-            : Mouse.current != null ? Mouse.current.delta.ReadValue() : Vector2.zero;
-        cameraYaw += lookInput.x * lookSensitivity;
-        cameraPitch = Mathf.Clamp(cameraPitch - lookInput.y * lookSensitivity,
-            normalProfile.minimumPitch, normalProfile.maximumPitch);
+        bool hardLocked = targetingController != null && targetingController.IsHardLocked;
+        if (hardLocked)
+        {
+            Vector3 direction = targetingController.CurrentTarget.AimPosition - target.position;
+            float planarDistance = new Vector2(direction.x, direction.z).magnitude;
+            float response = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(0.01f, hardLockOrbitResponse));
+            if (planarDistance > 0.001f)
+                cameraYaw = Mathf.LerpAngle(cameraYaw, Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg, response);
+            float pitch = -Mathf.Atan2(direction.y, Mathf.Max(0.001f, planarDistance)) * Mathf.Rad2Deg;
+            cameraPitch = Mathf.LerpAngle(cameraPitch, Mathf.Clamp(pitch, -80f, 80f), response);
+        }
+        else
+        {
+            if (wasHardLocked)
+            {
+                // Resume mouse look from the current view instead of the pre-lock heading.
+                cameraYaw = transform.eulerAngles.y;
+                cameraPitch = Mathf.DeltaAngle(0f, transform.eulerAngles.x);
+            }
+            Vector2 lookInput = Cursor.lockState != CursorLockMode.Locked || Time.timeScale == 0f ? Vector2.zero
+                : lookAction != null ? lookAction.ReadValue<Vector2>()
+                : Mouse.current != null ? Mouse.current.delta.ReadValue() : Vector2.zero;
+            cameraYaw += lookInput.x * lookSensitivity;
+            cameraPitch = Mathf.Clamp(cameraPitch - lookInput.y * lookSensitivity,
+                normalProfile.minimumPitch, normalProfile.maximumPitch);
+        }
+        wasHardLocked = hardLocked;
         cameraTarget.SetPositionAndRotation(target.position, Quaternion.Euler(cameraPitch, cameraYaw, 0f));
     }
 
