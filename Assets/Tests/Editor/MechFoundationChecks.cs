@@ -69,6 +69,8 @@ public static class MechFoundationChecks
             view.tag = "MainCamera";
             view.pixelRect = new Rect(100, 50, 1000, 700);
             CheckTargeting(view);
+            CheckSoftLockIntent(view);
+            CheckFreeAimModes(view);
             CheckMovement(view);
             CheckEnemyIndependentMovement(view);
             CheckGroundFeatures(view);
@@ -89,6 +91,7 @@ public static class MechFoundationChecks
         var targeting = player.AddComponent<MechTargetLockController>();
         int changes = 0;
         targeting.TargetChanged += (previous, next) => changes++;
+        targeting.ResumeTargeting();
         var canvas = new GameObject("Canvas", typeof(RectTransform), typeof(Canvas)).GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         var cursor = new GameObject("Cursor", typeof(RectTransform)).GetComponent<RectTransform>();
@@ -99,7 +102,7 @@ public static class MechFoundationChecks
         var b = Enemy(new Vector3(7, 0, 20));
         Physics.SyncTransforms();
         Call(targeting, "LateUpdate");
-        Check(targeting.CurrentTarget == a && changes == 1, "Acquire nearest center target and publish one change");
+        Check(targeting.CurrentTarget == a && changes == 1, "Acquire nearest world-distance target and publish one change");
         Call(targeting, "LateUpdate");
         Check(changes == 1, "Keeping a target does not repeat change events");
         view.transform.rotation = Quaternion.LookRotation(new Vector3(4, 0, 20));
@@ -109,6 +112,7 @@ public static class MechFoundationChecks
         Check(Vector2.Distance(RectTransformUtility.WorldToScreenPoint(null, cursor.position),
             view.WorldToScreenPoint(a.AimPosition)) < 0.1f, "Cursor overlays target after camera rotation");
         view.transform.rotation = Quaternion.LookRotation(b.AimPosition);
+        targeting.ReportAimInput(Vector2.right);
         Quaternion rotation = view.transform.rotation;
         Call(targeting, "LateUpdate");
         Check(targeting.CurrentTarget == b && changes == 2, "Center aim switches targets exactly once");
@@ -170,6 +174,175 @@ public static class MechFoundationChecks
         crowd.SetActive(false);
         b.gameObject.SetActive(false);
         canvas.gameObject.SetActive(false);
+        view.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+    }
+
+    static void CheckSoftLockIntent(Camera view)
+    {
+        var player = new GameObject("Soft Lock Intent Player");
+        player.transform.position = new Vector3(1000, 0, 0);
+        view.transform.SetPositionAndRotation(player.transform.position, Quaternion.identity);
+        var targeting = player.AddComponent<MechTargetLockController>();
+        Set(targeting, "gameplayCamera", view);
+        targeting.ResumeTargeting();
+        var near = Enemy(player.transform.position + new Vector3(-5, 0, 15));
+        var centered = Enemy(player.transform.position + new Vector3(0, 0, 30));
+        var side = Enemy(player.transform.position + new Vector3(4, 0, 20));
+        Physics.SyncTransforms();
+        Call(targeting, "LateUpdate");
+        Check(targeting.CurrentTarget == near, "Initial soft lock uses distance from mech, not distance from screen center");
+        centered.transform.position = player.transform.position + new Vector3(0, 0, 10);
+        Physics.SyncTransforms();
+        Call(targeting, "LateUpdate");
+        Check(targeting.CurrentTarget == near, "A nearer enemy crossing stationary hidden aim cannot steal soft lock");
+        view.transform.rotation = Quaternion.Euler(0, 7, 0);
+        targeting.ReportAimInput(Vector2.right);
+        Call(targeting, "LateUpdate");
+        Check(targeting.CurrentTarget == near, "Aiming at empty space preserves a valid soft lock");
+        centered.transform.position = player.transform.position + new Vector3(0, 0, 30);
+        view.transform.rotation = Quaternion.identity;
+        Physics.SyncTransforms();
+        targeting.ReportAimInput(Vector2.left);
+        Call(targeting, "LateUpdate");
+        Check(targeting.CurrentTarget == centered, "Deliberate hidden aim selects a farther enemy over the closer selection");
+        near.transform.position = player.transform.position + new Vector3(0, 0, 8);
+        Physics.SyncTransforms();
+        Call(targeting, "LateUpdate");
+        Check(targeting.CurrentTarget == centered, "Aim input is consumed: next-frame enemy movement cannot switch targets");
+        targeting.ToggleHardLock();
+        Check(targeting.IsHardLocked && targeting.CurrentTarget == centered,
+            "Hard-lock toggle preserves the visible selection even with a nearer enemy on center aim");
+        targeting.ToggleHardLock();
+        centered.enabled = false;
+        Call(targeting, "LateUpdate");
+        Check(targeting.CurrentTarget == near, "Losing a selected enemy automatically picks nearest without mouse input");
+        centered.enabled = true;
+        near.transform.position = player.transform.position + new Vector3(-30, 0, 15);
+        Physics.SyncTransforms();
+        Call(targeting, "LateUpdate");
+        Check(targeting.CurrentTarget == side, "Enemy exiting screen picks nearest visible replacement rather than center-most enemy");
+        Object.DestroyImmediate(side.gameObject);
+        Call(targeting, "LateUpdate");
+        Check(targeting.CurrentTarget == centered, "Destroyed soft-lock target automatically advances to the next nearest enemy");
+        centered.gameObject.SetActive(false);
+        Call(targeting, "LateUpdate");
+        Check(targeting.CurrentTarget == null, "Soft lock clears when no visible enemy remains");
+        player.SetActive(false);
+        near.gameObject.SetActive(false);
+        view.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+    }
+
+    static void CheckFreeAimModes(Camera view)
+    {
+        var player = new GameObject("Free Aim Mode Player");
+        player.transform.position = new Vector3(2000, 0, 0);
+        view.transform.SetPositionAndRotation(player.transform.position, Quaternion.identity);
+        var targeting = player.AddComponent<MechTargetLockController>();
+        Set(targeting, "gameplayCamera", view);
+        var enemy = Enemy(player.transform.position + Vector3.forward * 20);
+        Physics.SyncTransforms();
+        targeting.ReportAimInput(Vector2.right);
+        Call(targeting, "LateUpdate");
+        Check(targeting.IsFreeAim && targeting.CurrentTarget == null,
+            "Startup free aim never acquires an enemy, even when the player aims at it");
+        var canvas = new GameObject("Free Aim Canvas", typeof(RectTransform), typeof(Canvas)).GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        var cursor = new GameObject("Free Aim Cursor", typeof(RectTransform)).GetComponent<RectTransform>();
+        cursor.SetParent(canvas.transform, false);
+        var tracker = cursor.gameObject.AddComponent<LockOnCursor>();
+        tracker.Bind(targeting, view);
+        Call(tracker, "LateUpdate");
+        Check(Vector2.Distance(RectTransformUtility.WorldToScreenPoint(null, cursor.position), view.pixelRect.center) < 0.1f,
+            "Free aim displays the existing cursor at screen center");
+
+        targeting.ProcessLockButton(true, true, false, 0.02f);
+        Check(!targeting.IsFreeAim && !targeting.IsHardLocked && targeting.CurrentTarget == enemy,
+            "First middle-mouse press immediately enters soft lock");
+        targeting.ProcessLockButton(false, true, false, 2f);
+        targeting.ProcessLockButton(false, false, true, 0.02f);
+        Check(!targeting.IsFreeAim && !targeting.IsHardLocked,
+            "Holding and releasing the restore press cannot immediately exit or toggle the restored mode");
+        targeting.ProcessLockButton(true, true, false, 0.1f);
+        Check(!targeting.IsHardLocked, "Beginning a hold does not prematurely toggle soft lock");
+        targeting.ProcessLockButton(false, false, true, 0.02f);
+        Check(targeting.IsHardLocked, "A short middle-mouse click switches soft lock to hard lock on release");
+
+        var cameraRoot = new GameObject("Free Aim Mode Camera");
+        cameraRoot.SetActive(false);
+        cameraRoot.AddComponent<Camera>();
+        var cameraControl = cameraRoot.AddComponent<CameraControlThirdPerson>();
+        Set(cameraControl, "target", player.transform);
+        cameraRoot.SetActive(true);
+        var rig = (CinemachineCamera)Get(cameraControl, "cinemachineCamera");
+        Call(cameraControl, "UpdateCameraOrbit", Vector2.zero, 0.02f);
+        Call(cameraControl, "ApplySettings");
+        Check(rig.LookAt == enemy.AimTransform, "Hard mode still directs the actual camera at its enemy");
+        targeting.ProcessLockButton(true, true, false, 1.19f);
+        Check(targeting.IsHardLocked, "A 1.19-second hold leaves hard lock active");
+        targeting.ProcessLockButton(false, true, false, 0.02f);
+        Call(cameraControl, "UpdateCameraOrbit", Vector2.zero, 0.02f);
+        Call(cameraControl, "ApplySettings");
+        Check(targeting.IsFreeAim && targeting.CurrentTarget == null && !targeting.IsHardLocked && rig.LookAt == rig.Follow,
+            "Crossing 1.2 seconds clears target and camera follow into free aim");
+        targeting.ProcessLockButton(false, true, false, 3f);
+        targeting.ProcessLockButton(false, false, true, 0.02f);
+        targeting.ReportAimInput(Vector2.left);
+        Call(targeting, "LateUpdate");
+        Check(targeting.IsFreeAim && targeting.CurrentTarget == null,
+            "Long-hold release and subsequent aiming cannot reactivate targeting");
+        targeting.ProcessLockButton(true, true, false, 0.02f);
+        targeting.ProcessLockButton(false, false, true, 0.02f);
+        Check(targeting.IsHardLocked && targeting.CurrentTarget == enemy, "A new press restores the remembered hard-lock mode");
+
+        targeting.ProcessLockButton(true, true, false, 0.02f);
+        targeting.ProcessLockButton(false, false, true, 0.02f);
+        Check(!targeting.IsFreeAim && !targeting.IsHardLocked, "Short click from hard lock returns to soft lock");
+        targeting.ProcessLockButton(true, true, false, 1.21f);
+        targeting.ProcessLockButton(false, false, true, 0.02f);
+        Check(targeting.IsFreeAim, "Soft lock also exits after the hold threshold");
+        targeting.ProcessLockButton(true, true, false, 0.02f);
+        targeting.ProcessLockButton(false, false, true, 0.02f);
+        Check(!targeting.IsFreeAim && !targeting.IsHardLocked && targeting.CurrentTarget == enemy,
+            "Restoring soft mode does not accidentally restore an older hard mode");
+        targeting.ProcessLockButton(true, true, false, 0.6f);
+        targeting.CancelLockButtonInput();
+        targeting.ProcessLockButton(false, true, false, 1f);
+        targeting.ProcessLockButton(false, false, true, 0.02f);
+        Check(!targeting.IsFreeAim && !targeting.IsHardLocked,
+            "Interrupted holds cannot complete or turn into taps after pause or cursor release");
+
+        targeting.ToggleHardLock();
+        targeting.EnterFreeAim();
+        enemy.gameObject.SetActive(false);
+        targeting.ProcessLockButton(true, true, false, 0.02f);
+        targeting.ProcessLockButton(false, false, true, 0.02f);
+        Call(targeting, "LateUpdate");
+        Check(!targeting.IsFreeAim && targeting.CurrentTarget == null && !targeting.IsHardLocked,
+            "Restoring hard mode without an enemy waits safely for a target");
+        enemy.gameObject.SetActive(true);
+        Physics.SyncTransforms();
+        Call(targeting, "LateUpdate");
+        Check(targeting.IsHardLocked && targeting.CurrentTarget == enemy,
+            "Explicitly restored hard mode locks when an eligible enemy becomes available");
+        targeting.EnterFreeAim();
+        enemy.gameObject.SetActive(false);
+        targeting.ResumeTargeting();
+        targeting.EnterFreeAim();
+        enemy.gameObject.SetActive(true);
+        Physics.SyncTransforms();
+        Call(targeting, "LateUpdate");
+        Check(targeting.IsFreeAim && targeting.CurrentTarget == null,
+            "Enemies appearing during free aim cannot acquire automatically");
+        targeting.ResumeTargeting();
+        Check(targeting.IsHardLocked, "Hard-mode memory survives entering free aim while waiting for an enemy");
+        targeting.enabled = false;
+        targeting.enabled = true;
+        Call(targeting, "LateUpdate");
+        Check(targeting.IsFreeAim && targeting.CurrentTarget == null, "Re-enabling the controller does not silently resume auto targeting");
+        player.SetActive(false);
+        enemy.gameObject.SetActive(false);
+        canvas.gameObject.SetActive(false);
+        cameraRoot.SetActive(false);
         view.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
     }
 
@@ -351,6 +524,7 @@ public static class MechFoundationChecks
     {
         view.transform.SetPositionAndRotation(new Vector3(0, 1.1f, 130), Quaternion.identity);
         var player = new GameObject("Hard Lock Player");
+        player.tag = "Player";
         player.transform.position = view.transform.position;
         var targeting = player.AddComponent<MechTargetLockController>();
         Set(targeting, "gameplayCamera", view);
@@ -365,8 +539,9 @@ public static class MechFoundationChecks
         aim.localPosition = Vector3.up * 0.25f;
         Set(right, "aimPoint", aim);
         Physics.SyncTransforms();
+        targeting.ResumeTargeting();
         Call(targeting, "LateUpdate");
-        Check(!targeting.IsHardLocked && targeting.CurrentTarget == a, "Hard lock starts off with normal cursor selection");
+        Check(!targeting.IsHardLocked && targeting.CurrentTarget == a, "Explicit targeting starts in soft mode with normal cursor selection");
         int modeChanges = 0;
         targeting.HardLockChanged += active => modeChanges++;
         targeting.ToggleHardLock();
@@ -429,6 +604,22 @@ public static class MechFoundationChecks
         Vector3 projected = actualView.WorldToViewportPoint(right.AimPosition);
         Check(projected.z > 0 && Vector2.Distance(projected, new Vector2(0.5f, 0.5f)) < 0.001f,
             "Actual hidden center aim points directly at the enemy");
+        // Check visibility, not just reticle centering: a centered enemy can still
+        // be hidden behind the player's body when the camera orbit is too low.
+        var bodyBounds = new Bounds(player.transform.position, new Vector3(2, 3, 1));
+        foreach (float enemyDistance in new[] { 20f, 4f, 2f })
+        {
+            right.transform.position = player.transform.position + new Vector3(0, -0.75f, enemyDistance);
+            for (int i = 0; i < 60; i++) Call(cameraControl, "UpdateCameraOrbit", Vector2.zero, 0.02f);
+            Call(cameraControl, "ApplySettings");
+            rig.InternalUpdateCameraState(Vector3.up, -1f);
+            Vector3 cameraPosition = rig.State.GetFinalPosition();
+            var sightline = new Ray(cameraPosition, (right.AimPosition - cameraPosition).normalized);
+            Check(cameraPosition.y > bodyBounds.max.y && !bodyBounds.IntersectRay(sightline),
+                $"Elevated hard-lock sightline clears the mech body at enemy distance {enemyDistance} (camera {cameraPosition}, body {bodyBounds})");
+            Check((rig.State.GetFinalOrientation() * Vector3.forward).y < 0f,
+                "Hard-lock camera looks down at ground-level enemies");
+        }
         right.transform.position = player.transform.position + new Vector3(10, 3, -15);
         Physics.SyncTransforms();
         Call(targeting, "LateUpdate");

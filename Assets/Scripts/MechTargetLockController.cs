@@ -13,6 +13,9 @@ public class MechTargetLockController : MonoBehaviour
     [SerializeField, Range(0f, 0.25f)] float targetSwitchRadius = 0.025f;
     [SerializeField] Camera gameplayCamera;
 
+    [Header("Lock Mode Controls")]
+    [SerializeField, Min(0.1f)] float freeAimHoldDuration = 1.2f;
+
     [Header("Hard Lock Target Switching")]
     [Tooltip("Mouse travel required within the gesture window to switch targets.")]
     [SerializeField, Min(1f)] float switchFlickDistance = 80f;
@@ -26,28 +29,102 @@ public class MechTargetLockController : MonoBehaviour
     MechTargetable currentTarget;
     Collider[] candidates = new Collider[32];
     bool hardLockEnabled;
+    bool targetingEnabled;
+    bool rememberedHardLock;
+    bool lockButtonTracking;
+    bool lockButtonConsumed;
+    float lockButtonTime;
     bool switchLatched;
     Vector2 switchTravel;
     float gestureTime;
     float quietTime;
     float cooldownRemaining;
+    bool playerAimedThisFrame;
 
     public MechTargetable CurrentTarget => currentTarget;
     public Camera GameplayCamera => gameplayCamera;
-    public bool IsHardLocked => isActiveAndEnabled && hardLockEnabled && IsTargetInRange(currentTarget);
+    public bool IsFreeAim => !targetingEnabled;
+    public bool IsHardLocked => isActiveAndEnabled && targetingEnabled && hardLockEnabled && IsTargetInRange(currentTarget);
     public event Action<MechTargetable, MechTargetable> TargetChanged;
     public event Action<bool> HardLockChanged;
+
+    public void EnterFreeAim()
+    {
+        if (targetingEnabled) rememberedHardLock = hardLockEnabled;
+        targetingEnabled = false;
+        playerAimedThisFrame = false;
+        SetHardLock(false);
+        SetTarget(null);
+    }
+
+    public void ResumeTargeting()
+    {
+        if (!isActiveAndEnabled || targetingEnabled) return;
+        targetingEnabled = true;
+        playerAimedThisFrame = false;
+        if (gameplayCamera == null) gameplayCamera = Camera.main;
+        SelectTarget(gameplayCamera);
+        // Retain a remembered hard mode even if there is no enemy yet. Acquisition
+        // is allowed only after this explicit request, never while in free aim.
+        SetHardLock(rememberedHardLock);
+    }
+
+    // A short click commits on release, so starting a long hold never changes mode.
+    // A press from free aim restores immediately and consumes that whole gesture.
+    public void ProcessLockButton(bool pressed, bool held, bool released, float deltaTime)
+    {
+        if (!isActiveAndEnabled || deltaTime <= 0f) return;
+        if (pressed)
+        {
+            lockButtonTracking = true;
+            lockButtonConsumed = IsFreeAim;
+            lockButtonTime = 0f;
+            if (IsFreeAim) ResumeTargeting();
+        }
+        if (!lockButtonTracking) return;
+        if (!lockButtonConsumed)
+        {
+            lockButtonTime += deltaTime;
+            if (lockButtonTime >= freeAimHoldDuration)
+            {
+                EnterFreeAim();
+                lockButtonConsumed = true;
+            }
+            else if (released)
+                ToggleHardLock();
+        }
+        if (released || !held) CancelLockButtonInput();
+    }
+
+    public void CancelLockButtonInput()
+    {
+        lockButtonTracking = lockButtonConsumed = false;
+        lockButtonTime = 0f;
+    }
+
+    // The camera reports actual look input, not enemy motion or camera follow motion.
+    public void ReportAimInput(Vector2 lookInput)
+    {
+        playerAimedThisFrame = targetingEnabled && lookInput.sqrMagnitude > 0f;
+    }
 
     public void ToggleHardLock()
     {
         if (!isActiveAndEnabled) return;
+        if (IsFreeAim)
+        {
+            ResumeTargeting();
+            return;
+        }
         if (hardLockEnabled)
         {
             SetHardLock(false);
             return;
         }
         if (gameplayCamera == null) gameplayCamera = Camera.main;
-        SelectTarget(gameplayCamera);
+        // Toggling follows the visible selection; it must not silently choose another enemy.
+        if (gameplayCamera == null || !IsValidTarget(currentTarget, gameplayCamera))
+            SelectTarget(gameplayCamera);
         if (currentTarget != null) SetHardLock(true);
     }
 
@@ -115,6 +192,7 @@ public class MechTargetLockController : MonoBehaviour
     {
         if (hardLockEnabled == active) return;
         hardLockEnabled = active;
+        if (targetingEnabled) rememberedHardLock = active;
         switchTravel = Vector2.zero;
         gestureTime = quietTime = cooldownRemaining = 0f;
         switchLatched = false;
@@ -129,17 +207,25 @@ public class MechTargetLockController : MonoBehaviour
 
     void OnDisable()
     {
-        SetHardLock(false);
-        SetTarget(null);
+        CancelLockButtonInput();
+        EnterFreeAim();
     }
 
     void LateUpdate()
     {
+        if (IsFreeAim) return;
         if (gameplayCamera == null)
             gameplayCamera = Camera.main;
 
         if (hardLockEnabled)
         {
+            playerAimedThisFrame = false;
+            if (ReferenceEquals(currentTarget, null))
+            {
+                // Restored hard mode is waiting for its first eligible enemy.
+                SelectTarget(gameplayCamera);
+                return;
+            }
             // Keep tracking offscreen enemies while the camera catches up, but release
             // disabled, destroyed, out-of-range, or no-longer-targetable enemies.
             bool found = false;
@@ -152,11 +238,12 @@ public class MechTargetLockController : MonoBehaviour
             SetTarget(null);
         }
         SelectTarget(gameplayCamera);
+        playerAimedThisFrame = false;
     }
 
     void SelectTarget(Camera viewCamera)
     {
-        if (viewCamera == null)
+        if (IsFreeAim || viewCamera == null)
         {
             SetTarget(null);
             return;
@@ -184,9 +271,10 @@ public class MechTargetLockController : MonoBehaviour
             keepCurrentTarget |= targetable == currentTarget;
             Vector2 screenPoint = viewCamera.WorldToScreenPoint(targetable.AimPosition);
             float score = (screenPoint - screenCenter).sqrMagnitude;
-            if (score < nearestScore)
+            float distance = (targetable.AimPosition - transform.position).sqrMagnitude;
+            if (distance < nearestScore)
             {
-                nearestScore = score;
+                nearestScore = distance;
                 nearestTarget = targetable;
             }
 
@@ -205,12 +293,12 @@ public class MechTargetLockController : MonoBehaviour
             }
         }
 
-        // Acquire automatically, then stay until center aim crosses another enemy
-        // or the selected enemy leaves the screen/range.
-        SetTarget(rayTarget != null ? rayTarget
-            : centeredTarget != null ? centeredTarget
-            : keepCurrentTarget ? currentTarget
-            : nearestTarget);
+        // Distance is only the fallback for initial acquisition or loss. A valid lock
+        // changes only when the player actively aims at another enemy. Enemies moving
+        // across the stationary center ray cannot steal the visible cursor.
+        MechTargetable aimedTarget = rayTarget != null ? rayTarget : centeredTarget;
+        SetTarget(playerAimedThisFrame && aimedTarget != null ? aimedTarget
+            : keepCurrentTarget ? currentTarget : nearestTarget);
         Array.Clear(candidates, 0, candidateCount);
     }
 
@@ -240,6 +328,7 @@ public class MechTargetLockController : MonoBehaviour
     void OnValidate()
     {
         lockRange = Mathf.Max(0.01f, lockRange);
+        freeAimHoldDuration = Mathf.Max(0.1f, freeAimHoldDuration);
         screenPadding = Mathf.Clamp(screenPadding, 0f, 0.49f);
         targetSwitchRadius = Mathf.Clamp(targetSwitchRadius, 0f, 0.25f);
         switchFlickDistance = Mathf.Max(1f, switchFlickDistance);

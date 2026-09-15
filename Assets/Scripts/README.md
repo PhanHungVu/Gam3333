@@ -1,8 +1,12 @@
 # Mech controller foundation
 
-Free look is the default. Mouse input controls camera rotation independently of enemy selection. The visible cursor follows the selected enemy. Center aim selects a replacement; moving the camera alone does not release a valid target. With no target the cursor returns to the gameplay camera viewport center.
+The game starts in free aim: the existing cursor stays at screen center and no enemy is acquired automatically, including when aiming at one. Press middle mouse to resume targeting in the last used soft/hard mode (soft on the first use). While targeting is active, hold middle mouse for 1.2 seconds to return to free aim. Releasing that hold does not turn targeting back on. Mode memory lasts for the current controller instance; it is not saved between game sessions.
 
-Middle mouse toggles optional hard lock on the selected enemy. While locked, the camera aims at the enemy's aim point and the whole mech turns to face it, including while idle or boosting. The hidden center aim stays invisible. A deliberate mouse flick switches to the nearest visible enemy in that screen direction. Small mouse movements do not switch or rotate the locked view. Toggle off to resume free look from the current heading. Losing a valid target returns to free mode; toggling without an available enemy leaves free mode active.
+In soft lock, mouse input controls camera rotation independently of enemy selection. The visible cursor initially acquires the nearest visible enemy by world distance from the mech. It stays with that enemy until the player actively aims the hidden screen-center cursor at another enemy, or the selected enemy becomes invalid. Enemies getting closer or crossing a stationary center aim cannot steal the selection. A lost, disabled, destroyed, out-of-range, or offscreen target is replaced by the nearest remaining visible enemy even without mouse input. This automatic selection is enabled only after the player explicitly leaves free aim.
+
+A short middle-mouse click while targeting switches between soft and hard lock on release, without reselecting. Delaying the tap until release prevents a long hold from briefly changing modes first. In hard lock, the camera looks down from above and behind the mech, aims at the enemy's aim point, and the whole mech turns to face it, including while idle or boosting. The hidden center aim stays invisible. A deliberate mouse flick switches to the nearest visible enemy in that screen direction. Small mouse movements do not switch or rotate the locked view. Losing an active hard-lock target falls back to soft targeting. Restoring a remembered hard mode with no eligible enemy waits safely until one becomes available; the camera remains under mouse control while waiting.
+
+The first press from free aim restores immediately and consumes that whole button gesture, so holding or releasing that same press cannot immediately exit or toggle again. Pause, cursor release, and camera disable cancel unfinished gestures. `Free Aim Hold Duration` on `MechTargetLockController` sets the hold time. `IsFreeAim` reports whether targeting is explicitly off; `IsHardLocked` reports actual camera/body tracking of a valid enemy. `EnterFreeAim` and `ResumeTargeting` provide the same mode transitions for other callers.
 
 WASD movement is always camera-relative. Hard lock rotates that camera, so the movement axes follow the view, but there is no enemy-relative approach/orbit movement. An active Quick Boost retains its captured world direction even when targets switch. With hard lock off, body facing retains the previous camera-relative movement and dodge behavior; idle facing does not turn toward enemies.
 
@@ -18,6 +22,8 @@ WASD movement is always camera-relative. Hard lock rotates that camera, so the m
 - `MechEnergyHud`: displays remaining energy on the scene Canvas.
 
 Update order is camera input/toggle/flick in Update (-100), movement in Update, camera rig in LateUpdate (-100), Cinemachine at its default order, selection/lock validation (100), then cursor projection (200). Hard lock suppresses automatic center-crossing switches and retains offscreen targets while the camera catches up. Disabled/destroyed targets, range loss, and loss of eligible colliders release it.
+
+The camera reports actual free-look input through `ReportAimInput` before soft selection. That intent is consumed each selection frame; follow motion and enemy movement do not count as player aim. Hard-lock orbit defaults to a 20-degree downward pitch with a 1.5-unit raised pivot. Close or low enemies steepen the angle to keep the sightline above the mech. `Hard Lock Pitch`, `Hard Lock Height`, and `Hard Lock Orbit Response` on the camera tune this framing; normal soft-lock framing is preserved.
 
 ## Extension points
 
@@ -51,7 +57,9 @@ The serialized `normalProfile` name and its members are retained to preserve exi
 | Left Shift | Ground boost (existing sprint) |
 | Left Alt | Quick Boost, 20 energy |
 | Hold Left Ctrl | Ground Assault Boost; release to cancel |
-| Middle mouse | Toggle enemy camera/body follow (hard lock) |
+| Middle mouse from free aim | Restore last used soft/hard targeting mode |
+| Short middle-mouse click while targeting | Switch soft/hard mode on release |
+| Hold middle mouse for 1.2 seconds while targeting | Enter free aim and remember the current mode |
 | Mouse flick while locked | Switch to the nearest visible enemy in that direction |
 | Escape / left click | Release / recapture mouse |
 
@@ -67,7 +75,7 @@ The player root is unscaled and keeps the equivalent upright capsule dimensions.
 
 The next work is tuning this ground prototype in play. Combat and aerial movement are deferred; target line-of-sight changes are also deferred with combat.
 
-Hard lock is optional and starts off. Target-relative locomotion and threat-based automatic switching remain outside the current design.
+Targeting starts off in free aim. Target-relative locomotion and threat-based automatic switching remain outside the current design.
 
 ## Regression checks
 

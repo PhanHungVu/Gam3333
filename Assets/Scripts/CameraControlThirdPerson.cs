@@ -30,6 +30,10 @@ public class CameraControlThirdPerson : MonoBehaviour
     [SerializeField] bool lockCursorOnPlay = true;
     [Tooltip("How quickly the camera moves behind the mech when following a locked enemy.")]
     [SerializeField, Min(0.01f)] float hardLockOrbitResponse = 0.12f;
+    [Tooltip("Minimum downward orbit angle while locked. Close, low targets use a steeper view to clear the mech.")]
+    [SerializeField, Range(5f, 60f)] float hardLockPitch = 20f;
+    [Tooltip("Extra height above the player root for the hard-lock follow pivot.")]
+    [SerializeField, Min(0f)] float hardLockHeight = 1.5f;
 
     [Header("Follow and Framing")]
     // Keep the serialized name and members so existing scene tuning survives cleanup.
@@ -77,6 +81,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     CinemachineRotationComposer rotationComposer;
     Transform cameraTarget;
     MechMovementController movementController;
+    CharacterController movementCapsule;
     MechTargetLockController targetingController;
     InputAction lookAction;
     InputAction lockAction;
@@ -85,6 +90,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     float currentLateralOffset;
     float cameraYaw;
     float cameraPitch;
+    float currentLockHeight;
 
     void Awake()
     {
@@ -103,6 +109,7 @@ public class CameraControlThirdPerson : MonoBehaviour
         cameraTarget = new GameObject("CameraTarget").transform;
         cameraTarget.SetParent(target, false);
         movementController = target.GetComponent<MechMovementController>();
+        movementCapsule = target.GetComponent<CharacterController>();
         targetingController = target.GetComponent<MechTargetLockController>();
         cameraYaw = target.eulerAngles.y;
         cameraPitch = initialPitch;
@@ -132,6 +139,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     {
         lookAction?.Disable();
         lockAction?.Disable();
+        targetingController?.CancelLockButtonInput();
         movementFovOffset = 0f;
         assaultFraming = 0f;
         if (cameraRigObject != null)
@@ -147,12 +155,18 @@ public class CameraControlThirdPerson : MonoBehaviour
             SetCursorLocked(true);
 
         if (Cursor.lockState != CursorLockMode.Locked || Time.timeScale == 0f || targetingController == null)
+        {
+            targetingController?.CancelLockButtonInput();
             return;
-        bool toggle = lockAction != null ? lockAction.WasPressedThisFrame()
+        }
+        bool pressed = lockAction != null ? lockAction.WasPressedThisFrame()
             : Mouse.current != null && Mouse.current.middleButton.wasPressedThisFrame;
-        if (toggle)
-            targetingController.ToggleHardLock();
-        else
+        bool held = lockAction != null ? lockAction.IsPressed()
+            : Mouse.current != null && Mouse.current.middleButton.isPressed;
+        bool released = lockAction != null ? lockAction.WasReleasedThisFrame()
+            : Mouse.current != null && Mouse.current.middleButton.wasReleasedThisFrame;
+        targetingController.ProcessLockButton(pressed, held, released, Time.unscaledDeltaTime);
+        if (!pressed && !held && !released)
             targetingController.ProcessSwitchInput(Mouse.current != null ? Mouse.current.delta.ReadValue() : Vector2.zero,
                 Time.unscaledDeltaTime);
     }
@@ -226,16 +240,32 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     void UpdateCameraTargetRotation()
     {
+        Vector2 lookInput = Cursor.lockState != CursorLockMode.Locked || Time.timeScale == 0f ? Vector2.zero
+            : lookAction != null ? lookAction.ReadValue<Vector2>()
+            : Mouse.current != null ? Mouse.current.delta.ReadValue() : Vector2.zero;
+        UpdateCameraOrbit(lookInput, Time.deltaTime);
+    }
+
+    void UpdateCameraOrbit(Vector2 lookInput, float deltaTime)
+    {
         bool hardLocked = targetingController != null && targetingController.IsHardLocked;
         if (hardLocked)
         {
             Vector3 direction = targetingController.CurrentTarget.AimPosition - target.position;
             float planarDistance = new Vector2(direction.x, direction.z).magnitude;
-            float response = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(0.01f, hardLockOrbitResponse));
+            float response = 1f - Mathf.Exp(-deltaTime / Mathf.Max(0.01f, hardLockOrbitResponse));
             if (planarDistance > 0.001f)
                 cameraYaw = Mathf.LerpAngle(cameraYaw, Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg, response);
-            float pitch = -Mathf.Atan2(direction.y, Mathf.Max(0.001f, planarDistance)) * Mathf.Rad2Deg;
-            cameraPitch = Mathf.LerpAngle(cameraPitch, Mathf.Clamp(pitch, -80f, 80f), response);
+            // Orbit above the mech. For close/low enemies, steepen the orbit so the
+            // sightline passes over the raised pivot instead of through the mech.
+            float bodyRadius = movementCapsule != null
+                ? Mathf.Max(movementCapsule.bounds.extents.x, movementCapsule.bounds.extents.z) : 1f;
+            // Clear the front of the body, not just the vertical line through its center.
+            float clearancePitch = Mathf.Atan2(hardLockHeight - direction.y,
+                Mathf.Max(0.1f, planarDistance - bodyRadius - cameraRadius)) * Mathf.Rad2Deg;
+            float desiredPitch = Mathf.Clamp(Mathf.Max(hardLockPitch, clearancePitch), 5f, 80f);
+            cameraPitch = Mathf.LerpAngle(cameraPitch, desiredPitch, response);
+            currentLockHeight = Mathf.Lerp(currentLockHeight, hardLockHeight, response);
         }
         else
         {
@@ -245,15 +275,16 @@ public class CameraControlThirdPerson : MonoBehaviour
                 cameraYaw = transform.eulerAngles.y;
                 cameraPitch = Mathf.DeltaAngle(0f, transform.eulerAngles.x);
             }
-            Vector2 lookInput = Cursor.lockState != CursorLockMode.Locked || Time.timeScale == 0f ? Vector2.zero
-                : lookAction != null ? lookAction.ReadValue<Vector2>()
-                : Mouse.current != null ? Mouse.current.delta.ReadValue() : Vector2.zero;
             cameraYaw += lookInput.x * lookSensitivity;
             cameraPitch = Mathf.Clamp(cameraPitch - lookInput.y * lookSensitivity,
                 normalProfile.minimumPitch, normalProfile.maximumPitch);
+            targetingController?.ReportAimInput(lookInput);
+            currentLockHeight = Mathf.Lerp(currentLockHeight, 0f,
+                1f - Mathf.Exp(-deltaTime / Mathf.Max(0.01f, hardLockOrbitResponse)));
         }
         wasHardLocked = hardLocked;
-        cameraTarget.SetPositionAndRotation(target.position, Quaternion.Euler(cameraPitch, cameraYaw, 0f));
+        cameraTarget.SetPositionAndRotation(target.position + Vector3.up * currentLockHeight,
+            Quaternion.Euler(cameraPitch, cameraYaw, 0f));
     }
 
     void UpdateMovementFeedback(float deltaTime)
