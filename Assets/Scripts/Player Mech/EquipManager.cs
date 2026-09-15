@@ -52,6 +52,7 @@ public class EquipManager : MonoBehaviour
         {
             current.transform.SetParent(null);
             current.isEquipped = false;
+            current.EnableDropPhysics();
         }
 
         EquipToSocket(target, part);
@@ -60,6 +61,7 @@ public class EquipManager : MonoBehaviour
 
     void EquipToSocket(Socket target, Part part)
     {
+        part.DisableDropPhysics();
         part.transform.position = target.transform.position;
         part.transform.rotation = target.transform.rotation;
         part.transform.SetParent(target.transform);
