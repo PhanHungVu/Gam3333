@@ -30,12 +30,7 @@ public class EquipManager : MonoBehaviour
         }
     }
 
-    public void SetNearbyPart(Part part)
-    {
-        nearbyPart = part;
-        Debug.Log($"Nearby part set: {part.name}");
-    }
-
+    public void SetNearbyPart(Part part) => nearbyPart = part;
     public void ClearNearbyPart(Part part)
     {
         if (nearbyPart == part) nearbyPart = null;
@@ -50,15 +45,13 @@ public class EquipManager : MonoBehaviour
     void TryEquip(Part part)
     {
         Socket target = FindSocketForType(part.compatibleSocket);
-        Debug.Log($"Target socket for {part.name} ({part.compatibleSocket}) is {target?.name}, CanEquip: {(target != null ? rulesConfig.CanEquip(target, part) : false)}");
         if (target == null || !rulesConfig.CanEquip(target, part)) return;
 
         Part current = target.GetComponentInChildren<Part>();
         if (current != null)
         {
             current.transform.SetParent(null);
-            var currentPickup = current.GetComponent<PartPickup>();
-            if (currentPickup != null) currentPickup.enabled = true;
+            current.isEquipped = false;
         }
 
         EquipToSocket(target, part);
@@ -67,13 +60,10 @@ public class EquipManager : MonoBehaviour
 
     void EquipToSocket(Socket target, Part part)
     {
-        Vector3 offset = target.transform.position - part.connector.position;
-        part.transform.position += offset;
+        part.transform.position = target.transform.position;
         part.transform.rotation = target.transform.rotation;
         part.transform.SetParent(target.transform);
-
-        var pickup = part.GetComponent<PartPickup>();
-        if (pickup != null) pickup.enabled = false;
+        part.isEquipped = true;
     }
 
     Socket FindSocketForType(SocketType type)
