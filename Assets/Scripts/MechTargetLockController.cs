@@ -44,6 +44,7 @@ public class MechTargetLockController : MonoBehaviour
     public MechTargetable CurrentTarget => currentTarget;
     public Camera GameplayCamera => gameplayCamera;
     public bool IsFreeAim => !targetingEnabled;
+    public bool IsHardLockMode => isActiveAndEnabled && targetingEnabled && hardLockEnabled;
     public bool IsHardLocked => isActiveAndEnabled && targetingEnabled && hardLockEnabled && IsTargetInRange(currentTarget);
     public event Action<MechTargetable, MechTargetable> TargetChanged;
     public event Action<bool> HardLockChanged;
@@ -125,7 +126,7 @@ public class MechTargetLockController : MonoBehaviour
         // Toggling follows the visible selection; it must not silently choose another enemy.
         if (gameplayCamera == null || !IsValidTarget(currentTarget, gameplayCamera))
             SelectTarget(gameplayCamera);
-        if (currentTarget != null) SetHardLock(true);
+        SetHardLock(true);
     }
 
     // Called once per frame by the camera input owner, before movement and camera updates.
@@ -219,26 +220,28 @@ public class MechTargetLockController : MonoBehaviour
 
         if (hardLockEnabled)
         {
-            playerAimedThisFrame = false;
-            if (ReferenceEquals(currentTarget, null))
-            {
-                // Restored hard mode is waiting for its first eligible enemy.
-                SelectTarget(gameplayCamera);
-                return;
-            }
-            // Keep tracking offscreen enemies while the camera catches up, but release
-            // disabled, destroyed, out-of-range, or no-longer-targetable enemies.
-            bool found = false;
-            int count = QueryCandidates();
-            for (int i = 0; i < count; i++)
-                found |= candidates[i].GetComponentInParent<MechTargetable>() == currentTarget;
-            Array.Clear(candidates, 0, count);
-            if (gameplayCamera != null && IsTargetInRange(currentTarget) && found) return;
-            SetHardLock(false);
-            SetTarget(null);
+            RefreshHardLockTarget();
+            return;
         }
         SelectTarget(gameplayCamera);
         playerAimedThisFrame = false;
+    }
+
+    // The camera can refresh before framing, so death never produces a soft-camera frame.
+    // Mode and target lifetime are separate: only player input changes soft/hard mode.
+    public void RefreshHardLockTarget()
+    {
+        if (!IsHardLockMode) return;
+        if (gameplayCamera == null) gameplayCamera = Camera.main;
+        playerAimedThisFrame = false;
+        bool found = false;
+        int count = QueryCandidates();
+        for (int i = 0; i < count; i++)
+            found |= candidates[i].GetComponentInParent<MechTargetable>() == currentTarget;
+        Array.Clear(candidates, 0, count);
+        if (gameplayCamera != null && IsTargetInRange(currentTarget) && found) return;
+        SetTarget(null);
+        SelectTarget(gameplayCamera);
     }
 
     void SelectTarget(Camera viewCamera)

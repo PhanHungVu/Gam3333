@@ -76,6 +76,8 @@ public static class MechFoundationChecks
             CheckEnemyIndependentMovement(view);
             CheckGroundFeatures(view);
             CheckHardLock(view);
+            CheckCombat(view);
+            CheckMeleeFramingAndAssist(view);
             Debug.Log("MECH CHECKS COMPLETE: " + checks);
             EditorApplication.Exit(0);
         }
@@ -366,25 +368,26 @@ public static class MechFoundationChecks
             "Free aim retains its original upward mouse-look limit");
         targeting.ResumeTargeting();
         Call(cameraControl, "UpdateCameraOrbit", Vector2.up * 10000, 0.02f);
-        Check(Mathf.Abs((float)Get(cameraControl, "cameraPitch") - 9f) < 0.001f,
+        Check(Mathf.Abs((float)Get(cameraControl, "cameraPitch") - 17f) < 0.001f,
             "Entering soft lock from a low view restores the elevated minimum pitch");
         Call(cameraControl, "ApplySettings");
         rig.InternalUpdateCameraState(Vector3.up, -1f);
         Check(rig.State.GetFinalPosition().y > player.transform.position.y + 1.5f,
             "Lowest allowed soft-lock view places the camera above mech body height");
-        Call(cameraControl, "UpdateCameraOrbit", Vector2.down * 10000, 0.02f);
-        Check(Mathf.Abs((float)Get(cameraControl, "cameraPitch") - 15f) < 0.001f,
+        Call(cameraControl, "UpdateCameraOrbit", Vector2.down * 10000, 2f);
+        Check(Mathf.Abs((float)Get(cameraControl, "cameraPitch") - 23f) < 0.001f,
             "Large downward mouse movement stays within the soft-lock pitch band");
-        Set(cameraControl, "cameraPitch", 12f);
+        Set(cameraControl, "cameraPitch", 20f);
+        Set(cameraControl, "lockPitchAdjustment", 0f);
         float yaw = (float)Get(cameraControl, "cameraYaw");
-        Call(cameraControl, "UpdateCameraOrbit", new Vector2(50, 10), 0.02f);
-        Check(Mathf.Abs((float)Get(cameraControl, "cameraPitch") - 11.7f) < 0.001f,
+        Call(cameraControl, "UpdateCameraOrbit", new Vector2(50, 10), 2f);
+        Check(Mathf.Abs((float)Get(cameraControl, "cameraPitch") - 19.7f) < 0.001f,
             "Soft-lock vertical adjustment uses reduced sensitivity");
         Check(Mathf.Abs((float)Get(cameraControl, "cameraYaw") - yaw - 6f) < 0.001f,
             "Soft-lock horizontal mouse look keeps its original sensitivity");
         Set(cameraControl, "lockOnVerticalRange", 0f);
-        Call(cameraControl, "UpdateCameraOrbit", Vector2.up * 10000, 0.02f);
-        Check(Mathf.Abs((float)Get(cameraControl, "cameraPitch") - 12f) < 0.001f,
+        Call(cameraControl, "UpdateCameraOrbit", Vector2.up * 10000, 2f);
+        Check(Mathf.Abs((float)Get(cameraControl, "cameraPitch") - 20f) < 0.001f,
             "Zero vertical range fully fixes soft-lock orbit pitch");
         Set(cameraControl, "lockOnVerticalRange", 3f);
         var enemy = Enemy(player.transform.position + Vector3.forward * 20);
@@ -400,14 +403,14 @@ public static class MechFoundationChecks
         targeting.ToggleHardLock();
         cameraRoot.transform.rotation = Quaternion.Euler(-15, 40, 0);
         Call(cameraControl, "UpdateCameraOrbit", Vector2.zero, 0.02f);
-        Check((float)Get(cameraControl, "cameraPitch") >= 9f && (float)Get(cameraControl, "cameraPitch") <= 15f,
+        Check((float)Get(cameraControl, "cameraPitch") >= 17f && (float)Get(cameraControl, "cameraPitch") <= 23f,
             "Returning from hard to soft lock cannot inherit a body-level view");
         targeting.ToggleHardLock();
         targeting.EnterFreeAim();
         enemy.gameObject.SetActive(false);
         targeting.ResumeTargeting();
         Call(cameraControl, "UpdateCameraOrbit", Vector2.up * 10000, 0.02f);
-        Check(!targeting.IsFreeAim && !targeting.IsHardLocked && (float)Get(cameraControl, "cameraPitch") >= 9f,
+        Check(!targeting.IsFreeAim && !targeting.IsHardLocked && (float)Get(cameraControl, "cameraPitch") >= 17f,
             "Remembered hard mode waiting for an enemy also limits vertical mouse look");
         targeting.EnterFreeAim();
         Call(cameraControl, "UpdateCameraOrbit", Vector2.down * 10000, 0.02f);
@@ -718,24 +721,267 @@ public static class MechFoundationChecks
         targeting.ToggleHardLock();
         targeting.CurrentTarget.enabled = false;
         Call(targeting, "LateUpdate");
-        Check(!targeting.IsHardLocked, "Disabling the enemy releases hard lock into free mode");
-        targeting.ToggleHardLock();
+        Check(targeting.IsHardLocked && targeting.IsHardLockMode, "Disabled enemy is replaced without leaving hard mode");
         targeting.CurrentTarget.transform.position = player.transform.position + Vector3.forward * 100;
         Physics.SyncTransforms();
         Call(targeting, "LateUpdate");
-        Check(!targeting.IsHardLocked, "Leaving lock range releases camera and mech facing");
-        targeting.ToggleHardLock();
+        Check(targeting.IsHardLocked && targeting.IsHardLockMode, "Out-of-range enemy is replaced in hard mode");
         Object.DestroyImmediate(targeting.CurrentTarget.gameObject);
         Call(targeting, "LateUpdate");
-        Check(!targeting.IsHardLocked, "Destroying a locked enemy safely releases hard lock");
+        Check(targeting.IsHardLockMode, "Destroying a locked enemy preserves hard mode");
         foreach (var enemy in new[] { a, right, fartherRight, left, up })
             if (enemy != null) enemy.gameObject.SetActive(false);
         Physics.SyncTransforms();
         Call(targeting, "LateUpdate");
-        targeting.ToggleHardLock();
-        Check(!targeting.IsHardLocked && targeting.CurrentTarget == null, "Toggle with no available enemy stays in free mode");
+        Check(targeting.IsHardLockMode && !targeting.IsHardLocked && targeting.CurrentTarget == null && modeChanges == 3,
+            "No available enemy preserves hard mode without publishing a mode change");
+        targeting.EnterFreeAim();
+        targeting.ResumeTargeting();
+        Check(targeting.IsHardLockMode, "Free aim remembers hard mode after all enemies disappear");
         player.SetActive(false);
         cameraRoot.SetActive(false);
+    }
+
+    static void CheckCombat(Camera view)
+    {
+        Vector3 origin = new Vector3(4000, 2, 0);
+        view.transform.SetPositionAndRotation(origin - Vector3.forward * 8, Quaternion.identity);
+        var player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        player.name = "Combat Test Player";
+        player.transform.position = origin;
+        var playerHealth = player.AddComponent<CombatHealth>();
+        var targeting = player.AddComponent<MechTargetLockController>();
+        Set(targeting, "gameplayCamera", view);
+        var combat = player.AddComponent<MechCombatController>();
+        Set(combat, "gameplayCamera", view);
+        var target = Enemy(origin + Vector3.forward * 12);
+        var health = target.gameObject.AddComponent<CombatHealth>();
+        Physics.SyncTransforms();
+        targeting.ResumeTargeting();
+        var projectile = combat.TryFire();
+        Vector3 muzzle = player.transform.TransformPoint((Vector3)Get(combat, "muzzleOffset"));
+        Check(projectile != null && Vector3.Angle(projectile.Direction, target.AimPosition - muzzle) < 0.01f,
+            "Soft-locked projectile launches toward the selected enemy's current aim point");
+        Check(combat.TryFire() == null, "Fire cadence blocks repeated shots in the same interval");
+        Call(projectile, "Step", 0.1f);
+        Check(projectile.IsLive && health.CurrentHealth == 100f, "Projectile travels through space instead of applying instant damage");
+        Call(projectile, "Step", 0.5f);
+        Check(!projectile.IsLive && health.CurrentHealth == 85f && playerHealth.CurrentHealth == 100f,
+            "Swept projectile hits the enemy once and ignores its owner's collider");
+        Call(projectile, "Step", 1f);
+        Check(health.CurrentHealth == 85f, "Spent projectile cannot deal repeated damage");
+
+        Call(combat, "TickCooldowns", 0.2f);
+        projectile = combat.TryFire();
+        Vector3 launchDirection = projectile.Direction;
+        target.transform.position += Vector3.right * 5;
+        Physics.SyncTransforms();
+        Call(projectile, "Step", 0.6f);
+        Check(projectile.IsLive && projectile.Direction == launchDirection && health.CurrentHealth == 85f,
+            "An enemy moving off the launch line makes a locked shot miss; projectiles never home");
+        Call(projectile, "Step", 3f);
+        Check(!projectile.IsLive, "A missed projectile is removed at its maximum travel range");
+        target.transform.position = origin + Vector3.forward * 12;
+        var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        wall.transform.position = origin + Vector3.forward * 5;
+        wall.transform.localScale = new Vector3(4, 4, 0.1f);
+        Physics.SyncTransforms();
+        Call(combat, "TickCooldowns", 0.2f);
+        projectile = combat.TryFire();
+        Call(projectile, "Step", 1f);
+        Check(!projectile.IsLive && health.CurrentHealth == 85f, "Thin walls stop projectiles before enemies even in a long physics step");
+        wall.transform.position = origin + new Vector3(0.325f, 0.5f, 0.325f);
+        wall.transform.localScale = new Vector3(0.05f, 2, 2);
+        Physics.SyncTransforms();
+        Call(combat, "TickCooldowns", 0.2f);
+        projectile = combat.TryFire();
+        Check(!projectile.IsLive && health.CurrentHealth == 85f, "A muzzle extending through a wall cannot spawn a shot beyond it");
+        Object.DestroyImmediate(wall);
+        var side = Enemy(origin + new Vector3(5, 0, 12));
+        side.gameObject.AddComponent<CombatHealth>();
+        Physics.SyncTransforms();
+        Call(targeting, "SetTarget", side);
+        targeting.ToggleHardLock();
+        Call(combat, "TickCooldowns", 0.2f);
+        projectile = combat.TryFire();
+        Check(Vector3.Angle(projectile.Direction, side.AimPosition - muzzle) < 0.01f,
+            "Hard-locked shots use the visible selection as their launch aim");
+        Object.DestroyImmediate(projectile.gameObject);
+        targeting.EnterFreeAim();
+        Call(combat, "TickCooldowns", 0.2f);
+        projectile = combat.TryFire();
+        Check(projectile.Direction.x < 0f, "Free-aim shots follow the center camera ray instead of the old locked enemy");
+        Object.DestroyImmediate(projectile.gameObject);
+        side.gameObject.SetActive(false);
+        target.gameObject.SetActive(false);
+
+        var front = Enemy(origin + Vector3.forward * 2);
+        var frontHealth = front.gameObject.AddComponent<CombatHealth>();
+        var extraCollider = new GameObject("Second hurt collider").AddComponent<BoxCollider>();
+        extraCollider.transform.SetParent(front.transform, false);
+        var adjacent = Enemy(origin + new Vector3(0.9f, 0, 2.5f));
+        var adjacentHealth = adjacent.gameObject.AddComponent<CombatHealth>();
+        var behind = Enemy(origin - Vector3.forward * 2);
+        var behindHealth = behind.gameObject.AddComponent<CombatHealth>();
+        var outside = Enemy(origin + new Vector3(6, 0, 2));
+        var outsideHealth = outside.gameObject.AddComponent<CombatHealth>();
+        int meleeHits = -1;
+        combat.MeleePerformed += count => meleeHits = count;
+        Physics.SyncTransforms();
+        Check(combat.TryMelee() && meleeHits == 2 && frontHealth.CurrentHealth == 40 && adjacentHealth.CurrentHealth == 40,
+            "Melee damages each enemy in the front box once, including enemies with multiple colliders");
+        Check(behindHealth.CurrentHealth == 100 && outsideHealth.CurrentHealth == 100 && playerHealth.CurrentHealth == 100,
+            "Melee excludes the owner and enemies behind or outside its volume");
+        Check(!combat.TryMelee() && frontHealth.CurrentHealth == 40, "Melee cooldown blocks repeat damage");
+        wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        wall.transform.position = origin + Vector3.forward;
+        wall.transform.localScale = new Vector3(4, 4, 0.15f);
+        Physics.SyncTransforms();
+        Call(combat, "TickCooldowns", 0.65f);
+        Check(combat.TryMelee() && meleeHits == 0 && frontHealth.CurrentHealth == 40,
+            "Melee cannot damage enemies through a wall inside its preview box");
+        Object.DestroyImmediate(wall);
+        var rotated = Enemy(origin + Vector3.right * 2);
+        var rotatedHealth = rotated.gameObject.AddComponent<CombatHealth>();
+        // Move the old front enemy fully outside the rotated box, rather than
+        // leaving its collider touching the inclusive overlap boundary.
+        front.transform.position = origin + Vector3.forward * 3;
+        player.transform.rotation = Quaternion.Euler(0, 90, 0);
+        Physics.SyncTransforms();
+        Call(combat, "TickCooldowns", 0.65f);
+        combat.TryMelee();
+        Check(rotatedHealth.CurrentHealth == 40 && frontHealth.CurrentHealth == 40,
+            "Melee box follows the mech's facing instead of camera or selected enemy direction");
+        int deaths = 0;
+        rotatedHealth.Died += () => deaths++;
+        Check(!rotatedHealth.ApplyDamage(-10) && !rotatedHealth.ApplyDamage(float.NaN), "Invalid damage cannot heal or corrupt health");
+        rotatedHealth.ApplyDamage(1000);
+        rotatedHealth.ApplyDamage(1000);
+        Check(deaths == 1 && rotatedHealth.IsDead && !rotated.gameObject.activeSelf,
+            "Lethal damage publishes death once and removes enemy movement, collision, and targeting eligibility");
+        combat.enabled = false;
+        Check(combat.TryFire() == null && !combat.TryMelee(), "Disabled combat cannot attack");
+        foreach (var obj in new[] { player, front.gameObject, adjacent.gameObject, behind.gameObject, outside.gameObject })
+            obj.SetActive(false);
+        view.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+    }
+
+    static void CheckMeleeFramingAndAssist(Camera view)
+    {
+        Vector3 origin = new Vector3(5000, 2, 0);
+        view.transform.SetPositionAndRotation(origin, Quaternion.identity);
+        var player = new GameObject("Melee Assist Player");
+        player.transform.position = origin;
+        var targeting = player.AddComponent<MechTargetLockController>();
+        Set(targeting, "gameplayCamera", view);
+        var combat = player.AddComponent<MechCombatController>();
+        var enemy = Enemy(origin + Vector3.forward * 5f);
+        var health = enemy.gameObject.AddComponent<CombatHealth>();
+        Physics.SyncTransforms();
+        targeting.ResumeTargeting();
+        int hits = -1;
+        combat.MeleePerformed += count => hits = count;
+        Check(combat.TryMelee() && combat.IsMeleeApproaching && health.CurrentHealth == 100,
+            "Just-out-of-reach selected enemy starts a timed approach without immediate damage");
+        Call(combat, "TickMelee", 0.06f);
+        Check(combat.MeleeExtension > 0 && combat.MeleeExtension < 1 && health.CurrentHealth == 100,
+            "Attack box advances gradually during approach");
+        Check(!combat.TryMelee(), "Pending approach cannot start a second swing");
+        Call(combat, "TickMelee", 0.06f);
+        Check(!combat.IsMeleeApproaching && hits == 1 && health.CurrentHealth == 40 && combat.MeleeExtension <= 1,
+            "Assisted strike resolves once after 0.12 seconds within the one metre budget");
+        Check(player.transform.position == origin && player.transform.rotation == Quaternion.identity,
+            "Melee assistance never translates or rotates the movement root");
+        Call(combat, "TickCooldowns", 1f);
+        combat.TryMelee();
+        enemy.transform.position += Vector3.forward * 3;
+        Call(combat, "TickMelee", 0.12f);
+        Check(hits == 0 && health.CurrentHealth == 40, "Moving enemy can escape an assisted swing");
+        Call(combat, "TickCooldowns", 1f);
+        combat.TryMelee();
+        Check(!combat.IsMeleeApproaching && hits == 0, "Distant enemy receives an ordinary missed swing");
+        enemy.transform.position = origin + new Vector3(3, 0, 4);
+        Physics.SyncTransforms();
+        Call(combat, "TickCooldowns", 1f);
+        combat.TryMelee();
+        Check(!combat.IsMeleeApproaching && hits == 0, "Enemy outside the forward assist angle does not pull the attack sideways");
+        enemy.transform.position = origin + Vector3.forward * 5;
+        var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        wall.transform.position = origin + Vector3.forward * 4.2f;
+        wall.transform.localScale = new Vector3(4, 4, 0.1f);
+        Physics.SyncTransforms();
+        Call(combat, "TickCooldowns", 1f);
+        combat.TryMelee();
+        Check(!combat.IsMeleeApproaching && hits == 0 && health.CurrentHealth == 40,
+            "A wall prevents reach assistance and damage beyond it");
+        wall.SetActive(false);
+
+        var cameraRoot = new GameObject("Shared Combat Camera");
+        cameraRoot.SetActive(false);
+        cameraRoot.AddComponent<Camera>();
+        var control = cameraRoot.AddComponent<CameraControlThirdPerson>();
+        Set(control, "target", player.transform);
+        Set(control, "cameraSide", 1f);
+        cameraRoot.SetActive(true);
+        var rig = (CinemachineCamera)Get(control, "cinemachineCamera");
+        var follow = rig.GetComponent<CinemachineThirdPersonFollow>();
+        enemy.transform.position = origin + Vector3.forward * 20;
+        Physics.SyncTransforms();
+        Call(combat, "TickCooldowns", 1f);
+        Call(control, "UpdateCameraOrbit", Vector2.zero, 5f);
+        Call(control, "ApplySettings");
+        float softPitch = (float)Get(control, "cameraPitch");
+        Vector3 softPosition = rig.Follow.position;
+        float distance = follow.CameraDistance, fov = rig.Lens.FieldOfView;
+        Vector3 shoulder = follow.ShoulderOffset;
+        targeting.ToggleHardLock();
+        Call(control, "UpdateCameraOrbit", Vector2.zero, 5f);
+        Call(control, "ApplySettings");
+        Check(Mathf.Abs((float)Get(control, "cameraPitch") - softPitch) < 0.001f
+            && Vector3.Distance(rig.Follow.position, softPosition) < 0.001f
+            && follow.ShoulderOffset == shoulder && follow.CameraDistance == distance && rig.Lens.FieldOfView == fov,
+            "Soft and hard modes share pitch, pivot height, shoulder, distance, and FOV tuning");
+        enemy.transform.position = origin + Vector3.forward * 5;
+        Physics.SyncTransforms();
+        Call(control, "UpdateCameraOrbit", Vector2.zero, 5f);
+        float closePitch = (float)Get(control, "cameraPitch");
+        Call(combat, "TickCooldowns", 1f);
+        combat.TryMelee();
+        Call(control, "UpdateCameraOrbit", Vector2.zero, 5f);
+        Call(control, "UpdateMovementFeedback", 5f);
+        Call(control, "ApplySettings");
+        Check(Mathf.Abs((float)Get(control, "cameraPitch") - closePitch - 7f) < 0.01f
+            && follow.ShoulderOffset.x < shoulder.x && rig.LookAt != enemy.AimTransform,
+            "Committed close melee adds downward pitch, centers the shoulder, and frames both combatants");
+        Check(follow.CameraDistance == distance && rig.Lens.FieldOfView == fov,
+            "Melee framing keeps camera distance and FOV stable");
+        var replacement = Enemy(origin + new Vector3(1, 0, 6));
+        replacement.gameObject.AddComponent<CombatHealth>();
+        Physics.SyncTransforms();
+        health.ApplyDamage(1000);
+        Call(control, "UpdateCameraOrbit", Vector2.zero, 0.02f);
+        Check(targeting.IsHardLocked && targeting.CurrentTarget == replacement
+            && (float)Get(control, "currentLockHeight") > 1.49f,
+            "Lethal combat damage reacquires in hard mode before camera framing without dropping pivot height");
+        Call(combat, "TickMelee", 0.12f);
+        Check(!combat.IsMeleeApproaching && hits == 0, "Losing the assisted enemy cancels the pending swing");
+        Call(combat, "TickCooldowns", 1f);
+        Call(control, "UpdateCameraOrbit", Vector2.zero, 5f);
+        Call(control, "ApplySettings");
+        Check(rig.LookAt == replacement.AimTransform && Mathf.Abs(follow.ShoulderOffset.x - shoulder.x) < 0.001f,
+            "Melee framing smoothly returns to normal hard-lock composition after the swing");
+        targeting.ToggleHardLock();
+        float yaw = (float)Get(control, "cameraYaw");
+        Call(control, "UpdateCameraOrbit", Vector2.zero, 5f);
+        yaw = (float)Get(control, "cameraYaw");
+        replacement.transform.position += Vector3.right;
+        Call(control, "UpdateCameraOrbit", Vector2.zero, 0.02f);
+        Check(Mathf.Abs(Mathf.DeltaAngle(yaw, (float)Get(control, "cameraYaw"))) < 0.001f,
+            "Shared soft-lock framing does not let enemy motion steer camera yaw");
+        player.SetActive(false);
+        replacement.gameObject.SetActive(false);
+        cameraRoot.SetActive(false);
+        view.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
     }
 
     static void CheckMovement(Camera view)

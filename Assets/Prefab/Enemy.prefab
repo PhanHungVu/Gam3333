@@ -1,5 +1,20 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &880000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3781223206463202102}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc15aad914b342bc859e2ab8c19fce6d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
+  maximumHealth: 100
+  feedbackMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
+  healthBarHeight: 1.4
 --- !u!1 &3781223206463202102
 GameObject:
   m_ObjectHideFlags: 0
@@ -8,6 +23,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 880000001}
   - component: {fileID: 4985282284613908051}
   - component: {fileID: 7432986261581176862}
   - component: {fileID: 3659596557528629386}

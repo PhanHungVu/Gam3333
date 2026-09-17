@@ -28,9 +28,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     [SerializeField] float lookSensitivity = 0.12f;
     [SerializeField] float initialPitch = 8f;
     [SerializeField] bool lockCursorOnPlay = true;
-    [Header("Lock-On Vertical Look")]
-    [Tooltip("Elevated resting pitch for soft lock and lock mode waiting for an enemy.")]
-    [SerializeField, Range(5f, 40f)] float softLockPitch = 12f;
+    [Header("Shared Soft / Hard Lock Camera")]
     [Tooltip("Allowed mouse adjustment above/below soft-lock pitch. Set to zero to lock it completely.")]
     [SerializeField, Range(0f, 5f)] float lockOnVerticalRange = 3f;
     [SerializeField, Range(0f, 1f)] float lockOnVerticalSensitivity = 0.25f;
@@ -38,8 +36,15 @@ public class CameraControlThirdPerson : MonoBehaviour
     [SerializeField, Min(0.01f)] float hardLockOrbitResponse = 0.12f;
     [Tooltip("Minimum downward orbit angle while locked. Close, low targets use a steeper view to clear the mech.")]
     [SerializeField, Range(5f, 60f)] float hardLockPitch = 20f;
-    [Tooltip("Extra height above the player root for the hard-lock follow pivot.")]
+    [Tooltip("Shared height above the player root for both lock modes.")]
     [SerializeField, Min(0f)] float hardLockHeight = 1.5f;
+
+    [Header("Melee Framing")]
+    [SerializeField, Range(0f, 10f)] float meleePitchOffset = 7f;
+    [SerializeField, Min(0.1f)] float meleeFramingRange = 6f;
+    [SerializeField, Range(0f, 1f)] float meleeShoulderCentering = 0.75f;
+    [SerializeField, Range(0f, 1f)] float meleeTargetWeight = 0.65f;
+    [SerializeField, Min(0.01f)] float meleeFramingResponse = 0.15f;
 
     [Header("Follow and Framing")]
     // Keep the serialized name and members so existing scene tuning survives cleanup.
@@ -86,6 +91,8 @@ public class CameraControlThirdPerson : MonoBehaviour
     CinemachineThirdPersonFollow thirdPersonFollow;
     CinemachineRotationComposer rotationComposer;
     Transform cameraTarget;
+    Transform meleeFocus;
+    MechCombatController combatController;
     MechMovementController movementController;
     CharacterController movementCapsule;
     MechTargetLockController targetingController;
@@ -97,6 +104,9 @@ public class CameraControlThirdPerson : MonoBehaviour
     float cameraYaw;
     float cameraPitch;
     float currentLockHeight;
+    float lockPitchAdjustment;
+    float meleeFraming;
+    bool wasTargeting;
 
     void Awake()
     {
@@ -115,6 +125,8 @@ public class CameraControlThirdPerson : MonoBehaviour
         cameraTarget = new GameObject("CameraTarget").transform;
         cameraTarget.SetParent(target, false);
         movementController = target.GetComponent<MechMovementController>();
+        combatController = target.GetComponent<MechCombatController>();
+        meleeFocus = new GameObject("Melee Camera Focus").transform;
         movementCapsule = target.GetComponent<CharacterController>();
         targetingController = target.GetComponent<MechTargetLockController>();
         cameraYaw = target.eulerAngles.y;
@@ -195,14 +207,23 @@ public class CameraControlThirdPerson : MonoBehaviour
             * lateralOffsetDistance;
         currentLateralOffset = Mathf.Lerp(currentLateralOffset, desiredOffset,
             1f - Mathf.Exp(-deltaTime / Mathf.Max(lateralOffsetResponse, 0.01f)));
-        thirdPersonFollow.ShoulderOffset = new Vector3(cameraSide + currentLateralOffset, shoulderHeight, 0f);
+        thirdPersonFollow.ShoulderOffset = ShoulderOffset();
         previousTargetPosition = target.position;
     }
 
     void ApplySettings()
     {
+        bool targetingActive = targetingController != null && targetingController.isActiveAndEnabled && !targetingController.IsFreeAim;
         bool hardLocked = targetingController != null && targetingController.IsHardLocked;
         cinemachineCamera.LookAt = hardLocked ? targetingController.CurrentTarget.AimTransform : cameraTarget;
+        if (hardLocked && meleeFraming > 0.001f && meleeFocus != null)
+        {
+            Vector3 enemyFocus = targetingController.CurrentTarget.AimPosition;
+            Vector3 playerFocus = target.position + Vector3.up * hardLockHeight;
+            Vector3 sharedFocus = Vector3.Lerp(playerFocus, enemyFocus, meleeTargetWeight);
+            meleeFocus.position = Vector3.Lerp(enemyFocus, sharedFocus, meleeFraming);
+            cinemachineCamera.LookAt = meleeFocus;
+        }
         thirdPersonFollow.CameraDistance = normalProfile.distance
             * Mathf.Lerp(1f, assaultBoostDistanceMultiplier, assaultFraming);
         LensSettings lens = cinemachineCamera.Lens;
@@ -221,17 +242,17 @@ public class CameraControlThirdPerson : MonoBehaviour
         thirdPersonFollow.VerticalArmLength = shoulderHeight;
         thirdPersonFollow.Damping = movementController != null && movementController.IsQuickBoosting
             ? quickBoostFollowDamping : normalProfile.damping;
-        thirdPersonFollow.ShoulderOffset = new Vector3(cameraSide + currentLateralOffset, shoulderHeight, 0f);
-        rotationComposer.TargetOffset = hardLocked ? Vector3.zero : normalProfile.targetOffset;
+        thirdPersonFollow.ShoulderOffset = ShoulderOffset();
+        rotationComposer.TargetOffset = targetingActive ? Vector3.zero : normalProfile.targetOffset;
         // Center the actual camera on the enemy; the only visible cursor remains the existing UI cursor.
-        rotationComposer.Damping = hardLocked ? Vector2.zero : rotationDamping;
+        rotationComposer.Damping = targetingActive ? Vector2.zero : rotationDamping;
         rotationComposer.CenterOnActivate = true;
 
         ScreenComposerSettings composition = rotationComposer.Composition;
-        composition.ScreenPosition = hardLocked ? Vector2.zero : screenPosition;
+        composition.ScreenPosition = targetingActive ? Vector2.zero : screenPosition;
         composition.DeadZone = new ScreenComposerSettings.DeadZoneSettings
         {
-            Enabled = !hardLocked,
+            Enabled = !targetingActive,
             Size = normalProfile.deadZoneSize
         };
         composition.HardLimits = new ScreenComposerSettings.HardLimitSettings
@@ -254,54 +275,75 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     void UpdateCameraOrbit(Vector2 lookInput, float deltaTime)
     {
+        targetingController?.RefreshHardLockTarget();
         bool targetingActive = targetingController != null && targetingController.isActiveAndEnabled
             && !targetingController.IsFreeAim;
         bool hardLocked = targetingActive && targetingController.IsHardLocked;
+        bool hardMode = targetingActive && targetingController.IsHardLockMode;
+        MechTargetable enemy = targetingActive ? targetingController.CurrentTarget : null;
+        Vector3 direction = enemy != null ? enemy.AimPosition - target.position : Vector3.zero;
+        float planarDistance = new Vector2(direction.x, direction.z).magnitude;
+        float response = 1f - Mathf.Exp(-deltaTime / Mathf.Max(0.01f, hardLockOrbitResponse));
+        Vector3 cameraForward = Quaternion.Euler(0f, cameraYaw, 0f) * Vector3.forward;
+        bool closeMelee = targetingActive && enemy != null && combatController != null && combatController.MeleeCameraActive
+            && planarDistance <= meleeFramingRange && Mathf.Abs(direction.y) <= 2.5f
+            && Vector3.Dot(cameraForward, Vector3.ProjectOnPlane(direction, Vector3.up).normalized) > 0.5f;
+        meleeFraming = Mathf.Lerp(meleeFraming, closeMelee ? 1f : 0f,
+            1f - Mathf.Exp(-deltaTime / Mathf.Max(0.01f, meleeFramingResponse)));
+
+        if (wasHardLocked && !hardMode)
+        {
+            cameraYaw = transform.eulerAngles.y;
+            if (!targetingActive) cameraPitch = Mathf.DeltaAngle(0f, transform.eulerAngles.x);
+        }
         if (hardLocked)
         {
-            Vector3 direction = targetingController.CurrentTarget.AimPosition - target.position;
-            float planarDistance = new Vector2(direction.x, direction.z).magnitude;
-            float response = 1f - Mathf.Exp(-deltaTime / Mathf.Max(0.01f, hardLockOrbitResponse));
             if (planarDistance > 0.001f)
                 cameraYaw = Mathf.LerpAngle(cameraYaw, Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg, response);
-            // Orbit above the mech. For close/low enemies, steepen the orbit so the
-            // sightline passes over the raised pivot instead of through the mech.
-            float bodyRadius = movementCapsule != null
-                ? Mathf.Max(movementCapsule.bounds.extents.x, movementCapsule.bounds.extents.z) : 1f;
-            // Clear the front of the body, not just the vertical line through its center.
-            float clearancePitch = Mathf.Atan2(hardLockHeight - direction.y,
-                Mathf.Max(0.1f, planarDistance - bodyRadius - cameraRadius)) * Mathf.Rad2Deg;
-            float desiredPitch = Mathf.Clamp(Mathf.Max(hardLockPitch, clearancePitch), 5f, 80f);
+        }
+        else
+        {
+            cameraYaw += lookInput.x * lookSensitivity;
+            targetingController?.ReportAimInput(lookInput);
+        }
+        if (targetingActive)
+        {
+            if (!wasTargeting) lockPitchAdjustment = 0f;
+            if (!hardMode)
+                lockPitchAdjustment = Mathf.Clamp(lockPitchAdjustment - lookInput.y * lookSensitivity * lockOnVerticalSensitivity,
+                    -lockOnVerticalRange, lockOnVerticalRange);
+            float desiredPitch = hardLockPitch + lockPitchAdjustment;
+            // Both modes share the same clearance, height, and pitch calculations.
+            if (enemy != null && Vector3.Dot(cameraForward, Vector3.ProjectOnPlane(direction, Vector3.up).normalized) > 0.5f)
+            {
+                float bodyRadius = movementCapsule != null
+                    ? Mathf.Max(movementCapsule.bounds.extents.x, movementCapsule.bounds.extents.z) : 1f;
+                float clearancePitch = Mathf.Atan2(hardLockHeight - direction.y,
+                    Mathf.Max(0.1f, planarDistance - bodyRadius - cameraRadius)) * Mathf.Rad2Deg;
+                desiredPitch = Mathf.Max(desiredPitch, clearancePitch);
+            }
+            desiredPitch = Mathf.Clamp(desiredPitch + meleePitchOffset * meleeFraming, 5f, 80f);
+            // Never enter targeting from a low free-aim angle that hides the ground.
+            if (!wasTargeting) cameraPitch = Mathf.Max(cameraPitch, hardLockPitch - lockOnVerticalRange);
             cameraPitch = Mathf.LerpAngle(cameraPitch, desiredPitch, response);
             currentLockHeight = Mathf.Lerp(currentLockHeight, hardLockHeight, response);
         }
         else
         {
-            if (wasHardLocked)
-            {
-                // Resume mouse look from the current view instead of the pre-lock heading.
-                cameraYaw = transform.eulerAngles.y;
-                cameraPitch = Mathf.DeltaAngle(0f, transform.eulerAngles.x);
-            }
-            cameraYaw += lookInput.x * lookSensitivity;
-            // Constrain soft lock (including a restored hard mode waiting for an enemy).
-            // Free aim retains the full normal pitch range and mouse sensitivity.
-            float minimumPitch = targetingActive ? softLockPitch - lockOnVerticalRange : normalProfile.minimumPitch;
-            float maximumPitch = targetingActive ? softLockPitch + lockOnVerticalRange : normalProfile.maximumPitch;
-            float verticalSensitivity = targetingActive ? lockOnVerticalSensitivity : 1f;
-            cameraPitch = Mathf.Clamp(cameraPitch - lookInput.y * lookSensitivity * verticalSensitivity,
-                minimumPitch, maximumPitch);
-            targetingController?.ReportAimInput(lookInput);
-            currentLockHeight = Mathf.Lerp(currentLockHeight, 0f,
-                1f - Mathf.Exp(-deltaTime / Mathf.Max(0.01f, hardLockOrbitResponse)));
+            cameraPitch = Mathf.Clamp(cameraPitch - lookInput.y * lookSensitivity,
+                normalProfile.minimumPitch, normalProfile.maximumPitch);
+            currentLockHeight = Mathf.Lerp(currentLockHeight, 0f, response);
         }
-        wasHardLocked = hardLocked;
+        wasHardLocked = hardMode;
+        wasTargeting = targetingActive;
         cameraTarget.SetPositionAndRotation(target.position + Vector3.up * currentLockHeight,
             Quaternion.Euler(cameraPitch, cameraYaw, 0f));
     }
 
     void UpdateMovementFeedback(float deltaTime)
     {
+        // Melee framing does not pump FOV or distance as the target gets closer.
+        if (meleeFraming > 0.001f) return;
         bool active = movementFeedback && movementController != null && movementController.isActiveAndEnabled;
         float desiredFov = active && movementController.IsQuickBoosting
             ? quickBoostFovCurve.Evaluate(movementController.QuickBoostProgress) * quickBoostFovKick
@@ -310,6 +352,9 @@ public class CameraControlThirdPerson : MonoBehaviour
         float desiredFraming = active && movementController.IsAssaultBoosting ? 1f : 0f;
         assaultFraming = Mathf.Lerp(assaultFraming, desiredFraming, 1f - Mathf.Exp(-deltaTime / 0.2f));
     }
+
+    Vector3 ShoulderOffset() => new Vector3((cameraSide + currentLateralOffset)
+        * (1f - meleeFraming * meleeShoulderCentering), shoulderHeight, 0f);
 
     static void SetCursorLocked(bool locked)
     {
@@ -320,8 +365,8 @@ public class CameraControlThirdPerson : MonoBehaviour
     void OnValidate()
     {
         lookSensitivity = Mathf.Max(0f, lookSensitivity);
-        softLockPitch = Mathf.Clamp(softLockPitch, 5f, 40f);
-        lockOnVerticalRange = Mathf.Clamp(lockOnVerticalRange, 0f, Mathf.Min(5f, softLockPitch - 1f));
+        hardLockPitch = Mathf.Clamp(hardLockPitch, 5f, 60f);
+        lockOnVerticalRange = Mathf.Clamp(lockOnVerticalRange, 0f, Mathf.Min(5f, hardLockPitch - 1f));
         lockOnVerticalSensitivity = Mathf.Clamp01(lockOnVerticalSensitivity);
         normalProfile.distance = Mathf.Max(0.1f, normalProfile.distance);
         normalProfile.maximumPitch = Mathf.Max(normalProfile.minimumPitch, normalProfile.maximumPitch);
@@ -340,5 +385,7 @@ public class CameraControlThirdPerson : MonoBehaviour
             Destroy(cameraRigObject);
         if (cameraTarget != null)
             Destroy(cameraTarget.gameObject);
+        if (meleeFocus != null)
+            Destroy(meleeFocus.gameObject);
     }
 }
