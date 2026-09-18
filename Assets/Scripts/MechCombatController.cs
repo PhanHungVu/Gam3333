@@ -54,7 +54,9 @@ public class MechCombatController : MonoBehaviour
     static readonly int[] BoxCorners = { 0, 1, 3, 2, 0, 4, 5, 1, 5, 7, 3, 7, 6, 2, 6, 4 };
     static readonly int[] GroundCorners = { 0, 1, 5, 4, 0 };
     public event Action<MechProjectile> ShotFired;
+    public event Action<MechProjectileImpact> ProjectileImpact;
     public event Action<int> MeleePerformed;
+    public Vector3 MuzzlePosition => transform.TransformPoint(muzzleOffset);
 
     void Awake()
     {
@@ -160,12 +162,17 @@ public class MechCombatController : MonoBehaviour
         renderer.SetPropertyBlock(tint);
         renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         var projectile = shot.AddComponent<MechProjectile>();
+        projectile.Weapon = slot;
+        // Subscribe before Launch: a wall intersecting the muzzle can impact immediately.
+        projectile.ImpactResolved += ForwardProjectileImpact;
         projectile.ConfigureRangeAndExplosion(weapon.effectiveRange, weapon.explosionRadius, combatMaterial, weapon.color);
         projectile.Launch(transform, direction, weapon.projectileSpeed, weapon.damage, weapon.projectileRadius,
             weapon.maximumRange, hitLayers, muzzle);
         ShotFired?.Invoke(projectile);
         return projectile;
     }
+
+    void ForwardProjectileImpact(MechProjectileImpact impact) => ProjectileImpact?.Invoke(impact);
 
     Vector3 GetAimPoint(float projectileRange)
     {

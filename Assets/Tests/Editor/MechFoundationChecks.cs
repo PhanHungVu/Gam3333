@@ -71,6 +71,7 @@ public static class MechFoundationChecks
             view.pixelRect = new Rect(100, 50, 1000, 700);
             CheckTargeting(view);
             CheckSoftLockIntent(view);
+            CheckSoftLockCameraAim();
             CheckFreeAimModes(view);
             CheckLockVerticalLook(view);
             CheckMovement(view);
@@ -81,6 +82,7 @@ public static class MechFoundationChecks
             CheckMeleeFramingAndAssist(view);
             CheckWeaponLoadout(view);
             CheckInputIsolation();
+            CombatFeedbackChecks.Run(Check);
             Debug.Log("MECH CHECKS COMPLETE: " + checks);
             EditorApplication.Exit(0);
         }
@@ -236,6 +238,69 @@ public static class MechFoundationChecks
         player.SetActive(false);
         near.gameObject.SetActive(false);
         view.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+    }
+
+    static void CheckSoftLockCameraAim()
+    {
+        var player = new GameObject("Soft Lock Camera Aim Player");
+        player.transform.position = new Vector3(1500, 0, 0);
+        var targeting = player.AddComponent<MechTargetLockController>();
+        var cameraRoot = new GameObject("Soft Lock Camera Aim");
+        cameraRoot.SetActive(false);
+        var view = cameraRoot.AddComponent<Camera>();
+        view.pixelRect = new Rect(0, 0, 1280, 720);
+        var control = cameraRoot.AddComponent<CameraControlThirdPerson>();
+        Set(control, "target", player.transform);
+        Set(control, "avoidObstacles", false);
+        cameraRoot.SetActive(true);
+        Set(targeting, "gameplayCamera", view);
+        var rig = (CinemachineCamera)Get(control, "cinemachineCamera");
+        var near = Enemy(player.transform.position + new Vector3(-4, 0, 15));
+        var far = Enemy(player.transform.position + new Vector3(5, 0, 20));
+        Physics.SyncTransforms();
+        view.transform.SetPositionAndRotation(player.transform.position, Quaternion.identity);
+        targeting.ResumeTargeting();
+        Check(targeting.CurrentTarget == near, "Rig regression starts locked onto the nearer enemy");
+
+        void Aim(Vector2 input)
+        {
+            Call(control, "UpdateCameraOrbit", input, 1f);
+            Call(control, "ApplySettings");
+            rig.InternalUpdateCameraState(Vector3.up, -1f);
+            view.transform.SetPositionAndRotation(rig.State.GetFinalPosition(), rig.State.GetFinalOrientation());
+            Call(targeting, "LateUpdate");
+        }
+        Aim(Vector2.zero);
+        Aim(Vector2.right * (Mathf.Atan2(5, 20) * Mathf.Rad2Deg / 0.12f));
+        Check(targeting.CurrentTarget == far,
+            "Actual soft camera mouse look switches to the farther aimed enemy while the old target remains valid");
+        var projected = view.WorldToViewportPoint(far.AimPosition);
+        Check(Mathf.Abs(projected.x - 0.5f) < 0.01f && Mathf.Abs(projected.y - 0.5f) < 0.025f,
+            "Soft camera puts forward enemies within reach of the real hidden screen-center aim");
+        Quaternion orientation = view.transform.rotation;
+        near.transform.position = player.transform.position + new Vector3(5, 0, 10);
+        Physics.SyncTransforms();
+        Aim(Vector2.zero);
+        Check(targeting.CurrentTarget == far && Quaternion.Angle(orientation, view.transform.rotation) < 0.01f,
+            "A closer enemy cannot steal soft lock or turn the soft camera without look input");
+        near.transform.position = player.transform.position + Vector3.forward * 14f;
+        far.transform.position = player.transform.position + Vector3.forward * 30f;
+        Physics.SyncTransforms();
+        Set(control, "cameraYaw", 0f);
+        Call(targeting, "SetTarget", near);
+        Aim(Vector2.up * 100f);
+        Check(targeting.CurrentTarget == far,
+            "Limited upward soft-camera aim selects a farther enemy at the same bearing");
+        Aim(Vector2.down * 200f);
+        Check(targeting.CurrentTarget == near,
+            "Limited downward soft-camera aim selects a closer enemy at the same bearing");
+        Aim(Vector2.right * 100f);
+        Check(targeting.CurrentTarget == near,
+            "Actual soft-camera look into empty space keeps the selected enemy");
+        player.SetActive(false);
+        cameraRoot.SetActive(false);
+        near.gameObject.SetActive(false);
+        far.gameObject.SetActive(false);
     }
 
     static void CheckFreeAimModes(Camera view)
@@ -713,8 +778,8 @@ public static class MechFoundationChecks
         targeting.ToggleHardLock();
         Call(cameraControl, "UpdateCameraTargetRotation");
         Call(cameraControl, "ApplySettings");
-        Check(!targeting.IsHardLocked && rig.LookAt == rig.Follow && modeChanges == 2,
-            "Toggling off restores normal player framing and free-look mode");
+        Check(!targeting.IsHardLocked && rig.LookAt == (Transform)Get(cameraControl, "softLockFocus") && modeChanges == 2,
+            "Toggling off restores player-controlled forward aim in soft lock");
         float freeYaw = (float)Get(cameraControl, "cameraYaw");
         right.transform.position += Vector3.right * 10;
         Call(cameraControl, "UpdateCameraTargetRotation");

@@ -2,6 +2,17 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+// One result per resolved impact, emitted only after all gameplay damage is applied.
+public readonly struct MechProjectileImpact
+{
+    public readonly MechWeaponSlot Weapon;
+    public readonly Vector3 Position;
+    public readonly float Radius;
+    public readonly int Hits, Kills;
+    public MechProjectileImpact(MechWeaponSlot weapon, Vector3 position, float radius, int hits, int kills)
+    { Weapon = weapon; Position = position; Radius = radius; Hits = hits; Kills = kills; }
+}
+
 // Straight projectile: direction is captured at launch and never tracks a target.
 public class MechProjectile : MonoBehaviour
 {
@@ -9,21 +20,20 @@ public class MechProjectile : MonoBehaviour
     Vector3 direction;
     float speed, damage, radius, remainingDistance;
     float effectiveRange = float.PositiveInfinity, maximumRange, travelled, explosionRadius;
-    Material impactMaterial;
-    Color impactColor;
     LayerMask collisionLayers;
     bool live;
     RaycastHit[] hits = new RaycastHit[16];
     Collider[] overlaps = new Collider[16];
     public Vector3 Direction => direction;
     public bool IsLive => live;
+    public MechWeaponSlot Weapon { get; set; }
+    public event Action<MechProjectileImpact> ImpactResolved;
 
     public void ConfigureRangeAndExplosion(float effective, float blastRadius, Material material, Color color)
     {
         effectiveRange = Mathf.Max(0f, effective);
         explosionRadius = Mathf.Max(0f, blastRadius);
-        impactMaterial = material;
-        impactColor = color;
+        // Retain the existing API; visuals now belong to the event-driven feedback layer.
     }
 
     public static float RangeMultiplier(float distance, float effective, float maximum)
@@ -115,17 +125,32 @@ public class MechProjectile : MonoBehaviour
         // Mark spent first: callbacks and compound colliders cannot cause repeat damage.
         Finish();
         var damaged = new HashSet<CombatHealth>();
-        if (health != null) { health.ApplyDamage(impactDamage); damaged.Add(health); }
-        if (explosionRadius <= 0f) return;
-        foreach (var candidate in Physics.OverlapSphere(impactPoint, explosionRadius, collisionLayers, QueryTriggerInteraction.Ignore))
+        int hitCount = 0, killCount = 0;
+        if (health != null)
         {
-            if (IsOwner(candidate)) continue;
-            var nearby = candidate.GetComponentInParent<CombatHealth>();
-            if (nearby == null || damaged.Contains(nearby) || BlastBlocked(impactPoint, candidate)) continue;
-            damaged.Add(nearby);
-            nearby.ApplyDamage(impactDamage);
+            ApplyImpactDamage(health, impactDamage, ref hitCount, ref killCount);
+            damaged.Add(health);
         }
-        ShowExplosion(impactPoint);
+        if (explosionRadius > 0f)
+        {
+            foreach (var candidate in Physics.OverlapSphere(impactPoint, explosionRadius, collisionLayers, QueryTriggerInteraction.Ignore))
+            {
+                if (IsOwner(candidate)) continue;
+                var nearby = candidate.GetComponentInParent<CombatHealth>();
+                if (nearby == null || damaged.Contains(nearby) || BlastBlocked(impactPoint, candidate)) continue;
+                damaged.Add(nearby);
+                ApplyImpactDamage(nearby, impactDamage, ref hitCount, ref killCount);
+            }
+        }
+        ImpactResolved?.Invoke(new MechProjectileImpact(Weapon, impactPoint, explosionRadius, hitCount, killCount));
+        ImpactResolved = null;
+    }
+
+    static void ApplyImpactDamage(CombatHealth health, float amount, ref int hits, ref int kills)
+    {
+        if (!health.ApplyDamage(amount)) return;
+        hits++;
+        if (health.IsDead) kills++;
     }
 
     bool BlastBlocked(Vector3 origin, Collider candidate)
@@ -135,25 +160,6 @@ public class MechProjectile : MonoBehaviour
         foreach (var hit in Physics.RaycastAll(origin, offset.normalized, offset.magnitude, collisionLayers, QueryTriggerInteraction.Ignore))
             if (!IsOwner(hit.collider) && hit.collider.GetComponentInParent<CombatHealth>() == null) return true;
         return false;
-    }
-
-    void ShowExplosion(Vector3 point)
-    {
-        if (impactMaterial == null) return;
-        var flash = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        flash.name = "Cannon Blast";
-        flash.GetComponent<Collider>().enabled = false;
-        Destroy(flash.GetComponent<Collider>());
-        flash.transform.position = point;
-        flash.transform.localScale = Vector3.one * explosionRadius * 2f;
-        var renderer = flash.GetComponent<Renderer>();
-        renderer.sharedMaterial = impactMaterial;
-        var tint = new MaterialPropertyBlock();
-        impactColor.a = 0.18f;
-        tint.SetColor("_Color", impactColor);
-        renderer.SetPropertyBlock(tint);
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        Destroy(flash, 0.18f);
     }
 
     void Finish()

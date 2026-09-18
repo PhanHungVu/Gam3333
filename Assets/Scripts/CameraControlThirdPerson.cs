@@ -39,6 +39,8 @@ public class CameraControlThirdPerson : MonoBehaviour
     [SerializeField, Range(5f, 60f)] float hardLockPitch = 20f;
     [Tooltip("Shared height above the player root for both lock modes.")]
     [SerializeField, Min(0f)] float hardLockHeight = 1.5f;
+    [Tooltip("Soft-lock screen-center aim is framed this far ahead of the mech, independently of the selected enemy.")]
+    [SerializeField, Min(1f)] float softLockAimDistance = 20f;
 
     [Header("Melee Framing")]
     [SerializeField, Range(0f, 10f)] float meleePitchOffset = 7f;
@@ -93,6 +95,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     CinemachineRotationComposer rotationComposer;
     Transform cameraTarget;
     Transform meleeFocus;
+    Transform softLockFocus;
     MechCombatController combatController;
     MechMovementController movementController;
     CharacterController movementCapsule;
@@ -108,6 +111,25 @@ public class CameraControlThirdPerson : MonoBehaviour
     float lockPitchAdjustment;
     float meleeFraming;
     bool wasTargeting;
+    CinemachineImpulseListener combatImpulseListener;
+
+    // An additive Cinemachine extension; no changes to the tracking rig or lens.
+    public CinemachineImpulseListener GetCombatImpulseListener()
+    {
+        if (cameraRigObject == null) return null;
+        if (combatImpulseListener == null)
+        {
+            combatImpulseListener = cameraRigObject.AddComponent<CinemachineImpulseListener>();
+            combatImpulseListener.ChannelMask = 64;
+            combatImpulseListener.Gain = 1f;
+            combatImpulseListener.UseCameraSpace = true;
+            combatImpulseListener.Use2DDistance = false;
+            combatImpulseListener.ApplyAfter = CinemachineCore.Stage.Noise;
+            combatImpulseListener.SignalCombinationMode = CinemachineImpulseListener.SignalCombinationModes.UseLargest;
+            combatImpulseListener.ReactionSettings = default;
+        }
+        return combatImpulseListener;
+    }
 
     void Awake()
     {
@@ -128,6 +150,7 @@ public class CameraControlThirdPerson : MonoBehaviour
         movementController = target.GetComponent<MechMovementController>();
         combatController = target.GetComponent<MechCombatController>();
         meleeFocus = new GameObject("Melee Camera Focus").transform;
+        softLockFocus = new GameObject("Soft Lock Aim Focus").transform;
         movementCapsule = target.GetComponent<CharacterController>();
         targetingController = target.GetComponent<MechTargetLockController>();
         cameraYaw = target.eulerAngles.y;
@@ -220,6 +243,17 @@ public class CameraControlThirdPerson : MonoBehaviour
         bool targetingActive = targetingController != null && targetingController.isActiveAndEnabled && !targetingController.IsFreeAim;
         bool hardLocked = targetingController != null && targetingController.IsHardLocked;
         cinemachineCamera.LookAt = hardLocked ? targetingController.CurrentTarget.AimTransform : cameraTarget;
+        if (targetingActive && !targetingController.IsHardLockMode && softLockFocus != null)
+        {
+            // Looking at the raised player pivot puts the hidden center ray through
+            // the mech and into the ground before it can reach enemies. Aim ahead
+            // along the player's manual yaw instead; enemy selection never steers it.
+            Vector3 forward = Quaternion.Euler(0f, cameraYaw, 0f) * Vector3.forward;
+            float aimHeight = -Mathf.Tan(lockPitchAdjustment * Mathf.Deg2Rad)
+                * (softLockAimDistance + normalProfile.distance);
+            softLockFocus.position = target.position + forward * softLockAimDistance + Vector3.up * aimHeight;
+            cinemachineCamera.LookAt = softLockFocus;
+        }
         if (hardLocked && meleeFraming > 0.001f && meleeFocus != null)
         {
             Vector3 enemyFocus = targetingController.CurrentTarget.AimPosition;
@@ -248,7 +282,8 @@ public class CameraControlThirdPerson : MonoBehaviour
             ? quickBoostFollowDamping : normalProfile.damping;
         thirdPersonFollow.ShoulderOffset = ShoulderOffset();
         rotationComposer.TargetOffset = targetingActive ? Vector3.zero : normalProfile.targetOffset;
-        // Center the actual camera on the enemy; the only visible cursor remains the existing UI cursor.
+        // Center on the manual aim focus in soft lock, or the enemy in hard lock.
+        // The only visible cursor remains the existing UI cursor.
         rotationComposer.Damping = targetingActive ? Vector2.zero : rotationDamping;
         rotationComposer.CenterOnActivate = true;
 
@@ -370,6 +405,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     {
         lookSensitivity = Mathf.Max(0f, lookSensitivity);
         hardLockPitch = Mathf.Clamp(hardLockPitch, 5f, 60f);
+        softLockAimDistance = Mathf.Max(1f, softLockAimDistance);
         lockOnVerticalRange = Mathf.Clamp(lockOnVerticalRange, 0f, Mathf.Min(5f, hardLockPitch - 1f));
         lockOnVerticalSensitivity = Mathf.Clamp01(lockOnVerticalSensitivity);
         normalProfile.distance = Mathf.Max(0.1f, normalProfile.distance);
@@ -391,5 +427,7 @@ public class CameraControlThirdPerson : MonoBehaviour
             Destroy(cameraTarget.gameObject);
         if (meleeFocus != null)
             Destroy(meleeFocus.gameObject);
+        if (softLockFocus != null)
+            Destroy(softLockFocus.gameObject);
     }
 }

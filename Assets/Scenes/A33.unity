@@ -127,6 +127,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 890200001}
   - component: {fileID: 45209998}
   - component: {fileID: 880000001}
   - component: {fileID: 45209997}
@@ -450,6 +451,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 890200002}
   - component: {fileID: 172156883}
   - component: {fileID: 880000002}
   - component: {fileID: 172156882}
@@ -1000,6 +1002,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 890200003}
   - component: {fileID: 528279851}
   - component: {fileID: 880000004}
   - component: {fileID: 528279850}
@@ -2028,6 +2031,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 890200004}
   - component: {fileID: 794288536}
   - component: {fileID: 880000006}
   - component: {fileID: 794288535}
@@ -2171,6 +2175,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 890200005}
   - component: {fileID: 811392354}
   - component: {fileID: 880000007}
   - component: {fileID: 811392353}
@@ -2426,6 +2431,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 890200006}
   - component: {fileID: 867034508}
   - component: {fileID: 880000008}
   - component: {fileID: 867034507}
@@ -2979,6 +2985,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 890200007}
   - component: {fileID: 1098657292}
   - component: {fileID: 880000010}
   - component: {fileID: 1098657291}
@@ -3122,6 +3129,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 890200008}
   - component: {fileID: 1100199818}
   - component: {fileID: 880000011}
   - component: {fileID: 1100199817}
@@ -4648,6 +4656,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 890200009}
   - component: {fileID: 1527384873}
   - component: {fileID: 880000013}
   - component: {fileID: 1527384872}
@@ -6116,3 +6125,111 @@ SceneRoots:
   - {fileID: 2079817370}
   - {fileID: 1251375240}
   - {fileID: 1783846960}
+--- !u!114 &890200001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 45209992}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71b84c6a53574a4fb52f51a5a884700c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyCombatFeedback
+--- !u!114 &890200002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 172156877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71b84c6a53574a4fb52f51a5a884700c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyCombatFeedback
+--- !u!114 &890200003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 528279845}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71b84c6a53574a4fb52f51a5a884700c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyCombatFeedback
+--- !u!114 &890200004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 794288530}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71b84c6a53574a4fb52f51a5a884700c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyCombatFeedback
+--- !u!114 &890200005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 811392348}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71b84c6a53574a4fb52f51a5a884700c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyCombatFeedback
+--- !u!114 &890200006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 867034502}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71b84c6a53574a4fb52f51a5a884700c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyCombatFeedback
+--- !u!114 &890200007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1098657286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71b84c6a53574a4fb52f51a5a884700c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyCombatFeedback
+--- !u!114 &890200008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100199812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71b84c6a53574a4fb52f51a5a884700c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyCombatFeedback
+--- !u!114 &890200009
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1527384867}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71b84c6a53574a4fb52f51a5a884700c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyCombatFeedback

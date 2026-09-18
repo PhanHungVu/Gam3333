@@ -157,6 +157,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 890100001}
   - component: {fileID: 880000001}
   - component: {fileID: 880000002}
   - component: {fileID: 3511054241801326258}
@@ -352,3 +353,17 @@ MonoBehaviour:
   leanResponse: 0.12
   showThrusters: 1
   playAudio: 1
+--- !u!114 &890100001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6816227557621732600}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df55c955fd694140bd431099851905d4, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CombatFeedback
+  effectMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
+  recoilVisual: {fileID: 6007396105002377943}
