@@ -23,6 +23,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     [Header("Player")]
     [SerializeField] Transform target;
     [SerializeField] InputActionAsset inputActions;
+    InputActionAsset runtimeInputActions;
 
     [Header("Mouse Look")]
     [SerializeField] float lookSensitivity = 0.12f;
@@ -143,9 +144,10 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     void OnEnable()
     {
-        lookAction = inputActions != null ? inputActions.FindAction("Player/Look", false) : null;
+        runtimeInputActions = MechInputActions.Create(inputActions);
+        lookAction = runtimeInputActions != null ? runtimeInputActions.FindAction("Player/Look", false) : null;
         lookAction?.Enable();
-        lockAction = inputActions != null ? inputActions.FindAction("Player/LockOn", false) : null;
+        lockAction = runtimeInputActions != null ? runtimeInputActions.FindAction("Player/LockOn", false) : null;
         lockAction?.Enable();
         if (cameraRigObject != null)
             cameraRigObject.SetActive(true);
@@ -157,6 +159,8 @@ public class CameraControlThirdPerson : MonoBehaviour
     {
         lookAction?.Disable();
         lockAction?.Disable();
+        MechInputActions.Release(ref runtimeInputActions);
+        lookAction = lockAction = null;
         targetingController?.CancelLockButtonInput();
         movementFovOffset = 0f;
         assaultFraming = 0f;

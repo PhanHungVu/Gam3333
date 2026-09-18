@@ -79,27 +79,26 @@ The player root is unscaled and keeps the equivalent upright capsule dimensions.
 
 The current combat prototype is described below. Enemy attacks, player damage/invulnerability, optimal-range bonuses, equipment, waves, objectives, resource budgets, and drops remain deferred. Aerial movement is outside the current design.
 
-## Basic weapon prototype
+## Four-weapon prototype
 
-The `Mech` prefab now has `MechCombatController`. Hold left mouse (`Player/Attack`) for projectile fire and press right mouse (`Player/Melee`) for one melee swing. Existing gamepad Attack is button West; Melee is left shoulder. Both weapons remain available while moving or boosting. There are no new animations or sounds. Clicking to recapture the cursor requires releasing the attack button before weapons arm, so it does not accidentally fire.
+The `Mech` prefab has `MechCombatController` and an ammo/reload HUD. All four weapons are equipped simultaneously and fire once per press. Holding an attack button does not repeatedly fire. The three ranged slots have independent one-round magazines and automatic reloads; there is no manual reload key. Ammo below is total available shots, including the initially loaded round. Empty weapons stay empty until a new player instance is created; pickups and resupply are not implemented.
 
-Projectiles aim at the selected enemy's current aim point in soft/hard lock. In free aim they converge from the muzzle onto the center camera ray's first surface, or its range endpoint. Each shot then travels straight, with no homing, prediction, automatic lead, spread, or distance damage bonuses. A moving enemy can leave the launch line before the projectile arrives. Swept sphere collision catches thin walls/targets between physics steps, ignores the shooter and triggers, and damages the first impacted enemy once. Shots cannot originate beyond a wall intersecting the muzzle and expire at maximum travel range.
+| Control / weapon | Damage | Ammo | Cooldown/reload | Effective / maximum range |
+| --- | --- | --- | --- | --- |
+| RMB / sword | 100 | Unlimited | 0.7 s | 4 m melee reach |
+| LMB / throwing axe | 50 | 30 | 0.5 s | 12 / 18 m |
+| E / cannon | 100 | 20 | 3 s | 20 / 30 m |
+| Q / large crossbow | 30 | 50 | 1 s | 40 / 60 m |
 
-Melee tests an oriented box directly in front of the mech's movement root, following its facing rather than the camera or target. The cyan wireframe shows that volume, with a ground-level outline to help judge distance. It turns orange during approach and yellow for 0.15 seconds on impact. Each damageable enemy inside is hit once per swing, even with multiple colliders. World obstacles block hits; other enemies do not block the melee area. Normal reach is 4 m. A selected enemy just beyond it can extend the box by up to 1 m over 0.12 seconds, with one damage check at the end. Assistance only admits targets within 30 degrees ahead and fades as the angle increases. It never moves or rotates the mech, turns sideways, or pursues a fleeing target. Walls prevent extension and damage; losing the selected enemy or starting a dodge cancels a pending approach. Free aim and enemies outside these limits use the ordinary immediate attack. There is no animation or persistent overlap damage. `Show Melee Box` can hide the preview later.
+Range assumptions for this prototype: one golem length is 4 Unity metres, matching the existing sword reach. The supplied ranges are effective ranges; maximum range is 1.5 times effective range. Cannon AoE is interpreted as a 3-golem **diameter**, giving a 6 m explosion radius. These are editable defaults, not claims about Armored Core 6's internal formulas. Full projectile damage applies through effective range, then decreases linearly to zero at maximum range. Distance is projectile travel from the muzzle, not camera distance. Each ranged weapon exposes both ranges individually on the mech prefab.
 
-| Prototype setting | Default |
-| --- | --- |
-| Enemy health | 100 |
-| Projectile damage / interval | 15 / 0.2 seconds |
-| Projectile speed / range / radius | 30 units/sec / 60 units / 0.12 units |
-| Melee damage / cooldown | 60 / 0.65 seconds |
-| Melee local center / size | (0, 0, 2.25) / (3, 2.5, 3.5) |
+All ranged weapons launch straight physical projectiles toward the selected enemy's current aim point in soft/hard lock. Free aim uses the hidden screen-center ray. There is no homing or prediction, so moving enemies can evade shots. The axe cannot melee; RMB always uses the separate sword. The cannon detonates on impact, deals its range-adjusted damage once per enemy inside the blast radius, and shows a brief orange blast sphere. World obstacles block blast damage, and the shooter is excluded. The crossbow uses a smaller projectile for precision. Projectile speeds are editable prototype values: axe/cannon 100 m/s, preserving the recently tuned projectile speed, crossbow 160 m/s. Projectile visuals remain simple colored placeholders, with no added sounds or weapon animations.
 
-All weapon values are editable on the mech prefab. `CombatHealth` on the enemy prefab and existing scene enemies displays a shrinking green health bar, raises `Damaged(amount)` and `Died`, and immediately deactivates the enemy on death. This also stops movement, removes collision, and lets targeting release it. Health starts full in `Awake`; this prototype has no respawn or reset loop. `ShotFired(projectile)` and `MeleePerformed(hitCount)` are presentation extension points. The shared `Combat/Prototype Combat.mat` is explicitly referenced by the prefab/scene so its unlit shader is included in builds.
+Swept sphere collision catches thin walls and enemies between physics steps, ignores the shooter/triggers, prevents firing through walls intersecting the muzzle, and removes projectiles at maximum range. Range expiry does not detonate the cannon. Firing one weapon does not reset another weapon's reload or interrupt movement. Clicking to recapture the cursor requires releasing held attack buttons before weapons arm. Existing gamepad Attack/Melee bindings remain available; cannon/crossbow currently use E/Q.
 
-The prototype uses runtime projectile objects with bounded lifetime, not a weapon inventory or projectile pool. Scale/pooling can be added after the basic weapon feel is settled. The current scene's enemy population and movements are preserved; no spawn system or on-screen enemy cap is introduced by this pass.
+Sword melee uses the existing oriented front box and reach assist. The cyan box and ground outline turn orange during approach and yellow on the damage check. Normal reach is 4 m, with at most 1 m extra over 0.12 seconds for a selected enemy within 30 degrees ahead. Assistance diminishes with angle, does not move or rotate the mech, and does not chase a fleeing target. Walls prevent extension/damage; losing the assisted target or beginning a dodge cancels a pending approach. Free aim and targets outside the assist limits use the ordinary immediate attack. Each enemy is damaged once per swing, including enemies with compound colliders. Box center/size remain (0, 0, 2.25)/(3, 2.5, 3.5).
 
-Targeting starts off in free aim. Target-relative locomotion and threat-based automatic switching remain outside the current design.
+`CombatHealth` starts at 100 on current test enemies and deactivates them on death. Consequently the sword and a full-damage cannon hit kill a standard test enemy in one hit. Health bars, `Damaged`/`Died`, `ShotFired`, and `MeleePerformed` remain available. No inventory, equipment screen, enemy attacks, player damage, waves, or resupply are introduced. Existing targeting modes, melee camera framing, and enemy-independent movement remain intact.
 
 ## Regression checks
 
@@ -112,3 +111,9 @@ Unity.exe -batchmode -nographics -projectPath <isolated-project> -executeMethod 
 ```
 
 Do not add `-quit`: the runner enters Play mode asynchronously and exits with code 0 or 1 when finished. The batch entry point intentionally rejects interactive use. Tests create their own objects and do not load or save the working scene.
+
+## Input and package asset ownership
+
+Movement, camera, and combat read the same input definitions through separate runtime copies (`MechInputActions`). Disabling a controller disposes its copy without disabling the shared project-wide/UI action asset. Re-enabling creates a fresh copy; input definition edits take effect on the next enable or Play session. Tests cover source layout changes, repeated component enable/disable, and gamepad connection/removal.
+
+Scene enemies and the enemy prefab use `Combat/Enemy Metal Black.mat`, preserving the previous appearance without referencing the editable material in an immutable URP package. The package copy has been restored from the matching Unity installation. If Unity retains input assertions from a session that was already running when the bindings changed, stop Play mode and restart the editor once to discard that stale native state.

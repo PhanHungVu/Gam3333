@@ -6,6 +6,24 @@
             "id": "df70fa95-8a34-4494-b137-73ab6b9c7d37",
             "actions": [
                 {
+                    "name": "Cannon",
+                    "type": "Button",
+                    "id": "ee4b3269-f2db-4e0c-8a27-b901bfed0cc3",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Crossbow",
+                    "type": "Button",
+                    "id": "ffd6f67d-88fb-44f6-b103-4470971223d8",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Move",
                     "type": "Value",
                     "id": "351f2ccd-1f9f-44bf-9bec-d62ac5c5f408",
@@ -124,6 +142,28 @@
                 }
             ],
             "bindings": [
+                {
+                    "name": "",
+                    "id": "353683dc-dd23-47ab-ade8-00d9ddfa17a2",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Cannon",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "85d0dbc7-9ed1-484f-9613-6a77964342fb",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Crossbow",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
                 {
                     "name": "",
                     "id": "e177be3a-bb3b-4b2d-98a7-8b32c47a1306",

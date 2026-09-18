@@ -3,6 +3,7 @@ using System.Reflection;
 using Unity.Cinemachine;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using Object = UnityEngine.Object;
 
 // Run only in an isolated project with -batchmode -executeMethod MechFoundationChecks.RunBatch.
@@ -78,6 +79,8 @@ public static class MechFoundationChecks
             CheckHardLock(view);
             CheckCombat(view);
             CheckMeleeFramingAndAssist(view);
+            CheckWeaponLoadout(view);
+            CheckInputIsolation();
             Debug.Log("MECH CHECKS COMPLETE: " + checks);
             EditorApplication.Exit(0);
         }
@@ -753,6 +756,15 @@ public static class MechFoundationChecks
         var targeting = player.AddComponent<MechTargetLockController>();
         Set(targeting, "gameplayCamera", view);
         var combat = player.AddComponent<MechCombatController>();
+        // Keep collision/timing fixtures independent of weapon balance defaults.
+        Set(combat, "meleeDamage", 60f);
+        Set(combat, "meleeCooldown", 0.65f);
+        var fixtureWeapon = combat.GetWeapon(MechWeaponSlot.ThrowingAxe);
+        fixtureWeapon.damage = 15f;
+        fixtureWeapon.reloadSeconds = 0.2f;
+        fixtureWeapon.projectileSpeed = 30f;
+        fixtureWeapon.projectileRadius = 0.12f;
+        fixtureWeapon.effectiveRange = fixtureWeapon.maximumRange = 60f;
         Set(combat, "gameplayCamera", view);
         var target = Enemy(origin + Vector3.forward * 12);
         var health = target.gameObject.AddComponent<CombatHealth>();
@@ -875,6 +887,15 @@ public static class MechFoundationChecks
         var targeting = player.AddComponent<MechTargetLockController>();
         Set(targeting, "gameplayCamera", view);
         var combat = player.AddComponent<MechCombatController>();
+        // Keep collision/timing fixtures independent of weapon balance defaults.
+        Set(combat, "meleeDamage", 60f);
+        Set(combat, "meleeCooldown", 0.65f);
+        var fixtureWeapon = combat.GetWeapon(MechWeaponSlot.ThrowingAxe);
+        fixtureWeapon.damage = 15f;
+        fixtureWeapon.reloadSeconds = 0.2f;
+        fixtureWeapon.projectileSpeed = 30f;
+        fixtureWeapon.projectileRadius = 0.12f;
+        fixtureWeapon.effectiveRange = fixtureWeapon.maximumRange = 60f;
         var enemy = Enemy(origin + Vector3.forward * 5f);
         var health = enemy.gameObject.AddComponent<CombatHealth>();
         Physics.SyncTransforms();
@@ -982,6 +1003,184 @@ public static class MechFoundationChecks
         replacement.gameObject.SetActive(false);
         cameraRoot.SetActive(false);
         view.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+    }
+
+    static void CheckWeaponLoadout(Camera view)
+    {
+        Vector3 origin = new Vector3(6000, 2, 0);
+        var player = new GameObject("Four Weapon Player");
+        player.transform.position = origin;
+        var combat = player.AddComponent<MechCombatController>();
+        Set(combat, "gameplayCamera", view);
+        view.transform.SetPositionAndRotation(origin, Quaternion.identity);
+        var axe = combat.GetWeapon(MechWeaponSlot.ThrowingAxe);
+        var cannon = combat.GetWeapon(MechWeaponSlot.Cannon);
+        var crossbow = combat.GetWeapon(MechWeaponSlot.Crossbow);
+        Check(axe.damage == 50 && axe.ammunition == 30 && axe.reloadSeconds == 0.5f
+            && cannon.damage == 100 && cannon.ammunition == 20 && cannon.reloadSeconds == 3
+            && crossbow.damage == 30 && crossbow.ammunition == 50 && crossbow.reloadSeconds == 1,
+            "Ranged loadout uses the supplied damage, ammo, and reload table");
+        foreach (MechWeaponSlot slot in new[] { MechWeaponSlot.ThrowingAxe, MechWeaponSlot.Cannon, MechWeaponSlot.Crossbow })
+        {
+            var shot = combat.TryFire(slot);
+            Check(shot != null && combat.AmmoRemaining(slot) == combat.GetWeapon(slot).ammunition - 1,
+                $"{slot} fires independently and consumes exactly one round");
+            Object.DestroyImmediate(shot.gameObject);
+            Check(combat.TryFire(slot) == null, $"{slot} one-round magazine cannot fire during reload");
+        }
+        Call(combat, "TickCooldowns", 0.5f);
+        Check(combat.ReloadRemaining(MechWeaponSlot.ThrowingAxe) == 0
+            && combat.ReloadRemaining(MechWeaponSlot.Cannon) == 2.5f
+            && combat.ReloadRemaining(MechWeaponSlot.Crossbow) == 0.5f,
+            "Reload clocks remain independent across all three ranged slots");
+        for (int i = 0; i < 29; i++)
+        {
+            var shot = combat.TryFire();
+            Check(shot != null, "Available axe round fires after reload");
+            Object.DestroyImmediate(shot.gameObject);
+            Call(combat, "TickCooldowns", 0.5f);
+        }
+        Check(combat.AmmoRemaining(MechWeaponSlot.ThrowingAxe) == 0 && combat.TryFire() == null,
+            "The axe has exactly 30 total shots and cannot fire on empty");
+        combat.enabled = false;
+        combat.enabled = true;
+        Check(combat.AmmoRemaining(MechWeaponSlot.ThrowingAxe) == 0, "Re-enabling weapons cannot refill ammunition");
+        var swordEnemy = Enemy(origin + Vector3.forward * 2);
+        var swordHealth = swordEnemy.gameObject.AddComponent<CombatHealth>();
+        Physics.SyncTransforms();
+        Check(combat.TryMelee() && swordHealth.IsDead, "Sword uses the supplied 100 damage");
+        Call(combat, "TickCooldowns", 0.69f);
+        Check(!combat.TryMelee(), "Sword cannot repeat before its 0.7 second cooldown");
+        Call(combat, "TickCooldowns", 0.02f);
+        Check(combat.TryMelee(), "Sword is ready again after 0.7 seconds without ammunition");
+        Check(MechProjectile.RangeMultiplier(5, 5, 10) == 1
+            && MechProjectile.RangeMultiplier(7.5f, 5, 10) == 0.5f
+            && MechProjectile.RangeMultiplier(10, 5, 10) == 0,
+            "Effective range gives full damage, then falloff reaches zero at maximum range");
+        var rangeEnemy = Enemy(origin + Vector3.forward * 8);
+        var rangeHealth = rangeEnemy.gameObject.AddComponent<CombatHealth>();
+        var projectile = new GameObject("Range Test").AddComponent<MechProjectile>();
+        projectile.transform.position = origin;
+        projectile.ConfigureRangeAndExplosion(5, 0, null, Color.white);
+        Physics.SyncTransforms();
+        projectile.Launch(player.transform, Vector3.forward, 100, 100, 0.1f, 10, ~0, origin);
+        Call(projectile, "Step", 1f);
+        Check(rangeHealth.CurrentHealth > 0 && rangeHealth.CurrentHealth < 100,
+            "Physical impact beyond effective range actually receives reduced damage");
+        rangeEnemy.transform.position = origin + Vector3.forward * 12;
+        float previousHealth = rangeHealth.CurrentHealth;
+        projectile = new GameObject("Maximum Range Test").AddComponent<MechProjectile>();
+        projectile.transform.position = origin;
+        projectile.ConfigureRangeAndExplosion(5, 0, null, Color.white);
+        Physics.SyncTransforms();
+        projectile.Launch(player.transform, Vector3.forward, 100, 100, 0.1f, 10, ~0, origin);
+        Call(projectile, "Step", 1f);
+        Check(!projectile.IsLive && rangeHealth.CurrentHealth == previousHealth,
+            "Projectile expires at maximum range without damaging enemies beyond it");
+        rangeEnemy.gameObject.SetActive(false);
+        var direct = Enemy(origin + Vector3.forward * 5);
+        var directHealth = direct.gameObject.AddComponent<CombatHealth>();
+        var nearby = Enemy(origin + Vector3.forward * 7);
+        var nearbyHealth = nearby.gameObject.AddComponent<CombatHealth>();
+        var extra = new GameObject("Compound blast collider").AddComponent<BoxCollider>();
+        extra.transform.SetParent(nearby.transform, false);
+        var shielded = Enemy(origin + new Vector3(3, 0, 4.4f));
+        var shieldedHealth = shielded.gameObject.AddComponent<CombatHealth>();
+        var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        wall.transform.position = origin + new Vector3(1.5f, 0, 4.4f);
+        wall.transform.localScale = new Vector3(0.1f, 4, 4);
+        var ownerHealth = player.AddComponent<CombatHealth>();
+        player.AddComponent<BoxCollider>();
+        projectile = new GameObject("Blast Test").AddComponent<MechProjectile>();
+        projectile.transform.position = origin;
+        projectile.ConfigureRangeAndExplosion(10, 6, null, Color.white);
+        Physics.SyncTransforms();
+        projectile.Launch(player.transform, Vector3.forward, 100, 30, 0.1f, 15, ~0, origin);
+        Call(projectile, "Step", 1f);
+        Check(directHealth.CurrentHealth == 70 && nearbyHealth.CurrentHealth == 70,
+            "Cannon damages its direct victim and nearby compound enemy exactly once each");
+        Check(shieldedHealth.CurrentHealth == 100 && ownerHealth.CurrentHealth == 100,
+            "Cannon splash is blocked by walls and excludes the shooter");
+        foreach (var obj in new[] { player, direct.gameObject, nearby.gameObject, shielded.gameObject, wall }) obj.SetActive(false);
+        view.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+    }
+
+    static void CheckInputIsolation()
+    {
+        var imported = AssetDatabase.LoadAssetAtPath<InputActionAsset>("Assets/InputSystem_Actions.inputactions");
+        Check(imported != null, "Input lifecycle fixture loads the real action layout");
+        var source = Object.Instantiate(imported);
+        source.Enable();
+        var player = new GameObject("Input Lifecycle Player");
+        player.SetActive(false);
+        player.transform.position = new Vector3(7000, 2, 0);
+        var movement = player.AddComponent<MechMovementController>();
+        var combat = player.AddComponent<MechCombatController>();
+        Set(movement, "inputActions", source);
+        Set(combat, "inputActions", source);
+        var cameraRoot = new GameObject("Input Lifecycle Camera");
+        cameraRoot.SetActive(false);
+        cameraRoot.AddComponent<Camera>();
+        var camera = cameraRoot.AddComponent<CameraControlThirdPerson>();
+        Set(camera, "target", player.transform);
+        Set(camera, "inputActions", source);
+        player.SetActive(true);
+        cameraRoot.SetActive(true);
+        var moveCopy = (InputActionAsset)Get(movement, "runtimeInputActions");
+        var combatCopy = (InputActionAsset)Get(combat, "runtimeInputActions");
+        var cameraCopy = (InputActionAsset)Get(camera, "runtimeInputActions");
+        Check(moveCopy != source && combatCopy != source && cameraCopy != source
+            && moveCopy != combatCopy && cameraCopy != combatCopy,
+            "Movement, combat, and camera own separate runtime action state");
+        Check(moveCopy.FindAction("Player/Move").enabled && combatCopy.FindAction("Player/Cannon").enabled
+            && cameraCopy.FindAction("Player/Look").enabled, "Runtime copies enable their mapped gameplay inputs");
+        int errors = 0;
+        Application.LogCallback onLog = (message, stack, type) =>
+        {
+            if (type == LogType.Assert || type == LogType.Exception || type == LogType.Error) errors++;
+        };
+        Application.logMessageReceived += onLog;
+        Gamepad pad = null;
+        try
+        {
+            // Source layout edits cannot mutate the active controllers' native state.
+            source.Disable();
+            source.FindActionMap("Player").AddAction("FutureWeapon").AddBinding("<Keyboard>/r");
+            source.Enable();
+            Check(combatCopy.FindAction("Player/FutureWeapon", false) == null,
+                "Changing the source layout leaves a running input snapshot unchanged");
+            for (int i = 0; i < 3; i++)
+            {
+                pad = InputSystem.AddDevice<Gamepad>();
+                InputSystem.Update();
+                combat.enabled = false;
+                Check(source.FindAction("Player/Attack").enabled && moveCopy.FindAction("Player/Move").enabled
+                    && Get(combat, "runtimeInputActions") == null,
+                    "Disabling combat releases only its copy, leaving shared/UI and movement input enabled");
+                combat.enabled = true;
+                var refreshed = (InputActionAsset)Get(combat, "runtimeInputActions");
+                Check(refreshed.FindAction("Player/FutureWeapon", false) != null
+                    && refreshed.FindAction("Player/Cannon").enabled,
+                    "Re-enabling combat reads the latest source layout into fresh state");
+                InputSystem.RemoveDevice(pad);
+                pad = null;
+                InputSystem.Update();
+            }
+            player.SetActive(false);
+            cameraRoot.SetActive(false);
+            Check(Get(movement, "runtimeInputActions") == null && Get(camera, "runtimeInputActions") == null
+                && source.FindAction("Player/Look").enabled,
+                "Camera and movement clean up their copies without disabling project-wide input");
+            Check(errors == 0, "Device connection/removal and lifecycle changes produce no input assertions or errors");
+        }
+        finally
+        {
+            if (pad != null) InputSystem.RemoveDevice(pad);
+            Application.logMessageReceived -= onLog;
+            player.SetActive(false);
+            cameraRoot.SetActive(false);
+            Object.DestroyImmediate(source);
+        }
     }
 
     static void CheckMovement(Camera view)

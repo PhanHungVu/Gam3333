@@ -8,21 +8,20 @@ using UnityEngine.InputSystem;
 public class MechCombatController : MonoBehaviour
 {
     [SerializeField] InputActionAsset inputActions;
+    InputActionAsset runtimeInputActions;
     [SerializeField] Camera gameplayCamera;
     [SerializeField] Material combatMaterial;
     [SerializeField] LayerMask hitLayers = ~0;
-    [Header("Projectile Weapon")]
+    [Header("Ranged Weapons (ranges in metres, one-round magazines)")]
     [SerializeField] Vector3 muzzleOffset = new Vector3(0.65f, 0.5f, 0.65f);
-    [SerializeField, Min(0.01f)] float fireInterval = 0.2f;
-    [SerializeField, Min(0f)] float projectileDamage = 15f;
-    [SerializeField, Min(0.01f)] float projectileSpeed = 100f;
-    [SerializeField, Min(0.01f)] float projectileRadius = 0.12f;
-    [SerializeField, Min(0.01f)] float projectileRange = 100f;
+    [SerializeField] MechWeaponStats throwingAxe = new MechWeaponStats("Throwing axe", 50, 30, 0.5f, 12, 18, 100, 0.18f, 0, new Color(0.3f, 0.9f, 1));
+    [SerializeField] MechWeaponStats cannon = new MechWeaponStats("Cannon", 100, 20, 3, 20, 30, 100, 0.3f, 6, new Color(1, 0.5f, 0.15f));
+    [SerializeField] MechWeaponStats crossbow = new MechWeaponStats("Large crossbow", 30, 50, 1, 40, 60, 160, 0.07f, 0, new Color(1, 0.9f, 0.3f));
     [Header("Melee Weapon")]
     [SerializeField] Vector3 meleeCenter = new Vector3(0f, 0f, 2.25f);
     [SerializeField] Vector3 meleeSize = new Vector3(3f, 2.5f, 3.5f);
-    [SerializeField, Min(0f)] float meleeDamage = 60f;
-    [SerializeField, Min(0.01f)] float meleeCooldown = 0.65f;
+    [SerializeField, Min(0f)] float meleeDamage = 100f;
+    [SerializeField, Min(0.01f)] float meleeCooldown = 0.7f;
     [SerializeField] bool showMeleeBox = true;
     [Header("Melee Reach Assist")]
     [SerializeField, Min(0f)] float maximumMeleeApproach = 1f;
@@ -30,9 +29,15 @@ public class MechCombatController : MonoBehaviour
     [SerializeField, Min(0.01f)] float meleeApproachDuration = 0.12f;
     [SerializeField, Min(0f)] float meleeCameraHold = 0.45f;
     MechTargetLockController targeting;
-    InputAction fireAction, meleeAction;
+    InputAction fireAction, meleeAction, cannonAction, crossbowAction;
     bool inputArmed;
-    float fireTimer, meleeTimer, flashTimer;
+    float meleeTimer, flashTimer;
+    readonly float[] reloadTimers = new float[3];
+    readonly int[] remainingAmmo = new int[3];
+    public MechWeaponStats GetWeapon(MechWeaponSlot slot) => slot == MechWeaponSlot.Cannon ? cannon
+        : slot == MechWeaponSlot.Crossbow ? crossbow : throwingAxe;
+    public int AmmoRemaining(MechWeaponSlot slot) => remainingAmmo[(int)slot];
+    public float ReloadRemaining(MechWeaponSlot slot) => reloadTimers[(int)slot];
     Collider[] meleeCandidates = new Collider[32];
     readonly HashSet<CombatHealth> damaged = new HashSet<CombatHealth>();
     LineRenderer meleeOutline;
@@ -57,21 +62,31 @@ public class MechCombatController : MonoBehaviour
         movementCapsule = GetComponent<CharacterController>();
         movement = GetComponent<MechMovementController>();
         if (gameplayCamera == null) gameplayCamera = Camera.main;
+        for (int i = 0; i < 3; i++) remainingAmmo[i] = GetWeapon((MechWeaponSlot)i).ammunition;
         if (combatMaterial != null) CreateMeleeOutline();
     }
 
     void OnEnable()
     {
-        fireAction = inputActions != null ? inputActions.FindAction("Player/Attack", false) : null;
-        meleeAction = inputActions != null ? inputActions.FindAction("Player/Melee", false) : null;
+        runtimeInputActions = MechInputActions.Create(inputActions);
+        fireAction = runtimeInputActions != null ? runtimeInputActions.FindAction("Player/Attack", false) : null;
+        meleeAction = runtimeInputActions != null ? runtimeInputActions.FindAction("Player/Melee", false) : null;
+        cannonAction = runtimeInputActions != null ? runtimeInputActions.FindAction("Player/Cannon", false) : null;
+        crossbowAction = runtimeInputActions != null ? runtimeInputActions.FindAction("Player/Crossbow", false) : null;
         fireAction?.Enable();
         meleeAction?.Enable();
+        cannonAction?.Enable();
+        crossbowAction?.Enable();
     }
 
     void OnDisable()
     {
         fireAction?.Disable();
         meleeAction?.Disable();
+        cannonAction?.Disable();
+        crossbowAction?.Disable();
+        MechInputActions.Release(ref runtimeInputActions);
+        fireAction = meleeAction = cannonAction = crossbowAction = null;
         inputArmed = false;
         meleePending = false;
         meleeExtension = meleeCameraTimer = flashTimer = 0f;
@@ -89,57 +104,70 @@ public class MechCombatController : MonoBehaviour
             inputArmed = false;
             return;
         }
-        bool fire = fireAction != null ? fireAction.IsPressed() : Mouse.current != null && Mouse.current.leftButton.isPressed;
+        bool fireHeld = fireAction != null ? fireAction.IsPressed() : Mouse.current != null && Mouse.current.leftButton.isPressed;
+        bool fire = fireAction != null ? fireAction.WasPressedThisFrame() : Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
+        bool cannonHeld = cannonAction != null ? cannonAction.IsPressed() : Keyboard.current != null && Keyboard.current.eKey.isPressed;
+        bool crossbowHeld = crossbowAction != null ? crossbowAction.IsPressed() : Keyboard.current != null && Keyboard.current.qKey.isPressed;
+        bool fireCannon = cannonAction != null ? cannonAction.WasPressedThisFrame() : Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame;
+        bool fireCrossbow = crossbowAction != null ? crossbowAction.WasPressedThisFrame() : Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame;
         bool meleeHeld = meleeAction != null ? meleeAction.IsPressed() : Mouse.current != null && Mouse.current.rightButton.isPressed;
         bool melee = meleeAction != null ? meleeAction.WasPressedThisFrame() : Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame;
         // A click to recapture the mouse should not also fire a weapon.
-        if (!inputArmed) { inputArmed = !fire && !meleeHeld; return; }
-        if (fire || melee) Physics.SyncTransforms();
+        if (!inputArmed) { inputArmed = !fireHeld && !meleeHeld && !cannonHeld && !crossbowHeld; return; }
+        if (fire || melee || fireCannon || fireCrossbow) Physics.SyncTransforms();
         if (melee) TryMelee();
         if (fire) TryFire();
+        if (fireCannon) TryFire(MechWeaponSlot.Cannon);
+        if (fireCrossbow) TryFire(MechWeaponSlot.Crossbow);
     }
 
     void TickCooldowns(float deltaTime)
     {
-        fireTimer = Mathf.Max(0f, fireTimer - deltaTime);
+        for (int i = 0; i < reloadTimers.Length; i++) reloadTimers[i] = Mathf.Max(0f, reloadTimers[i] - deltaTime);
         meleeTimer = Mathf.Max(0f, meleeTimer - deltaTime);
         flashTimer = Mathf.Max(0f, flashTimer - deltaTime);
         meleeCameraTimer = Mathf.Max(0f, meleeCameraTimer - deltaTime);
         if (!meleePending && flashTimer <= 0f) meleeExtension = 0f;
     }
 
-    public MechProjectile TryFire()
+    public MechProjectile TryFire() => TryFire(MechWeaponSlot.ThrowingAxe);
+
+    public MechProjectile TryFire(MechWeaponSlot slot)
     {
-        if (!isActiveAndEnabled || fireTimer > 0f) return null;
+        int index = (int)slot;
+        if (!isActiveAndEnabled || index < 0 || index >= 3 || reloadTimers[index] > 0f || remainingAmmo[index] <= 0) return null;
+        var weapon = GetWeapon(slot);
         if (gameplayCamera == null) gameplayCamera = Camera.main;
         if (gameplayCamera == null) return null;
         Vector3 muzzle = transform.TransformPoint(muzzleOffset);
-        Vector3 aimPoint = GetAimPoint();
+        Vector3 aimPoint = GetAimPoint(weapon.maximumRange);
         Vector3 direction = (aimPoint - muzzle).normalized;
         if (direction.sqrMagnitude < 0.001f) direction = gameplayCamera.transform.forward;
-        fireTimer = fireInterval;
+        reloadTimers[index] = weapon.reloadSeconds;
+        remainingAmmo[index]--;
         var shot = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        shot.name = "Player Projectile";
+        shot.name = weapon.displayName + " Projectile";
         var collider = shot.GetComponent<Collider>();
         collider.enabled = false;
         Destroy(collider);
         // No projectile collider or rigidbody: swept sphere queries resolve its motion.
         shot.transform.position = transform.position + Vector3.up * muzzleOffset.y;
-        shot.transform.localScale = Vector3.one * (projectileRadius * 2f);
+        shot.transform.localScale = Vector3.one * (weapon.projectileRadius * 2f);
         var renderer = shot.GetComponent<Renderer>();
         if (combatMaterial != null) renderer.sharedMaterial = combatMaterial;
         var tint = new MaterialPropertyBlock();
-        tint.SetColor("_Color", new Color(1f, 0.85f, 0.15f));
+        tint.SetColor("_Color", weapon.color);
         renderer.SetPropertyBlock(tint);
         renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         var projectile = shot.AddComponent<MechProjectile>();
-        projectile.Launch(transform, direction, projectileSpeed, projectileDamage, projectileRadius,
-            projectileRange, hitLayers, muzzle);
+        projectile.ConfigureRangeAndExplosion(weapon.effectiveRange, weapon.explosionRadius, combatMaterial, weapon.color);
+        projectile.Launch(transform, direction, weapon.projectileSpeed, weapon.damage, weapon.projectileRadius,
+            weapon.maximumRange, hitLayers, muzzle);
         ShotFired?.Invoke(projectile);
         return projectile;
     }
 
-    Vector3 GetAimPoint()
+    Vector3 GetAimPoint(float projectileRange)
     {
         var enemy = targeting != null && targeting.isActiveAndEnabled && !targeting.IsFreeAim ? targeting.CurrentTarget : null;
         if (enemy != null && enemy.isActiveAndEnabled) return enemy.AimPosition;
@@ -332,7 +360,6 @@ public class MechCombatController : MonoBehaviour
     void OnValidate()
     {
         meleeSize = Vector3.Max(Vector3.one * 0.01f, meleeSize);
-        fireInterval = Mathf.Max(0.01f, fireInterval);
         meleeCooldown = Mathf.Max(0.01f, meleeCooldown);
         maximumMeleeApproach = Mathf.Max(0f, maximumMeleeApproach);
         meleeApproachDuration = Mathf.Max(0.01f, meleeApproachDuration);

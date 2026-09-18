@@ -18,6 +18,7 @@ public class MechMovementController : MonoBehaviour
     }
 
     [SerializeField] InputActionAsset inputActions;
+    InputActionAsset runtimeInputActions;
     [SerializeField] Camera gameplayCamera;
     [SerializeField] MechEnergyController energy;
     [Header("Ground Locomotion")]
@@ -109,11 +110,12 @@ public class MechMovementController : MonoBehaviour
         if (inputActions == null)
             return;
 
-        moveAction = inputActions.FindAction("Player/Move", false);
-        sprintAction = inputActions.FindAction("Player/Sprint", false);
-        jumpAction = inputActions.FindAction("Player/Jump", false);
-        quickBoostAction = inputActions.FindAction("Player/QuickBoost", false);
-        assaultBoostAction = inputActions.FindAction("Player/AssaultBoost", false);
+        runtimeInputActions = MechInputActions.Create(inputActions);
+        moveAction = runtimeInputActions.FindAction("Player/Move", false);
+        sprintAction = runtimeInputActions.FindAction("Player/Sprint", false);
+        jumpAction = runtimeInputActions.FindAction("Player/Jump", false);
+        quickBoostAction = runtimeInputActions.FindAction("Player/QuickBoost", false);
+        assaultBoostAction = runtimeInputActions.FindAction("Player/AssaultBoost", false);
         moveAction?.Enable();
         sprintAction?.Enable();
         jumpAction?.Enable();
@@ -128,6 +130,8 @@ public class MechMovementController : MonoBehaviour
         jumpAction?.Disable();
         quickBoostAction?.Disable();
         assaultBoostAction?.Disable();
+        MechInputActions.Release(ref runtimeInputActions);
+        moveAction = sprintAction = jumpAction = quickBoostAction = assaultBoostAction = null;
         bool wasAssaultBoosting = assaultBoostActive;
         assaultBoostActive = false;
         assaultBoostRequiresRelease = false;
