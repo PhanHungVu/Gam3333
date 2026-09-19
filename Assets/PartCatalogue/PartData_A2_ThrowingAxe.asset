@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad4a868c28c93014cbb933c5f410180b, type: 3}
+  m_Name: PartData_A2_ThrowingAxe
+  m_EditorClassIdentifier: Assembly-CSharp::PartData
+  partId: weaponA2
+  partName: Throwing Axe
+  compatibleSocket: 1
+  description: 
+  stats:
+  - type: 2
+    value: 50
+  - type: 3
+    value: 1
+  - type: 4
+    value: 30
+  - type: 5
+    value: 0.5
+  - type: 6
+    value: 3
+  - type: 7
+    value: 1

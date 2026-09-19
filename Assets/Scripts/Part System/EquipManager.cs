@@ -21,7 +21,7 @@ public class EquipManager : MonoBehaviour
 
             foreach (var socket in sockets)
             {
-                if (socket.socketType == part.compatibleSocket && socket.GetComponentInChildren<Part>() == null)
+                if (socket.socketType == part.partType && socket.GetComponentInChildren<Part>() == null)
                 {
                     EquipToSocket(socket, part);
                     break;
@@ -44,7 +44,7 @@ public class EquipManager : MonoBehaviour
 
     void TryEquip(Part part)
     {
-        Socket target = FindSocketForType(part.compatibleSocket);
+        Socket target = FindSocketForType(part.partType);
         if (target == null || !rulesConfig.CanEquip(target, part)) return;
 
         Part current = target.GetComponentInChildren<Part>();
@@ -52,7 +52,7 @@ public class EquipManager : MonoBehaviour
         {
             current.transform.SetParent(null);
             current.isEquipped = false;
-            current.EnableDropPhysics();
+            EnableDropPhysics(current);
         }
 
         EquipToSocket(target, part);
@@ -61,14 +61,30 @@ public class EquipManager : MonoBehaviour
 
     void EquipToSocket(Socket target, Part part)
     {
-        part.DisableDropPhysics();
+        DisableDropPhysics(part);
         part.transform.position = target.transform.position;
         part.transform.rotation = target.transform.rotation;
         part.transform.SetParent(target.transform);
         part.isEquipped = true;
     }
 
-    Socket FindSocketForType(SocketType type)
+    void EnableDropPhysics(Part part)
+    {
+        if (part.GetComponent<Rigidbody>() == null)
+        {
+            var rb = part.gameObject.AddComponent<Rigidbody>();
+            rb.useGravity = true;
+        }
+    }
+
+    void DisableDropPhysics(Part part)
+    {
+        var rb = part.GetComponent<Rigidbody>();
+        if (rb != null) Destroy(rb);
+    }
+
+    // EquipManager.cs — the FindSocketForType signature
+    Socket FindSocketForType(PartCategory type)
     {
         foreach (var s in sockets)
             if (s.socketType == type) return s;
