@@ -17,15 +17,13 @@ public sealed class MechEquipmentCombat : MonoBehaviour
     {
         var part = equipment.GetEquipped(slot == MechWeaponSlot.ThrowingAxe ? PartCategory.ArmL
             : slot == MechWeaponSlot.Cannon ? PartCategory.ShoulderL : PartCategory.ShoulderR);
-        return Usable(part) && part.data != null && part.data.weapon == MechPartWeapon.None
-            ? part.GetComponent<MechAbilityDriver>() : null;
+        return AbilityOn(part);
     }
     public MechAbilityDriver MeleeAbility
     {
         get
         {
-            var part = equipment.GetEquipped(PartCategory.ArmR);
-            return Usable(part) && part.TryGetComponent<MechAbilityDriver>(out var driver) ? driver : null;
+            return AbilityOn(equipment.GetEquipped(PartCategory.ArmR));
         }
     }
     public bool TryMeleeAbility() => MeleeAbility != null && MeleeAbility.TryActivate();
@@ -33,6 +31,11 @@ public sealed class MechEquipmentCombat : MonoBehaviour
     public bool HasWeapon(MechWeaponSlot slot) => isActiveAndEnabled && Usable(GetPart(slot));
     public bool HasSword => isActiveAndEnabled && Usable(Sword);
     static bool Usable(Part part) => part != null && part.isEquipped && part.isActiveAndEnabled && part.EquippedBy != null;
+    static MechAbilityDriver AbilityOn(Part part)
+    {
+        if (!Usable(part) || part.data == null || part.data.ability == MechPartAbilityKind.None) return null;
+        return part.GetComponent<MechAbilityDriver>();
+    }
     public MechWeaponStats GetWeapon(MechWeaponSlot slot) => weapons[(int)slot];
     void Refresh()
     {
@@ -43,6 +46,7 @@ public sealed class MechEquipmentCombat : MonoBehaviour
             var part = equipment.GetEquipped((PartCategory)i);
             if (part == null || part.data == null) continue;
             var data = part.data;
+            EnsureAbility(part);
             if (data.weapon == MechPartWeapon.Sword) { Sword = part; continue; }
             if (data.weapon < MechPartWeapon.ThrowingAxe || data.weapon > MechPartWeapon.Crossbow) continue;
             var slot = (MechWeaponSlot)((int)data.weapon - (int)MechPartWeapon.ThrowingAxe);
@@ -58,5 +62,23 @@ public sealed class MechEquipmentCombat : MonoBehaviour
         combat.CancelEquippedMelee();
         var feedback = GetComponent<CombatFeedback>();
         if (feedback != null) feedback.BindRecoilVisual(ranged[1] != null ? ranged[1].recoilVisual : null, Vector3.left);
+    }
+
+    static void EnsureAbility(Part part)
+    {
+        if (part.data.ability == MechPartAbilityKind.None) return;
+        var required = part.data.ability == MechPartAbilityKind.ResonancePulse ? typeof(ResonancePulseAbility)
+            : part.data.ability == MechPartAbilityKind.ZigzagBarrage ? typeof(ZigzagBarrageAbility)
+            : typeof(BloomMissileAbility);
+        var ability = part.GetComponent<MechPartAbility>();
+        if (ability == null || ability.GetType() != required)
+        {
+            if (ability != null) Object.Destroy(ability);
+            ability = (MechPartAbility)part.gameObject.AddComponent(required);
+        }
+        var driver = part.GetComponent<MechAbilityDriver>();
+        if (driver == null) driver = part.gameObject.AddComponent<MechAbilityDriver>();
+        driver.SetAbility(ability);
+        driver.BindOwner(part.EquippedBy != null ? part.EquippedBy.transform : null);
     }
 }

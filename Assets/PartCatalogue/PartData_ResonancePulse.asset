@@ -17,6 +17,7 @@ MonoBehaviour:
   description: 
   stats: []
   weapon: 0
+  ability: 1
   metresPerGolem: 4
   maximumRangeMultiplier: 1.5
   cannonExplosionRadius: 6

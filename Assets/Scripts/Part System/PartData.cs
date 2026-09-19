@@ -11,6 +11,7 @@ public enum StatType
 }
 
 public enum MechPartWeapon { None, Sword, ThrowingAxe, Cannon, Crossbow }
+public enum MechPartAbilityKind { None, ResonancePulse, ZigzagBarrage, BloomMissile }
 
 [System.Serializable]
 public struct StatEntry
@@ -28,6 +29,7 @@ public class PartData : ScriptableObject
     public List<StatEntry> stats;
     [Header("Combat integration (Range stat is in golem lengths)")]
     public MechPartWeapon weapon;
+    public MechPartAbilityKind ability;
     [Min(0.01f)] public float metresPerGolem = 4f;
     [Min(1f)] public float maximumRangeMultiplier = 1.5f;
     [Min(0f)] public float cannonExplosionRadius = 6f;

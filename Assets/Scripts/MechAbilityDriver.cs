@@ -50,6 +50,7 @@ public sealed class MechAbilityDriver : MonoBehaviour
         gameplayCamera = targeting != null && targeting.GameplayCamera != null ? targeting.GameplayCamera : Camera.main;
         if (isActiveAndEnabled && combat != null) combat.ProjectileImpact += OnImpact;
     }
+    internal void SetAbility(MechPartAbility nextAbility) => ability = nextAbility;
     void OnEnable() { if (combat != null) { combat.ProjectileImpact -= OnImpact; combat.ProjectileImpact += OnImpact; } }
     void OnDisable() { if (combat != null) combat.ProjectileImpact -= OnImpact; ability?.Cancel(); }
     void Update()
