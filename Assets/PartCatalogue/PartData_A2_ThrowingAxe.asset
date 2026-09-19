@@ -14,7 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PartData
   partId: weaponA2
   partName: Throwing Axe
-  compatibleSocket: 1
   description: 
   stats:
   - type: 2
@@ -29,3 +28,7 @@ MonoBehaviour:
     value: 3
   - type: 7
     value: 1
+  weapon: 2
+  metresPerGolem: 4
+  maximumRangeMultiplier: 1.5
+  cannonExplosionRadius: 6

@@ -200,6 +200,8 @@ public class MechTargetLockController : MonoBehaviour
         HardLockChanged?.Invoke(active);
     }
 
+    public void BindCamera(Camera camera) => gameplayCamera = camera;
+
     void Awake()
     {
         if (gameplayCamera == null)

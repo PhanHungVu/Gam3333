@@ -158,6 +158,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a83a10ed3c50e19479018b309d84c0ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
+  recoilVisual: {fileID: 0}
+  muzzle: {fileID: 0}
+  authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: a17b5cd975f0f634a8626983c04c0047, type: 2}
   partType: 3
   isStartingPart: 1

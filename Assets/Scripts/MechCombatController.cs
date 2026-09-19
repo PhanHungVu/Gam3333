@@ -17,6 +17,11 @@ public class MechCombatController : MonoBehaviour
     [SerializeField] MechWeaponStats throwingAxe = new MechWeaponStats("Throwing axe", 50, 30, 0.5f, 12, 18, 100, 0.18f, 0, new Color(0.3f, 0.9f, 1));
     [SerializeField] MechWeaponStats cannon = new MechWeaponStats("Cannon", 100, 20, 3, 20, 30, 100, 0.3f, 6, new Color(1, 0.5f, 0.15f));
     [SerializeField] MechWeaponStats crossbow = new MechWeaponStats("Large crossbow", 30, 50, 1, 40, 60, 160, 0.07f, 0, new Color(1, 0.9f, 0.3f));
+    [Header("Optional Cannon Pattern")]
+    [Tooltip("Snapshot at firing. Off retains the normal single cannon blast.")]
+    [SerializeField] bool spiralBarrage;
+    [SerializeField] CannonSpiralBarrage.Settings spiralSettings = CannonSpiralBarrage.Settings.Default;
+    CannonSpiralBarrage barrageRunner;
     [Header("Melee Weapon")]
     [SerializeField] Vector3 meleeCenter = new Vector3(0f, 0f, 2.25f);
     [SerializeField] Vector3 meleeSize = new Vector3(3f, 2.5f, 3.5f);
@@ -34,10 +39,17 @@ public class MechCombatController : MonoBehaviour
     float meleeTimer, flashTimer;
     readonly float[] reloadTimers = new float[3];
     readonly int[] remainingAmmo = new int[3];
-    public MechWeaponStats GetWeapon(MechWeaponSlot slot) => slot == MechWeaponSlot.Cannon ? cannon
+    MechEquipmentCombat equipment;
+    float strikeDamage;
+    public void BindCamera(Camera camera) => gameplayCamera = camera;
+    public bool HasWeapon(MechWeaponSlot slot) => equipment == null || equipment.HasWeapon(slot);
+    public bool HasSword => equipment == null || equipment.HasSword;
+    public MechWeaponStats GetWeapon(MechWeaponSlot slot) => equipment != null && equipment.GetWeapon(slot) != null
+        ? equipment.GetWeapon(slot) : GetDefaultWeapon(slot);
+    public MechWeaponStats GetDefaultWeapon(MechWeaponSlot slot) => slot == MechWeaponSlot.Cannon ? cannon
         : slot == MechWeaponSlot.Crossbow ? crossbow : throwingAxe;
-    public int AmmoRemaining(MechWeaponSlot slot) => remainingAmmo[(int)slot];
-    public float ReloadRemaining(MechWeaponSlot slot) => reloadTimers[(int)slot];
+    public int AmmoRemaining(MechWeaponSlot slot) => equipment != null ? (HasWeapon(slot) ? equipment.GetPart(slot).RemainingAmmo : 0) : remainingAmmo[(int)slot];
+    public float ReloadRemaining(MechWeaponSlot slot) => equipment != null ? (HasWeapon(slot) ? Mathf.Max(0, equipment.GetPart(slot).ReadyAt - Time.time) : 0) : reloadTimers[(int)slot];
     Collider[] meleeCandidates = new Collider[32];
     readonly HashSet<CombatHealth> damaged = new HashSet<CombatHealth>();
     LineRenderer meleeOutline;
@@ -56,10 +68,17 @@ public class MechCombatController : MonoBehaviour
     public event Action<MechProjectile> ShotFired;
     public event Action<MechProjectileImpact> ProjectileImpact;
     public event Action<int> MeleePerformed;
-    public Vector3 MuzzlePosition => transform.TransformPoint(muzzleOffset);
+    MechWeaponSlot lastFiredSlot = MechWeaponSlot.Cannon;
+    public Vector3 MuzzlePosition => GetMuzzlePosition(lastFiredSlot);
+    public Vector3 GetMuzzlePosition(MechWeaponSlot slot)
+    {
+        var part = equipment != null ? equipment.GetPart(slot) : null;
+        return part != null && part.muzzle != null ? part.muzzle.position : transform.TransformPoint(muzzleOffset);
+    }
 
     void Awake()
     {
+        equipment = GetComponent<MechEquipmentCombat>();
         targeting = GetComponent<MechTargetLockController>();
         movementCapsule = GetComponent<CharacterController>();
         movement = GetComponent<MechMovementController>();
@@ -83,6 +102,7 @@ public class MechCombatController : MonoBehaviour
 
     void OnDisable()
     {
+        if (barrageRunner != null) barrageRunner.CancelAll();
         fireAction?.Disable();
         meleeAction?.Disable();
         cannonAction?.Disable();
@@ -136,24 +156,30 @@ public class MechCombatController : MonoBehaviour
 
     public MechProjectile TryFire(MechWeaponSlot slot)
     {
+        if (equipment != null && isActiveAndEnabled)
+        {
+            var ability = equipment.GetAbility(slot);
+            if (ability != null) { ability.TryActivate(); return null; }
+        }
         int index = (int)slot;
-        if (!isActiveAndEnabled || index < 0 || index >= 3 || reloadTimers[index] > 0f || remainingAmmo[index] <= 0) return null;
+        if (!isActiveAndEnabled || index < 0 || index >= 3 || !HasWeapon(slot) || ReloadRemaining(slot) > 0f || AmmoRemaining(slot) <= 0) return null;
         var weapon = GetWeapon(slot);
         if (gameplayCamera == null) gameplayCamera = Camera.main;
         if (gameplayCamera == null) return null;
-        Vector3 muzzle = transform.TransformPoint(muzzleOffset);
+        lastFiredSlot = slot;
+        Vector3 muzzle = GetMuzzlePosition(slot);
         Vector3 aimPoint = GetAimPoint(weapon.maximumRange);
         Vector3 direction = (aimPoint - muzzle).normalized;
         if (direction.sqrMagnitude < 0.001f) direction = gameplayCamera.transform.forward;
-        reloadTimers[index] = weapon.reloadSeconds;
-        remainingAmmo[index]--;
+        if (equipment != null) equipment.GetPart(slot).Consume(weapon.reloadSeconds, true);
+        else { reloadTimers[index] = weapon.reloadSeconds; remainingAmmo[index]--; }
         var shot = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         shot.name = weapon.displayName + " Projectile";
         var collider = shot.GetComponent<Collider>();
         collider.enabled = false;
         Destroy(collider);
         // No projectile collider or rigidbody: swept sphere queries resolve its motion.
-        shot.transform.position = transform.position + Vector3.up * muzzleOffset.y;
+        shot.transform.position = new Vector3(transform.position.x, muzzle.y, transform.position.z);
         shot.transform.localScale = Vector3.one * (weapon.projectileRadius * 2f);
         var renderer = shot.GetComponent<Renderer>();
         if (combatMaterial != null) renderer.sharedMaterial = combatMaterial;
@@ -166,6 +192,16 @@ public class MechCombatController : MonoBehaviour
         // Subscribe before Launch: a wall intersecting the muzzle can impact immediately.
         projectile.ImpactResolved += ForwardProjectileImpact;
         projectile.ConfigureRangeAndExplosion(weapon.effectiveRange, weapon.explosionRadius, combatMaterial, weapon.color);
+        if (slot == MechWeaponSlot.Cannon && spiralBarrage)
+        {
+            if (barrageRunner == null)
+            {
+                barrageRunner = GetComponent<CannonSpiralBarrage>();
+                if (barrageRunner == null) barrageRunner = gameObject.AddComponent<CannonSpiralBarrage>();
+                barrageRunner.ImpactResolved += ForwardProjectileImpact;
+            }
+            projectile.ConfigureSpiralBarrage(barrageRunner, spiralSettings);
+        }
         projectile.Launch(transform, direction, weapon.projectileSpeed, weapon.damage, weapon.projectileRadius,
             weapon.maximumRange, hitLayers, muzzle);
         ShotFired?.Invoke(projectile);
@@ -192,8 +228,12 @@ public class MechCombatController : MonoBehaviour
 
     public bool TryMelee()
     {
-        if (!isActiveAndEnabled || meleeTimer > 0f || meleePending) return false;
-        meleeTimer = meleeCooldown;
+        if (isActiveAndEnabled && !HasSword && equipment != null) return equipment.TryMeleeAbility();
+        if (!isActiveAndEnabled || !HasSword || meleeTimer > 0f || meleePending
+            || equipment != null && equipment.Sword.ReadyAt > Time.time) return false;
+        strikeDamage = equipment != null ? equipment.Sword.data.GetStat(StatType.Damage) : meleeDamage;
+        meleeTimer = equipment != null ? Mathf.Max(0.01f, equipment.Sword.data.GetStat(StatType.CooldownReload)) : meleeCooldown;
+        if (equipment != null) equipment.Sword.Consume(meleeTimer, false);
         meleeCameraTimer = meleeCameraHold;
         strikeRotation = transform.rotation;
         meleeExtension = 0f;
@@ -252,7 +292,7 @@ public class MechCombatController : MonoBehaviour
     {
         if (!meleePending || deltaTime <= 0f) return;
         if (assistedTarget == null || !assistedTarget.isActiveAndEnabled
-            || movement != null && (movement.IsQuickBoosting || !movement.IsGrounded))
+            || !HasSword || movement != null && (movement.IsQuickBoosting || !movement.IsGrounded))
         {
             meleePending = false;
             meleeExtension = 0f;
@@ -286,7 +326,7 @@ public class MechCombatController : MonoBehaviour
             var health = candidate.GetComponentInParent<CombatHealth>();
             if (health == null || damaged.Contains(health) || BlockedByWorld(candidate)) continue;
             damaged.Add(health);
-            if (health.ApplyDamage(meleeDamage)) hitCount++;
+            if (health.ApplyDamage(strikeDamage)) hitCount++;
         }
         Array.Clear(meleeCandidates, 0, count);
         meleePending = false;
@@ -309,7 +349,9 @@ public class MechCombatController : MonoBehaviour
     Vector3 AbsScale()
     {
         var scale = transform.lossyScale;
-        return new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z));
+        float reachScale = equipment != null && equipment.HasSword
+            ? Mathf.Max(0.01f, equipment.Sword.data.GetStat(StatType.Range) * equipment.Sword.data.metresPerGolem / 4f) : 1f;
+        return new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z) * reachScale);
     }
 
     void CreateMeleeOutline()
@@ -338,8 +380,8 @@ public class MechCombatController : MonoBehaviour
     {
         if (meleeOutline == null) return;
         if (!meleePending && flashTimer <= 0f) strikeRotation = transform.rotation;
-        meleeOutline.enabled = showMeleeBox;
-        groundOutline.enabled = showMeleeBox;
+        meleeOutline.enabled = showMeleeBox && HasSword;
+        groundOutline.enabled = showMeleeBox && HasSword;
         // Walk every edge of the box, retracing only the edges needed to connect them.
         meleeOutline.positionCount = BoxCorners.Length;
         for (int i = 0; i < BoxCorners.Length; i++)
@@ -364,8 +406,15 @@ public class MechCombatController : MonoBehaviour
         }
     }
 
+    public void CancelEquippedMelee()
+    {
+        meleePending = false;
+        meleeExtension = meleeCameraTimer = flashTimer = 0;
+    }
+
     void OnValidate()
     {
+        spiralSettings = spiralSettings.Validated();
         meleeSize = Vector3.Max(Vector3.one * 0.01f, meleeSize);
         meleeCooldown = Mathf.Max(0.01f, meleeCooldown);
         maximumMeleeApproach = Mathf.Max(0f, maximumMeleeApproach);

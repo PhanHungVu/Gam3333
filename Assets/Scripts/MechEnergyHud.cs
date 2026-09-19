@@ -7,6 +7,8 @@ public class MechEnergyHud : MonoBehaviour
     [SerializeField] Image fill;
     [SerializeField] Text label;
 
+    public void Bind(MechEnergyController controller) => energy = controller;
+
     void LateUpdate()
     {
         if (energy == null)

@@ -5,12 +5,14 @@ using UnityEngine.UI;
 public class MechWeaponHud : MonoBehaviour
 {
     MechCombatController combat;
+    MechEquipmentCombat equipment;
     Canvas canvas;
     Text readout;
 
     void Awake()
     {
         combat = GetComponent<MechCombatController>();
+        equipment = GetComponent<MechEquipmentCombat>();
         var root = new GameObject("Weapon HUD", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
         root.transform.SetParent(transform, false);
         canvas = root.GetComponent<Canvas>();
@@ -25,7 +27,7 @@ public class MechWeaponHud : MonoBehaviour
         var rect = panel.GetComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = rect.pivot = Vector2.one;
         rect.anchoredPosition = new Vector2(-24, -24);
-        rect.sizeDelta = new Vector2(400, 110);
+        rect.sizeDelta = new Vector2(420, equipment != null ? 132 : 110);
         panel.GetComponent<Image>().color = new Color(0.03f, 0.05f, 0.07f, 0.8f);
         panel.GetComponent<Image>().raycastTarget = false;
         var label = new GameObject("Ammo and Reload", typeof(RectTransform), typeof(Text), typeof(Shadow));
@@ -48,6 +50,9 @@ public class MechWeaponHud : MonoBehaviour
 
     string WeaponLine(MechWeaponSlot slot, string key)
     {
+        var ability = equipment != null ? equipment.GetAbility(slot) : null;
+        if (ability != null) return key + "  " + ability.name.ToUpperInvariant() + (ability.CooldownRemaining > 0 ? $"  {ability.CooldownRemaining:0.0}s" : "  READY");
+        if (!combat.HasWeapon(slot)) return key + "  NO PART EQUIPPED";
         int ammo = combat.AmmoRemaining(slot);
         float reload = combat.ReloadRemaining(slot);
         string state = ammo == 0 ? "EMPTY" : reload > 0 ? $"RELOAD {reload:0.0}s" : "READY";
@@ -56,7 +61,7 @@ public class MechWeaponHud : MonoBehaviour
 
     void LateUpdate()
     {
-        readout.text = "RMB  SWORD\n" + WeaponLine(MechWeaponSlot.ThrowingAxe, "LMB") + "\n"
-            + WeaponLine(MechWeaponSlot.Cannon, "E") + "\n" + WeaponLine(MechWeaponSlot.Crossbow, "Q");
+        readout.text = (combat.HasSword ? "RMB  SWORD\n" : equipment != null && equipment.MeleeAbility != null ? "RMB  " + equipment.MeleeAbility.name.ToUpperInvariant() + "\n" : "RMB  NO SWORD EQUIPPED\n") + WeaponLine(MechWeaponSlot.ThrowingAxe, "LMB") + "\n"
+            + WeaponLine(MechWeaponSlot.Cannon, "E") + "\n" + WeaponLine(MechWeaponSlot.Crossbow, "Q") + (equipment != null ? "\nF  EQUIP NEARBY PART" : "");
     }
 }

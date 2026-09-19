@@ -10,6 +10,8 @@ public enum StatType
     Damage, MagSize, Ammo, CooldownReload, Range, SingleShot, AutoAim
 }
 
+public enum MechPartWeapon { None, Sword, ThrowingAxe, Cannon, Crossbow }
+
 [System.Serializable]
 public struct StatEntry
 {
@@ -24,9 +26,15 @@ public class PartData : ScriptableObject
     public string partName;
     [TextArea] public string description;
     public List<StatEntry> stats;
+    [Header("Combat integration (Range stat is in golem lengths)")]
+    public MechPartWeapon weapon;
+    [Min(0.01f)] public float metresPerGolem = 4f;
+    [Min(1f)] public float maximumRangeMultiplier = 1.5f;
+    [Min(0f)] public float cannonExplosionRadius = 6f;
 
     public float GetStat(StatType type)
     {
+        if (stats == null) return 0f;
         foreach (var s in stats)
             if (s.type == type) return s.value;
         return 0f;

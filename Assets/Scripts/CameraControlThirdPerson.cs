@@ -131,6 +131,24 @@ public class CameraControlThirdPerson : MonoBehaviour
         return combatImpulseListener;
     }
 
+    public Transform Target => target;
+    public void BindTarget(Transform player)
+    {
+        target = player;
+        if (cameraTarget == null) return; // Before Awake, preserve normal rig initialization.
+        cameraTarget.SetParent(player, false);
+        movementController = player.GetComponent<MechMovementController>();
+        combatController = player.GetComponent<MechCombatController>();
+        movementCapsule = player.GetComponent<CharacterController>();
+        targetingController = player.GetComponent<MechTargetLockController>();
+        previousTargetPosition = player.position;
+        cameraYaw = player.eulerAngles.y;
+        cameraPitch = initialPitch;
+        wasHardLocked = wasTargeting = false;
+        currentLateralOffset = meleeFraming = 0;
+        cinemachineCamera.PreviousStateIsValid = false;
+    }
+
     void Awake()
     {
         if (target == null)

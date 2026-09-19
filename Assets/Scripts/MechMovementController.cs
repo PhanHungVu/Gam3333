@@ -95,6 +95,8 @@ public class MechMovementController : MonoBehaviour
     public event Action AssaultBoostStarted;
     public event Action AssaultBoostEnded;
 
+    public void BindCamera(Camera camera) => gameplayCamera = camera;
+
     void Awake()
     {
         characterController = GetComponent<CharacterController>();

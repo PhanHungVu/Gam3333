@@ -28,6 +28,7 @@ public static class MechFoundationChecks
     {
         if (!Application.isBatchMode)
             throw new InvalidOperationException("Run these checks in an isolated batch-mode project.");
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene);
         SessionState.SetBool(PendingKey, true);
         EditorApplication.EnterPlaymode();
     }
@@ -83,6 +84,9 @@ public static class MechFoundationChecks
             CheckWeaponLoadout(view);
             CheckInputIsolation();
             CombatFeedbackChecks.Run(Check);
+            SpiralBarrageChecks.Run(Check);
+            MechAbilityChecks.Run(Check);
+            MechPartsChecks.Run(Check);
             Debug.Log("MECH CHECKS COMPLETE: " + checks);
             EditorApplication.Exit(0);
         }

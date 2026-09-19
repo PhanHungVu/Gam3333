@@ -14,7 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PartData
   partId: backweaponA4
   partName: Large Crossbow
-  compatibleSocket: 5
   description: 
   stats:
   - type: 2
@@ -29,3 +28,7 @@ MonoBehaviour:
     value: 10
   - type: 7
     value: 1
+  weapon: 4
+  metresPerGolem: 4
+  maximumRangeMultiplier: 1.5
+  cannonExplosionRadius: 6

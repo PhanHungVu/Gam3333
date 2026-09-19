@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 // One result per resolved impact, emitted only after all gameplay damage is applied.
@@ -7,10 +6,17 @@ public readonly struct MechProjectileImpact
 {
     public readonly MechWeaponSlot Weapon;
     public readonly Vector3 Position;
+    public readonly Vector3 Direction;
     public readonly float Radius;
     public readonly int Hits, Kills;
-    public MechProjectileImpact(MechWeaponSlot weapon, Vector3 position, float radius, int hits, int kills)
-    { Weapon = weapon; Position = position; Radius = radius; Hits = hits; Kills = kills; }
+    public readonly bool DeferConfirmation, Secondary, ConfirmationOnly;
+    public MechProjectileImpact(MechWeaponSlot weapon, Vector3 position, float radius, int hits, int kills,
+        bool deferConfirmation = false, bool secondary = false, bool confirmationOnly = false, Vector3 direction = default)
+    {
+        Weapon = weapon; Position = position; Radius = radius; Hits = hits; Kills = kills;
+        DeferConfirmation = deferConfirmation; Secondary = secondary; ConfirmationOnly = confirmationOnly;
+        Direction = direction;
+    }
 }
 
 // Straight projectile: direction is captured at launch and never tracks a target.
@@ -24,10 +30,16 @@ public class MechProjectile : MonoBehaviour
     bool live;
     RaycastHit[] hits = new RaycastHit[16];
     Collider[] overlaps = new Collider[16];
+    readonly CombatBlast blast = new CombatBlast();
+    CannonSpiralBarrage spiralBarrage;
+    CannonSpiralBarrage.Settings spiralSettings;
     public Vector3 Direction => direction;
     public bool IsLive => live;
     public MechWeaponSlot Weapon { get; set; }
     public event Action<MechProjectileImpact> ImpactResolved;
+
+    public void ConfigureSpiralBarrage(CannonSpiralBarrage barrage, CannonSpiralBarrage.Settings settings)
+    { spiralBarrage = barrage; spiralSettings = settings; }
 
     public void ConfigureRangeAndExplosion(float effective, float blastRadius, Material material, Color color)
     {
@@ -119,47 +131,17 @@ public class MechProjectile : MonoBehaviour
 
     void Impact(Collider collider)
     {
-        var health = collider.GetComponentInParent<CombatHealth>();
+        if (!live) return;
         Vector3 impactPoint = transform.position;
         float impactDamage = damage * RangeMultiplier(travelled, effectiveRange, maximumRange);
         // Mark spent first: callbacks and compound colliders cannot cause repeat damage.
         Finish();
-        var damaged = new HashSet<CombatHealth>();
-        int hitCount = 0, killCount = 0;
-        if (health != null)
-        {
-            ApplyImpactDamage(health, impactDamage, ref hitCount, ref killCount);
-            damaged.Add(health);
-        }
-        if (explosionRadius > 0f)
-        {
-            foreach (var candidate in Physics.OverlapSphere(impactPoint, explosionRadius, collisionLayers, QueryTriggerInteraction.Ignore))
-            {
-                if (IsOwner(candidate)) continue;
-                var nearby = candidate.GetComponentInParent<CombatHealth>();
-                if (nearby == null || damaged.Contains(nearby) || BlastBlocked(impactPoint, candidate)) continue;
-                damaged.Add(nearby);
-                ApplyImpactDamage(nearby, impactDamage, ref hitCount, ref killCount);
-            }
-        }
-        ImpactResolved?.Invoke(new MechProjectileImpact(Weapon, impactPoint, explosionRadius, hitCount, killCount));
+        var result = blast.Resolve(Weapon, impactPoint, explosionRadius, impactDamage, owner, collisionLayers, collider);
+        bool barrageStarted = Weapon == MechWeaponSlot.Cannon && spiralBarrage != null
+            && spiralBarrage.TryBegin(result, impactDamage, direction, owner, collisionLayers, spiralSettings);
+        ImpactResolved?.Invoke(new MechProjectileImpact(Weapon, impactPoint, explosionRadius,
+            result.Hits, result.Kills, deferConfirmation: barrageStarted, direction: direction));
         ImpactResolved = null;
-    }
-
-    static void ApplyImpactDamage(CombatHealth health, float amount, ref int hits, ref int kills)
-    {
-        if (!health.ApplyDamage(amount)) return;
-        hits++;
-        if (health.IsDead) kills++;
-    }
-
-    bool BlastBlocked(Vector3 origin, Collider candidate)
-    {
-        Vector3 offset = candidate.ClosestPoint(origin) - origin;
-        if (offset.sqrMagnitude < 0.0001f) return false;
-        foreach (var hit in Physics.RaycastAll(origin, offset.normalized, offset.magnitude, collisionLayers, QueryTriggerInteraction.Ignore))
-            if (!IsOwner(hit.collider) && hit.collider.GetComponentInParent<CombatHealth>() == null) return true;
-        return false;
     }
 
     void Finish()

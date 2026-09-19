@@ -36,3 +36,5 @@ The bright flash is short, the ring expands to the existing blast radius, and sp
 `Tests/Editor/CombatFeedbackChecks.cs` runs through the existing isolated `MechFoundationChecks.RunBatch` entry point. It checks actual damage/death events, compound colliders, a triple-kill confirmation, inactive enemy roots with surviving presentation, pooled cleanup/cap, visual recoil isolation, optional-asset handling, an immediate muzzle-obstruction impact, and identical gameplay with presentation muted. Existing camera, melee, other weapons, movement, targeting, input lifecycle, and boost regressions run alongside it.
 
 The automated scene/render check uses a temporary copy of `A33`; it does not save enemy test positions back into the working scene. Final comfort tuning of impulse strength, recoil visibility while moving, and audio levels with real clips should be judged during normal interactive play.
+
+See [Parts and Abilities](Parts-and-Abilities.md) for the integrated FullPlayer prefab, swappable weapons, restored Spiral Barrage, and the three optional ability modules.
