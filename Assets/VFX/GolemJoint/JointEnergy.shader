@@ -5,6 +5,7 @@ Shader "Golem/Joint Energy"
         [HDR] _Tint ("Energy Tint", Color) = (0.08, 0.65, 1.6, 1)
         _Ring ("Ring Shape", Range(0, 1)) = 0
         _Segments ("Ring Segments", Float) = 6
+        _JointGlow ("Movement Glow", Float) = 1
     }
     SubShader
     {
@@ -21,12 +22,13 @@ Shader "Golem/Joint Energy"
             struct Attributes { float4 vertex : POSITION; float4 color : COLOR; float2 uv : TEXCOORD0; };
             struct Varyings { float4 position : SV_POSITION; float4 color : COLOR; float2 uv : TEXCOORD0; };
             float4 _Tint;
-            float _Ring, _Segments;
+            float _Ring, _Segments, _JointGlow;
             Varyings vert(Attributes input)
             {
                 Varyings output;
                 output.position = UnityObjectToClipPos(input.vertex);
                 output.color = input.color * _Tint;
+                output.color.rgb *= _JointGlow;
                 output.uv = input.uv;
                 return output;
             }

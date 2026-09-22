@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-/// <summary>Authors ordinary Particle Systems; the resulting prefab needs no runtime scripts.</summary>
+/// <summary>Authors Particle Systems with an optional movement-driven glow.</summary>
 public static class GolemJointEffectFactory
 {
     const string Folder = "Assets/VFX/GolemJoint";
@@ -70,6 +70,7 @@ public static class GolemJointEffectFactory
             renderer.velocityScale = 0.08f;
             Fade(sparks, 0.8f);
 
+            root.AddComponent<GolemJointGlow>();
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             AssetDatabase.SaveAssets();
             Validate(prefab);
