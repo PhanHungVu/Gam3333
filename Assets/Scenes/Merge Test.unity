@@ -313,7 +313,7 @@ GameObject:
   - component: {fileID: 359989206}
   m_Layer: 0
   m_Name: Slalom Pillar 5
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -584,7 +584,7 @@ GameObject:
   - component: {fileID: 544101133}
   m_Layer: 0
   m_Name: Slalom Pillar 3
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1057,6 +1057,55 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &879827024 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3781223206463202102, guid: ff51d93edaedeaa409e7c8f297106bcb, type: 3}
+  m_PrefabInstance: {fileID: 7339388296789629404}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &879827032
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 879827024}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93b527e519074ac46870be4e41caf179, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyAgent
+  target: {fileID: 0}
+  maxSpeed: 6
+  maxForce: 15
+  wanderSpeedFraction: 0.4
+  turnSpeed: 240
+  detectRadius: 40
+  loseRadius: 60
+  arriveRadius: 12
+  attackRange: 6
+  perceptionRadius: 10
+  separationRadius: 3.5
+  separationWeight: 1.5
+  alignmentWeight: 0.4
+  cohesionWeight: 0
+  seekWeight: 1
+  wanderWeight: 1
+  avoidWeight: 2.2
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  bodyRadius: 0.6
+  probeHeight: 1
+  probeDistance: 3
+  skin: 0.05
+  snapToGround: 1
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  snapRange: 2
+  snapSpeed: 12
+  fallGravity: 25
+  debugState: 
 --- !u!1 &1054055415
 GameObject:
   m_ObjectHideFlags: 0
@@ -1213,6 +1262,10 @@ PrefabInstance:
     - target: {fileID: 3053454427299694765, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
       propertyPath: m_Name
       value: FullPlayer_mech_base
+      objectReference: {fileID: 0}
+    - target: {fileID: 8044991099957252597, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
+      propertyPath: partScale
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1440,7 +1493,7 @@ GameObject:
   - component: {fileID: 1258679314}
   m_Layer: 0
   m_Name: Runway End Wall
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1552,7 +1605,7 @@ GameObject:
   - component: {fileID: 1273100694}
   m_Layer: 0
   m_Name: Corridor Wall
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1664,7 +1717,7 @@ GameObject:
   - component: {fileID: 1281979641}
   m_Layer: 0
   m_Name: Slalom Pillar 1
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2031,7 +2084,7 @@ GameObject:
   - component: {fileID: 1356081871}
   m_Layer: 0
   m_Name: Camera Wall
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2143,7 +2196,7 @@ GameObject:
   - component: {fileID: 1369278905}
   m_Layer: 0
   m_Name: Slalom Pillar 4
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2255,7 +2308,7 @@ GameObject:
   - component: {fileID: 1467178335}
   m_Layer: 0
   m_Name: Corridor Corner
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2648,6 +2701,81 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1548283073}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1719337905
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1719337907}
+  - component: {fileID: 1719337906}
+  - component: {fileID: 1719337908}
+  m_Layer: 0
+  m_Name: NavGrid
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1719337906
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1719337905}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00782742a26ea9048b8c449ff4558675, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NavGrid
+  origin: {x: 0, y: 0, z: 0}
+  width: 200
+  depth: 200
+  cellSize: 1
+  obstacleTag: Obstacle
+  bodyRadiusPadding: 0.6
+  stepHeight: 0.3
+  shoulderHeight: 1.6
+  drawBlockedCells: 1
+  drawOpenCells: 1
+  blockedColor: {r: 0.85, g: 0.25, b: 0.2, a: 0.5}
+  openColor: {r: 0.2, g: 0.8, b: 0.3, a: 0.15}
+--- !u!4 &1719337907
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1719337905}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1719337908
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1719337905}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fd6729e6581b814f826170faf1e9a55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FlowField
+  goal: {fileID: 0}
+  rebuildDistance: 3
+  wallAdjacencyCost: 4
+  drawArrows: 1
+  arrowColor: {r: 0.3, g: 0.5, b: 0.95, a: 0.9}
+  gizmoStride: 2
 --- !u!1 &1735031572
 GameObject:
   m_ObjectHideFlags: 0
@@ -3298,7 +3426,7 @@ GameObject:
   - component: {fileID: 2119286456}
   m_Layer: 0
   m_Name: Slalom Pillar 2
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3457,7 +3585,10 @@ PrefabInstance:
     - {fileID: 9007139857449960259, guid: ff51d93edaedeaa409e7c8f297106bcb, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3781223206463202102, guid: ff51d93edaedeaa409e7c8f297106bcb, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 879827032}
   m_SourcePrefab: {fileID: 100100000, guid: ff51d93edaedeaa409e7c8f297106bcb, type: 3}
 --- !u!1001 &8550216008285762272
 PrefabInstance:
@@ -3533,3 +3664,4 @@ SceneRoots:
   - {fileID: 1251375240}
   - {fileID: 1098106125}
   - {fileID: 543154026}
+  - {fileID: 1719337907}
