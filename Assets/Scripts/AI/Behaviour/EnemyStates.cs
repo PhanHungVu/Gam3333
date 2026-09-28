@@ -46,13 +46,28 @@ public sealed class WanderState : EnemyState
     }
 }
 
-// Full-speed chase toward the player - reads the flow field when one exists
-// (Phase 6), so this is the piece that actually solves the corner-stuck problem:
-// the direction now comes from a map that already knows the way around a wall,
-// not from a straight line toward the player that a wall can block.
+// Full-speed chase toward the player. Which way it heads depends on the enemy's
+// Pathing mode (an Inspector dropdown on EnemyAgent, readable live in Play mode):
+//   FlowField - the shared field, routes around walls (Phase 6)
+//   Direct    - straight at the player, reactive avoidance only
+//   Flank     - swing out to one side of the player, then close in
 public sealed class ChaseState : EnemyState
 {
-    public override void Enter() { agent.FaceTarget = false; agent.InAttackRange = false; }
+    const float FlankTimeout = 8f; // give up the swing if it can't be reached (e.g. blocked by a wall)
+
+    bool flankPlanned;
+    bool flankReached;
+    float flankTimer;
+    Vector3 flankOffset; // fixed offset from the player, chosen once per chase
+
+    public override void Enter()
+    {
+        agent.FaceTarget = false;
+        agent.InAttackRange = false;
+        flankPlanned = false;
+        flankReached = false;
+        flankTimer = 0f;
+    }
 
     public override void Tick(float dt)
     {
@@ -62,19 +77,72 @@ public sealed class ChaseState : EnemyState
         if (agent.DistanceToTarget <= agent.ArriveRadius)
         { agent.Fsm.Transition(agent.Arrive); return; }
 
-        Vector3 dir = Steering.Flat(agent.TargetPosition - agent.Position).normalized; // Phase 3 fallback
-
-        var field = FlowField.Instance;
-        if (field != null && field.HasDirection)
+        Vector3 dir;
+        switch (agent.Pathing)
         {
-            Vector3 fieldDir = field.SampleDirection(agent.Position);
-            // A zero result means unreachable or off the grid entirely - keep the
-            // direct line rather than freezing the enemy in place for that case.
-            if (fieldDir != Vector3.zero) dir = fieldDir;
+            case PathingMode.Direct: dir = DirectToPlayer(); break;
+            case PathingMode.Flank: dir = FlankThenField(dt); break;
+            default: dir = FieldOrDirect(); break;
         }
 
         agent.GoalDirection = dir;
         agent.BehaviourForce = Steering.SeekDirection(agent, dir) * agent.SeekWeight;
+    }
+
+    Vector3 DirectToPlayer()
+        => Steering.Flat(agent.TargetPosition - agent.Position).normalized;
+
+    // The shared flow field when it has an answer for this cell; otherwise the direct
+    // line, so an unreachable or off-grid cell never freezes the enemy in place.
+    Vector3 FieldOrDirect()
+    {
+        var field = FlowField.Instance;
+        if (field != null && field.HasDirection)
+        {
+            Vector3 fieldDir = field.SampleDirection(agent.Position);
+            if (fieldDir != Vector3.zero) return fieldDir;
+        }
+        return DirectToPlayer();
+    }
+
+    // Leg 1: head for a point that's diagonally behind the player - both to one side
+    // AND behind their facing, so the path reads as a loop rather than a straight
+    // lateral cut. Leg 2 (once there, or after the timeout): close in toward a point
+    // directly behind the player, so the final approach still comes from behind,
+    // instead of beelining at the player from whatever angle leg 1 ended on.
+    // Both legs are straight lines to an offset point - the flow field only ever
+    // points at the PLAYER'S own cell, not an arbitrary point near them, so neither
+    // leg gets obstacle-routing the way a direct chase does. A wall in the way can
+    // block either leg; that's a real limitation of aiming at an offset point at all.
+    Vector3 FlankThenField(float dt)
+    {
+        Vector3 behind = -agent.TargetForward; // opposite the player's facing
+
+        if (!flankPlanned)
+        {
+            float side = UnityEngine.Random.value < 0.5f ? 1f : -1f; // a group splits left and right
+            Vector3 sideways = Vector3.Cross(Vector3.up, behind) * side;
+            flankOffset = (behind + sideways).normalized * agent.FlankRadius;
+            flankPlanned = true;
+        }
+
+        if (!flankReached)
+        {
+            flankTimer += dt;
+            Vector3 toPoint = Steering.Flat(agent.TargetPosition + flankOffset - agent.Position);
+            if (toPoint.magnitude <= agent.FlankReachDistance || flankTimer >= FlankTimeout)
+                flankReached = true;
+            else
+                return toPoint.normalized;
+        }
+
+        // Closing in: aim at a point just behind the player, not the player directly,
+        // so the enemy keeps approaching from behind rather than cutting back toward
+        // whichever angle is shortest. Once within ArriveRadius of the PLAYER (checked
+        // above, every Tick), the state machine hands off to Arrive as normal.
+        Vector3 closeOffset = behind * Mathf.Max(agent.ArriveRadius * 0.8f, agent.FlankReachDistance);
+        Vector3 toBehind = Steering.Flat(agent.TargetPosition + closeOffset - agent.Position);
+        return toBehind.sqrMagnitude > 1e-4f ? toBehind.normalized : DirectToPlayer();
     }
 }
 

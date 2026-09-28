@@ -5,6 +5,15 @@ using UnityEngine;
 // Add to an enemy: it wanders until the player is close, chases, then arrives at attack range.
 // Kinematic (moves the transform itself), so it needs no Rigidbody/CharacterController.
 // Works on the XZ plane; height follows the ground (see Snap To Ground).
+// Demo switch: how ChaseState decides which way to head. Read every frame, so it can
+// be flipped live in Play mode. A stopgap until the per-type state classes exist.
+public enum PathingMode
+{
+    FlowField, // routes around walls using the shared flow field (default)
+    Direct,    // straight at the player; only reactive avoidance, so walls can trap it
+    Flank      // swing out to one side of the player first, then close in
+}
+
 public sealed class EnemyAgent : MonoBehaviour
 {
     // Every active enemy. Enable/disable keeps this in sync, so CombatHealth's
@@ -38,6 +47,13 @@ public sealed class EnemyAgent : MonoBehaviour
     [SerializeField] float seekWeight = 1f;
     [SerializeField] float wanderWeight = 1f;
     [SerializeField] float avoidWeight = 2.2f;
+
+    [Header("Pathing (demo switch)")]
+    [SerializeField] PathingMode pathingMode = PathingMode.FlowField;
+    [Tooltip("Flank only: how far to the side of the player to swing out. Keep this larger than Arrive Radius or the swing never shows.")]
+    [SerializeField] float flankRadius = 20f;
+    [Tooltip("Flank only: counts as 'reached' within this distance of the swing-out point, then it closes in.")]
+    [SerializeField] float flankReachDistance = 4f;
 
     [Header("Obstacles")]
     [Tooltip("Put enemies on their own layer and exclude it here for cleaner probes.")]
@@ -73,9 +89,15 @@ public sealed class EnemyAgent : MonoBehaviour
     public float AttackRange => attackRange;
     public float SeekWeight => seekWeight;
     public float WanderWeight => wanderWeight;
+    public PathingMode Pathing => pathingMode;
+    public float FlankRadius => flankRadius;
+    public float FlankReachDistance => flankReachDistance;
 
     public bool HasTarget => target != null;
     public Vector3 TargetPosition => target != null ? target.position : transform.position;
+    // Flat (XZ) facing direction of whatever's being chased - needed for "behind the
+    // player", which depends on which way they're facing, not on where the enemy is.
+    public Vector3 TargetForward => target != null ? Steering.Flat(target.forward).normalized : Vector3.forward;
     public float DistanceToTarget { get; private set; } = float.PositiveInfinity;
 
     // ---- written by the states ----
