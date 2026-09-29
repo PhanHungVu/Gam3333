@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PartData
   partId: backweaponA3
   partName: Cannon
-  description: 
+  description: 'single shot med range, aoe '
   stats:
   - type: 2
     value: 100
@@ -29,6 +29,7 @@ MonoBehaviour:
   - type: 7
     value: 1
   weapon: 3
+  ability: 0
   metresPerGolem: 4
   maximumRangeMultiplier: 1.5
   cannonExplosionRadius: 6
