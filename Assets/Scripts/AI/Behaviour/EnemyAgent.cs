@@ -70,6 +70,10 @@ public sealed class EnemyAgent : MonoBehaviour
     [SerializeField] float snapSpeed = 12f;
     [Tooltip("Only used for the off-a-ledge fallback below, not the normal ramp-following case.")]
     [SerializeField] float fallGravity = 25f; // matches the mech's own Gravity magnitude, for a consistent feel
+    [Tooltip("Fixed distance from this model's pivot down to its feet - a property of the mesh, not of wherever it spawns. For the current cube enemy this is 1.")]
+    [SerializeField] float pivotHeight = 1f;
+    [Tooltip("Matches the Plane's Y position (0). Change this if the floor ever moves, or if a level ever has more than one flat height.")]
+    [SerializeField] float groundY = 0f;
 
     [Header("Debug (read-only)")]
     [SerializeField] string debugState;
@@ -113,7 +117,6 @@ public sealed class EnemyAgent : MonoBehaviour
     public ArriveState Arrive { get; } = new ArriveState();
 
     Vector3 velocity;
-    float groundOffset;
     bool hasGround;
     float fallSpeed; // accumulated downward speed while off a ledge (fallback case only)
     float nextTargetSearch;
@@ -136,11 +139,14 @@ public sealed class EnemyAgent : MonoBehaviour
 
     void Start()
     {
-        // Remember how high the pivot sits above the ground, so snapping works
-        // whether the pivot is at the feet or the centre of the model.
-        hasGround = Physics.Raycast(transform.position + Vector3.up * 0.5f, Vector3.down, out RaycastHit hit,
-            0.5f + 10f, groundMask, QueryTriggerInteraction.Ignore);
-        if (hasGround) groundOffset = transform.position.y - hit.point.y;
+        // Don't trust the Y this spawned at - a spawn point can sit above the real
+        // floor (on a pillar, say), and if we treated that as correct we'd float
+        // there forever. This scene has one flat floor, so snap straight to the
+        // known groundY instead of measuring anything - no raycast needed.
+        Vector3 p = transform.position;
+        p.y = groundY + pivotHeight;
+        transform.position = p;
+        hasGround = true; // the ongoing SnapToGround below still raycasts every frame on its own
     }
 
     void Update()
@@ -254,7 +260,7 @@ public sealed class EnemyAgent : MonoBehaviour
                 groundMask, QueryTriggerInteraction.Ignore))
         {
             fallSpeed = 0f; // standing on something within range - not falling
-            p.y = Mathf.MoveTowards(p.y, hit.point.y + groundOffset, snapSpeed * dt);
+            p.y = Mathf.MoveTowards(p.y, hit.point.y + pivotHeight, snapSpeed * dt);
             transform.position = p;
             return;
         }
@@ -269,7 +275,7 @@ public sealed class EnemyAgent : MonoBehaviour
                 groundMask, QueryTriggerInteraction.Ignore))
         {
             fallSpeed += fallGravity * dt;
-            float landingY = farHit.point.y + groundOffset;
+            float landingY = farHit.point.y + pivotHeight;
             p.y = Mathf.Max(p.y - fallSpeed * dt, landingY);
             if (p.y <= landingY) fallSpeed = 0f; // landed
             transform.position = p;
