@@ -8,16 +8,8 @@ public class MechMovementController : MonoBehaviour
 {
     public enum MovementState { Grounded, GroundBoost, Airborne, QuickBoost, AssaultBoost }
 
-    struct MovementInput
-    {
-        public Vector2 move;
-        public bool sprint;
-        public bool jump;
-        public bool quickBoost;
-        public bool assaultBoost;
-    }
-
     [SerializeField] InputActionAsset inputActions;
+    [SerializeField] bool readPlayerInput = true;
     InputActionAsset runtimeInputActions;
     [SerializeField] Camera gameplayCamera;
     [SerializeField] MechEnergyController energy;
@@ -70,6 +62,37 @@ public class MechMovementController : MonoBehaviour
     float quickBoostTimer;
     float quickBoostRecoveryTimer;
     bool hasGroundSample;
+    bool locomotionBoostActive;
+    LocomotionModule locomotionModule;
+    RaycastHit[] groundHits = new RaycastHit[16];
+
+    public LocomotionModule CurrentModule => locomotionModule != null && locomotionModule.isActiveAndEnabled
+        ? locomotionModule : null;
+    public LocomotionType LocomotionType => CurrentModule != null ? CurrentModule.Type : LocomotionType.Biped;
+    public LocomotionAnimationData AnimationData { get; private set; }
+    public bool ReadPlayerInput { get => readPlayerInput; set => readPlayerInput = value; }
+    public event Action<LocomotionAnimationData> AnimationDataUpdated;
+
+    // Attachment changes never reset velocity, input instances, energy, or boost timers.
+    public void SetLocomotionModule(LocomotionModule module)
+    {
+        locomotionModule = module;
+        PublishAnimationData(AnimationData.TurnRate, AnimationData.AimDirection);
+    }
+
+    MechLocomotionSettings Settings
+    {
+        get
+        {
+            var defaults = new MechLocomotionSettings
+            {
+                moveSpeed = moveSpeed, sprintSpeed = sprintSpeed, acceleration = acceleration,
+                deceleration = deceleration, boostAcceleration = boostAcceleration,
+                rotationSharpness = rotationSharpness, gravity = gravity, jumpHeight = jumpHeight
+            };
+            return CurrentModule != null ? CurrentModule.Configure(defaults) : defaults;
+        }
+    }
 
     public MovementState State { get; private set; } = MovementState.Airborne;
     public Vector3 Velocity { get; private set; }
@@ -81,7 +104,7 @@ public class MechMovementController : MonoBehaviour
         ? Mathf.Clamp01(1f - quickBoostTimer / ActiveQuickBoostDuration) : 0f;
     // Includes the active boost: this is time until another boost may start.
     public float QuickBoostCooldownRemaining => quickBoostRecoveryTimer;
-    public bool CanQuickBoost => isActiveAndEnabled && IsGrounded
+    public bool CanQuickBoost => isActiveAndEnabled && (CurrentModule != null ? CurrentModule.CanQuickBoost(IsGrounded) : IsGrounded)
         && !IsQuickBoosting && quickBoostRecoveryTimer <= 0f
         && (energy == null || energy.CanSpend(quickBoostEnergyCost));
     public bool IsAssaultBoosting => assaultBoostActive;
@@ -105,6 +128,7 @@ public class MechMovementController : MonoBehaviour
             energy = GetComponent<MechEnergyController>();
         if (gameplayCamera == null)
             gameplayCamera = Camera.main;
+        PublishAnimationData(0f, transform.forward);
     }
 
     void OnEnable()
@@ -144,7 +168,8 @@ public class MechMovementController : MonoBehaviour
         verticalVelocity = 0f;
         Velocity = MoveDirection = FacingDirection = Vector3.zero;
         hasGroundSample = false;
-        SetState(IsGrounded ? MovementState.Grounded : MovementState.Airborne);
+        locomotionBoostActive = false;
+        SetState(IsGrounded ? MovementState.Grounded : MovementState.Airborne, 0f, AnimationData.AimDirection);
         if (wasBoosting)
             QuickBoostEnded?.Invoke();
         if (wasAssaultBoosting)
@@ -153,13 +178,16 @@ public class MechMovementController : MonoBehaviour
 
     void Update()
     {
+        if (!readPlayerInput) return;
         if (gameplayCamera == null)
             gameplayCamera = Camera.main;
-        MovementInput input = new MovementInput
+        MechLocomotionInput input = new MechLocomotionInput
         {
             move = ReadMoveInput(),
             sprint = ReadSprintInput(),
             jump = WasJumpPressedThisFrame(),
+            jumpHeld = jumpAction != null ? jumpAction.IsPressed()
+                : Keyboard.current != null && Keyboard.current.spaceKey.isPressed,
             quickBoost = WasQuickBoostPressedThisFrame(),
             assaultBoost = assaultBoostAction != null ? assaultBoostAction.IsPressed()
                 : Keyboard.current != null && Keyboard.current.leftCtrlKey.isPressed
@@ -167,12 +195,16 @@ public class MechMovementController : MonoBehaviour
         Tick(input, gameplayCamera != null ? gameplayCamera.transform : null, Time.deltaTime);
     }
 
-    void Tick(MovementInput input, Transform cameraTransform, float deltaTime)
+    // Public command boundary also supports AI/replay/test callers without device input.
+    public void Tick(MechLocomotionInput input, Transform cameraTransform, float deltaTime)
     {
-        if (deltaTime <= 0f || !characterController.enabled)
+        if (deltaTime <= 0f || !isActiveAndEnabled || !characterController.enabled)
             return;
 
+        input.move = Vector2.ClampMagnitude(input.move, 1f);
+        MechLocomotionSettings settings = Settings;
         bool wasGrounded = IsGrounded;
+        float previousYaw = transform.eulerAngles.y;
         Vector3 movementDirection = GetCameraRelativeDirection(input.move, cameraTransform);
         MoveDirection = movementDirection;
         bool boostEnded = UpdateQuickBoostTimers(deltaTime);
@@ -185,9 +217,12 @@ public class MechMovementController : MonoBehaviour
         }
         UpdateAssaultBoost(input, movementDirection, cameraTransform, deltaTime);
 
-        UpdatePlanarVelocity(input.sprint, movementDirection, deltaTime);
-        UpdateFacing(movementDirection, cameraTransform, deltaTime);
-        UpdateVerticalVelocity(input.jump, deltaTime);
+        UpdatePlanarVelocity(input.sprint, movementDirection, settings, deltaTime);
+        UpdateFacing(movementDirection, cameraTransform, settings.rotationSharpness, deltaTime);
+        verticalVelocity = CurrentModule != null
+            ? CurrentModule.VerticalVelocity(input, verticalVelocity, IsGrounded,
+                ProbeGround(CurrentModule.GroundProbeDistance), settings, deltaTime)
+            : LocomotionModule.GroundVerticalVelocity(input.jump, verticalVelocity, IsGrounded, settings, deltaTime);
 
         Vector3 velocity = planarVelocity + Vector3.up * verticalVelocity;
         Vector3 previousPosition = transform.position;
@@ -196,7 +231,7 @@ public class MechMovementController : MonoBehaviour
         float landingSpeed = Mathf.Max(0f, -verticalVelocity);
         if ((collisions & CollisionFlags.Above) != 0 && verticalVelocity > 0f)
             verticalVelocity = 0f;
-        if (assaultBoostActive && (!IsGrounded
+        if (assaultBoostActive && (!CanAssaultBoostHere()
             || ((collisions & CollisionFlags.Sides) != 0
                 && Vector3.ProjectOnPlane(Velocity, Vector3.up).magnitude < 1f)))
         {
@@ -205,11 +240,13 @@ public class MechMovementController : MonoBehaviour
         }
         energy?.TickRecovery(deltaTime, !IsQuickBoosting && !assaultBoostActive);
 
+        locomotionBoostActive = input.sprint && movementDirection.sqrMagnitude > 0.001f && CanAssaultBoostHere();
         SetState(IsQuickBoosting ? MovementState.QuickBoost
             : assaultBoostActive ? MovementState.AssaultBoost
             : !IsGrounded ? MovementState.Airborne
             : input.sprint && movementDirection.sqrMagnitude > 0.001f ? MovementState.GroundBoost
-            : MovementState.Grounded);
+            : MovementState.Grounded, Mathf.DeltaAngle(previousYaw, transform.eulerAngles.y) / deltaTime,
+            GetAimDirection(cameraTransform));
 
         // Publish after movement so effects can read this frame's state and velocity.
         if (boostEnded)
@@ -225,7 +262,7 @@ public class MechMovementController : MonoBehaviour
         hasGroundSample = true;
     }
 
-    void UpdatePlanarVelocity(bool sprinting, Vector3 movementDirection, float deltaTime)
+    void UpdatePlanarVelocity(bool sprinting, Vector3 movementDirection, MechLocomotionSettings settings, float deltaTime)
     {
         if (IsQuickBoosting)
         {
@@ -239,18 +276,13 @@ public class MechMovementController : MonoBehaviour
         }
         else
         {
-            float targetSpeed = sprinting ? sprintSpeed : moveSpeed;
-            Vector3 desiredVelocity = movementDirection * targetSpeed;
-            float speedChange = desiredVelocity.sqrMagnitude > planarVelocity.sqrMagnitude
-                ? (sprinting ? boostAcceleration : acceleration)
-                : deceleration;
-
-            planarVelocity = Vector3.MoveTowards(planarVelocity, desiredVelocity,
-                speedChange * deltaTime);
+            planarVelocity = CurrentModule != null
+                ? CurrentModule.PlanarVelocity(planarVelocity, movementDirection, sprinting, settings, deltaTime)
+                : LocomotionModule.GroundPlanarVelocity(planarVelocity, movementDirection, sprinting, settings, deltaTime);
         }
     }
 
-    void UpdateFacing(Vector3 movementDirection, Transform cameraTransform, float deltaTime)
+    void UpdateFacing(Vector3 movementDirection, Transform cameraTransform, float turnSharpness, float deltaTime)
     {
         Vector3 facingDirection = IsQuickBoosting
             ? quickBoostDirection
@@ -266,31 +298,41 @@ public class MechMovementController : MonoBehaviour
         {
             Quaternion targetRotation = Quaternion.LookRotation(facingDirection, Vector3.up);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation,
-                1f - Mathf.Exp(-rotationSharpness * deltaTime));
+                1f - Mathf.Exp(-turnSharpness * deltaTime));
         }
     }
 
-    void UpdateVerticalVelocity(bool jumpPressed, float deltaTime)
+    float ProbeGround(float distance)
     {
-        if (IsGrounded)
+        if (distance <= 0f) return float.PositiveInfinity;
+        Bounds bounds = characterController.bounds;
+        int count;
+        while (true)
         {
-            if (verticalVelocity < 0f)
-                verticalVelocity = -2f;
-            if (jumpPressed)
-                verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            count = Physics.RaycastNonAlloc(bounds.center, Vector3.down, groundHits,
+                distance + bounds.extents.y, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            if (count < groundHits.Length) break;
+            Array.Resize(ref groundHits, groundHits.Length * 2);
         }
-        else
+        float nearest = float.PositiveInfinity;
+        for (int i = 0; i < count; i++)
         {
-            verticalVelocity += gravity * deltaTime;
+            var hit = groundHits[i];
+            if (hit.transform.IsChildOf(transform) || hit.normal.y < 0.5f) continue;
+            nearest = Mathf.Min(nearest, Mathf.Max(0f, hit.distance - bounds.extents.y));
         }
+        return nearest;
     }
 
-    void UpdateAssaultBoost(MovementInput input, Vector3 movementDirection,
+    bool CanAssaultBoostHere() => CurrentModule != null ? CurrentModule.CanAssaultBoost(IsGrounded) : IsGrounded;
+
+    void UpdateAssaultBoost(MechLocomotionInput input, Vector3 movementDirection,
         Transform cameraTransform, float deltaTime)
     {
         if (!input.assaultBoost)
             assaultBoostRequiresRelease = false;
-        if (!input.assaultBoost || !IsGrounded || input.jump || IsQuickBoosting)
+        if (!input.assaultBoost || !CanAssaultBoostHere()
+            || input.jump && (CurrentModule == null || CurrentModule.JumpCancelsAssaultBoost) || IsQuickBoosting)
         {
             if (assaultBoostActive && input.assaultBoost)
                 assaultBoostRequiresRelease = true;
@@ -322,13 +364,12 @@ public class MechMovementController : MonoBehaviour
             assaultBoostTurnRate * Mathf.Deg2Rad * deltaTime, 0f).normalized;
     }
 
-    void SetState(MovementState nextState)
+    void SetState(MovementState nextState, float turnRate, Vector3 aimDirection)
     {
-        if (State == nextState)
-            return;
         MovementState previousState = State;
         State = nextState;
-        StateChanged?.Invoke(previousState, nextState);
+        PublishAnimationData(turnRate, aimDirection);
+        if (previousState != nextState) StateChanged?.Invoke(previousState, nextState);
     }
 
     bool ReadSprintInput()
@@ -360,6 +401,9 @@ public class MechMovementController : MonoBehaviour
         quickBoostDirection = movementDirection.sqrMagnitude > 0.001f
             ? movementDirection.normalized
             : GetCameraForward(cameraTransform);
+        if (CurrentModule != null)
+            quickBoostDirection = CurrentModule.QuickBoostDirection(quickBoostDirection,
+                Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized);
         quickBoostTimer = Mathf.Max(ActiveQuickBoostDuration, 0.01f);
         quickBoostRecoveryTimer = quickBoostTimer + Mathf.Max(quickBoostRecovery, 0f);
     }
@@ -430,7 +474,7 @@ public class MechMovementController : MonoBehaviour
     static Vector3 GetCameraRelativeDirection(Vector2 input, Transform cameraTransform)
     {
         if (cameraTransform == null)
-            return new Vector3(input.x, 0f, input.y).normalized;
+            return Vector3.ClampMagnitude(new Vector3(input.x, 0f, input.y), 1f);
 
         Vector3 forward = Vector3.ProjectOnPlane(cameraTransform.forward, Vector3.up).normalized;
         Vector3 right = Vector3.ProjectOnPlane(cameraTransform.right, Vector3.up).normalized;
@@ -444,5 +488,24 @@ public class MechMovementController : MonoBehaviour
 
         Vector3 forward = Vector3.ProjectOnPlane(cameraTransform.forward, Vector3.up).normalized;
         return forward.sqrMagnitude > 0.001f ? forward : transform.forward;
+    }
+
+    Vector3 GetAimDirection(Transform cameraTransform)
+    {
+        if (targetingController != null && !targetingController.IsFreeAim && targetingController.CurrentTarget != null)
+            return (targetingController.CurrentTarget.AimPosition - transform.position).normalized;
+        return cameraTransform != null ? cameraTransform.forward : transform.forward;
+    }
+
+    void PublishAnimationData(float turnRate, Vector3 aimDirection)
+    {
+        // Ground contact includes a small downward stick velocity. Hide that only in animation data.
+        Vector3 velocity = Velocity;
+        if (IsGrounded && velocity.y < 0f) velocity.y = 0f;
+        if (velocity.sqrMagnitude < 0.0001f) velocity = Vector3.zero;
+        AnimationData = new LocomotionAnimationData(LocomotionType, State, velocity, transform.rotation,
+            IsGrounded, IsQuickBoosting || IsAssaultBoosting || locomotionBoostActive,
+            turnRate, aimDirection);
+        AnimationDataUpdated?.Invoke(AnimationData);
     }
 }

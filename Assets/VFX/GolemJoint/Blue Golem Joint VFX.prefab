@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 2349100094175838907}
   - component: {fileID: 7182991073960841210}
   m_Layer: 0
-  m_Name: Blue Golem Joint
+  m_Name: Blue Golem Joint VFX
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

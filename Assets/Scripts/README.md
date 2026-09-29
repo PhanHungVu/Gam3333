@@ -19,6 +19,8 @@ WASD movement is always camera-relative. Hard lock rotates that camera, so the m
 - `MechTargetable`: supplies an enemy aim position. `AutoMoveTarget` remains an active test-scene helper.
 - `MechEnergyController`: boost costs, delayed recovery, and the energy change signal. The motor advances its recovery exactly once per movement tick.
 - `MechBoostPresentation`: leans only `VisualMech` and manages exhaust/trails. The ignition audio slot is intentionally empty, so dashing is silent. Assign a clip later to enable boost audio; there is no generated fallback sound.
+- `MechEquipmentLocomotion` / `MechLegAnimator`: bind the equipped locomotion strategy and its part-owned animation rig. Fast/heavy legs use the real imported clips without root motion.
+- `MechUpperBodyAnimation`: carries the module's authored body/head pose to the existing visible parts after Animator evaluation. `MechAnimationPoseSource` isolates bone references; `MechPartPoseReceiver` moves upper visuals/sockets without moving the leg socket or gameplay root.
 - `MechEnergyHud`: displays remaining energy on the scene Canvas.
 
 Update order is camera input/toggle/flick in Update (-100), movement in Update, camera rig in LateUpdate (-100), Cinemachine at its default order, selection/lock validation (100), then cursor projection (200). Hard lock suppresses automatic center-crossing switches and retains offscreen targets while the camera catches up. Disabled/destroyed targets, range loss, and loss of eligible colliders replace the selection without changing the selected camera mode.
@@ -31,7 +33,7 @@ During a committed melee swing against a selected enemy within 6 m ahead and nea
 
 ## Extension points
 
-Movement states describe implemented actions only: `Grounded` (idle/walking), `GroundBoost` (sprinting with movement input), `Airborne` (existing jump/fall), `QuickBoost`, and ground-only `AssaultBoost`. There is no flight, sustained ascent, or air dodge. Weapons run independently of the movement state machine.
+Movement states describe implemented actions only: `Grounded` (idle/walking), `GroundBoost` (sprinting with movement input), `Airborne` (jump/fall or hover), `QuickBoost`, and `AssaultBoost`. Equipped locomotion modules decide jump and air-boost support; standalone/biped movement retains ground-only boosts. Weapons run independently of the movement state machine. See [modular locomotion and animated legs](../GroundMovement/Locomotion.md) for fast/heavy animation swapping, hover/tank behavior, debug controls and the animation-data contract.
 
 | Signal | Meaning / intended consumer |
 | --- | --- |
@@ -77,7 +79,7 @@ Camera obstacle handling uses the Default layer and ignores objects tagged Playe
 
 The player root is unscaled and keeps the equivalent upright capsule dimensions. The visible mesh is under `VisualMech/Body` with its original dimensions. Presentation never changes the root transform or collider. The old duplicate BoxCollider has been removed.
 
-The current combat prototype is described below. Enemy attacks, player damage/invulnerability, optimal-range bonuses, equipment, waves, objectives, resource budgets, and drops remain deferred. Aerial movement is outside the current design.
+The current combat prototype is described below. Enemy attacks, player damage/invulnerability, optimal-range bonuses, waves, objectives and resource budgets remain deferred. Equipment is described in [parts and abilities](../Combat/Parts-and-Abilities.md); hover locomotion is an optional equipped strategy.
 
 ## Four-weapon prototype
 
