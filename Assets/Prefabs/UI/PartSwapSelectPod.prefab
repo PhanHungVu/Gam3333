@@ -65,21 +65,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Stat1
-
-    Stat2
-
-    Stat3
-
-    Stat4
-
-    Stat5
-
-    Stat6
-
-    Stat7
-
-    Stat8'
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
   m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
@@ -216,21 +202,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '1
-
-    2
-
-    3
-
-    4
-
-    5
-
-    6
-
-    7
-
-    8'
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
   m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
@@ -367,7 +339,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Part Type
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
   m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
@@ -586,7 +558,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4232325501993384942}
   m_Layer: 5
-  m_Name: PartSwapSelectTemplate
+  m_Name: PartSwapSelectPod
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -615,7 +587,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 250}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 660, y: 359}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &6597990437352109354
@@ -683,7 +655,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Part Name
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
   m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}

@@ -13,11 +13,13 @@ public class EquipManager : MonoBehaviour
     readonly HashSet<Part> nearby = new HashSet<Part>();
     Socket[] sockets;
     Key inputKey;
+    public PartSwapHUDScript partSwapHUDScript;
     public Part GetEquipped(PartCategory category) => equipped.TryGetValue(category, out var part) ? part : null;
     void Awake()
     {
         Enum.TryParse(interactKey.ToString(), out inputKey);
         var starting = GetComponentsInChildren<Part>(true);
+        partSwapHUDScript = GetComponent<PartSwapHUDScript>();
         RefreshSockets();
         foreach (var part in starting)
             if ((part.isStartingPart || part.transform.parent.GetComponent<Socket>() != null) && part.partType == PartCategory.Torso) AttachStarting(part);
@@ -32,6 +34,7 @@ public class EquipManager : MonoBehaviour
     }
     void RefreshSockets() => sockets = GetComponentsInChildren<Socket>(true);
     public void SetNearbyPart(Part part) { if (part != null && !part.isEquipped) nearby.Add(part); }
+    public Part GetNearbyPart() { foreach (var part in nearby) if (part != null && !part.isEquipped && part.gameObject.activeInHierarchy) return part; return null; }
     public void ClearNearbyPart(Part part) => nearby.Remove(part);
     void Update()
     {
@@ -43,7 +46,11 @@ public class EquipManager : MonoBehaviour
             float d = (part.transform.position - transform.position).sqrMagnitude;
             if (d < distance) { distance = d; closest = part; }
         }
-        if (closest != null) TryEquip(closest);
+        //if (closest != null) TryEquip(closest);
+        if (closest != null && partSwapHUDScript != null)
+        {
+            partSwapHUDScript.ShowPartList();
+        }
     }
     public bool TryEquip(Part part)
     {
