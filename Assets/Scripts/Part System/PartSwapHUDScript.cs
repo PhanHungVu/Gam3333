@@ -34,7 +34,7 @@ public class PartSwapHUDScript : MonoBehaviour
     public void ShowPartList()
     {
         ClearActivePods();
-        cameraControl.SetCursorLocked(false);
+        cameraControl.enabled = false;
         partSwapHUDPrefab.SetActive(true);
         for (int i = 0; i < totalPartList.Length; i++)
         {

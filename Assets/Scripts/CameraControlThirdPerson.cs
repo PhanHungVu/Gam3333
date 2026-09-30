@@ -413,7 +413,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     Vector3 ShoulderOffset() => new Vector3((cameraSide + currentLateralOffset)
         * (1f - meleeFraming * meleeShoulderCentering), shoulderHeight, 0f);
 
-    public void SetCursorLocked(bool locked)
+    static void SetCursorLocked(bool locked)
     {
         Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
         Cursor.visible = !locked;
