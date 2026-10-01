@@ -148,7 +148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62100139211d6ef4ba7abec7e8746d2a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
-  enemyPrefab: {fileID: 2909853621632512758, guid: cf0494b58c29c104c9a3e693ea7a1deb, type: 3}
+  enemyPrefab: {fileID: 698147885}
   spawnPoints:
   - {fileID: 1281979640}
   waveInterval: 30
@@ -929,6 +929,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 597716940}
   m_CullTransparentMesh: 1
+--- !u!1 &698147885 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2909853621632512758, guid: cf0494b58c29c104c9a3e693ea7a1deb, type: 3}
+  m_PrefabInstance: {fileID: 1025680197642976064}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &788090588
 GameObject:
   m_ObjectHideFlags: 0
@@ -3539,8 +3544,20 @@ PrefabInstance:
       value: Enemy
       objectReference: {fileID: 0}
     - target: {fileID: 7005050382852158715, guid: cf0494b58c29c104c9a3e693ea7a1deb, type: 3}
+      propertyPath: pathingMode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7005050382852158715, guid: cf0494b58c29c104c9a3e693ea7a1deb, type: 3}
       propertyPath: snapToGround
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7005050382852158715, guid: cf0494b58c29c104c9a3e693ea7a1deb, type: 3}
+      propertyPath: zigzagAmplitude
+      value: 1000
+      objectReference: {fileID: 0}
+    - target: {fileID: 7005050382852158715, guid: cf0494b58c29c104c9a3e693ea7a1deb, type: 3}
+      propertyPath: zigzagLookAhead
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 8698099227329616900, guid: cf0494b58c29c104c9a3e693ea7a1deb, type: 3}
       propertyPath: m_LocalPosition.x
