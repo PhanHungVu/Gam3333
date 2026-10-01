@@ -93,11 +93,12 @@ public class PartSwapHUDScript : MonoBehaviour
                     UnityEngine.UI.Button btn = newPartSwapPod.GetComponentInChildren<UnityEngine.UI.Button>();
                     if (btn != null) btn.interactable = false;
                 }
-                else if (i == 1 && totalPartList.Length > 2)
+                else if (i == 1 && totalPartList[2] != null)
                 {
+                    Debug.Log(totalPartList.Length);
                     text.text = "Left Part";
                 }
-                else if (i == 2 && totalPartList.Length > 2)
+                else if (i == 2 && totalPartList[2] != null)
                 {
                     text.text = "Right Part";
                 }
