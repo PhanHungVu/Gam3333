@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using TMPro;
 using Unity.AppUI.UI;
 using UnityEngine;
@@ -7,7 +6,6 @@ public class PartSwapHUDScript : MonoBehaviour
 {
     GameObject partSwapHUDPrefab;
     private Part[] totalPartList = new Part[3];//0 = new nearby part, 1/2 = equipped parts (1 = left, 2 = right)
-    readonly List<Part> uniqueParts = new List<Part>();
     EquipManager manager;
     public GameObject partSwapHudPodPrefab;
     public CameraControlThirdPerson cameraControl;
