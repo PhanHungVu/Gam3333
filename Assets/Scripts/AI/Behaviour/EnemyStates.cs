@@ -49,24 +49,20 @@ public sealed class WanderState : EnemyState
 // Full-speed chase toward the player. Which way it heads depends on the enemy's
 // Pathing mode (an Inspector dropdown on EnemyAgent, readable live in Play mode):
 //   FlowField - the shared field, routes around walls (Phase 6)
-//   Direct    - straight at the player, reactive avoidance only
-//   Flank     - swing out to one side of the player, then close in
+//   Zigzag    - follows the flow field's own line, weaving left-right as it goes
 public sealed class ChaseState : EnemyState
 {
-    const float FlankTimeout = 8f; // give up the swing if it can't be reached (e.g. blocked by a wall)
-
-    bool flankPlanned;
-    bool flankReached;
-    float flankTimer;
-    Vector3 flankOffset; // fixed offset from the player, chosen once per chase
+    float zigzagTimer;
+    float zigzagNoiseSeed; // random per-chase offset into the noise field, so a group doesn't sway in unison
+    Vector3 zigzagSmoothedDir; // the steady "line" the sway swings around
 
     public override void Enter()
     {
         agent.FaceTarget = false;
         agent.InAttackRange = false;
-        flankPlanned = false;
-        flankReached = false;
-        flankTimer = 0f;
+        zigzagTimer = 0f;
+        zigzagNoiseSeed = UnityEngine.Random.value * 1000f; // a wide spread so enemies sample unrelated parts of the noise
+        zigzagSmoothedDir = Vector3.zero; // sentinel: next ZigzagField call snaps to the first real sample
     }
 
     public override void Tick(float dt)
@@ -80,10 +76,15 @@ public sealed class ChaseState : EnemyState
         Vector3 dir;
         switch (agent.Pathing)
         {
-            case PathingMode.Direct: dir = DirectToPlayer(); break;
-            case PathingMode.Flank: dir = FlankThenField(dt); break;
+            case PathingMode.Zigzag: dir = ZigzagField(dt); break;
             default: dir = FieldOrDirect(); break;
         }
+
+        // Zigzag only: face the player regardless of which way the swing is
+        // currently carrying the enemy, so it reads as sidestepping rather than
+        // turning side to side with every swing. Other modes keep facing wherever
+        // they're actually moving, as before.
+        agent.FaceTarget = agent.Pathing == PathingMode.Zigzag;
 
         agent.GoalDirection = dir;
         agent.BehaviourForce = Steering.SeekDirection(agent, dir) * agent.SeekWeight;
@@ -105,44 +106,32 @@ public sealed class ChaseState : EnemyState
         return DirectToPlayer();
     }
 
-    // Leg 1: head for a point that's diagonally behind the player - both to one side
-    // AND behind their facing, so the path reads as a loop rather than a straight
-    // lateral cut. Leg 2 (once there, or after the timeout): close in toward a point
-    // directly behind the player, so the final approach still comes from behind,
-    // instead of beelining at the player from whatever angle leg 1 ended on.
-    // Both legs are straight lines to an offset point - the flow field only ever
-    // points at the PLAYER'S own cell, not an arbitrary point near them, so neither
-    // leg gets obstacle-routing the way a direct chase does. A wall in the way can
-    // block either leg; that's a real limitation of aiming at an offset point at all.
-    Vector3 FlankThenField(float dt)
+    // Same aim-point structure as before: project out ahead along a smoothed version
+    // of the flow field's direction, then push that point sideways. The difference
+    // is what generates the sideways amount - Perlin noise instead of a sine wave.
+    // A sine wave repeats identically every cycle, which reads as scripted once you
+    // watch it for a few seconds. Perlin noise is just as smooth, but never repeats,
+    // so the same visible sway doesn't settle into an obviously mechanical pattern.
+    Vector3 ZigzagField(float dt)
     {
-        Vector3 behind = -agent.TargetForward; // opposite the player's facing
+        Vector3 rawDir = FieldOrDirect();
+        if (rawDir.sqrMagnitude < 1e-6f) return rawDir;
 
-        if (!flankPlanned)
-        {
-            float side = UnityEngine.Random.value < 0.5f ? 1f : -1f; // a group splits left and right
-            Vector3 sideways = Vector3.Cross(Vector3.up, behind) * side;
-            flankOffset = (behind + sideways).normalized * agent.FlankRadius;
-            flankPlanned = true;
-        }
+        zigzagSmoothedDir = zigzagSmoothedDir == Vector3.zero
+            ? rawDir
+            : Vector3.Slerp(zigzagSmoothedDir, rawDir, dt * 2f).normalized; // ~0.5s to mostly catch up to a new direction
 
-        if (!flankReached)
-        {
-            flankTimer += dt;
-            Vector3 toPoint = Steering.Flat(agent.TargetPosition + flankOffset - agent.Position);
-            if (toPoint.magnitude <= agent.FlankReachDistance || flankTimer >= FlankTimeout)
-                flankReached = true;
-            else
-                return toPoint.normalized;
-        }
+        zigzagTimer += dt;
+        // PerlinNoise returns roughly [0,1]; remap to [-1,1] so it swings both sides
+        // of the line, not just to one side of it.
+        float noise = Mathf.PerlinNoise(zigzagNoiseSeed, zigzagTimer * agent.ZigzagNoiseSpeed);
+        float lateral = (noise * 2f - 1f) * agent.ZigzagAmplitude;
 
-        // Closing in: aim at a point just behind the player, not the player directly,
-        // so the enemy keeps approaching from behind rather than cutting back toward
-        // whichever angle is shortest. Once within ArriveRadius of the PLAYER (checked
-        // above, every Tick), the state machine hands off to Arrive as normal.
-        Vector3 closeOffset = behind * Mathf.Max(agent.ArriveRadius * 0.8f, agent.FlankReachDistance);
-        Vector3 toBehind = Steering.Flat(agent.TargetPosition + closeOffset - agent.Position);
-        return toBehind.sqrMagnitude > 1e-4f ? toBehind.normalized : DirectToPlayer();
+        Vector3 perpendicular = Vector3.Cross(Vector3.up, zigzagSmoothedDir); // unit length: both inputs unit and perpendicular
+        Vector3 aimPoint = agent.Position + zigzagSmoothedDir * agent.ZigzagLookAhead + perpendicular * lateral;
+
+        Vector3 toAim = Steering.Flat(aimPoint - agent.Position);
+        return toAim.sqrMagnitude > 1e-6f ? toAim.normalized : zigzagSmoothedDir;
     }
 }
 

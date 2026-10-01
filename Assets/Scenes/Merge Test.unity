@@ -3509,6 +3509,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3288396653387323531, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
+      propertyPath: data
+      value: 
+      objectReference: {fileID: 11400000, guid: 8ec1d572786d6d54ca5b1e61c52ee8f5, type: 2}
+    - target: {fileID: 3288396653387323531, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
+      propertyPath: isStartingPart
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8678832782221385882, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
       propertyPath: m_Name
       value: arm_mace
@@ -3587,6 +3595,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 772186069702846714, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
+      propertyPath: data
+      value: 
+      objectReference: {fileID: 11400000, guid: 0ab9726b31e49c948a1f584e15cb5d16, type: 2}
+    - target: {fileID: 772186069702846714, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
+      propertyPath: isStartingPart
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2332024753439568597, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_Name
       value: arm_crossbow

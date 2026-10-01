@@ -10,8 +10,7 @@ using UnityEngine;
 public enum PathingMode
 {
     FlowField, // routes around walls using the shared flow field (default)
-    Direct,    // straight at the player; only reactive avoidance, so walls can trap it
-    Flank      // swing out to one side of the player first, then close in
+    Zigzag     // follows the flow field's own line, swaying left-right as it goes
 }
 
 public sealed class EnemyAgent : MonoBehaviour
@@ -50,10 +49,12 @@ public sealed class EnemyAgent : MonoBehaviour
 
     [Header("Pathing (demo switch)")]
     [SerializeField] PathingMode pathingMode = PathingMode.FlowField;
-    [Tooltip("Flank only: how far to the side of the player to swing out. Keep this larger than Arrive Radius or the swing never shows.")]
-    [SerializeField] float flankRadius = 20f;
-    [Tooltip("Flank only: counts as 'reached' within this distance of the swing-out point, then it closes in.")]
-    [SerializeField] float flankReachDistance = 4f;
+    [Tooltip("Zigzag only: how far sideways (in units) the aim point can swing off the flow field's line. Bigger = a more obvious sway.")]
+    [SerializeField] float zigzagAmplitude = 6f;
+    [Tooltip("Zigzag only: how fast the underlying noise changes. Keep this moderate - too fast and velocity can't keep up with the sway (same issue as a fast sine wave would have).")]
+    [SerializeField] float zigzagNoiseSpeed = 0.5f;
+    [Tooltip("Zigzag only: how far ahead along the line the aim point projects. Smaller = sharper, more visible curves; larger = gentler sweeps.")]
+    [SerializeField] float zigzagLookAhead = 6f;
 
     [Header("Obstacles")]
     [Tooltip("Put enemies on their own layer and exclude it here for cleaner probes.")]
@@ -94,14 +95,12 @@ public sealed class EnemyAgent : MonoBehaviour
     public float SeekWeight => seekWeight;
     public float WanderWeight => wanderWeight;
     public PathingMode Pathing => pathingMode;
-    public float FlankRadius => flankRadius;
-    public float FlankReachDistance => flankReachDistance;
+    public float ZigzagAmplitude => zigzagAmplitude;
+    public float ZigzagNoiseSpeed => zigzagNoiseSpeed;
+    public float ZigzagLookAhead => zigzagLookAhead;
 
     public bool HasTarget => target != null;
     public Vector3 TargetPosition => target != null ? target.position : transform.position;
-    // Flat (XZ) facing direction of whatever's being chased - needed for "behind the
-    // player", which depends on which way they're facing, not on where the enemy is.
-    public Vector3 TargetForward => target != null ? Steering.Flat(target.forward).normalized : Vector3.forward;
     public float DistanceToTarget { get; private set; } = float.PositiveInfinity;
 
     // ---- written by the states ----
