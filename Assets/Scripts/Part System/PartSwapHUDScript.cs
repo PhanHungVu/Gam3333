@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using Unity.AppUI.UI;
 using UnityEngine;
@@ -6,6 +7,7 @@ public class PartSwapHUDScript : MonoBehaviour
 {
     GameObject partSwapHUDPrefab;
     private Part[] totalPartList = new Part[3];//0 = new nearby part, 1/2 = equipped parts (1 = left, 2 = right)
+    readonly List<Part> uniqueParts = new List<Part>();
     EquipManager manager;
     public GameObject partSwapHudPodPrefab;
     public CameraControlThirdPerson cameraControl;
@@ -42,7 +44,7 @@ public class PartSwapHUDScript : MonoBehaviour
         {
             totalPartList[i] = null;
         }
-        var nearbyPart = manager.GetNearbyPart();
+        var nearbyPart = manager.GetSelectedPart();
         if (nearbyPart == null) return;
         totalPartList[0] = nearbyPart;
         PartCategory category = totalPartList[0].partType;
@@ -80,8 +82,8 @@ public class PartSwapHUDScript : MonoBehaviour
         TMP_Text[] texts = newPartSwapPod.GetComponentsInChildren<TMP_Text>();
 
         //set button for equipped part to swap with new part, do not activate new button
-        var selectedPart = manager.GetNearbyPart(); //change later
-        newPartSwapPod.GetComponent<PartSwapSelectPodScript>().SetStakeholders(manager, this, selectedPart);
+        var selectedPart = manager.GetSelectedPart();
+        newPartSwapPod.GetComponent<PartSwapSelectPodScript>().SetStakeholders(manager, this, selectedPart); //selectedpart is still the closest part change it
 
         foreach (TMP_Text text in texts)
         {

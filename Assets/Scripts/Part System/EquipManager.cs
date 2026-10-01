@@ -33,9 +33,9 @@ public class EquipManager : MonoBehaviour
         if (socket != null && GetEquipped(part.partType) == null) Attach(socket, part);
     }
     void RefreshSockets() => sockets = GetComponentsInChildren<Socket>(true);
-    public void SetNearbyPart(Part part) { if (part != null && !part.isEquipped) nearby.Add(part); }
-    public Part GetNearbyPart() { foreach (var part in nearby) if (part != null && !part.isEquipped && part.gameObject.activeInHierarchy) return part; return null; }
-    public void ClearNearbyPart(Part part) => nearby.Remove(part);
+    public void SetSelectedPart(Part part) { if (part != null && !part.isEquipped) nearby.Add(part); }
+    public Part GetSelectedPart() { foreach (var part in nearby) if (part != null && !part.isEquipped && part.gameObject.activeInHierarchy) return part; return null; }
+    public void ClearSelectedPart(Part part) => nearby.Remove(part);
     void Update()
     {
         if (Time.timeScale <= 0 || Keyboard.current == null || inputKey == Key.None || !Keyboard.current[inputKey].wasPressedThisFrame) return;
@@ -49,7 +49,7 @@ public class EquipManager : MonoBehaviour
         //if (closest != null) TryEquip(closest);
         if (closest != null && partSwapHUDScript != null)
         {
-            partSwapHUDScript.ShowPartList();
+            partSwapHUDScript.ShowPartList(); //tryequip happens in partswapselectpodscript, in partswapselectpod prefab
         }
     }
     public bool TryEquip(Part part)

@@ -5,7 +5,7 @@ public class PartSwapSelectPodScript : MonoBehaviour
 {
     EquipManager manager;
     PartSwapHUDScript partswapper;
-    Part closest;
+    Part selectedPart;
     void Start()
     {
 
@@ -19,7 +19,7 @@ public class PartSwapSelectPodScript : MonoBehaviour
 
     public void Equip()
     {
-        manager.TryEquip(closest);
+        manager.TryEquip(selectedPart);
         partswapper.ClosePartList();
     }
 
@@ -27,6 +27,6 @@ public class PartSwapSelectPodScript : MonoBehaviour
     {
         manager = m;
         partswapper = p;
-        closest = part;
+        selectedPart = part;
     }
 }
