@@ -1,11 +1,14 @@
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class PartSwapSelectPodScript : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    EquipManager manager;
+    PartSwapHUDScript partswapper;
+    Part closest;
     void Start()
     {
-        
+
     }
 
     // Update is called once per frame
@@ -16,6 +19,14 @@ public class PartSwapSelectPodScript : MonoBehaviour
 
     public void Equip()
     {
+        manager.TryEquip(closest);
+        partswapper.ClosePartList();
+    }
 
+    public void SetStakeholders(EquipManager m, PartSwapHUDScript p, Part part)
+    {
+        manager = m;
+        partswapper = p;
+        closest = part;
     }
 }

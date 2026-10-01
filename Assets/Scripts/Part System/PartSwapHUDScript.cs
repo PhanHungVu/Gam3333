@@ -1,13 +1,14 @@
 using TMPro;
+using Unity.AppUI.UI;
 using UnityEngine;
 
 public class PartSwapHUDScript : MonoBehaviour
 {
-    [SerializeField] private GameObject partSwapHUDPrefab;
+    GameObject partSwapHUDPrefab;
     private Part[] totalPartList = new Part[3];//0 = new nearby part, 1/2 = equipped parts (1 = left, 2 = right)
-    [SerializeField] private EquipManager manager;
+    EquipManager manager;
     public GameObject partSwapHudPodPrefab;
-    CameraControlThirdPerson cameraControl;
+    public CameraControlThirdPerson cameraControl;
     GameObject newPartPos;
     GameObject equippedPartPos1;
     GameObject equippedPartPos2;
@@ -16,7 +17,8 @@ public class PartSwapHUDScript : MonoBehaviour
     private void Awake()
     {
         manager = GetComponent<EquipManager>();
-        cameraControl = GetComponent<CameraControlThirdPerson>();
+        GameObject cam = GameObject.FindWithTag("MainCamera");
+        cameraControl = cam.GetComponent<CameraControlThirdPerson>();
         partSwapHUDPrefab = GameObject.Find("Canvas/PartSwapHUD");
         partSwapHUDPrefab.SetActive(false);
         equippedPartPos1 = partSwapHUDPrefab.transform.Find("EquippedPartPos1").gameObject;
@@ -28,13 +30,13 @@ public class PartSwapHUDScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
+        
     }
 
     public void ShowPartList()
     {
         ClearActivePods();
-        cameraControl.enabled = false;
+        cameraControl.enabled = false;  
         partSwapHUDPrefab.SetActive(true);
         for (int i = 0; i < totalPartList.Length; i++)
         {
@@ -74,8 +76,12 @@ public class PartSwapHUDScript : MonoBehaviour
     public void InitPod(GameObject gObject, int i)
     {
         Transform partPos = gObject.transform;
-        GameObject newPartSwapHud = Instantiate(partSwapHudPodPrefab, partPos);
-        TMP_Text[] texts = newPartSwapHud.GetComponentsInChildren<TMP_Text>();
+        GameObject newPartSwapPod = Instantiate(partSwapHudPodPrefab, partPos); 
+        TMP_Text[] texts = newPartSwapPod.GetComponentsInChildren<TMP_Text>();
+
+        //set button for equipped part to swap with new part, do not activate new button
+        var selectedPart = manager.GetNearbyPart(); //change later
+        newPartSwapPod.GetComponent<PartSwapSelectPodScript>().SetStakeholders(manager, this, selectedPart);
 
         foreach (TMP_Text text in texts)
         {
@@ -84,16 +90,18 @@ public class PartSwapHUDScript : MonoBehaviour
                 if (i == 0)
                 {
                     text.text = "New Part";
+                    UnityEngine.UI.Button btn = newPartSwapPod.GetComponentInChildren<UnityEngine.UI.Button>();
+                    if (btn != null) btn.interactable = false;
                 }
-                if (i == 1)
+                else if (i == 1 && totalPartList.Length > 2)
                 {
                     text.text = "Left Part";
                 }
-                if (i == 2)
+                else if (i == 2 && totalPartList.Length > 2)
                 {
                     text.text = "Right Part";
                 }
-                if (i == 3)
+                else
                 {
                     text.text = "Equipped Part";
                 }
@@ -134,5 +142,12 @@ public class PartSwapHUDScript : MonoBehaviour
                 }
             }
         }
+    }
+
+    public void ClosePartList()
+    {
+        ClearActivePods();
+        partSwapHUDPrefab.SetActive(false);
+        cameraControl.enabled = true;
     }
 }
