@@ -255,8 +255,7 @@ public sealed class EnemyAgent : MonoBehaviour
 
         // Normal case: ground is within snapRange, so ease toward it - this is what
         // makes walking up/down a gentle ramp look smooth instead of stair-stepping.
-        if (Physics.Raycast(p + Vector3.up * 0.5f, Vector3.down, out RaycastHit hit, 0.5f + snapRange,
-                groundMask, QueryTriggerInteraction.Ignore))
+        if (RaycastGroundIgnoringSelf(p + Vector3.up * 0.5f, 0.5f + snapRange, out RaycastHit hit))
         {
             fallSpeed = 0f; // standing on something within range - not falling
             p.y = Mathf.MoveTowards(p.y, hit.point.y + pivotHeight, snapSpeed * dt);
@@ -270,8 +269,7 @@ public sealed class EnemyAgent : MonoBehaviour
         // clamps to the ground the moment it reaches it - a real fall, not a teleport,
         // without needing physics simulation to do it.
         const float fallbackRange = 50f;
-        if (Physics.Raycast(p + Vector3.up * 0.5f, Vector3.down, out RaycastHit farHit, 0.5f + fallbackRange,
-                groundMask, QueryTriggerInteraction.Ignore))
+        if (RaycastGroundIgnoringSelf(p + Vector3.up * 0.5f, 0.5f + fallbackRange, out RaycastHit farHit))
         {
             fallSpeed += fallGravity * dt;
             float landingY = farHit.point.y + pivotHeight;
@@ -279,6 +277,33 @@ public sealed class EnemyAgent : MonoBehaviour
             if (p.y <= landingY) fallSpeed = 0f; // landed
             transform.position = p;
         }
+    }
+
+    // Plain Physics.Raycast can register a hit against the enemy's OWN colliders if
+    // the probe origin isn't safely inside all of them (true for a multi-part model
+    // with several separate colliders, unlike the old single convex cube) - or at all,
+    // if any part uses a Mesh Collider, which has no "safe from inside" behaviour the
+    // way a Box Collider does. RaycastAll + filtering out anything under this enemy's
+    // own transform, same ancestry check TryProbe already uses, fixes that properly
+    // rather than relying on a layer mask always being set correctly.
+    static readonly RaycastHit[] groundHitsBuffer = new RaycastHit[16];
+
+    bool RaycastGroundIgnoringSelf(Vector3 origin, float maxDistance, out RaycastHit result)
+    {
+        int count = Physics.RaycastNonAlloc(origin, Vector3.down, groundHitsBuffer, maxDistance,
+            groundMask, QueryTriggerInteraction.Ignore);
+
+        bool found = false;
+        result = default;
+        float nearest = float.PositiveInfinity;
+
+        for (int i = 0; i < count; i++)
+        {
+            RaycastHit h = groundHitsBuffer[i];
+            if (h.collider.transform.IsChildOf(transform)) continue; // part of this enemy's own body - not ground
+            if (h.distance < nearest) { nearest = h.distance; result = h; found = true; }
+        }
+        return found;
     }
 
     // Equivalent of fish.debug_draw_radii: select an enemy to see its ranges.

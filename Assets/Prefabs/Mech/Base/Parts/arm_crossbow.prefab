@@ -51,7 +51,7 @@ MonoBehaviour:
   recoilVisual: {fileID: 0}
   muzzle: {fileID: 0}
   authoredScale: {x: 1, y: 1, z: 1}
-  data: {fileID: 11400000, guid: 31a4ba2367672dd46aa2de4b0e857de9, type: 2}
+  data: {fileID: 11400000, guid: 0ab9726b31e49c948a1f584e15cb5d16, type: 2}
   partType: 2
   isStartingPart: 1
   isEquipped: 0
