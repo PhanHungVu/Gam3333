@@ -16,4 +16,4 @@ MonoBehaviour:
   fire: {fileID: 7400000, guid: e60bb6746ea02d642b3f2b269498e019, type: 2}
   reload: {fileID: 7400000, guid: 67058832ce2fdb64a949caa16551ee37, type: 2}
   blendDuration: 0.04
-  animationOnly: 1
+  animationOnly: 0

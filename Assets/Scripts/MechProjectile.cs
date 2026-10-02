@@ -22,6 +22,8 @@ public readonly struct MechProjectileImpact
 // Straight projectile: direction is captured at launch and never tracks a target.
 public class MechProjectile : MonoBehaviour
 {
+    [SerializeField] Transform visual;
+    [SerializeField] Vector3 angularVelocity;
     Transform owner;
     Vector3 direction;
     float speed, damage, radius, remainingDistance;
@@ -42,6 +44,27 @@ public class MechProjectile : MonoBehaviour
     public CombatHealth DamageTarget { get => damageTarget; set { damageTarget = value; targetOnly = true; } }
     public event Action<MechProjectileImpact> ImpactResolved;
 
+    public static MechProjectile Create(GameObject prefab, string shotName, Vector3 position,
+        float shotRadius, Material fallbackMaterial, Color fallbackColor)
+    {
+        if (prefab != null)
+        {
+            var model = Instantiate(prefab, position, Quaternion.identity);
+            model.name = shotName;
+            return model.GetComponent<MechProjectile>() ?? model.AddComponent<MechProjectile>();
+        }
+        // Legacy prototypes and the cannon retain their existing visuals.
+        var shot = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        shot.name = shotName; shot.transform.position = position;
+        var collider = shot.GetComponent<Collider>(); collider.enabled = false; Destroy(collider);
+        shot.transform.localScale = Vector3.one * (shotRadius * 2f);
+        var renderer = shot.GetComponent<Renderer>();
+        if (fallbackMaterial != null) renderer.sharedMaterial = fallbackMaterial;
+        var tint = new MaterialPropertyBlock(); tint.SetColor("_Color", fallbackColor); renderer.SetPropertyBlock(tint);
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        return shot.AddComponent<MechProjectile>();
+    }
+
     public void ConfigureSpiralBarrage(CannonSpiralBarrage barrage, CannonSpiralBarrage.Settings settings)
     { spiralBarrage = barrage; spiralSettings = settings; }
 
@@ -61,6 +84,7 @@ public class MechProjectile : MonoBehaviour
     {
         owner = shooter;
         direction = shotDirection.normalized;
+        if (direction.sqrMagnitude > 0f) transform.rotation = Quaternion.LookRotation(direction);
         speed = Mathf.Max(0.01f, shotSpeed);
         damage = shotDamage;
         radius = Mathf.Max(0.01f, shotRadius);
@@ -80,6 +104,7 @@ public class MechProjectile : MonoBehaviour
     void Step(float deltaTime)
     {
         if (!live || deltaTime <= 0f) return;
+        if (visual != null) visual.Rotate(angularVelocity * deltaTime, Space.Self);
         float distance = Mathf.Min(speed * deltaTime, remainingDistance);
         if (CheckOverlap() || Sweep(direction * distance)) return;
         transform.position += direction * distance;

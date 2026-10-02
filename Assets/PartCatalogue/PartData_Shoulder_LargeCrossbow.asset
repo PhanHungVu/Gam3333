@@ -30,6 +30,7 @@ MonoBehaviour:
     value: 1
   weapon: 4
   ability: 0
+  projectilePrefab: {fileID: 1465189720993408064, guid: ed7887b3b88626a4089da49f33479a2a, type: 3}
   metresPerGolem: 4
   maximumRangeMultiplier: 1.5
   cannonExplosionRadius: 6

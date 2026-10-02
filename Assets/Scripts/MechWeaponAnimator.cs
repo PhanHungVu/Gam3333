@@ -13,6 +13,8 @@ public sealed class MechWeaponAnimator : MonoBehaviour
     [SerializeField] MechWeaponAnimationSet animations;
     [Tooltip("Optional authored attachment bone, e.g. the axe's unanimated Barrel bone.")]
     [SerializeField] Transform placement;
+    [Tooltip("The displayed axe/bolt follows the rig while loaded, and hides until reloaded after a shot.")]
+    [SerializeField] Renderer[] loadedProjectileRenderers = new Renderer[0];
     Part part;
     MechCombatController owner;
     MechEquipmentCombat equipment;
@@ -84,6 +86,7 @@ public sealed class MechWeaponAnimator : MonoBehaviour
         AnimationPlayableOutput.Create(graph, "Weapon", animator).SetSourcePlayable(mixer);
         graph.Play();
         CurrentPose = PoseState.Neutral;
+        RefreshLoadedProjectile();
         age = neutralTime = 0f;
         graph.Evaluate(0f);
     }
@@ -109,6 +112,7 @@ public sealed class MechWeaponAnimator : MonoBehaviour
         if (animator != null) animator.enabled = false;
         age = neutralTime = 0f;
         CurrentPose = PoseState.Neutral;
+        RefreshLoadedProjectile();
     }
 
     void Update() => RefreshEquipment();
@@ -128,7 +132,18 @@ public sealed class MechWeaponAnimator : MonoBehaviour
 
     void OnAttack(Part attacked)
     {
-        if (attacked == part) PlayAttack(Mathf.Max(0.01f, part.ReadyAt - Time.time));
+        if (attacked == part)
+        {
+            PlayAttack(Mathf.Max(0.01f, part.ReadyAt - Time.time));
+            RefreshLoadedProjectile();
+        }
+    }
+
+    void RefreshLoadedProjectile()
+    {
+        bool visible = owner == null || part == null || !part.isEquipped
+            || part.RemainingAmmo > 0 && part.ReadyAt <= Time.time;
+        foreach (var renderer in loadedProjectileRenderers) if (renderer != null) renderer.enabled = visible;
     }
 
     public bool PlayAttack(float cooldown, float requestedFireDuration = 0f)
@@ -188,6 +203,7 @@ public sealed class MechWeaponAnimator : MonoBehaviour
             mixer.SetInputWeight(i, weights[i]);
         }
         graph.Evaluate(0f);
+        RefreshLoadedProjectile();
     }
 
     void ChangePose(PoseState pose)

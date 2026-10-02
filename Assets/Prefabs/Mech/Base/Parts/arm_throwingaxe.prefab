@@ -383,6 +383,8 @@ MonoBehaviour:
   animator: {fileID: 6190613918583319704}
   animations: {fileID: 11400000, guid: cc7b93ef62d1e1e499a8a8e4709b19d2, type: 2}
   placement: {fileID: 1442497411790760837}
+  loadedProjectileRenderers:
+  - {fileID: 8088031939848424622}
 --- !u!1 &5759857666210329218
 GameObject:
   m_ObjectHideFlags: 0
@@ -827,3 +829,8 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.30283508, y: 1.9191141, z: 1.4293134}
   m_Center: {x: -0.00000046193594, y: -0.19977355, z: -0.1735982}
+--- !u!23 &8088031939848424622 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7369188318502224253, guid: ed25671d3585d7244b3f27aab5079bc1, type: 3}
+  m_PrefabInstance: {fileID: 7603506046851265069}
+  m_PrefabAsset: {fileID: 0}

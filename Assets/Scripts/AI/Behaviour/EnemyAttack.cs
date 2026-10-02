@@ -20,6 +20,7 @@ public sealed class EnemyAttack : MonoBehaviour
     [SerializeField, Min(0f)] float verticalReach = 2.5f;
     [SerializeField, Min(0.1f)] float projectileSpeed = 18f;
     [SerializeField] Material projectileMaterial;
+    [SerializeField] GameObject projectilePrefab;
     [SerializeField] LayerMask hitLayers = ~0;
     EnemyAgent agent;
     CombatHealth self, attackTarget;
@@ -118,18 +119,10 @@ public sealed class EnemyAttack : MonoBehaviour
     {
         var marker = activeWeapon != null ? activeWeapon.GetComponent<Part>().muzzle : muzzle;
         var position = marker != null ? marker.position : transform.position + Vector3.up * 0.5f + transform.forward;
-        var bolt = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        bolt.name = "Enemy Crossbow Bolt";
-        var collider = bolt.GetComponent<Collider>(); collider.enabled = false; Destroy(collider);
-        bolt.transform.position = new Vector3(transform.position.x, position.y, transform.position.z);
         var direction = (aim - position).normalized;
         if (direction.sqrMagnitude < 0.001f) direction = transform.forward;
-        bolt.transform.rotation = Quaternion.LookRotation(direction);
-        bolt.transform.localScale = new Vector3(0.12f, 0.12f, 0.6f);
-        var renderer = bolt.GetComponent<Renderer>();
-        if (projectileMaterial != null) renderer.sharedMaterial = projectileMaterial;
-        var tint = new MaterialPropertyBlock(); tint.SetColor("_Color", new Color(1f, 0.3f, 0.15f)); renderer.SetPropertyBlock(tint);
-        var projectile = bolt.AddComponent<MechProjectile>();
+        var projectile = MechProjectile.Create(projectilePrefab, "Enemy Crossbow Bolt",
+            new Vector3(transform.position.x, position.y, transform.position.z), 0.12f, projectileMaterial, new Color(1f, 0.3f, 0.15f));
         projectile.Weapon = MechWeaponSlot.Crossbow;
         projectile.DamageTarget = attackTarget;
         projectile.Launch(transform, direction, projectileSpeed, damage, 0.12f, Mathf.Max(25f, agent.AttackRange * 2f), hitLayers, position);

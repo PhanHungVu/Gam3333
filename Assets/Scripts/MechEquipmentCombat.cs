@@ -11,8 +11,9 @@ public sealed class MechEquipmentCombat : MonoBehaviour
     [SerializeField, Min(0f)] float weaponIdleDelay = 3f;
     float weaponIdleTime;
     public MechWeaponAnimator IdleWeapon { get; private set; }
-    readonly Part[] ranged = new Part[3];
-    readonly MechWeaponStats[] weapons = new MechWeaponStats[3];
+    readonly Part[] ranged = new Part[4];
+    readonly MechWeaponStats[] weapons = new MechWeaponStats[4];
+    readonly System.Collections.Generic.Dictionary<Part, MechWeaponStats> partWeapons = new System.Collections.Generic.Dictionary<Part, MechWeaponStats>();
     public Part Sword { get; private set; }
     void Awake() { equipment = GetComponent<EquipManager>(); combat = GetComponent<MechCombatController>(); movement = GetComponent<MechMovementController>(); }
     void OnEnable() { equipment.EquipmentChanged += Refresh; Refresh(); }
@@ -52,6 +53,7 @@ public sealed class MechEquipmentCombat : MonoBehaviour
     }
     public MechAbilityDriver GetAbility(MechWeaponSlot slot)
     {
+        if (slot == MechWeaponSlot.ArmCrossbow) return null;
         var part = equipment.GetEquipped(slot == MechWeaponSlot.ThrowingAxe ? PartCategory.ArmL
             : slot == MechWeaponSlot.Cannon ? PartCategory.ShoulderL : PartCategory.ShoulderR);
         return AbilityOn(part);
@@ -75,10 +77,12 @@ public sealed class MechEquipmentCombat : MonoBehaviour
         return part.GetComponent<MechAbilityDriver>();
     }
     public MechWeaponStats GetWeapon(MechWeaponSlot slot) => weapons[(int)slot];
+    public MechWeaponStats GetWeapon(Part part) => part != null && partWeapons.TryGetValue(part, out var stats) ? stats : null;
     void Refresh()
     {
         ResetWeaponIdle();
         Sword = null;
+        partWeapons.Clear();
         for (int i = 0; i < ranged.Length; i++) { ranged[i] = null; weapons[i] = null; }
         for (int i = 0; i <= (int)PartCategory.Torso; i++)
         {
@@ -87,7 +91,7 @@ public sealed class MechEquipmentCombat : MonoBehaviour
             var data = part.data;
             EnsureAbility(part);
             if (data.weapon == MechPartWeapon.Sword) { Sword = part; continue; }
-            if (data.weapon < MechPartWeapon.ThrowingAxe || data.weapon > MechPartWeapon.Crossbow) continue;
+            if (data.weapon < MechPartWeapon.ThrowingAxe || data.weapon > MechPartWeapon.ArmCrossbow) continue;
             var slot = (MechWeaponSlot)((int)data.weapon - (int)MechPartWeapon.ThrowingAxe);
             var prototype = combat.GetDefaultWeapon(slot);
             float range = Mathf.Max(0.01f, data.GetStat(StatType.Range) * data.metresPerGolem);
@@ -96,6 +100,7 @@ public sealed class MechEquipmentCombat : MonoBehaviour
                 range, range * Mathf.Max(1, data.maximumRangeMultiplier), prototype.projectileSpeed,
                 prototype.projectileRadius, slot == MechWeaponSlot.Cannon ? data.cannonExplosionRadius : 0, prototype.color);
             ranged[(int)slot] = part; weapons[(int)slot] = stats;
+            partWeapons[part] = stats;
             part.InitializeAmmo(stats.ammunition);
         }
         combat.CancelEquippedMelee();

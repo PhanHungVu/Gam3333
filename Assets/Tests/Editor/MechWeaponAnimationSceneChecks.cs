@@ -15,7 +15,7 @@ public static class MechWeaponAnimationSceneChecks
     static Mouse mouse;
     static MechMovementController motor;
     static EquipManager equipment;
-    static Part originalSword;
+    static Part originalSword, originalAxe;
     static float next = -1f, deadline;
     static int phase = -2, shots;
     static bool cycleHeld;
@@ -40,6 +40,8 @@ public static class MechWeaponAnimationSceneChecks
             "Actual input plays " + family + " " + pose + " (actual=" + (driver != null ? driver.CurrentPose.ToString() : "missing") + ")");
     }
     static void Keys(params Key[] keys) => InputSystem.QueueStateEvent(keyboard, new KeyboardState(keys));
+    static bool LoadedModelVisible(Part part, string meshName) => part.GetComponentsInChildren<MeshFilter>(true)
+        .Single(m => m.sharedMesh != null && m.sharedMesh.name == meshName).GetComponent<Renderer>().enabled;
     static void Button(MouseButton? button = null) => InputSystem.QueueStateEvent(mouse,
         button.HasValue ? new MouseState().WithButton(button.Value) : new MouseState());
 
@@ -66,6 +68,7 @@ public static class MechWeaponAnimationSceneChecks
                     motor = Object.FindAnyObjectByType<MechMovementController>();
                     equipment = motor.GetComponent<EquipManager>();
                     originalSword = equipment.GetEquipped(PartCategory.ArmL);
+                    originalAxe = equipment.GetEquipped(PartCategory.ArmR);
                     motor.GetComponent<MechCombatController>().ShotFired += _ => shots++;
                     motor.GetComponent<MechCombatController>().ReadPlayerInput = false;
                     var data = new SerializedObject(motor.GetComponent<MechCombatController>());
@@ -102,6 +105,7 @@ public static class MechWeaponAnimationSceneChecks
                 case 4:
                     Pose(PartCategory.ArmR, MechWeaponAnimator.PoseState.Fire, "ThrowingAxe");
                     Check(Driver(PartCategory.ArmR).Placement != null, "Actual axe rig exposes its placement bone");
+                    Check(!LoadedModelVisible(originalAxe, "ThrowingAxeMesh"), "Fired axe hides from the loaded arm during cooldown");
                     Capture("axe-fire"); Button(); Keys(Key.Q); delay = 0.1f; break;
                 case 5:
                     Pose(PartCategory.ShoulderL, MechWeaponAnimator.PoseState.Fire, "Cannon");
@@ -111,6 +115,8 @@ public static class MechWeaponAnimationSceneChecks
                     Capture("cannon-reload"); Keys(Key.E); delay = 0.1f; break;
                 case 7:
                     Pose(PartCategory.ShoulderR, MechWeaponAnimator.PoseState.Fire, "Crossbow");
+                    Check(!LoadedModelVisible(equipment.GetEquipped(PartCategory.ShoulderR), "CrossbowBoltMesh"),
+                        "Fired shoulder bolt hides from its rail during cooldown");
                     Capture("crossbow-fire"); Keys(); delay = 0.3f; break;
                 case 8:
                     Pose(PartCategory.ShoulderR, MechWeaponAnimator.PoseState.Reload, "Crossbow");
@@ -144,6 +150,8 @@ public static class MechWeaponAnimationSceneChecks
                 case 15:
                     ConfirmPickup("EquippedPartPos2");
                     Check(Driver(PartCategory.ArmR).Animations.name == "ArmCrossbow", "F and the right swap button equip the animated arm crossbow");
+                    Check(!originalAxe.isEquipped && LoadedModelVisible(originalAxe, "ThrowingAxeMesh"),
+                        "Dropped throwing axe retains its visible model on the ground");
                     Keys(); Button(MouseButton.Right); delay = 0.1f; break;
                 case 16:
                     Pose(PartCategory.ArmR, MechWeaponAnimator.PoseState.Fire, "ArmCrossbow");
@@ -154,7 +162,10 @@ public static class MechWeaponAnimationSceneChecks
                 default:
                     Pose(PartCategory.ArmL, MechWeaponAnimator.PoseState.Neutral, "Mace");
                     Pose(PartCategory.ArmR, MechWeaponAnimator.PoseState.Neutral, "ArmCrossbow");
-                    Check(shots == 3, "Existing ranged weapons fire once each; animation-only parts add no placeholder shots");
+                    Check(shots == 4, "Shoulder weapons, throwing axe and arm crossbow each fire once; mace adds no projectile");
+                    Check(LoadedModelVisible(equipment.GetEquipped(PartCategory.ShoulderR), "CrossbowBoltMesh"),
+                        "Reloaded shoulder crossbow displays its next bolt");
+                    MechProjectileModelChecks.CaptureModels();
                     Check(Object.FindObjectsByType<MechMovementController>().Length == 1
                         && Camera.main.GetComponent<CameraControlThirdPerson>().Target == motor.transform,
                         "Weapon pickup and firing retain one player and its camera");

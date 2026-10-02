@@ -85,6 +85,8 @@ public static class MechEnemyCombatChecks
                 "Crossbow projectile waits for its release frame");
             Step(crossbow, 0.25f); var bolt = Bolt();
             check(bolt.IsLive && health.CurrentHealth == before, "Crossbow releases a travelling projectile rather than instant ranged damage");
+            check(bolt.GetComponentInChildren<MeshFilter>().sharedMesh.name == "CrossbowBoltMesh",
+                "Enemy crossbow launches the same authored bolt model as the player");
             Fly(bolt, 1f);
             check(health.CurrentHealth == before - 12f && !bolt.IsLive, "Enemy bolt uses swept collision to damage player once");
             Object.DestroyImmediate(bolt.gameObject);

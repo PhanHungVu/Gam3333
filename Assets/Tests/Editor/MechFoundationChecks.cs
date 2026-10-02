@@ -87,6 +87,7 @@ public static class MechFoundationChecks
             MechAnimationV2Checks.Run(Check);
             MechWeaponAnimationChecks.Run(Check);
             MechEnemyCombatChecks.Run(Check);
+            MechProjectileModelChecks.Run(Check);
             Debug.Log("MECH CHECKS COMPLETE: " + checks);
             EditorApplication.Exit(0);
         }
