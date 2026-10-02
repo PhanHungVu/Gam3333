@@ -1083,7 +1083,7 @@ MonoBehaviour:
   cursorRect: {fileID: 587240072}
   canvas: {fileID: 1054055418}
   gameplayCamera: {fileID: 2142205465}
-  targetLockController: {fileID: 1098106127}
+  targetLockController: {fileID: 3300747674104814835}
   showAtScreenCenterWhenUnlocked: 1
 --- !u!1 &597716940
 GameObject:
@@ -1451,90 +1451,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!1001 &1098106125
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 2832213520374762835, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -1.72165
-      objectReference: {fileID: 0}
-    - target: {fileID: 2832213520374762835, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 2.67
-      objectReference: {fileID: 0}
-    - target: {fileID: 2832213520374762835, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -0.62
-      objectReference: {fileID: 0}
-    - target: {fileID: 2832213520374762835, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2832213520374762835, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2832213520374762835, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2832213520374762835, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2832213520374762835, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2832213520374762835, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2832213520374762835, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3053454427299694765, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
-      propertyPath: m_Name
-      value: FullPlayer_mech_base
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
---- !u!114 &1098106126 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6057257043024523587, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
-  m_PrefabInstance: {fileID: 1098106125}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 29454c7fbb814c36a4a1a5a80793819a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MechEnergyController
---- !u!114 &1098106127 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3300747675196267006, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
-  m_PrefabInstance: {fileID: 1098106125}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8e01e99e2497bbd4b8d657213fa2636e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MechTargetLockController
---- !u!4 &1098106128 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 2832213520374762835, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
-  m_PrefabInstance: {fileID: 1098106125}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1117528353
 GameObject:
   m_ObjectHideFlags: 0
@@ -2694,7 +2610,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c05df394657149daa2c6d9a5a09e0222, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechEnergyHud
-  energy: {fileID: 1098106126}
+  energy: {fileID: 6057257044116141134}
   fill: {fileID: 1350029570}
   label: {fileID: 597716942}
 --- !u!114 &1472121144
@@ -3645,13 +3561,13 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'WASD  MOVE     SHIFT  RUN     ALT  QUICK BOOST     HOLD CTRL
-    ASSAULT BOOST
+  m_Text: 'WASD  MOVE     SHIFT  RUN     ALT  QUICK BOOST     HOLD CTRL ASSAULT BOOST
 
-    MMB  RESUME / SOFT-HARD     HOLD MMB 1.2s  FREE AIM     FLICK 
-    SWITCH TARGET
+    MMB 
+    RESUME / SOFT-HARD     HOLD MMB 1.2s  FREE AIM     FLICK  SWITCH TARGET
 
-    LMB  SWORD     RMB  AXE     Q  CANNON     E  CROSSBOW'
+    LMB 
+    SWORD     RMB  AXE     Q  CANNON     E  CROSSBOW'
 --- !u!222 &1904516351
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -4011,6 +3927,68 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
+--- !u!1001 &2436679806329855333
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 4396956645279519157, guid: 7cd6b546b02756c43a235a7c3bed577c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1.72165
+      objectReference: {fileID: 0}
+    - target: {fileID: 4396956645279519157, guid: 7cd6b546b02756c43a235a7c3bed577c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 2.67
+      objectReference: {fileID: 0}
+    - target: {fileID: 4396956645279519157, guid: 7cd6b546b02756c43a235a7c3bed577c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.62
+      objectReference: {fileID: 0}
+    - target: {fileID: 4396956645279519157, guid: 7cd6b546b02756c43a235a7c3bed577c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4396956645279519157, guid: 7cd6b546b02756c43a235a7c3bed577c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4396956645279519157, guid: 7cd6b546b02756c43a235a7c3bed577c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4396956645279519157, guid: 7cd6b546b02756c43a235a7c3bed577c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4396956645279519157, guid: 7cd6b546b02756c43a235a7c3bed577c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4396956645279519157, guid: 7cd6b546b02756c43a235a7c3bed577c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4396956645279519157, guid: 7cd6b546b02756c43a235a7c3bed577c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4693907206337741564, guid: 7cd6b546b02756c43a235a7c3bed577c, type: 3}
+      propertyPath: m_Name
+      value: FullPlayer_mech_base
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 7cd6b546b02756c43a235a7c3bed577c, type: 3}
+--- !u!4 &2832213519276755038 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4396956645279519157, guid: 7cd6b546b02756c43a235a7c3bed577c, type: 3}
+  m_PrefabInstance: {fileID: 2436679806329855333}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &2868873665420062629
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4076,6 +4054,28 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
+--- !u!114 &3300747674104814835 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8868570084812194379, guid: 7cd6b546b02756c43a235a7c3bed577c, type: 3}
+  m_PrefabInstance: {fileID: 2436679806329855333}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e01e99e2497bbd4b8d657213fa2636e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MechTargetLockController
+--- !u!114 &6057257044116141134 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4600976156532574513, guid: 7cd6b546b02756c43a235a7c3bed577c, type: 3}
+  m_PrefabInstance: {fileID: 2436679806329855333}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29454c7fbb814c36a4a1a5a80793819a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MechEnergyController
 --- !u!1001 &8550216008285762272
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4091,7 +4091,7 @@ PrefabInstance:
     - target: {fileID: 4024066128090005228, guid: ee0d32885dad7e8499e06dc440d1680f, type: 3}
       propertyPath: target
       value: 
-      objectReference: {fileID: 1098106128}
+      objectReference: {fileID: 2832213519276755038}
     - target: {fileID: 4785633787567073804, guid: ee0d32885dad7e8499e06dc440d1680f, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -4148,7 +4148,7 @@ SceneRoots:
   - {fileID: 2079817370}
   - {fileID: 1251375240}
   - {fileID: 1719337907}
-  - {fileID: 1098106125}
+  - {fileID: 2436679806329855333}
   - {fileID: 386053909645579831}
   - {fileID: 2868873665420062629}
   - {fileID: 398583068}
