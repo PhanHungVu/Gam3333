@@ -8,6 +8,8 @@ using UnityEngine.InputSystem;
 public class MechCombatController : MonoBehaviour
 {
     [SerializeField] InputActionAsset inputActions;
+    [SerializeField] bool readPlayerInput = true;
+    public bool ReadPlayerInput { get => readPlayerInput; set => readPlayerInput = value; }
     InputActionAsset runtimeInputActions;
     [SerializeField] Camera gameplayCamera;
     [SerializeField] Material combatMaterial;
@@ -68,6 +70,8 @@ public class MechCombatController : MonoBehaviour
     public event Action<MechProjectile> ShotFired;
     public event Action<MechProjectileImpact> ProjectileImpact;
     public event Action<int> MeleePerformed;
+    // Presentation starts on admission, independently of impact/damage resolution.
+    public event Action<Part> WeaponAttackStarted;
     MechWeaponSlot lastFiredSlot = MechWeaponSlot.Cannon;
     public Vector3 MuzzlePosition => GetMuzzlePosition(lastFiredSlot);
     public Vector3 GetMuzzlePosition(MechWeaponSlot slot)
@@ -121,19 +125,27 @@ public class MechCombatController : MonoBehaviour
         TickCooldowns(Time.deltaTime);
         TickMelee(Time.deltaTime);
         UpdateMeleeOutline();
-        if (Cursor.lockState != CursorLockMode.Locked || Time.timeScale == 0f)
+        if (readPlayerInput) ProcessPlayerInput(Cursor.lockState == CursorLockMode.Locked);
+    }
+
+    // Explicit input boundary, like the movement motor's Tick. External callers
+    // disable ReadPlayerInput first and supply their own cursor-capture policy.
+    public void ProcessPlayerInput(bool hasCapturedCursor)
+    {
+        if (!isActiveAndEnabled) return;
+        if (!hasCapturedCursor || Time.timeScale == 0f)
         {
             inputArmed = false;
             return;
         }
-        bool fireHeld = fireAction != null ? fireAction.IsPressed() : Mouse.current != null && Mouse.current.leftButton.isPressed;
-        bool fire = fireAction != null ? fireAction.WasPressedThisFrame() : Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
-        bool cannonHeld = cannonAction != null ? cannonAction.IsPressed() : Keyboard.current != null && Keyboard.current.eKey.isPressed;
-        bool crossbowHeld = crossbowAction != null ? crossbowAction.IsPressed() : Keyboard.current != null && Keyboard.current.qKey.isPressed;
-        bool fireCannon = cannonAction != null ? cannonAction.WasPressedThisFrame() : Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame;
-        bool fireCrossbow = crossbowAction != null ? crossbowAction.WasPressedThisFrame() : Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame;
-        bool meleeHeld = meleeAction != null ? meleeAction.IsPressed() : Mouse.current != null && Mouse.current.rightButton.isPressed;
-        bool melee = meleeAction != null ? meleeAction.WasPressedThisFrame() : Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame;
+        bool fireHeld = fireAction != null ? fireAction.IsPressed() : Mouse.current != null && Mouse.current.rightButton.isPressed;
+        bool fire = fireAction != null ? fireAction.WasPressedThisFrame() : Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame;
+        bool cannonHeld = cannonAction != null ? cannonAction.IsPressed() : Keyboard.current != null && Keyboard.current.qKey.isPressed;
+        bool crossbowHeld = crossbowAction != null ? crossbowAction.IsPressed() : Keyboard.current != null && Keyboard.current.eKey.isPressed;
+        bool fireCannon = cannonAction != null ? cannonAction.WasPressedThisFrame() : Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame;
+        bool fireCrossbow = crossbowAction != null ? crossbowAction.WasPressedThisFrame() : Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame;
+        bool meleeHeld = meleeAction != null ? meleeAction.IsPressed() : Mouse.current != null && Mouse.current.leftButton.isPressed;
+        bool melee = meleeAction != null ? meleeAction.WasPressedThisFrame() : Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
         // A click to recapture the mouse should not also fire a weapon.
         if (!inputArmed) { inputArmed = !fireHeld && !meleeHeld && !cannonHeld && !crossbowHeld; return; }
         if (fire || melee || fireCannon || fireCrossbow) Physics.SyncTransforms();
@@ -162,7 +174,13 @@ public class MechCombatController : MonoBehaviour
             if (ability != null) { ability.TryActivate(); return null; }
         }
         int index = (int)slot;
-        if (!isActiveAndEnabled || index < 0 || index >= 3 || !HasWeapon(slot) || ReloadRemaining(slot) > 0f || AmmoRemaining(slot) <= 0) return null;
+        if (!isActiveAndEnabled || index < 0 || index >= 3) return null;
+        if (!HasWeapon(slot))
+        {
+            if (slot == MechWeaponSlot.ThrowingAxe) TryAnimationOnlyAttack(PartCategory.ArmR);
+            return null;
+        }
+        if (ReloadRemaining(slot) > 0f || AmmoRemaining(slot) <= 0) return null;
         var weapon = GetWeapon(slot);
         if (gameplayCamera == null) gameplayCamera = Camera.main;
         if (gameplayCamera == null) return null;
@@ -205,6 +223,7 @@ public class MechCombatController : MonoBehaviour
         projectile.Launch(transform, direction, weapon.projectileSpeed, weapon.damage, weapon.projectileRadius,
             weapon.maximumRange, hitLayers, muzzle);
         ShotFired?.Invoke(projectile);
+        if (equipment != null) WeaponAttackStarted?.Invoke(equipment.GetPart(slot));
         return projectile;
     }
 
@@ -228,12 +247,14 @@ public class MechCombatController : MonoBehaviour
 
     public bool TryMelee()
     {
-        if (isActiveAndEnabled && !HasSword && equipment != null) return equipment.TryMeleeAbility();
+        if (isActiveAndEnabled && !HasSword && equipment != null)
+            return equipment.TryMeleeAbility() || TryAnimationOnlyAttack(PartCategory.ArmL);
         if (!isActiveAndEnabled || !HasSword || meleeTimer > 0f || meleePending
             || equipment != null && equipment.Sword.ReadyAt > Time.time) return false;
         strikeDamage = equipment != null ? equipment.Sword.data.GetStat(StatType.Damage) : meleeDamage;
         meleeTimer = equipment != null ? Mathf.Max(0.01f, equipment.Sword.data.GetStat(StatType.CooldownReload)) : meleeCooldown;
         if (equipment != null) equipment.Sword.Consume(meleeTimer, false);
+        if (equipment != null) WeaponAttackStarted?.Invoke(equipment.Sword);
         meleeCameraTimer = meleeCameraHold;
         strikeRotation = transform.rotation;
         meleeExtension = 0f;
@@ -246,6 +267,15 @@ public class MechCombatController : MonoBehaviour
         }
         else ResolveMelee();
         return true;
+    }
+
+    bool TryAnimationOnlyAttack(PartCategory category)
+    {
+        var part = equipment != null ? equipment.GetEquippedPart(category) : null;
+        if (part == null || part.data == null || part.data.weapon != MechPartWeapon.None
+            || part.data.ability != MechPartAbilityKind.None) return false;
+        var presentation = part.GetComponent<MechWeaponAnimator>();
+        return presentation != null && presentation.TryAnimationOnlyAttack();
     }
 
     // Reach assistance translates only the attack box. It never steers or teleports

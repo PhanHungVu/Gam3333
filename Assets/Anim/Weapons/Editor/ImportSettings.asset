@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86506bdec845ff044ae278c6e1243274, type: 3}
+  m_Name: ImportSettings
+  m_EditorClassIdentifier: Assembly-CSharp-Editor::MechWeaponAnimationImportSettings
+  source: {fileID: 8771091787928289351, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+  weapons:
+  - part: {fileID: 11400000, guid: 55c3987ff5a5221488425f98040b8852, type: 2}
+    rigPath: CanonRig
+    referenceMesh: Cannon
+    bodyBone: WeapRoot/CanonBody
+    placementBone: 
+    neutral: {fileID: -3059261956484813515, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+    fire: {fileID: -4444407760738836087, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+    reload: {fileID: -5546401230530889515, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+    target: {fileID: 11400000, guid: d476b62987313ac46aa043ff618a1075, type: 2}
+  - part: {fileID: 11400000, guid: cc03c119946ec9043b0bfe8e39af9144, type: 2}
+    rigPath: CrossBowRig
+    referenceMesh: Crossbow
+    bodyBone: WeapRoot/CrossBowBody
+    placementBone: 
+    neutral: {fileID: 159669051933076347, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+    fire: {fileID: 4490484289785687401, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+    reload: {fileID: -1931623451998185331, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+    target: {fileID: 11400000, guid: 2d4cc11a0888ea8478d35abfebeb757e, type: 2}
+  - part: {fileID: 11400000, guid: 0ab9726b31e49c948a1f584e15cb5d16, type: 2}
+    rigPath: CrossBowArmRig
+    referenceMesh: CrossbowArm
+    bodyBone: WeapRoot/CrossBowArmBody
+    placementBone: 
+    neutral: {fileID: 2464904997482686932, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+    fire: {fileID: 2817655155131812500, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+    reload: {fileID: 3549177251031616188, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+    target: {fileID: 11400000, guid: cee9dad4229e3cf4c9c2331176e2a1ac, type: 2}
+  - part: {fileID: 11400000, guid: 31a4ba2367672dd46aa2de4b0e857de9, type: 2}
+    rigPath: SwordArmRig
+    referenceMesh: SwordArm
+    bodyBone: WeapRoot/SwordArmBody
+    placementBone: 
+    neutral: {fileID: 4439687787296433298, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+    fire: {fileID: -1811320529265998891, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+    reload: {fileID: 0}
+    target: {fileID: 11400000, guid: 4ac8fc18ee6733f44a5e69e79d7f153d, type: 2}
+  - part: {fileID: 11400000, guid: 8ec1d572786d6d54ca5b1e61c52ee8f5, type: 2}
+    rigPath: MaceArmRig
+    referenceMesh: MaceArm
+    bodyBone: WeapRoot/MaceArmBody
+    placementBone: 
+    neutral: {fileID: 156841254362427053, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+    fire: {fileID: 1017525140038098545, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+    reload: {fileID: 0}
+    target: {fileID: 11400000, guid: 28ac79f9732ea8848b508803d6d77735, type: 2}
+  - part: {fileID: 11400000, guid: 691dc3f793865b842b733326fc23f6e5, type: 2}
+    rigPath: ThrowingAxeRig
+    referenceMesh: ThrowingAxeArm
+    bodyBone: WeapRoot/ThrowingAxeBody
+    placementBone: WeapRoot/ThrowingAxeBody/Barrel
+    neutral: {fileID: -3637130285252110872, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+    fire: {fileID: -6001961542532985466, guid: bccf6ed6f7a04571a483a2b09d352562, type: 3}
+    reload: {fileID: 0}
+    target: {fileID: 11400000, guid: cc7b93ef62d1e1e499a8a8e4709b19d2, type: 2}

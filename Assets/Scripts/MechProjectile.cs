@@ -36,6 +36,10 @@ public class MechProjectile : MonoBehaviour
     public Vector3 Direction => direction;
     public bool IsLive => live;
     public MechWeaponSlot Weapon { get; set; }
+    // Optional enemy shot filter. Other bodies still block the shot, without friendly damage.
+    CombatHealth damageTarget;
+    bool targetOnly;
+    public CombatHealth DamageTarget { get => damageTarget; set { damageTarget = value; targetOnly = true; } }
     public event Action<MechProjectileImpact> ImpactResolved;
 
     public void ConfigureSpiralBarrage(CannonSpiralBarrage barrage, CannonSpiralBarrage.Settings settings)
@@ -136,7 +140,9 @@ public class MechProjectile : MonoBehaviour
         float impactDamage = damage * RangeMultiplier(travelled, effectiveRange, maximumRange);
         // Mark spent first: callbacks and compound colliders cannot cause repeat damage.
         Finish();
-        var result = blast.Resolve(Weapon, impactPoint, explosionRadius, impactDamage, owner, collisionLayers, collider);
+        var result = !targetOnly || damageTarget != null && collider.GetComponentInParent<CombatHealth>() == damageTarget
+            ? blast.Resolve(Weapon, impactPoint, explosionRadius, impactDamage, owner, collisionLayers, collider)
+            : new MechProjectileImpact(Weapon, impactPoint, explosionRadius, 0, 0);
         bool barrageStarted = Weapon == MechWeaponSlot.Cannon && spiralBarrage != null
             && spiralBarrage.TryBegin(result, impactDamage, direction, owner, collisionLayers, spiralSettings);
         ImpactResolved?.Invoke(new MechProjectileImpact(Weapon, impactPoint, explosionRadius,

@@ -44,5 +44,8 @@ public class Part : MonoBehaviour
         var body = GetComponent<Rigidbody>();
         if (!equipped && body == null) body = gameObject.AddComponent<Rigidbody>();
         if (body != null) { body.isKinematic = equipped; body.useGravity = !equipped; body.detectCollisions = !equipped; }
+        // Stop visual playback immediately on drop, including within the same frame.
+        var weaponAnimator = GetComponent<MechWeaponAnimator>();
+        if (weaponAnimator != null) weaponAnimator.RefreshEquipment();
     }
 }

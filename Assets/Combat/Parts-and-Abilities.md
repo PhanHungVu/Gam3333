@@ -26,7 +26,7 @@ F replaces the teammate's E pickup binding, which conflicted with cannon fire. T
 
 Ammo and reload deadlines belong to each physical Part instance. Dropping and re-equipping never refills it or clears its reload. PartData assets do not contain mutable ammunition. A missing weapon disables its attack and is reported in the HUD. Ranged parts provide their own optional muzzle Transform; the cannon's mesh-only recoil child follows swaps. The legacy prototype still uses its original built-in loadout without MechEquipmentCombat.
 
-Head/leg health and movement stat effects have not been introduced: the existing movement and energy tuning is preserved.
+`EquipManager.Health` exposes the sum of positive Health stats on the currently equipped parts. Dropping or swapping a part changes the total automatically; grounded pickups contribute nothing. Edit Health entries on the existing PartCatalogue assets. The player has `CombatHealth` with **Use Equipment Stats** enabled: it starts at this maximum and accepts damage. Capacity changes clamp current health and never refill lost health. `MechHealthHud` shows an upper-left bar and current/max values, turns red at 25% health or below, and follows the existing player HUD enable/disable lifecycle. Zero health disables the player; respawn is not implemented. Movement and energy retain their existing tuning.
 
 ## Three independently equippable ability modules
 

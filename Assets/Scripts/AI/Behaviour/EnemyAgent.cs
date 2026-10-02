@@ -100,6 +100,7 @@ public sealed class EnemyAgent : MonoBehaviour
     public float ZigzagLookAhead => zigzagLookAhead;
 
     public bool HasTarget => target != null;
+    public Transform Target => target != null && target.gameObject.activeInHierarchy ? target : null;
     public Vector3 TargetPosition => target != null ? target.position : transform.position;
     public float DistanceToTarget { get; private set; } = float.PositiveInfinity;
 

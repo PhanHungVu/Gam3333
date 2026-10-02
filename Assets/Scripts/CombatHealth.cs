@@ -7,7 +7,11 @@ public class CombatHealth : MonoBehaviour
     [SerializeField, Min(1f)] float maximumHealth = 100f;
     [SerializeField] Material feedbackMaterial;
     [SerializeField] float healthBarHeight = 1.4f;
-    public float CurrentHealth { get; private set; }
+    [Tooltip("Player only: maximum health comes from equipped part Health stats.")]
+    [SerializeField] bool useEquipmentStats;
+    [SerializeField] float currentHealth;
+    EquipManager equipment;
+    public float CurrentHealth { get => currentHealth; private set => currentHealth = value; }
     public float MaximumHealth => maximumHealth;
     public bool IsDead => CurrentHealth <= 0f;
     public event Action<float> Damaged;
@@ -17,6 +21,8 @@ public class CombatHealth : MonoBehaviour
 
     void Awake()
     {
+        equipment = useEquipmentStats ? GetComponent<EquipManager>() : null;
+        if (equipment != null) maximumHealth = Mathf.Max(1f, equipment.Health);
         CurrentHealth = maximumHealth;
         if (feedbackMaterial == null) return;
         var display = new GameObject("Enemy Health");
@@ -28,6 +34,15 @@ public class CombatHealth : MonoBehaviour
         bar.startColor = bar.endColor = new Color(0.3f, 1f, 0.35f);
         bar.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         bar.receiveShadows = false;
+    }
+
+    void OnEnable() { if (equipment != null) equipment.EquipmentChanged += RefreshMaximum; }
+    void OnDisable() { if (equipment != null) equipment.EquipmentChanged -= RefreshMaximum; }
+    void RefreshMaximum()
+    {
+        maximumHealth = Mathf.Max(1f, equipment.Health);
+        // Swaps change capacity without refilling lost health or resurrecting the player.
+        CurrentHealth = Mathf.Min(CurrentHealth, maximumHealth);
     }
 
     public bool ApplyDamage(float amount)

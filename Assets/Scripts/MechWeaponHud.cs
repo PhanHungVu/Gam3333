@@ -52,7 +52,12 @@ public class MechWeaponHud : MonoBehaviour
     {
         var ability = equipment != null ? equipment.GetAbility(slot) : null;
         if (ability != null) return key + "  " + ability.name.ToUpperInvariant() + (ability.CooldownRemaining > 0 ? $"  {ability.CooldownRemaining:0.0}s" : "  READY");
-        if (!combat.HasWeapon(slot)) return key + "  NO PART EQUIPPED";
+        if (!combat.HasWeapon(slot))
+        {
+            var preview = slot == MechWeaponSlot.ThrowingAxe && equipment != null
+                ? equipment.GetEquippedPart(PartCategory.ArmR) : null;
+            return AnimationLine(preview, key) ?? key + "  NO PART EQUIPPED";
+        }
         int ammo = combat.AmmoRemaining(slot);
         float reload = combat.ReloadRemaining(slot);
         string state = ammo == 0 ? "EMPTY" : reload > 0 ? $"RELOAD {reload:0.0}s" : "READY";
@@ -61,7 +66,18 @@ public class MechWeaponHud : MonoBehaviour
 
     void LateUpdate()
     {
-        readout.text = (combat.HasSword ? "LMB  SWORD\n" : equipment != null && equipment.MeleeAbility != null ? "LMB  " + equipment.MeleeAbility.name.ToUpperInvariant() + "\n" : "LMB  NO SWORD EQUIPPED\n") + WeaponLine(MechWeaponSlot.ThrowingAxe, "RMB") + "\n"
+        string melee = combat.HasSword ? "LMB  SWORD" : equipment != null && equipment.MeleeAbility != null
+            ? "LMB  " + equipment.MeleeAbility.name.ToUpperInvariant() : AnimationLine(equipment != null
+                ? equipment.GetEquippedPart(PartCategory.ArmL) : null, "LMB") ?? "LMB  NO SWORD EQUIPPED";
+        readout.text = melee + "\n" + WeaponLine(MechWeaponSlot.ThrowingAxe, "RMB") + "\n"
             + WeaponLine(MechWeaponSlot.Cannon, "Q") + "\n" + WeaponLine(MechWeaponSlot.Crossbow, "E") + (equipment != null ? "\nF  EQUIP NEARBY PART" : "");
+    }
+
+    static string AnimationLine(Part part, string key)
+    {
+        var animation = part != null ? part.GetComponent<MechWeaponAnimator>() : null;
+        if (animation == null || animation.Animations == null || !animation.Animations.animationOnly) return null;
+        return key + "  " + part.data.partName.ToUpperInvariant() + (animation.PreviewCooldownRemaining > 0f
+            ? $"  {animation.PreviewCooldownRemaining:0.0}s" : "  READY");
     }
 }

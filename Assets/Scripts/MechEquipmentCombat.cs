@@ -7,12 +7,49 @@ public sealed class MechEquipmentCombat : MonoBehaviour
 {
     EquipManager equipment;
     MechCombatController combat;
+    MechMovementController movement;
+    [SerializeField, Min(0f)] float weaponIdleDelay = 3f;
+    float weaponIdleTime;
+    public MechWeaponAnimator IdleWeapon { get; private set; }
     readonly Part[] ranged = new Part[3];
     readonly MechWeaponStats[] weapons = new MechWeaponStats[3];
     public Part Sword { get; private set; }
-    void Awake() { equipment = GetComponent<EquipManager>(); combat = GetComponent<MechCombatController>(); }
+    void Awake() { equipment = GetComponent<EquipManager>(); combat = GetComponent<MechCombatController>(); movement = GetComponent<MechMovementController>(); }
     void OnEnable() { equipment.EquipmentChanged += Refresh; Refresh(); }
-    void OnDisable() { equipment.EquipmentChanged -= Refresh; }
+    void OnDisable() { equipment.EquipmentChanged -= Refresh; ResetWeaponIdle(); }
+    void LateUpdate()
+    {
+        var state = movement != null ? movement.AnimationData : default;
+        bool stationary = movement != null && movement.isActiveAndEnabled && state.IsGrounded
+            && !state.IsBoosting && state.Speed < 0.05f && Mathf.Abs(state.VerticalSpeed) < 0.05f;
+        TickWeaponIdle(Time.deltaTime, stationary);
+    }
+
+    public void ResetWeaponIdle() { weaponIdleTime = 0f; IdleWeapon = null; }
+
+    // One owner arbitrates all its weapons; a part never starts an idle by itself.
+    public void TickWeaponIdle(float deltaTime, bool stationary)
+    {
+        if (!isActiveAndEnabled || !stationary) { ResetWeaponIdle(); return; }
+        for (int i = 0; i <= (int)PartCategory.Torso; i++)
+        {
+            var part = equipment.GetEquipped((PartCategory)i);
+            var driver = part != null ? part.GetComponent<MechWeaponAnimator>() : null;
+            if (driver != null && driver.CurrentPose != MechWeaponAnimator.PoseState.Neutral)
+            { ResetWeaponIdle(); return; }
+        }
+        weaponIdleTime += Mathf.Max(0f, deltaTime);
+        if (weaponIdleTime < weaponIdleDelay || IdleWeapon != null) return;
+        int candidates = 0;
+        for (int i = 0; i <= (int)PartCategory.Torso; i++)
+        {
+            var part = equipment.GetEquipped((PartCategory)i);
+            var driver = part != null ? part.GetComponent<MechWeaponAnimator>() : null;
+            if (driver == null || !driver.CanAnimate) continue;
+            // Reservoir sampling chooses uniformly without allocating a list.
+            if (Random.Range(0, ++candidates) == 0) IdleWeapon = driver;
+        }
+    }
     public MechAbilityDriver GetAbility(MechWeaponSlot slot)
     {
         var part = equipment.GetEquipped(slot == MechWeaponSlot.ThrowingAxe ? PartCategory.ArmL
@@ -28,6 +65,7 @@ public sealed class MechEquipmentCombat : MonoBehaviour
     }
     public bool TryMeleeAbility() => MeleeAbility != null && MeleeAbility.TryActivate();
     public Part GetPart(MechWeaponSlot slot) => ranged[(int)slot];
+    public Part GetEquippedPart(PartCategory category) => equipment.GetEquipped(category);
     public bool HasWeapon(MechWeaponSlot slot) => isActiveAndEnabled && Usable(GetPart(slot));
     public bool HasSword => isActiveAndEnabled && Usable(Sword);
     static bool Usable(Part part) => part != null && part.isEquipped && part.isActiveAndEnabled && part.EquippedBy != null;
@@ -39,6 +77,7 @@ public sealed class MechEquipmentCombat : MonoBehaviour
     public MechWeaponStats GetWeapon(MechWeaponSlot slot) => weapons[(int)slot];
     void Refresh()
     {
+        ResetWeaponIdle();
         Sword = null;
         for (int i = 0; i < ranged.Length; i++) { ranged[i] = null; weapons[i] = null; }
         for (int i = 0; i <= (int)PartCategory.Torso; i++)
