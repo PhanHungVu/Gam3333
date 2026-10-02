@@ -128,7 +128,7 @@ public class PickupDetector : MonoBehaviour
 
     void SelectPart(Part part)
     {
-        //if (manager.GetSelectedPart() == part) return;
+        if (part.isEquipped) return;
         SetHighlight(part);
         manager.SetSelectedPart(part);
         Debug.Log($"Selected part: {part.name}");
@@ -145,5 +145,16 @@ public class PickupDetector : MonoBehaviour
     {
         if (highlightElement != null) Destroy(highlightElement);
         highlightElement = null;
+    }
+
+    public void PartEquipped(Part part)
+    {
+        nearbyParts.Remove(part);
+        if (nearbyParts.Count != 0 ) SelectPart(nearbyParts[0]);
+        else
+        {
+            selectedIndex = -1;
+            ClearHighlight();
+        }
     }
 }

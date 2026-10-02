@@ -14,12 +14,14 @@ public class EquipManager : MonoBehaviour
     Socket[] sockets;
     Key inputKey;
     public PartSwapHUDScript partSwapHUDScript;
+    PickupDetector pickupDetector;
     public Part GetEquipped(PartCategory category) => equipped.TryGetValue(category, out var part) ? part : null;
     void Awake()
     {
         Enum.TryParse(interactKey.ToString(), out inputKey);
         var starting = GetComponentsInChildren<Part>(true);
         partSwapHUDScript = GetComponent<PartSwapHUDScript>();
+        pickupDetector = GetComponentInChildren<PickupDetector>(true);
         RefreshSockets();
         foreach (var part in starting)
             if ((part.isStartingPart || part.transform.parent.GetComponent<Socket>() != null) && part.partType == PartCategory.Torso) AttachStarting(part);
@@ -80,6 +82,7 @@ public class EquipManager : MonoBehaviour
         }
         nearby.Remove(part);
         EquipmentChanged?.Invoke();
+        pickupDetector.PartEquipped(part);
         return true;
     }
     public Part Unequip(PartCategory category) => Unequip(category, true);
