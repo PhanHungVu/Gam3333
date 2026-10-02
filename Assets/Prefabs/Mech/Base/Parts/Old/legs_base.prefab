@@ -122,6 +122,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6574564896049106630}
   - component: {fileID: 6840066504521858499}
+  - component: {fileID: 5925807152736960947}
   m_Layer: 0
   m_Name: legs_base
   m_TagString: Untagged
@@ -165,6 +166,18 @@ MonoBehaviour:
   partType: 3
   isStartingPart: 1
   isEquipped: 0
+--- !u!114 &5925807152736960947
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7893051478125242504}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee890f52fd95b214080a0deb712e588e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::BipedLocomotionModule
 --- !u!1 &7950157159272944090
 GameObject:
   m_ObjectHideFlags: 0

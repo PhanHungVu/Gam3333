@@ -47,14 +47,8 @@ public static class MechFoundationChecks
     static void Step(MechMovementController motor, Camera view, Vector2 move = default,
         bool sprint = false, bool jump = false, bool boost = false, float dt = 0.02f, bool assault = false)
     {
-        Type inputType = typeof(MechMovementController).GetNestedType("MovementInput", BindingFlags.NonPublic);
-        object input = Activator.CreateInstance(inputType);
-        inputType.GetField("move").SetValue(input, move);
-        inputType.GetField("sprint").SetValue(input, sprint);
-        inputType.GetField("jump").SetValue(input, jump);
-        inputType.GetField("quickBoost").SetValue(input, boost);
-        inputType.GetField("assaultBoost").SetValue(input, assault);
-        Call(motor, "Tick", input, view.transform, dt);
+        motor.Tick(new MechLocomotionInput { move = move, sprint = sprint, jump = jump,
+            jumpHeld = jump, quickBoost = boost, assaultBoost = assault }, view.transform, dt);
     }
     static MechTargetable Enemy(Vector3 position)
     {
@@ -87,6 +81,9 @@ public static class MechFoundationChecks
             SpiralBarrageChecks.Run(Check);
             MechAbilityChecks.Run(Check);
             MechPartsChecks.Run(Check);
+            MechLocomotionChecks.Run(Check);
+            MechAnimatedLegChecks.Run(Check);
+            MechUpperBodyChecks.Run(Check);
             Debug.Log("MECH CHECKS COMPLETE: " + checks);
             EditorApplication.Exit(0);
         }

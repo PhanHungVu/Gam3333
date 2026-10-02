@@ -1,5 +1,7 @@
 # Swappable mech combat and abilities
 
+Lower-body swapping and movement are covered in [modular locomotion milestones 1-3](../GroundMovement/Locomotion.md). Legs use the same equipment system as weapons.
+
 ## Player setup
 
 Use `Assets/Prefabs/Mech/Base/FullPlayer_mech_base.prefab`. A33 and Merge Test now use this integrated player. The existing `Prefab/Mech.prefab` remains a legacy prototype for regression checks; do not place both players in one scene.
