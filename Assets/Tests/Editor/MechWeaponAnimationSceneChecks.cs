@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -17,6 +18,7 @@ public static class MechWeaponAnimationSceneChecks
     static Part originalSword;
     static float next = -1f, deadline;
     static int phase = -2, shots;
+    static bool cycleHeld;
     [InitializeOnLoadMethod]
     static void Register() => EditorApplication.update += Update;
 
@@ -57,6 +59,8 @@ public static class MechWeaponAnimationSceneChecks
             {
                 case -2:
                     Time.captureDeltaTime = 1f / 60f;
+                    foreach (var spawner in Object.FindObjectsByType<EnemySpawnerManager>()) spawner.enabled = false;
+                    foreach (var enemy in Object.FindObjectsByType<EnemyAgent>()) enemy.gameObject.SetActive(false);
                     InputSystem.settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
                     InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
                     motor = Object.FindAnyObjectByType<MechMovementController>();
@@ -117,27 +121,34 @@ public static class MechWeaponAnimationSceneChecks
                         && equipment.GetEquipped(PartCategory.Legs).GetComponent<MechLegAnimator>().CurrentPose == MechLegAnimator.PoseState.Boost,
                         "Heavy swap/boost works while weapons are reloading");
                     Pose(PartCategory.ShoulderL, MechWeaponAnimator.PoseState.Reload, "Cannon");
-                    Keys(); PlacePickup("Mace Animation Pickup"); delay = 0.45f; break;
-                case 10: Keys(Key.F); break;
+                    Keys(); delay = 1.2f; break;
+                case 10: PlacePickup("Mace Animation Pickup"); delay = 0.45f; break;
                 case 11:
-                    Check(Driver(PartCategory.ArmL).Animations.name == "Mace", "F picks up the animated mace normally");
+                    if (!SelectPickupAndPressF("Mace Animation Pickup")) { next = Time.time + 0.15f; return; }
+                    break;
+                case 12:
+                    ConfirmPickup("EquippedPartPos1");
+                    Check(Driver(PartCategory.ArmL).Animations.name == "Mace", "F and the left swap button equip the animated mace");
                     // Keep the dropped sword outside pickup range before selecting
-                    // the second test pickup; gameplay correctly picks the closest part.
+                    // the second test pickup's highlighted selection.
                     originalSword.GetComponent<Rigidbody>().isKinematic = true;
                     originalSword.transform.position += Vector3.right * 100f;
                     Physics.SyncTransforms();
                     Keys(); Button(MouseButton.Left); delay = 0.15f; break;
-                case 12:
+                case 13:
                     Pose(PartCategory.ArmL, MechWeaponAnimator.PoseState.Fire, "Mace");
                     Capture("mace-fire"); Button(); PlacePickup("Arm Crossbow Animation Pickup"); delay = 0.45f; break;
-                case 13: Keys(Key.F); break;
                 case 14:
-                    Check(Driver(PartCategory.ArmR).Animations.name == "ArmCrossbow", "F picks up the animated arm crossbow normally");
-                    Keys(); Button(MouseButton.Right); delay = 0.1f; break;
+                    if (!SelectPickupAndPressF("Arm Crossbow Animation Pickup")) { next = Time.time + 0.15f; return; }
+                    break;
                 case 15:
+                    ConfirmPickup("EquippedPartPos2");
+                    Check(Driver(PartCategory.ArmR).Animations.name == "ArmCrossbow", "F and the right swap button equip the animated arm crossbow");
+                    Keys(); Button(MouseButton.Right); delay = 0.1f; break;
+                case 16:
                     Pose(PartCategory.ArmR, MechWeaponAnimator.PoseState.Fire, "ArmCrossbow");
                     Capture("arm-crossbow-fire"); Button(); delay = 0.3f; break;
-                case 16:
+                case 17:
                     Pose(PartCategory.ArmR, MechWeaponAnimator.PoseState.Reload, "ArmCrossbow");
                     Capture("arm-crossbow-reload"); delay = 2.2f; break;
                 default:
@@ -166,8 +177,39 @@ public static class MechWeaponAnimationSceneChecks
         var pickup = GameObject.Find(name);
         pickup.GetComponent<Rigidbody>().isKinematic = true;
         var collider = pickup.GetComponentInChildren<Collider>();
-        pickup.transform.position += motor.transform.position + motor.transform.right * 2.5f - collider.bounds.center;
+        // Place inside the actual authored pickup trigger, whose scale/offset
+        // can differ from the older test's fixed distance from the player root.
+        var range = motor.GetComponentInChildren<PickupDetector>().GetComponent<Collider>().bounds;
+        pickup.transform.position += range.center + motor.transform.right * 0.75f - collider.bounds.center;
         Physics.SyncTransforms();
+    }
+
+    static void ConfirmPickup(string position)
+    {
+        var selector = motor.GetComponent<PartSwapHUDScript>();
+        if (selector == null || !selector.IsAvailable) return;
+        var button = GameObject.Find("Canvas/PartSwapHUD/" + position)?.GetComponentInChildren<UnityEngine.UI.Button>();
+        Check(button != null && button.interactable, "F opens the actual teammate swap menu");
+        button.onClick.Invoke();
+    }
+
+    static bool SelectPickupAndPressF(string name)
+    {
+        var pickup = GameObject.Find(name).GetComponent<Part>();
+        Check(motor.GetComponentInChildren<PickupDetector>().NearbyParts.Contains(pickup),
+            "Real physics reports nearby " + name);
+        if (equipment.GetSelectedPart() != pickup)
+        {
+            // Restored Heavy/other dropped parts can also be in range. The new
+            // selector deliberately uses V, rather than automatically choosing
+            // whichever collider happens to be closest to the player root.
+            if (cycleHeld) Keys(); else Keys(Key.V);
+            cycleHeld = !cycleHeld;
+            return false;
+        }
+        cycleHeld = false;
+        Keys(Key.F);
+        return true;
     }
 
     static void Capture(string label)

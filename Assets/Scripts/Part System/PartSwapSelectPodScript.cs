@@ -1,4 +1,3 @@
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class PartSwapSelectPodScript : MonoBehaviour
@@ -6,6 +5,7 @@ public class PartSwapSelectPodScript : MonoBehaviour
     EquipManager manager;
     PartSwapHUDScript partswapper;
     Part selectedPart;
+    PartCategory targetCategory;
     void Start()
     {
 
@@ -19,14 +19,14 @@ public class PartSwapSelectPodScript : MonoBehaviour
 
     public void Equip()
     {
-        manager.TryEquip(selectedPart);
-        partswapper.ClosePartList();
+        if (manager != null && manager.TryEquip(selectedPart, targetCategory)) partswapper.ClosePartList();
     }
 
-    public void SetStakeholders(EquipManager m, PartSwapHUDScript p, Part part)
+    public void SetStakeholders(EquipManager m, PartSwapHUDScript p, Part part, PartCategory category)
     {
         manager = m;
         partswapper = p;
         selectedPart = part;
+        targetCategory = category;
     }
 }

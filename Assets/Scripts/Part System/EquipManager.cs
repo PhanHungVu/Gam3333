@@ -10,13 +10,13 @@ public class EquipManager : MonoBehaviour
     [Min(0.01f)] public float partScale = 1f;
     public event Action EquipmentChanged;
     readonly Dictionary<PartCategory, Part> equipped = new Dictionary<PartCategory, Part>();
-    readonly HashSet<Part> nearby = new HashSet<Part>();
+    Part selectedPart;
     Socket[] sockets;
     Key inputKey;
     public PartSwapHUDScript partSwapHUDScript;
     PickupDetector pickupDetector;
     public Part GetEquipped(PartCategory category) => equipped.TryGetValue(category, out var part) ? part : null;
-    // Maximum health supplied by the current loadout; damage and HUD come later.
+    // Maximum health supplied by the current loadout.
     public float Health
     {
         get
@@ -47,24 +47,29 @@ public class EquipManager : MonoBehaviour
         if (socket != null && GetEquipped(part.partType) == null) Attach(socket, part);
     }
     void RefreshSockets() => sockets = GetComponentsInChildren<Socket>(true);
-    public void SetSelectedPart(Part part) { if (part != null && !part.isEquipped) nearby.Add(part); }
-    public Part GetSelectedPart() { foreach (var part in nearby) if (part != null && !part.isEquipped && part.gameObject.activeInHierarchy) return part; return null; }
-    public void ClearSelectedPart(Part part) => nearby.Remove(part);
+    public void SetSelectedPart(Part part) { if (part != null && !part.isEquipped) selectedPart = part; }
+    public Part GetSelectedPart() => selectedPart != null && !selectedPart.isEquipped && selectedPart.gameObject.activeInHierarchy ? selectedPart : null;
+    public void ClearSelectedPart(Part part) { if (selectedPart == part) selectedPart = null; }
     void Update()
     {
         if (Time.timeScale <= 0 || Keyboard.current == null || inputKey == Key.None || !Keyboard.current[inputKey].wasPressedThisFrame) return;
-        Part closest = null; float distance = float.MaxValue;
-        foreach (var part in nearby)
-        {
-            if (part == null || part.isEquipped || !part.gameObject.activeInHierarchy) continue;
-            float d = (part.transform.position - transform.position).sqrMagnitude;
-            if (d < distance) { distance = d; closest = part; }
-        }
-        //if (closest != null) TryEquip(closest);
-        if (closest != null && partSwapHUDScript != null)
-        {
-            partSwapHUDScript.ShowPartList(); //tryequip happens in partswapselectpodscript, in partswapselectpod prefab
-        }
+        var part = GetSelectedPart();
+        if (part == null) return;
+        if (partSwapHUDScript != null && partSwapHUDScript.IsAvailable) partSwapHUDScript.ShowPartList();
+        else TryEquip(part);
+    }
+    public bool TryEquip(Part part, PartCategory category)
+    {
+        if (part == null) return false;
+        var original = part.partType;
+        bool compatible = original == category
+            || (original == PartCategory.ArmL || original == PartCategory.ArmR) && (category == PartCategory.ArmL || category == PartCategory.ArmR)
+            || (original == PartCategory.ShoulderL || original == PartCategory.ShoulderR) && (category == PartCategory.ShoulderL || category == PartCategory.ShoulderR);
+        if (!compatible || part.isEquipped) return false;
+        part.partType = category;
+        if (TryEquip(part)) return true;
+        part.partType = original;
+        return false;
     }
     public bool TryEquip(Part part)
     {
@@ -92,9 +97,9 @@ public class EquipManager : MonoBehaviour
             foreach (var pair in equipped)
                 if (pair.Key != PartCategory.Torso && pair.Value != null) Place(FindSocketForType(pair.Key), pair.Value);
         }
-        nearby.Remove(part);
+        ClearSelectedPart(part);
         EquipmentChanged?.Invoke();
-        pickupDetector.PartEquipped(part);
+        if (pickupDetector != null) pickupDetector.PartEquipped(part);
         return true;
     }
     public Part Unequip(PartCategory category) => Unequip(category, true);

@@ -22,23 +22,20 @@ public class PickupDetector : MonoBehaviour
     void Awake()
     {
         manager = GetComponentInParent<EquipManager>();
-        partSwapHudPopupParent = GameObject.Find("Canvas/PartSwapPopup");
-        if (partSwapHudPopupParent == null)
+        if (partSwapHudPopupParent == null) partSwapHudPopupParent = GameObject.Find("Canvas/PartSwapPopup");
+        if (partSwapHudPopupParent != null)
         {
-            Debug.LogError("PickupDetector: Could not find PartSwapPopup parent object in the scene.");
-            return;
+            popup1 = partSwapHudPopupParent.transform.Find("Popup1")?.gameObject;
+            popup2 = partSwapHudPopupParent.transform.Find("Popup2")?.gameObject;
         }
-        popup1 = partSwapHudPopupParent.transform.Find("Popup1").gameObject;
-        popup2 = partSwapHudPopupParent.transform.Find("Popup2").gameObject;
-        popup1.SetActive(false);
-        popup2.SetActive(false);
+        ShowPopups(false, false);
     }
     readonly List<Part> uniqueParts = new List<Part>();
     void RebuildUnique()
     {
         uniqueParts.Clear();
         foreach (var p in nearbyParts)
-            if (p != null && !uniqueParts.Contains(p))
+            if (p != null && !p.isEquipped && p.gameObject.activeInHierarchy && !uniqueParts.Contains(p))
                 uniqueParts.Add(p);
     }
     private void Update()
@@ -49,8 +46,8 @@ public class PickupDetector : MonoBehaviour
         if (count == 0)
         {
             selectedIndex = -1;
-            popup1.SetActive(false);
-            popup2.SetActive(false);
+            ShowPopups(false, false);
+            manager.ClearSelectedPart(manager.GetSelectedPart());
             ClearHighlight();
             return;
         }
@@ -58,22 +55,26 @@ public class PickupDetector : MonoBehaviour
         if (count == 1)
         {
             selectedIndex = 0;
-            popup1.SetActive(true);
-            popup2.SetActive(false);
+            ShowPopups(true, false);
         }
         else
         {
-            popup1.SetActive(false);
-            popup2.SetActive(true);
+            ShowPopups(false, true);
 
             // also guards against a stale index after parts leave the range
             if (selectedIndex < 0 || selectedIndex >= count) selectedIndex = 0;
 
-            if (Keyboard.current.vKey.wasPressedThisFrame)
+            if (Keyboard.current != null && Keyboard.current.vKey.wasPressedThisFrame)
                 selectedIndex = (selectedIndex + 1) % count;
         }
 
         SelectPart(uniqueParts[selectedIndex]);
+    }
+
+    void ShowPopups(bool single, bool multiple)
+    {
+        if (popup1 != null) popup1.SetActive(single);
+        if (popup2 != null) popup2.SetActive(multiple);
     }
 
     void OnTriggerEnter(Collider other) => OnTriggerStay(other);
@@ -124,6 +125,8 @@ public class PickupDetector : MonoBehaviour
         tracked.Clear();
         nearbyParts.Clear();
         selectedIndex = -1;
+        ShowPopups(false, false);
+        ClearHighlight();
     }
 
     void SelectPart(Part part)
@@ -131,11 +134,11 @@ public class PickupDetector : MonoBehaviour
         if (part.isEquipped) return;
         SetHighlight(part);
         manager.SetSelectedPart(part);
-        Debug.Log($"Selected part: {part.name}");
     }
 
     void SetHighlight(Part part)
     {
+        if (highlightElementPrefab == null) return;
         if (highlightElement == null)
             highlightElement = Instantiate(highlightElementPrefab);
         highlightElement.transform.position = part.transform.position;
@@ -149,8 +152,11 @@ public class PickupDetector : MonoBehaviour
 
     public void PartEquipped(Part part)
     {
-        nearbyParts.Remove(part);
-        if (nearbyParts.Count != 0 ) SelectPart(nearbyParts[0]);
+        var colliders = new List<Collider>();
+        foreach (var pair in tracked) if (pair.Value == part) colliders.Add(pair.Key);
+        foreach (var collider in colliders) RemoveCollider(collider);
+        RebuildUnique();
+        if (uniqueParts.Count != 0) { selectedIndex = 0; SelectPart(uniqueParts[0]); }
         else
         {
             selectedIndex = -1;

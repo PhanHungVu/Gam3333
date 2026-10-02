@@ -22,7 +22,7 @@ No duplicate sword, throwing axe, cannon or crossbow data assets were created. T
 | E | ShoulderR | Large crossbow | 30 | 50 | 1 s | 40 / 60 m |
 | F | Nearby matching part | Equip / swap | | | | |
 
-F replaces the teammate's E pickup binding, which conflicted with cannon fire. The closest part inside the pickup trigger is selected. Startup only installs this player's own child parts, including the preinstalled torso; it no longer searches the scene for other players' equipment. Torso replacement transfers equipped socket occupants when the replacement supports all required sockets.
+F opens the teammate's part selection HUD for the highlighted pickup. V cycles between distinct nearby parts, including parts with multiple colliders. The left/right buttons choose the actual arm or shoulder socket; empty sockets are supported. Escape closes the menu. Camera and cursor state are restored when the menu closes or the player is disabled. Scenes without this HUD retain direct F pickup. Startup only installs this player's own child parts, including the preinstalled torso; it no longer searches the scene for other players' equipment. Torso replacement transfers equipped socket occupants when the replacement supports all required sockets.
 
 Ammo and reload deadlines belong to each physical Part instance. Dropping and re-equipping never refills it or clears its reload. PartData assets do not contain mutable ammunition. A missing weapon disables its attack and is reported in the HUD. Ranged parts provide their own optional muzzle Transform; the cannon's mesh-only recoil child follows swaps. The legacy prototype still uses its original built-in loadout without MechEquipmentCombat.
 

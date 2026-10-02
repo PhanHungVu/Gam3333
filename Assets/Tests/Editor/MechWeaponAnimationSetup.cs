@@ -101,7 +101,7 @@ public static class MechWeaponAnimationSetup
         return entry;
     }
 
-    static void BuildRig(Part part, GameObject source, MechWeaponAnimationImportSettings.Entry entry)
+    internal static void BuildRig(Part part, GameObject source, MechWeaponAnimationImportSettings.Entry entry)
     {
         var oldMeshes = part.GetComponentsInChildren<MeshFilter>(true)
             .Where(m => m.sharedMesh != null && m.sharedMesh.name.EndsWith("Mesh", StringComparison.Ordinal)

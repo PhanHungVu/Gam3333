@@ -1,5 +1,4 @@
 using TMPro;
-using Unity.AppUI.UI;
 using UnityEngine;
 
 public class PartSwapHUDScript : MonoBehaviour
@@ -13,13 +12,19 @@ public class PartSwapHUDScript : MonoBehaviour
     GameObject equippedPartPos1;
     GameObject equippedPartPos2;
     GameObject equippedPartPos3;
+    bool isOpen;
+    bool cameraWasEnabled;
+    CursorLockMode previousCursorLock;
+    bool previousCursorVisible;
+    public bool IsAvailable => partSwapHUDPrefab != null && partSwapHudPodPrefab != null;
 
     private void Awake()
     {
         manager = GetComponent<EquipManager>();
         GameObject cam = GameObject.FindWithTag("MainCamera");
-        cameraControl = cam.GetComponent<CameraControlThirdPerson>();
+        cameraControl = cam != null ? cam.GetComponent<CameraControlThirdPerson>() : null;
         partSwapHUDPrefab = GameObject.Find("Canvas/PartSwapHUD");
+        if (partSwapHUDPrefab == null) return;
         partSwapHUDPrefab.SetActive(false);
         equippedPartPos1 = partSwapHUDPrefab.transform.Find("EquippedPartPos1").gameObject;
         equippedPartPos2 = partSwapHUDPrefab.transform.Find("EquippedPartPos2").gameObject;
@@ -30,20 +35,29 @@ public class PartSwapHUDScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        if (isOpen && UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ClosePartList();
     }
+
+    void OnDisable() { if (isOpen) ClosePartList(); }
 
     public void ShowPartList()
     {
+        var nearbyPart = manager.GetSelectedPart();
+        if (!IsAvailable || nearbyPart == null) return;
         ClearActivePods();
-        cameraControl.enabled = false;  
+        if (!isOpen)
+        {
+            cameraWasEnabled = cameraControl != null && cameraControl.enabled;
+            previousCursorLock = Cursor.lockState; previousCursorVisible = Cursor.visible;
+            if (cameraControl != null) cameraControl.enabled = false;
+            Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
+            isOpen = true;
+        }
         partSwapHUDPrefab.SetActive(true);
         for (int i = 0; i < totalPartList.Length; i++)
         {
             totalPartList[i] = null;
         }
-        var nearbyPart = manager.GetSelectedPart();
-        if (nearbyPart == null) return;
         totalPartList[0] = nearbyPart;
         PartCategory category = totalPartList[0].partType;
         if (category == PartCategory.ArmL || category == PartCategory.ArmR)
@@ -81,7 +95,11 @@ public class PartSwapHUDScript : MonoBehaviour
 
         //set button for equipped part to swap with new part, do not activate new button
         var selectedPart = manager.GetSelectedPart();
-        newPartSwapPod.GetComponent<PartSwapSelectPodScript>().SetStakeholders(manager, this, selectedPart); //selectedpart is still the closest part change it
+        PartCategory category = selectedPart.partType;
+        bool paired = category == PartCategory.ArmL || category == PartCategory.ArmR || category == PartCategory.ShoulderL || category == PartCategory.ShoulderR;
+        if (category == PartCategory.ArmL || category == PartCategory.ArmR) category = i == 2 ? PartCategory.ArmR : PartCategory.ArmL;
+        else if (category == PartCategory.ShoulderL || category == PartCategory.ShoulderR) category = i == 2 ? PartCategory.ShoulderR : PartCategory.ShoulderL;
+        newPartSwapPod.GetComponent<PartSwapSelectPodScript>().SetStakeholders(manager, this, selectedPart, category);
 
         foreach (TMP_Text text in texts)
         {
@@ -93,12 +111,11 @@ public class PartSwapHUDScript : MonoBehaviour
                     UnityEngine.UI.Button btn = newPartSwapPod.GetComponentInChildren<UnityEngine.UI.Button>();
                     if (btn != null) btn.interactable = false;
                 }
-                else if (i == 1 && totalPartList[2] != null)
+                else if (i == 1 && paired)
                 {
-                    Debug.Log(totalPartList.Length);
                     text.text = "Left Part";
                 }
-                else if (i == 2 && totalPartList[2] != null)
+                else if (i == 2 && paired)
                 {
                     text.text = "Right Part";
                 }
@@ -109,22 +126,24 @@ public class PartSwapHUDScript : MonoBehaviour
             }
             if (text.gameObject.name == "PartNameText")
             {
-                text.text = totalPartList[i].data.partName;
+                text.text = totalPartList[i] != null && totalPartList[i].data != null ? totalPartList[i].data.partName : "Empty";
             }
             if (text.gameObject.name == "PartTypeText")
             {
-                text.text = totalPartList[i].partType.ToString();
+                text.text = category.ToString();
             }
             if (text.gameObject.name == "StatNameText")
             {
-                foreach (var stat in totalPartList[i].data.stats)
+                text.text = string.Empty;
+                if (totalPartList[i] != null && totalPartList[i].data != null) foreach (var stat in totalPartList[i].data.stats)
                 {
                     text.text += stat.type.ToString() + "\n";
                 }
             }
             if (text.gameObject.name == "StatNumText")
             {
-                foreach (var stat in totalPartList[i].data.stats)
+                text.text = string.Empty;
+                if (totalPartList[i] != null && totalPartList[i].data != null) foreach (var stat in totalPartList[i].data.stats)
                 {
                     text.text += stat.value.ToString() + "\n";
                 }
@@ -133,12 +152,14 @@ public class PartSwapHUDScript : MonoBehaviour
     }
     public void ClearActivePods()
     {
+        if (partSwapHUDPrefab == null) return;
         foreach (Transform child in partSwapHUDPrefab.transform)
         {
             if (child.gameObject.name == "NewPartPos" || child.gameObject.name == "EquippedPartPos1" || child.gameObject.name == "EquippedPartPos2" || child.gameObject.name == "EquippedPartPos3")
             {
                 foreach (Transform podChild in child)
                 {
+                    podChild.gameObject.SetActive(false);
                     Destroy(podChild.gameObject);
                 }
             }
@@ -148,7 +169,10 @@ public class PartSwapHUDScript : MonoBehaviour
     public void ClosePartList()
     {
         ClearActivePods();
-        partSwapHUDPrefab.SetActive(false);
-        cameraControl.enabled = true;
+        if (partSwapHUDPrefab != null) partSwapHUDPrefab.SetActive(false);
+        if (!isOpen) return;
+        if (cameraControl != null) cameraControl.enabled = cameraWasEnabled;
+        Cursor.lockState = previousCursorLock; Cursor.visible = previousCursorVisible;
+        isOpen = false;
     }
 }

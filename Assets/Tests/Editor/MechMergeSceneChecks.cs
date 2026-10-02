@@ -108,6 +108,7 @@ public static class MechMergeSceneChecks
                 }
                 Check(Object.FindObjectsByType<MechMovementController>().Length == 1,
                     "Enemy spawning does not create extra player controllers");
+                MechMerge2SelectionChecks.Run(motor);
                 SessionState.SetBool(Pending, false);
                 Debug.Log("MERGE SCENE CHECKS COMPLETE");
                 EditorApplication.Exit(0);
