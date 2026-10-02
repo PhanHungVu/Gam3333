@@ -20259,6 +20259,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d8c5232c2d18cd409ba201304eadd29, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PartPickup
+  partSwapHudPopupParent: {fileID: 0}
+  highlightElementPrefab: {fileID: 2660861773203468729, guid: 02564f784f7b5ce4f97c2f616cba0a62, type: 3}
 --- !u!1 &2676866019859857318
 GameObject:
   m_ObjectHideFlags: 0
@@ -20437,6 +20439,7 @@ GameObject:
   - component: {fileID: 4847610582748452699}
   - component: {fileID: 259791631179473285}
   - component: {fileID: 5100146461133784099}
+  - component: {fileID: 9208706015051774703}
   m_Layer: 0
   m_Name: FullPlayer_mech_base
   m_TagString: Player
@@ -20476,6 +20479,7 @@ MonoBehaviour:
   rulesConfig: {fileID: 11400000, guid: ee7e37eb664fbfb4695ed0f740b434c4, type: 2}
   interactKey: 102
   partScale: 0.5
+  partSwapHUDScript: {fileID: 0}
 --- !u!114 &4187055195490756122
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20646,6 +20650,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechMovementController
   inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  readPlayerInput: 1
   gameplayCamera: {fileID: 0}
   energy: {fileID: 6057257043024523587}
   moveSpeed: 6
@@ -20798,6 +20803,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MechPlayerRig
   cameraPrefab: {fileID: 3557168452864418661, guid: ee0d32885dad7e8499e06dc440d1680f, type: 3}
   cursorPrefab: {fileID: 7007896882566638223, guid: bc1440da9e190b948ae13d16af646f0c, type: 3}
+--- !u!114 &9208706015051774703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3053454427299694765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0aeff150d89a2134790d54b6643b3c7a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PartSwapHUDScript
+  partSwapHudPodPrefab: {fileID: 6491257499953311691, guid: dbdff43322435234088d31564d299411, type: 3}
+  cameraControl: {fileID: 0}
 --- !u!1 &3220106313594343585
 GameObject:
   m_ObjectHideFlags: 0
