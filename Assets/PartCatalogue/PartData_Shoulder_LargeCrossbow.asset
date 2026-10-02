@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PartData
   partId: backweaponA4
   partName: Large Crossbow
-  description: 
+  description: single shot long range, precision
   stats:
   - type: 2
     value: 30
@@ -29,6 +29,7 @@ MonoBehaviour:
   - type: 7
     value: 1
   weapon: 4
+  ability: 0
   metresPerGolem: 4
   maximumRangeMultiplier: 1.5
   cannonExplosionRadius: 6
