@@ -2860,6 +2860,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: FullPlayer_mech_base
       objectReference: {fileID: 0}
+    - target: {fileID: 4187055195490756122, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
+      propertyPath: spiralBarrage
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5013543725712863560, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
       propertyPath: m_Name
       value: Blue Golem Joint VFX

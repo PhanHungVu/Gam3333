@@ -9,7 +9,7 @@ using Object = UnityEngine.Object;
 
 public static class MechAnimatedLegsSetup
 {
-    public const string Source = "Assets/Anim/golem2.glb";
+    public const string Source = "Assets/Anim/golem2_v2.glb";
     public const string PlayerPath = "Assets/Prefabs/Mech/Base/FullPlayer_mech_base.prefab";
     public const string Folder = "Assets/Prefabs/Mech/Locomotion";
     const string AnimationFolder = "Assets/Anim/Locomotion";
@@ -19,9 +19,9 @@ public static class MechAnimatedLegsSetup
         if (!Application.isBatchMode) throw new InvalidOperationException("Isolated batch project only.");
         if (!AssetDatabase.IsValidFolder(AnimationFolder)) AssetDatabase.CreateFolder("Assets/Anim", "Locomotion");
         var imported = AssetDatabase.LoadAssetAtPath<GameObject>(Source);
-        var clips = AssetDatabase.LoadAllAssetsAtPath(Source).OfType<AnimationClip>().ToArray();
-        var fastClip = clips.Single(c => c.name == "Biped_Run");
-        var heavyClip = clips.Single(c => c.name == "Heavy_Walk.001");
+        MechBipedAnimationImport.RefreshClips();
+        var fastClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(MechBipedAnimationImport.Folder + "/Biped_Run.anim");
+        var heavyClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(MechBipedAnimationImport.Folder + "/Heavy_Walk.anim");
         var player = PrefabUtility.LoadPrefabContents(PlayerPath);
         var oldLegs = player.GetComponentsInChildren<Part>(true).Single(p => p.partType == PartCategory.Legs);
         var oldModel = oldLegs.GetComponent<MechLegAnimator>() != null

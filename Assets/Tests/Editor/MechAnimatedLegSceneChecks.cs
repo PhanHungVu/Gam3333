@@ -65,7 +65,7 @@ public static class MechAnimatedLegSceneChecks
                 Check(torsoVisual != null && motor.GetComponent<MechUpperBodyAnimation>() != null, "Scene includes the upper-body animation connection");
                 bodyRest = torsoVisual.localPosition; headRest = headVisual.localPosition;
                 Check(fast.data.partId == "Legs_Fast", "Actual scene defaults to fast legs");
-                Check(MechAnimatedLegChecks.ClipWeight(fast.GetComponent<MechLegAnimator>(), "Biped_Stand") > 0.99f,
+                Check(MechAnimatedLegChecks.ClipWeight(fast.GetComponent<MechLegAnimator>(), "Biped_Neutral") > 0.99f,
                     "Scene starts with planted idle legs");
                 Capture("idle");
                 keyboard = InputSystem.AddDevice<Keyboard>();
@@ -132,10 +132,9 @@ public static class MechAnimatedLegSceneChecks
             }
             else
             {
-                Check(MechAnimatedLegChecks.ClipWeight(pickup.GetComponent<MechLegAnimator>(), "Biped_Stand") > 0.99f,
+                Check(MechAnimatedLegChecks.ClipWeight(pickup.GetComponent<MechLegAnimator>(), "Heavy_Neutral") > 0.99f,
                     "Releasing movement returns the equipped heavy rig to idle");
-                Check(Vector3.Distance(torsoVisual.localPosition, bodyRest) < 0.01f && Vector3.Distance(headVisual.localPosition, headRest) < 0.01f,
-                    "Body and head settle to their authored standing pose when input stops");
+                MechAnimationV2Checks.CheckNeutralPose(pickup.GetComponent<MechLegAnimator>(), Check);
                 Check(equipment.GetEquipped(PartCategory.Torso) == torso && Camera.main.GetComponent<CameraControlThirdPerson>().Target == motor.transform,
                     "Both swapping paths preserve the torso and existing camera target");
                 InputSystem.RemoveDevice(keyboard);

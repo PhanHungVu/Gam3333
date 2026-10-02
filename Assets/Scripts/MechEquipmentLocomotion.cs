@@ -23,9 +23,10 @@ public sealed class MechEquipmentLocomotion : MonoBehaviour
         var legs = equipment.GetEquipped(PartCategory.Legs);
         var nextAnimator = legs != null ? legs.GetComponent<MechLegAnimator>() : null;
         float phase = legAnimator != null ? legAnimator.NormalizedPhase : 0f;
+        var pose = legAnimator != null ? legAnimator.CurrentPose : MechLegAnimator.PoseState.Neutral;
         if (legAnimator != nextAnimator && legAnimator != null) legAnimator.Bind(null);
         movement.SetLocomotionModule(legs != null ? legs.GetComponent<LocomotionModule>() : null);
         legAnimator = nextAnimator;
-        if (legAnimator != null) legAnimator.Bind(movement, phase);
+        if (legAnimator != null) legAnimator.Bind(movement, phase, pose);
     }
 }

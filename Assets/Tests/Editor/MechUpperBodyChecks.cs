@@ -112,8 +112,7 @@ public static class MechUpperBodyChecks
                 "Modules without upper-body channels return safely to the neutral pose");
             player.GetComponent<MechLocomotionDebug>().TrySwap(0);
             Step(player, view.transform, 100, Vector2.zero);
-            check(Vector3.Distance(torsoMesh.localPosition, bodyRest) < 0.002f && Vector3.Distance(headMesh.localPosition, headRest) < 0.002f,
-                "Stopping movement settles the body/head back into the original standing pose");
+            MechAnimationV2Checks.CheckNeutralPose(equipment.GetEquipped(PartCategory.Legs).GetComponent<MechLegAnimator>(), check);
         }
         finally
         {
@@ -124,7 +123,9 @@ public static class MechUpperBodyChecks
 
     static void CheckReconstruction(MechLegAnimator driver, GameObject reference, string name, Action<bool, string> check)
     {
-        var clip = AssetDatabase.LoadAllAssetsAtPath(MechAnimatedLegsSetup.Source).OfType<AnimationClip>().Single(c => c.name == name);
+        // The original walking motion survives in Unity even when the GLB no longer contains it.
+        var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(MechBipedAnimationImport.Folder + "/"
+            + (name == "Heavy_Walk.001" ? "Heavy_Walk" : name) + ".anim");
         string[] bones = { "Armature/Root", "Armature/Root/Body", "Armature/Root/Body/Head", "Armature/Root/Leg.L", "Armature/Root/Leg.L/Foot.L",
             "Armature/Root/Leg.R", "Armature/Root/Leg.R/Foor.R" };
         foreach (float phase in new[] { 0.17f, 0.43f, 0.76f })

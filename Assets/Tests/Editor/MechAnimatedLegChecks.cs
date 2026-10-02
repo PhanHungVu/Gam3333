@@ -30,7 +30,7 @@ public static class MechAnimatedLegChecks
             check(fast.data.partId == "Legs_Fast" && driver != null, "Integrated player starts with the real fast animated leg part");
             check(Mathf.Abs(equipment.partScale - 0.5f) < 0.001f && Mathf.Abs(fast.transform.lossyScale.x - 0.5f) < 0.001f,
                 "Runtime equipment retains the authored half-scale mech dimensions");
-            check(ClipWeight(driver, "Biped_Stand") > 0.99f, "Standing fast legs use a stable idle pose");
+            check(ClipWeight(driver, "Biped_Neutral") > 0.99f, "Standing fast legs use their neutral clip");
             var skin = driver.GetComponentInChildren<SkinnedMeshRenderer>();
             check(skin.enabled && driver.GetComponentsInChildren<Renderer>(true).Count(r => r.enabled && !(r is ParticleSystemRenderer)) == 1,
                 "Animated module shows one leg mesh without duplicate torso/head renderers");
@@ -45,10 +45,8 @@ public static class MechAnimatedLegChecks
             check(Mathf.Abs(motor.AnimationData.Speed - 6f) < 0.08f && ClipWeight(driver, "Biped_Run") > 0.99f,
                 "Moving the default player runs the fast clip at the existing 6 m/s speed");
             Transform leg = driver.Animator.transform.Find("Armature/Root/Leg.L");
-            Quaternion before = leg.localRotation;
             Vector3 rootPosition = player.transform.position;
-            driver.Animator.Update(0.2f);
-            check(Quaternion.Angle(before, leg.localRotation) > 2f, "Fast animation visibly changes the leg bone pose");
+            check(BoneChanges(driver.Animator, leg), "Fast animation visibly changes the leg bone pose");
             check(player.transform.position == rootPosition && !driver.Animator.applyRootMotion,
                 "Sampling the real animation never moves the gameplay root");
             float phase = driver.NormalizedPhase;
@@ -75,9 +73,7 @@ public static class MechAnimatedLegChecks
             check(Mathf.Abs(motor.AnimationData.Speed - 3f) < 0.08f && ClipWeight(heavyDriver, "Heavy_Walk.001") > 0.99f,
                 "Heavy rating slows movement to 3 m/s while its authored heavy gait plays normally");
             leg = heavyDriver.Animator.transform.Find("Armature/Root/Leg.L");
-            before = leg.localRotation;
-            heavyDriver.Animator.Update(0.25f);
-            check(Quaternion.Angle(before, leg.localRotation) > 2f, "Heavy animation changes bone transforms rather than just changing a label");
+            check(BoneChanges(heavyDriver.Animator, leg), "Heavy animation changes bone transforms rather than just changing a label");
             check(heavyDriver.Animator.runtimeAnimatorController.animationClips.Any(c => c.name == "Heavy_Walk.001" && c.isLooping),
                 "Heavy walk retains the imported looping clip");
             phase = heavyDriver.NormalizedPhase;
@@ -87,7 +83,7 @@ public static class MechAnimatedLegChecks
             check(heavyDriver.Animator.enabled && ClipWeight(heavyDriver, "Heavy_Walk.001") > 0.99f,
                 "Re-enabling the bridge resumes the current module and movement state");
             Step(motor, equipment, view, 100);
-            check(ClipWeight(heavyDriver, "Biped_Stand") > 0.99f, "Stopping movement blends heavy legs back to a planted idle pose");
+            check(ClipWeight(heavyDriver, "Heavy_Neutral") > 0.99f, "Stopping movement blends heavy legs back to their neutral pose");
             Step(motor, equipment, view, 1, Vector2.up, jump: true);
             Step(motor, equipment, view, 12, Vector2.up);
             check(!motor.IsGrounded && heavyDriver.Animator.GetFloat("MoveBlend") < 0.1f,
@@ -114,6 +110,20 @@ public static class MechAnimatedLegChecks
 
     public static float ClipWeight(MechLegAnimator driver, string name) => driver.Animator.GetCurrentAnimatorClipInfo(0)
         .Where(c => c.clip.name == name).Sum(c => c.weight);
+
+    static bool BoneChanges(Animator animator, Transform bone)
+    {
+        var position = bone.localPosition;
+        var rotation = bone.localRotation;
+        bool moved = false;
+        // A reauthored gait may translate a floating leg or revisit a symmetric pose.
+        for (int i = 0; i < 4; i++)
+        {
+            animator.Update(0.1f);
+            moved |= Vector3.Distance(position, bone.localPosition) > 0.01f || Quaternion.Angle(rotation, bone.localRotation) > 2f;
+        }
+        return moved;
+    }
 
     static void Step(MechMovementController motor, EquipManager equipment, GameObject view, int count,
         Vector2 move = default, bool jump = false)
