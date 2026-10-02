@@ -61,7 +61,7 @@ public class MechWeaponHud : MonoBehaviour
 
     void LateUpdate()
     {
-        readout.text = (combat.HasSword ? "RMB  SWORD\n" : equipment != null && equipment.MeleeAbility != null ? "RMB  " + equipment.MeleeAbility.name.ToUpperInvariant() + "\n" : "RMB  NO SWORD EQUIPPED\n") + WeaponLine(MechWeaponSlot.ThrowingAxe, "LMB") + "\n"
-            + WeaponLine(MechWeaponSlot.Cannon, "E") + "\n" + WeaponLine(MechWeaponSlot.Crossbow, "Q") + (equipment != null ? "\nF  EQUIP NEARBY PART" : "");
+        readout.text = (combat.HasSword ? "LMB  SWORD\n" : equipment != null && equipment.MeleeAbility != null ? "LMB  " + equipment.MeleeAbility.name.ToUpperInvariant() + "\n" : "LMB  NO SWORD EQUIPPED\n") + WeaponLine(MechWeaponSlot.ThrowingAxe, "RMB") + "\n"
+            + WeaponLine(MechWeaponSlot.Cannon, "Q") + "\n" + WeaponLine(MechWeaponSlot.Crossbow, "E") + (equipment != null ? "\nF  EQUIP NEARBY PART" : "");
     }
 }

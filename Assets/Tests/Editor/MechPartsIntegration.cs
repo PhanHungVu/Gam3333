@@ -81,7 +81,7 @@ public static class MechPartsIntegration
     {
         foreach(var name in new[]{"ResonancePulse","ZigzagBarrage","BloomMissile"})
         {
-            string path="Assets/Prefab/Abilities/"+name+" Part.prefab";
+            string path="Assets/Prefabs/Abilities/"+name+" Part.prefab";
             var root=PrefabUtility.LoadPrefabContents(path);
             var part=root.GetComponent<Part>(); if(part==null) part=root.AddComponent<Part>();
             string dataPath="Assets/PartCatalogue/PartData_"+name+".asset";
@@ -106,10 +106,10 @@ public static class MechPartsIntegration
             foreach(var hud in clone.GetComponentsInChildren<MechEnergyHud>(true)) Ref(hud,"energy",null);
             var binding=clone.GetComponentInChildren<LockOnCursor>();
             Ref(binding,"targetLockController",null); Ref(binding,"gameplayCamera",null);
-            PrefabUtility.SaveAsPrefabAsset(clone,"Assets/Prefab/Mech Cursor Canvas.prefab"); Object.DestroyImmediate(clone);
+            PrefabUtility.SaveAsPrefabAsset(clone,"Assets/Prefabs/Mech Cursor Canvas.prefab"); Object.DestroyImmediate(clone);
         }
         var root=PrefabUtility.LoadPrefabContents(Full);
-        var source=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Mech.prefab");
+        var source=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech.prefab");
         if(root.GetComponent<SimpleMove>()!=null) Object.DestroyImmediate(root.GetComponent<SimpleMove>());
         if(root.GetComponent<Rigidbody>()!=null) Object.DestroyImmediate(root.GetComponent<Rigidbody>());
         root.tag="Player";
@@ -141,8 +141,8 @@ public static class MechPartsIntegration
         root.AddComponent<MechEquipmentCombat>();
 
         var rig=root.AddComponent<MechPlayerRig>();
-        Ref(rig,"cameraPrefab",AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Main Camera.prefab"));
-        Ref(rig,"cursorPrefab",AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Mech Cursor Canvas.prefab"));
+        Ref(rig,"cameraPrefab",AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Main Camera.prefab"));
+        Ref(rig,"cursorPrefab",AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech Cursor Canvas.prefab"));
         PrefabUtility.SaveAsPrefabAsset(root,Full); PrefabUtility.UnloadPrefabContents(root);
     }
     static void IntegrateScene(string path)

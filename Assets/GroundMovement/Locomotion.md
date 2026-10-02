@@ -1,6 +1,6 @@
 # Modular locomotion and body animation
 
-Open **A33** or **Merge Test** and enter Play mode. Both use `FullPlayer_mech_base.prefab`, which now includes the locomotion equipment bridge and a development debug panel. The older `Prefab/Mech.prefab` keeps its original standalone movement.
+Open **A33** or **Merge Test** and enter Play mode. Both use `FullPlayer_mech_base.prefab`, which now includes the locomotion equipment bridge and a development debug panel. The older `Prefabs/Mech.prefab` keeps its original standalone movement. See [merge recovery](MergeRecovery.md) for the restored animation wiring and retained teammate changes.
 
 | Control | Action |
 | --- | --- |
@@ -8,7 +8,7 @@ Open **A33** or **Merge Test** and enter Play mode. Both use `FullPlayer_mech_ba
 | 3 / 4 | Swap Hover / Tank placeholder lower bodies |
 | WASD | Camera-relative movement |
 | Space | Biped jump; hold for hover lift; ignored by tank |
-| Shift | Sustained movement boost |
+| Shift | Run using the walking clip at faster cadence |
 | Alt | Quick Boost; tank bursts along its current forward direction |
 | Ctrl | Assault Boost; hover also supports this in the air |
 | F8 | Show/hide locomotion data |

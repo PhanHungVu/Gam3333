@@ -32,20 +32,20 @@ public static class MechPartsChecks
         check(!cannon.isEquipped && cannon.GetComponent<Rigidbody>()!=null && !combat.HasWeapon(MechWeaponSlot.Cannon)
             && combat.TryFire(MechWeaponSlot.Cannon)==null,"Dropping a weapon disables its fire slot and restores physical interaction");
         cannon.transform.position+=Vector3.right*20;
-        var replacement=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/Parts/shoulder_base_l.prefab")).GetComponent<Part>();
+        var replacement=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/Parts/Old/shoulder_base_l.prefab")).GetComponent<Part>();
         check(equipment.TryEquip(replacement) && combat.AmmoRemaining(MechWeaponSlot.Cannon)==20,"Replacement cannon has independent ammunition");
         check(!equipment.TryEquip(replacement),"Already equipped parts cannot be equipped twice");
         check(equipment.TryEquip(cannon) && combat.AmmoRemaining(MechWeaponSlot.Cannon)==19 && combat.ReloadRemaining(MechWeaponSlot.Cannon)>0,"Re-equipping the original cannon preserves ammunition and reload deadline");
         Object.DestroyImmediate(replacement.gameObject);
         var oldTorso=equipment.GetEquipped(PartCategory.Torso);
-        var torso=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/Parts/torso_base.prefab")).GetComponent<Part>();
+        var torso=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/Parts/Old/torso_base.prefab")).GetComponent<Part>();
         check(equipment.TryEquip(torso) && bridge.GetPart(MechWeaponSlot.Cannon)==cannon && cannon.transform.IsChildOf(torso.transform)
             && combat.AmmoRemaining(MechWeaponSlot.Cannon)==19,"Torso replacement transfers socket occupants without losing weapon state");
         Object.DestroyImmediate(oldTorso.gameObject);
         bool targetMode=player.GetComponent<MechTargetLockController>().IsFreeAim;
         foreach(string name in new[]{"ResonancePulse","ZigzagBarrage","BloomMissile"})
         {
-            var module=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Abilities/"+name+" Part.prefab"));
+            var module=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Abilities/"+name+" Part.prefab"));
             var part=module.GetComponent<Part>(); var ability=module.GetComponent<MechPartAbility>();
             check(equipment.TryEquip(part) && bridge.GetAbility(MechWeaponSlot.Cannon)!=null,"Equip independent "+name+" module through the existing shoulder socket");
             cannon.transform.position+=Vector3.right*20;
@@ -65,7 +65,7 @@ public static class MechPartsChecks
             equipment.TryEquip(cannon);
         }
         check(player.GetComponent<MechTargetLockController>().IsFreeAim==targetMode,"Equipment swaps preserve targeting mode");
-        check(equipment.interactKey==KeyCode.F,"Pickup does not conflict with E cannon activation");
+        check(equipment.interactKey==KeyCode.F,"Pickup does not conflict with Q/E weapon activation");
         Object.DestroyImmediate(player);Object.DestroyImmediate(floor);
     }
 }

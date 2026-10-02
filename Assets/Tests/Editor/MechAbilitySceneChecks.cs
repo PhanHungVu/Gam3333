@@ -60,11 +60,11 @@ public static class MechAbilitySceneChecks
             if (phase == 0)
             {
                 applied = 0; completed = hits = 0;
-                part = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Abilities/" + Names[pattern] + " Part.prefab"), combat.transform);
+                part = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Abilities/" + Names[pattern] + " Part.prefab"), combat.transform);
                 ability = part.GetComponent<MechPartAbility>();
                 ability.Resolved += result => { hits += result.Complete ? 0 : result.Hits; if (result.Complete) completed++; };
                 Vector3 origin = pattern == 2 ? combat.MuzzlePosition : combat.transform.position;
-                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Enemy.prefab");
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemies/CubeTest_Enemy.prefab");
                 for (int i = 0; i < 2; i++)
                 {
                     enemies[i] = Object.Instantiate(prefab);

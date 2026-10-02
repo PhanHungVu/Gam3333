@@ -16,10 +16,10 @@ No duplicate sword, throwing axe, cannon or crossbow data assets were created. T
 
 | Input | Part/socket | Weapon | Damage | Ammo | Reload | Effective / maximum range |
 | --- | --- | --- | ---: | ---: | ---: | --- |
-| RMB | ArmR | Sword | 100 | unlimited | 0.7 s | Existing 4 m forward melee box |
-| LMB | ArmL | Throwing axe | 50 | 30 | 0.5 s | 12 / 18 m |
-| E | ShoulderL | Cannon | 100 | 20 | 3 s | 20 / 30 m |
-| Q | ShoulderR | Large crossbow | 30 | 50 | 1 s | 40 / 60 m |
+| LMB | ArmL | Sword | 100 | unlimited | 0.7 s | Existing 4 m forward melee box |
+| RMB | ArmR | Throwing axe | 50 | 30 | 0.5 s | 12 / 18 m |
+| Q | ShoulderL | Cannon | 100 | 20 | 3 s | 20 / 30 m |
+| E | ShoulderR | Large crossbow | 30 | 50 | 1 s | 40 / 60 m |
 | F | Nearby matching part | Equip / swap | | | | |
 
 F replaces the teammate's E pickup binding, which conflicted with cannon fire. The closest part inside the pickup trigger is selected. Startup only installs this player's own child parts, including the preinstalled torso; it no longer searches the scene for other players' equipment. Torso replacement transfers equipped socket occupants when the replacement supports all required sockets.
@@ -30,7 +30,7 @@ Head/leg health and movement stat effects have not been introduced: the existing
 
 ## Three independently equippable ability modules
 
-`Assets/Prefab/Abilities` contains ResonancePulse Part, ZigzagBarrage Part and BloomMissile Part. These are distinct abilities, each with its own PartData and Part component. Their default category is ShoulderL. Drag a prefab into a scene, approach it and press F; E then activates the equipped ability instead of firing an unequipped cannon. Re-equip the dropped cannon to restore normal firing. No test key or automatic weapon-impact hook is enabled by default.
+`Assets/Prefabs/Abilities` contains ResonancePulse Part, ZigzagBarrage Part and BloomMissile Part. These are distinct abilities, each with its own PartData and Part component. Their default category is ShoulderL. Drag a prefab into a scene, approach it and press F; Q then activates the equipped ability instead of firing an unequipped cannon. Re-equip the dropped cannon to restore normal firing. No test key or automatic weapon-impact hook is enabled by default.
 
 To use an ability on another socket, change its Part Category to ArmL, ArmR or ShoulderR; the socket's normal button activates it. For a custom part, add one pattern component plus MechAbilityDriver, assign Driver.Ability and use PartData.Weapon=None. The pattern classes themselves know nothing about keys or weapon slots. An ability can instead augment a weapon with the driver's optional Activate On Weapon Impact setting and Source Weapon. Secondary barrage impacts and confirmation-only events are excluded to prevent recursive activation.
 

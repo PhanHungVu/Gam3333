@@ -25,9 +25,9 @@ public static class MechLocomotionSetup
     {
         if (!Application.isBatchMode) throw new InvalidOperationException("Run in an isolated batch project.");
         if (!AssetDatabase.IsValidFolder(ModuleFolder)) AssetDatabase.CreateFolder("Assets/Prefabs/Mech", "Locomotion");
-        var baseLegs = PrefabUtility.LoadPrefabContents("Assets/Prefabs/Mech/Base/Parts/legs_base.prefab");
+        var baseLegs = PrefabUtility.LoadPrefabContents("Assets/Prefabs/Mech/Base/Parts/Old/legs_base.prefab");
         if (baseLegs.GetComponent<LocomotionModule>() == null) baseLegs.AddComponent<BipedLocomotionModule>();
-        PrefabUtility.SaveAsPrefabAsset(baseLegs, "Assets/Prefabs/Mech/Base/Parts/legs_base.prefab");
+        PrefabUtility.SaveAsPrefabAsset(baseLegs, "Assets/Prefabs/Mech/Base/Parts/Old/legs_base.prefab");
         PrefabUtility.UnloadPrefabContents(baseLegs);
 
         Part[] prefabs = { BuildModule(LocomotionType.Biped), BuildModule(LocomotionType.Hover), BuildModule(LocomotionType.Tank) };

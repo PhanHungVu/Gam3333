@@ -106,11 +106,11 @@ public static class MechAbilityChecks
             && bloom.ProjectilePoolSize <= 25, "Repeated activations leave no active work and keep both pools bounded");
         foreach (var name in new[] { "ResonancePulse", "ZigzagBarrage", "BloomMissile" })
         {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Abilities/" + name + " Part.prefab");
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Abilities/" + name + " Part.prefab");
             check(prefab != null && prefab.GetComponent<MechPartAbility>() != null && prefab.GetComponent<MechAbilityDriver>() != null,
                 name + " part prefab supplies an independently equippable ability and configurable driver");
         }
-        var part = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Abilities/ResonancePulse Part.prefab"), player.transform);
+        var part = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Abilities/ResonancePulse Part.prefab"), player.transform);
         var driver = part.GetComponent<MechAbilityDriver>();
         part.GetComponent<Part>().isEquipped = true; // Explicit manual attachment for the legacy prototype fixture.
         driver.BindOwner(player.transform);

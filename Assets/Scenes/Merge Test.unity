@@ -148,7 +148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62100139211d6ef4ba7abec7e8746d2a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
-  enemyPrefab: {fileID: 0}
+  enemyPrefab: {fileID: 7062185459325199375, guid: 01499eb7afac19d479cb6df1d4aae7e9, type: 3}
   spawnPoints:
   - {fileID: 398583068}
   waveInterval: 30
@@ -382,7 +382,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62100139211d6ef4ba7abec7e8746d2a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
-  enemyPrefab: {fileID: 0}
+  enemyPrefab: {fileID: 1767564731750688855, guid: b2ba31f62aee1e74fa6054eeb77dbc51, type: 3}
   spawnPoints:
   - {fileID: 1501549850}
   waveInterval: 30
@@ -1095,6 +1095,75 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 597716940}
   m_CullTransparentMesh: 1
+--- !u!1001 &746064471
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1393939829396773162, guid: caf0ba52db7a2cb4693dd8420f00e110, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1393939829396773162, guid: caf0ba52db7a2cb4693dd8420f00e110, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1393939829396773162, guid: caf0ba52db7a2cb4693dd8420f00e110, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1393939829396773162, guid: caf0ba52db7a2cb4693dd8420f00e110, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 2.2783499
+      objectReference: {fileID: 0}
+    - target: {fileID: 1393939829396773162, guid: caf0ba52db7a2cb4693dd8420f00e110, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 4.67
+      objectReference: {fileID: 0}
+    - target: {fileID: 1393939829396773162, guid: caf0ba52db7a2cb4693dd8420f00e110, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 1.38
+      objectReference: {fileID: 0}
+    - target: {fileID: 1393939829396773162, guid: caf0ba52db7a2cb4693dd8420f00e110, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1393939829396773162, guid: caf0ba52db7a2cb4693dd8420f00e110, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1393939829396773162, guid: caf0ba52db7a2cb4693dd8420f00e110, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1393939829396773162, guid: caf0ba52db7a2cb4693dd8420f00e110, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1393939829396773162, guid: caf0ba52db7a2cb4693dd8420f00e110, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1393939829396773162, guid: caf0ba52db7a2cb4693dd8420f00e110, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1393939829396773162, guid: caf0ba52db7a2cb4693dd8420f00e110, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5787548108339801736, guid: caf0ba52db7a2cb4693dd8420f00e110, type: 3}
+      propertyPath: m_Name
+      value: Heavy Legs Pickup
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: caf0ba52db7a2cb4693dd8420f00e110, type: 3}
 --- !u!1 &788090588
 GameObject:
   m_ObjectHideFlags: 0
@@ -3438,13 +3507,13 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'WASD  MOVE     SHIFT  GROUND BOOST     ALT  QUICK BOOST     HOLD CTRL 
+  m_Text: 'WASD  MOVE     SHIFT  RUN     ALT  QUICK BOOST     HOLD CTRL
     ASSAULT BOOST
 
     MMB  RESUME / SOFT-HARD     HOLD MMB 1.2s  FREE AIM     FLICK 
     SWITCH TARGET
 
-    RMB  SWORD     LMB  AXE     E  CANNON     Q  CROSSBOW'
+    LMB  SWORD     RMB  AXE     Q  CANNON     E  CROSSBOW'
 --- !u!222 &1904516351
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -3948,3 +4017,4 @@ SceneRoots:
   - {fileID: 1501549850}
   - {fileID: 342036364}
   - {fileID: 55333038}
+  - {fileID: 746064471}

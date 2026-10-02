@@ -171,13 +171,13 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'WASD  MOVE     SHIFT  GROUND BOOST     ALT  QUICK BOOST     HOLD CTRL 
+  m_Text: 'WASD  MOVE     SHIFT  RUN     ALT  QUICK BOOST     HOLD CTRL
     ASSAULT BOOST
 
     MMB  RESUME / SOFT-HARD     HOLD MMB 1.2s  FREE AIM     FLICK 
     SWITCH TARGET
 
-    RMB  SWORD     LMB  AXE     E  CANNON     Q  CROSSBOW'
+    LMB  SWORD     RMB  AXE     Q  CANNON     E  CROSSBOW'
 --- !u!1 &3401387659507900253
 GameObject:
   m_ObjectHideFlags: 0
