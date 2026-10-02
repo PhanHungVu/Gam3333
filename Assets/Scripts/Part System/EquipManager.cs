@@ -13,6 +13,8 @@ public class EquipManager : MonoBehaviour
     readonly HashSet<Part> nearby = new HashSet<Part>();
     Socket[] sockets;
     Key inputKey;
+    public PartSwapHUDScript partSwapHUDScript;
+    PickupDetector pickupDetector;
     public Part GetEquipped(PartCategory category) => equipped.TryGetValue(category, out var part) ? part : null;
     // Maximum health supplied by the current loadout; damage and HUD come later.
     public float Health
@@ -30,6 +32,8 @@ public class EquipManager : MonoBehaviour
     {
         Enum.TryParse(interactKey.ToString(), out inputKey);
         var starting = GetComponentsInChildren<Part>(true);
+        partSwapHUDScript = GetComponent<PartSwapHUDScript>();
+        pickupDetector = GetComponentInChildren<PickupDetector>(true);
         RefreshSockets();
         foreach (var part in starting)
             if ((part.isStartingPart || part.transform.parent.GetComponent<Socket>() != null) && part.partType == PartCategory.Torso) AttachStarting(part);
@@ -43,8 +47,9 @@ public class EquipManager : MonoBehaviour
         if (socket != null && GetEquipped(part.partType) == null) Attach(socket, part);
     }
     void RefreshSockets() => sockets = GetComponentsInChildren<Socket>(true);
-    public void SetNearbyPart(Part part) { if (part != null && !part.isEquipped) nearby.Add(part); }
-    public void ClearNearbyPart(Part part) => nearby.Remove(part);
+    public void SetSelectedPart(Part part) { if (part != null && !part.isEquipped) nearby.Add(part); }
+    public Part GetSelectedPart() { foreach (var part in nearby) if (part != null && !part.isEquipped && part.gameObject.activeInHierarchy) return part; return null; }
+    public void ClearSelectedPart(Part part) => nearby.Remove(part);
     void Update()
     {
         if (Time.timeScale <= 0 || Keyboard.current == null || inputKey == Key.None || !Keyboard.current[inputKey].wasPressedThisFrame) return;
@@ -55,7 +60,11 @@ public class EquipManager : MonoBehaviour
             float d = (part.transform.position - transform.position).sqrMagnitude;
             if (d < distance) { distance = d; closest = part; }
         }
-        if (closest != null) TryEquip(closest);
+        //if (closest != null) TryEquip(closest);
+        if (closest != null && partSwapHUDScript != null)
+        {
+            partSwapHUDScript.ShowPartList(); //tryequip happens in partswapselectpodscript, in partswapselectpod prefab
+        }
     }
     public bool TryEquip(Part part)
     {
@@ -85,6 +94,7 @@ public class EquipManager : MonoBehaviour
         }
         nearby.Remove(part);
         EquipmentChanged?.Invoke();
+        pickupDetector.PartEquipped(part);
         return true;
     }
     public Part Unequip(PartCategory category) => Unequip(category, true);
