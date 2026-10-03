@@ -43,8 +43,10 @@ public static class MechHealthHudSceneChecks
                 case 0:
                     foreach (var spawner in Object.FindObjectsByType<EnemySpawnerManager>()) spawner.enabled = false;
                     foreach (var enemy in Object.FindObjectsByType<EnemyAgent>()) enemy.gameObject.SetActive(false);
-                    hud = Object.FindAnyObjectByType<MechHealthHud>(); player = hud.gameObject; health = player.GetComponent<CombatHealth>();
-                    Check(hud != null && Object.FindObjectsByType<MechHealthHud>().Length == 1, "Scene player owns one health HUD");
+                    hud = Object.FindAnyObjectByType<MechHealthHud>(); health = hud.Health; player = health.gameObject;
+                    Check(hud != null && Object.FindObjectsByType<MechHealthHud>().Length == 1, "Scene has one standalone health HUD");
+                    Check(hud.transform.parent == null && player.GetComponentInChildren<MechHealthHud>() == null,
+                        "Health HUD is a separate scene root, outside the player prefab");
                     foreach (var graphic in hud.Canvas.GetComponentsInChildren<Graphic>()) Check(!graphic.raycastTarget, "Health UI never intercepts gameplay clicks");
                     Value(); Capture("full"); health.ApplyDamage(40f); break;
                 case 1:
@@ -60,8 +62,8 @@ public static class MechHealthHudSceneChecks
                     Capture("low"); player.SetActive(false); Check(!hud.Canvas.enabled, "Disabling player hides health HUD");
                     player.SetActive(true); break;
                 case 3:
-                    Check(hud.Canvas.enabled && player.GetComponentsInChildren<Canvas>().Length >= 2
-                        && player.GetComponentsInChildren<MechHealthHud>().Length == 1, "Re-enabling restores HUD without duplication");
+                    Check(hud.Canvas.enabled && Object.FindObjectsByType<MechHealthHud>().Length == 1,
+                        "Re-enabling player restores the standalone HUD without duplication");
                     Value(); health.ApplyDamage(10000f);
                     Check(health.IsDead && !hud.Canvas.enabled && hud.NormalizedHealth == 0f, "Death clears fill and follows existing player UI lifecycle");
                     SessionState.SetBool(Pending, false); Debug.Log("HEALTH HUD CHECKS COMPLETE"); EditorApplication.Exit(0); return;
