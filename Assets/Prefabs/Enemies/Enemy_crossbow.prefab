@@ -50269,6 +50269,7 @@ GameObject:
   - component: {fileID: 5667391269682614564}
   - component: {fileID: 5163642771340955098}
   - component: {fileID: 4002886853335233961}
+  - component: {fileID: 2317099856583387135}
   m_Layer: 0
   m_Name: Enemy_crossbow
   m_TagString: Untagged
@@ -50451,6 +50452,22 @@ MonoBehaviour:
   movementSound: {fileID: 8300000, guid: 0d78b4bb67abde745a1ca2c3cd1e2f43, type: 3}
   volume: 0.3
   referenceSpeed: 6
+--- !u!114 &2317099856583387135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7062185459325199375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 457c8943d88cc1549a43809314e6d2c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyPartDrop
+  partPrefab: {fileID: 772186069702846714, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
+  dropChancePercent: 25
+  spawnHeight: 1
+  popVelocity: 3
 --- !u!1 &7252553595477060627
 GameObject:
   m_ObjectHideFlags: 0
