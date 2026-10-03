@@ -20073,7 +20073,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a83a10ed3c50e19479018b309d84c0ca, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
   muzzle: {fileID: 0}
@@ -20092,7 +20092,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64c2aba78ddfcce44bce2d7599cc2e5d, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechAnimationPoseSource
   animator: {fileID: 6589893678993521718}
   body:
@@ -45064,7 +45064,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a83a10ed3c50e19479018b309d84c0ca, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
   muzzle: {fileID: 0}
@@ -45083,7 +45083,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 565e0671c1dca71448b09a2ea96b7d57, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechPartPoseReceiver
   pivotPosition: {x: -0.11999977, y: -0.8869045, z: 0.004645534}
   pivotRotation: {x: 0.000000006697388, y: -0.7071069, z: 0.0000000064735057, w: 0.7071069}
@@ -50268,6 +50268,8 @@ GameObject:
   - component: {fileID: 8205264264986548227}
   - component: {fileID: 5667391269682614564}
   - component: {fileID: 5163642771340955098}
+  - component: {fileID: 4002886853335233961}
+  - component: {fileID: 2317099856583387135}
   m_Layer: 0
   m_Name: Enemy_crossbow
   m_TagString: Untagged
@@ -50399,7 +50401,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 07b1503935ce51e46bc983f1fcca5169, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAttack
   kind: 1
   weapons:
@@ -50414,6 +50416,7 @@ MonoBehaviour:
   verticalReach: 2.5
   projectileSpeed: 18
   projectileMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
+  projectilePrefab: {fileID: 1465189720993408064, guid: ed7887b3b88626a4089da49f33479a2a, type: 3}
   hitLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -50427,13 +50430,44 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b98bc253b711d914b9fc20eb967076ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAnimation
   animator: {fileID: 6589893678993521718}
   poses: {fileID: 8757950830628805987}
   body: {fileID: 8529245508741435605}
   head: {fileID: 6213336435177271611}
   referenceSpeed: 6
+--- !u!114 &4002886853335233961
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7062185459325199375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2d82b4923b447919128641029d59c27, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MechMovementAudio
+  movementSound: {fileID: 8300000, guid: 0d78b4bb67abde745a1ca2c3cd1e2f43, type: 3}
+  volume: 0.3
+  referenceSpeed: 6
+--- !u!114 &2317099856583387135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7062185459325199375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 457c8943d88cc1549a43809314e6d2c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyPartDrop
+  partPrefab: {fileID: 772186069702846714, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
+  dropChancePercent: 25
+  spawnHeight: 1
+  popVelocity: 3
 --- !u!1 &7252553595477060627
 GameObject:
   m_ObjectHideFlags: 0
@@ -55502,7 +55536,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a83a10ed3c50e19479018b309d84c0ca, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
   muzzle: {fileID: 0}
@@ -55521,7 +55555,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 565e0671c1dca71448b09a2ea96b7d57, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechPartPoseReceiver
   pivotPosition: {x: 0.0000056624413, y: -1.4278097, z: 0.22886017}
   pivotRotation: {x: 0.000000008381904, y: 0, z: 7.4578566e-11, w: 1.0000001}
@@ -55591,7 +55625,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage:
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -75222,7 +75256,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -5711438494567441830, guid: 873eb8762e919424195d109a92d414a6, type: 3}
+  - {fileID: 2100000, guid: d8b60ff1e107fe84e95b355736b83d2d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -75256,7 +75290,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 772186069702846714, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: muzzle
-      value:
+      value: 
       objectReference: {fileID: 3609608387218335778}
     - target: {fileID: 772186069702846714, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: isEquipped
@@ -75390,7 +75424,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 39a10c3e992074141b45ab35cbdc9981, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechWeaponAnimator
 --- !u!1001 &4840287741179453413
 PrefabInstance:
@@ -75402,7 +75436,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 772186069702846714, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: muzzle
-      value:
+      value: 
       objectReference: {fileID: 4050104827083463101}
     - target: {fileID: 772186069702846714, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: isEquipped
@@ -75531,7 +75565,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 39a10c3e992074141b45ab35cbdc9981, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechWeaponAnimator
 --- !u!4 &7721699829672817030 stripped
 Transform:

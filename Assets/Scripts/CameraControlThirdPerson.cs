@@ -74,7 +74,9 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     [Header("Obstacle Avoidance")]
     [SerializeField] bool avoidObstacles = true;
+    [Tooltip("Solid structures must have colliders on these layers. Triggers are ignored.")]
     [SerializeField] LayerMask obstacleLayers = 1;
+    [Tooltip("Minimum clearance. Automatically enlarged when needed to protect the camera's near clip plane.")]
     [SerializeField, Range(0.05f, 1f)] float cameraRadius = 0.35f;
     [SerializeField, Min(0f)] float obstacleReturnDamping = 0.25f;
 
@@ -90,6 +92,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     float assaultFraming;
 
     CinemachineCamera cinemachineCamera;
+    Camera outputCamera;
     GameObject cameraRigObject;
     CinemachineThirdPersonFollow thirdPersonFollow;
     CinemachineRotationComposer rotationComposer;
@@ -158,6 +161,7 @@ public class CameraControlThirdPerson : MonoBehaviour
             return;
         }
 
+        outputCamera = GetComponent<Camera>();
         cameraRigObject = new GameObject("Mech Cinemachine Camera");
         cinemachineCamera = cameraRigObject.AddComponent<CinemachineCamera>();
         thirdPersonFollow = cameraRigObject.AddComponent<CinemachineThirdPersonFollow>();
@@ -290,7 +294,7 @@ public class CameraControlThirdPerson : MonoBehaviour
             Enabled = avoidObstacles,
             CollisionFilter = obstacleLayers,
             IgnoreTag = "Player",
-            CameraRadius = cameraRadius,
+            CameraRadius = CameraCollisionRadius(lens),
             DampingIntoCollision = 0f,
             DampingFromCollision = obstacleReturnDamping
         };
@@ -320,6 +324,18 @@ public class CameraControlThirdPerson : MonoBehaviour
         };
         composition.Validate();
         rotationComposer.Composition = composition;
+    }
+
+    float CameraCollisionRadius(LensSettings lens)
+    {
+        // A clear camera centre is insufficient: the corners of the near plane
+        // can still cross a wall, especially with a wide aspect ratio or boost FOV.
+        float aspect = outputCamera != null ? outputCamera.aspect : lens.Aspect;
+        float halfHeight = Mathf.Max(0.001f, lens.NearClipPlane)
+            * Mathf.Tan(Mathf.Clamp(lens.FieldOfView, 1f, 179f) * 0.5f * Mathf.Deg2Rad);
+        float nearCorner = Mathf.Sqrt(halfHeight * halfHeight * (1f + aspect * aspect)
+            + lens.NearClipPlane * lens.NearClipPlane);
+        return Mathf.Max(cameraRadius, nearCorner + 0.02f);
     }
 
     void UpdateCameraTargetRotation()

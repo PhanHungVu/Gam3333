@@ -19,14 +19,18 @@ public class MechCombatController : MonoBehaviour
     [SerializeField] MechWeaponStats throwingAxe = new MechWeaponStats("Throwing axe", 50, 30, 0.5f, 12, 18, 100, 0.18f, 0, new Color(0.3f, 0.9f, 1));
     [SerializeField] MechWeaponStats cannon = new MechWeaponStats("Cannon", 100, 20, 3, 20, 30, 100, 0.3f, 6, new Color(1, 0.5f, 0.15f));
     [SerializeField] MechWeaponStats crossbow = new MechWeaponStats("Large crossbow", 30, 50, 1, 40, 60, 160, 0.07f, 0, new Color(1, 0.9f, 0.3f));
+    [SerializeField] MechWeaponStats armCrossbow = new MechWeaponStats("Arm crossbow", 100, 30, 2, 20, 30, 160, 0.07f, 0, new Color(1, 0.9f, 0.3f));
+    [Header("Projectile Models")]
+    [SerializeField] GameObject crossbowProjectilePrefab;
+    [SerializeField] GameObject throwingAxeProjectilePrefab;
     [Header("Optional Cannon Pattern")]
     [Tooltip("Snapshot at firing. Off retains the normal single cannon blast.")]
     [SerializeField] bool spiralBarrage;
     [SerializeField] CannonSpiralBarrage.Settings spiralSettings = CannonSpiralBarrage.Settings.Default;
     CannonSpiralBarrage barrageRunner;
     [Header("Melee Weapon")]
-    [SerializeField] Vector3 meleeCenter = new Vector3(0f, 0f, 2.25f);
-    [SerializeField] Vector3 meleeSize = new Vector3(3f, 2.5f, 3.5f);
+    [SerializeField] Vector3 meleeCenter = new Vector3(0f, 0f, 2.75f);
+    [SerializeField] Vector3 meleeSize = new Vector3(5f, 3.5f, 5.5f);
     [SerializeField, Min(0f)] float meleeDamage = 100f;
     [SerializeField, Min(0.01f)] float meleeCooldown = 0.7f;
     [SerializeField] bool showMeleeBox = true;
@@ -39,17 +43,18 @@ public class MechCombatController : MonoBehaviour
     InputAction fireAction, meleeAction, cannonAction, crossbowAction;
     bool inputArmed;
     float meleeTimer, flashTimer;
-    readonly float[] reloadTimers = new float[3];
-    readonly int[] remainingAmmo = new int[3];
+    readonly float[] reloadTimers = new float[4];
+    readonly int[] remainingAmmo = new int[4];
     MechEquipmentCombat equipment;
     float strikeDamage;
     public void BindCamera(Camera camera) => gameplayCamera = camera;
     public bool HasWeapon(MechWeaponSlot slot) => equipment == null || equipment.HasWeapon(slot);
     public bool HasSword => equipment == null || equipment.HasSword;
+    public bool HasMelee => equipment == null || equipment.HasMelee;
     public MechWeaponStats GetWeapon(MechWeaponSlot slot) => equipment != null && equipment.GetWeapon(slot) != null
         ? equipment.GetWeapon(slot) : GetDefaultWeapon(slot);
     public MechWeaponStats GetDefaultWeapon(MechWeaponSlot slot) => slot == MechWeaponSlot.Cannon ? cannon
-        : slot == MechWeaponSlot.Crossbow ? crossbow : throwingAxe;
+        : slot == MechWeaponSlot.Crossbow ? crossbow : slot == MechWeaponSlot.ArmCrossbow ? armCrossbow : throwingAxe;
     public int AmmoRemaining(MechWeaponSlot slot) => equipment != null ? (HasWeapon(slot) ? equipment.GetPart(slot).RemainingAmmo : 0) : remainingAmmo[(int)slot];
     public float ReloadRemaining(MechWeaponSlot slot) => equipment != null ? (HasWeapon(slot) ? Mathf.Max(0, equipment.GetPart(slot).ReadyAt - Time.time) : 0) : reloadTimers[(int)slot];
     Collider[] meleeCandidates = new Collider[32];
@@ -59,6 +64,8 @@ public class MechCombatController : MonoBehaviour
     CharacterController movementCapsule;
     MechMovementController movement;
     bool meleePending;
+    Part activeMeleePart;
+    PartCategory activeMeleeCategory;
     float approachTime, approachDistance, meleeExtension, meleeCameraTimer;
     Quaternion strikeRotation;
     MechTargetable assistedTarget;
@@ -87,7 +94,7 @@ public class MechCombatController : MonoBehaviour
         movementCapsule = GetComponent<CharacterController>();
         movement = GetComponent<MechMovementController>();
         if (gameplayCamera == null) gameplayCamera = Camera.main;
-        for (int i = 0; i < 3; i++) remainingAmmo[i] = GetWeapon((MechWeaponSlot)i).ammunition;
+        for (int i = 0; i < remainingAmmo.Length; i++) remainingAmmo[i] = GetWeapon((MechWeaponSlot)i).ammunition;
         if (combatMaterial != null) CreateMeleeOutline();
     }
 
@@ -164,9 +171,28 @@ public class MechCombatController : MonoBehaviour
         if (!meleePending && flashTimer <= 0f) meleeExtension = 0f;
     }
 
-    public MechProjectile TryFire() => TryFire(MechWeaponSlot.ThrowingAxe);
+    public MechProjectile TryFire()
+    {
+        if (equipment == null) return TryFire(MechWeaponSlot.ThrowingAxe);
+        var part = equipment.GetEquippedPart(PartCategory.ArmR);
+        if (part != null && part.data != null && part.data.weapon == MechPartWeapon.ArmCrossbow)
+            return TryFire(MechWeaponSlot.ArmCrossbow, part);
+        if (part != null && part.data != null && part.data.weapon == MechPartWeapon.ThrowingAxe)
+            return TryFire(MechWeaponSlot.ThrowingAxe, part);
+        if (equipment.GetMeleePart(PartCategory.ArmR) != null)
+        { TryMelee(PartCategory.ArmR); return null; }
+        var ability = equipment.GetAbility(MechWeaponSlot.ThrowingAxe);
+        if (ability != null) ability.TryActivate(); else TryAnimationOnlyAttack(PartCategory.ArmR);
+        return null;
+    }
 
     public MechProjectile TryFire(MechWeaponSlot slot)
+    {
+        if ((int)slot < 0 || (int)slot >= remainingAmmo.Length) return null;
+        return TryFire(slot, equipment != null ? equipment.GetPart(slot) : null);
+    }
+
+    MechProjectile TryFire(MechWeaponSlot slot, Part part)
     {
         if (equipment != null && isActiveAndEnabled)
         {
@@ -174,38 +200,31 @@ public class MechCombatController : MonoBehaviour
             if (ability != null) { ability.TryActivate(); return null; }
         }
         int index = (int)slot;
-        if (!isActiveAndEnabled || index < 0 || index >= 3) return null;
-        if (!HasWeapon(slot))
+        if (!isActiveAndEnabled || index < 0 || index >= remainingAmmo.Length) return null;
+        bool usable = part != null ? equipment != null && equipment.isActiveAndEnabled
+            && part.isEquipped && part.isActiveAndEnabled && part.EquippedBy != null : HasWeapon(slot);
+        if (!usable)
         {
             if (slot == MechWeaponSlot.ThrowingAxe) TryAnimationOnlyAttack(PartCategory.ArmR);
             return null;
         }
-        if (ReloadRemaining(slot) > 0f || AmmoRemaining(slot) <= 0) return null;
-        var weapon = GetWeapon(slot);
+        if (part != null && (part.ReadyAt > Time.time || part.RemainingAmmo <= 0)
+            || part == null && (ReloadRemaining(slot) > 0f || AmmoRemaining(slot) <= 0)) return null;
+        var weapon = equipment != null && part != null ? equipment.GetWeapon(part) : GetWeapon(slot);
         if (gameplayCamera == null) gameplayCamera = Camera.main;
         if (gameplayCamera == null) return null;
         lastFiredSlot = slot;
-        Vector3 muzzle = GetMuzzlePosition(slot);
+        Vector3 muzzle = part != null && part.muzzle != null ? part.muzzle.position : GetMuzzlePosition(slot);
         Vector3 aimPoint = GetAimPoint(weapon.maximumRange);
         Vector3 direction = (aimPoint - muzzle).normalized;
         if (direction.sqrMagnitude < 0.001f) direction = gameplayCamera.transform.forward;
-        if (equipment != null) equipment.GetPart(slot).Consume(weapon.reloadSeconds, true);
+        if (equipment != null) part.Consume(weapon.reloadSeconds, true);
         else { reloadTimers[index] = weapon.reloadSeconds; remainingAmmo[index]--; }
-        var shot = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        shot.name = weapon.displayName + " Projectile";
-        var collider = shot.GetComponent<Collider>();
-        collider.enabled = false;
-        Destroy(collider);
-        // No projectile collider or rigidbody: swept sphere queries resolve its motion.
-        shot.transform.position = new Vector3(transform.position.x, muzzle.y, transform.position.z);
-        shot.transform.localScale = Vector3.one * (weapon.projectileRadius * 2f);
-        var renderer = shot.GetComponent<Renderer>();
-        if (combatMaterial != null) renderer.sharedMaterial = combatMaterial;
-        var tint = new MaterialPropertyBlock();
-        tint.SetColor("_Color", weapon.color);
-        renderer.SetPropertyBlock(tint);
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        var projectile = shot.AddComponent<MechProjectile>();
+        var prefab = part != null && part.data != null && part.data.projectilePrefab != null ? part.data.projectilePrefab
+            : slot == MechWeaponSlot.ThrowingAxe ? throwingAxeProjectilePrefab
+            : slot == MechWeaponSlot.Crossbow || slot == MechWeaponSlot.ArmCrossbow ? crossbowProjectilePrefab : null;
+        var projectile = MechProjectile.Create(prefab, weapon.displayName + " Projectile",
+            new Vector3(transform.position.x, muzzle.y, transform.position.z), weapon.projectileRadius, combatMaterial, weapon.color);
         projectile.Weapon = slot;
         // Subscribe before Launch: a wall intersecting the muzzle can impact immediately.
         projectile.ImpactResolved += ForwardProjectileImpact;
@@ -223,7 +242,7 @@ public class MechCombatController : MonoBehaviour
         projectile.Launch(transform, direction, weapon.projectileSpeed, weapon.damage, weapon.projectileRadius,
             weapon.maximumRange, hitLayers, muzzle);
         ShotFired?.Invoke(projectile);
-        if (equipment != null) WeaponAttackStarted?.Invoke(equipment.GetPart(slot));
+        if (equipment != null) WeaponAttackStarted?.Invoke(part);
         return projectile;
     }
 
@@ -245,16 +264,24 @@ public class MechCombatController : MonoBehaviour
         return aimPoint;
     }
 
-    public bool TryMelee()
+    public bool TryMelee() => TryMelee(PartCategory.ArmL);
+
+    bool TryMelee(PartCategory category)
     {
-        if (isActiveAndEnabled && !HasSword && equipment != null)
-            return equipment.TryMeleeAbility() || TryAnimationOnlyAttack(PartCategory.ArmL);
-        if (!isActiveAndEnabled || !HasSword || meleeTimer > 0f || meleePending
-            || equipment != null && equipment.Sword.ReadyAt > Time.time) return false;
-        strikeDamage = equipment != null ? equipment.Sword.data.GetStat(StatType.Damage) : meleeDamage;
-        meleeTimer = equipment != null ? Mathf.Max(0.01f, equipment.Sword.data.GetStat(StatType.CooldownReload)) : meleeCooldown;
-        if (equipment != null) equipment.Sword.Consume(meleeTimer, false);
-        if (equipment != null) WeaponAttackStarted?.Invoke(equipment.Sword);
+        var arm = equipment != null ? equipment.GetEquippedPart(category) : null;
+        if (arm != null && arm.data != null && (arm.data.weapon == MechPartWeapon.ArmCrossbow || arm.data.weapon == MechPartWeapon.ThrowingAxe))
+            return TryFire(arm.data.weapon == MechPartWeapon.ArmCrossbow ? MechWeaponSlot.ArmCrossbow : MechWeaponSlot.ThrowingAxe, arm) != null;
+        var meleePart = equipment != null ? equipment.GetMeleePart(category) : null;
+        if (isActiveAndEnabled && meleePart == null && equipment != null)
+            return (category == PartCategory.ArmL && equipment.TryMeleeAbility()) || TryAnimationOnlyAttack(category);
+        if (!isActiveAndEnabled || equipment != null && meleePart == null || equipment == null && meleeTimer > 0f || meleePending
+            || meleePart != null && meleePart.ReadyAt > Time.time) return false;
+        activeMeleePart = meleePart;
+        activeMeleeCategory = category;
+        strikeDamage = meleePart != null ? Mathf.Max(0f, meleePart.data.GetStat(StatType.Damage)) : meleeDamage;
+        meleeTimer = meleePart != null ? Mathf.Max(0.01f, meleePart.data.GetStat(StatType.CooldownReload)) : meleeCooldown;
+        if (meleePart != null) meleePart.Consume(meleeTimer, false);
+        if (meleePart != null) WeaponAttackStarted?.Invoke(meleePart);
         meleeCameraTimer = meleeCameraHold;
         strikeRotation = transform.rotation;
         meleeExtension = 0f;
@@ -322,7 +349,8 @@ public class MechCombatController : MonoBehaviour
     {
         if (!meleePending || deltaTime <= 0f) return;
         if (assistedTarget == null || !assistedTarget.isActiveAndEnabled
-            || !HasSword || movement != null && (movement.IsQuickBoosting || !movement.IsGrounded))
+            || !HasMelee || equipment != null && equipment.GetMeleePart(activeMeleeCategory) != activeMeleePart
+            || movement != null && (movement.IsQuickBoosting || !movement.IsGrounded))
         {
             meleePending = false;
             meleeExtension = 0f;
@@ -379,8 +407,9 @@ public class MechCombatController : MonoBehaviour
     Vector3 AbsScale()
     {
         var scale = transform.lossyScale;
-        float reachScale = equipment != null && equipment.HasSword
-            ? Mathf.Max(0.01f, equipment.Sword.data.GetStat(StatType.Range) * equipment.Sword.data.metresPerGolem / 4f) : 1f;
+        var part = equipment != null ? (activeMeleePart != null && (meleeTimer > 0f || meleePending || flashTimer > 0f) ? activeMeleePart
+            : equipment.GetMeleePart(PartCategory.ArmL) ?? equipment.GetMeleePart(PartCategory.ArmR)) : null;
+        float reachScale = part != null ? Mathf.Max(0.01f, part.data.GetStat(StatType.Range) * part.data.metresPerGolem / 4f) : 1f;
         return new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z) * reachScale);
     }
 
@@ -410,8 +439,8 @@ public class MechCombatController : MonoBehaviour
     {
         if (meleeOutline == null) return;
         if (!meleePending && flashTimer <= 0f) strikeRotation = transform.rotation;
-        meleeOutline.enabled = showMeleeBox && HasSword;
-        groundOutline.enabled = showMeleeBox && HasSword;
+        meleeOutline.enabled = showMeleeBox && HasMelee;
+        groundOutline.enabled = showMeleeBox && HasMelee;
         // Walk every edge of the box, retracing only the edges needed to connect them.
         meleeOutline.positionCount = BoxCorners.Length;
         for (int i = 0; i < BoxCorners.Length; i++)
@@ -438,6 +467,7 @@ public class MechCombatController : MonoBehaviour
 
     public void CancelEquippedMelee()
     {
+        activeMeleePart = null;
         meleePending = false;
         meleeExtension = meleeCameraTimer = flashTimer = 0;
     }

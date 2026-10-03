@@ -339,7 +339,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage:
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -461,7 +461,7 @@ MonoBehaviour:
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: 8ec1d572786d6d54ca5b1e61c52ee8f5, type: 2}
   partType: 1
-  isStartingPart: 1
+  isStartingPart: 0
   isEquipped: 0
 --- !u!114 &8542973691134999615
 MonoBehaviour:
@@ -473,11 +473,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 39a10c3e992074141b45ab35cbdc9981, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechWeaponAnimator
   animator: {fileID: 2940271670290464112}
   animations: {fileID: 11400000, guid: 28ac79f9732ea8848b508803d6d77735, type: 2}
   placement: {fileID: 0}
+  loadedProjectileRenderers: []
 --- !u!1001 &3464126027175872689
 PrefabInstance:
   m_ObjectHideFlags: 0

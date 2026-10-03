@@ -69,13 +69,13 @@ public static class MechAnimationV2SceneChecks
             {
                 AssertPose(MechLegAnimator.PoseState.Locomotion, "Biped_Run");
                 Capture("walk");
-                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.LeftShift));
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.LeftAlt));
             }
             else if (phase == 2)
             {
                 AssertPose(MechLegAnimator.PoseState.Locomotion, "Biped_Run");
-                Check(Driver().Animator.GetFloat("PlaybackSpeed") > 1.9f, "Real Shift input accelerates the walking clip");
-                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftAlt));
+                Check(!motor.IsQuickBoosting && Driver().Animator.GetFloat("PlaybackSpeed") < 1.1f, "Alt no longer dashes or activates sprint");
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift));
                 delay = 0.12f;
             }
             else if (phase == 3)
@@ -133,12 +133,12 @@ public static class MechAnimationV2SceneChecks
             else if (phase == 11)
             {
                 AssertPose(MechLegAnimator.PoseState.Locomotion, "Heavy_Walk.001");
-                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.LeftShift));
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.LeftAlt));
             }
             else if (phase == 12)
             {
                 AssertPose(MechLegAnimator.PoseState.Locomotion, "Heavy_Walk.001");
-                Check(Driver().Animator.GetFloat("PlaybackSpeed") > 1.9f, "Heavy run retains its saved gait with faster cadence");
+                Check(!motor.IsQuickBoosting && Driver().Animator.GetFloat("PlaybackSpeed") < 1.1f, "Heavy gait stays at walking cadence without sprint");
                 InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftCtrl));
                 delay = 0.3f;
             }

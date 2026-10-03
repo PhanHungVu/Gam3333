@@ -53,7 +53,7 @@ MonoBehaviour:
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: cc03c119946ec9043b0bfe8e39af9144, type: 2}
   partType: 5
-  isStartingPart: 1
+  isStartingPart: 0
   isEquipped: 0
 --- !u!114 &5396884824236839703
 MonoBehaviour:
@@ -65,11 +65,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 39a10c3e992074141b45ab35cbdc9981, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechWeaponAnimator
   animator: {fileID: 6622082322210821694}
   animations: {fileID: 11400000, guid: 2d4cc11a0888ea8478d35abfebeb757e, type: 2}
   placement: {fileID: 0}
+  loadedProjectileRenderers:
+  - {fileID: 2535809960006070129}
 --- !u!1 &2731721472918198437
 GameObject:
   m_ObjectHideFlags: 0
@@ -327,7 +329,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage:
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -653,6 +655,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 7335268681267106113}
   m_SourcePrefab: {fileID: -4161369568681901532, guid: c8cfc54328db5ab4aa96127b90a1ff1a, type: 3}
+--- !u!23 &2535809960006070129 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8623907898676168905, guid: c8cfc54328db5ab4aa96127b90a1ff1a, type: 3}
+  m_PrefabInstance: {fileID: 6097670708883122104}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &3906880570747565139 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7108721034538308587, guid: c8cfc54328db5ab4aa96127b90a1ff1a, type: 3}

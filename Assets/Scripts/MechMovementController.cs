@@ -49,7 +49,6 @@ public class MechMovementController : MonoBehaviour
     CharacterController characterController;
     MechTargetLockController targetingController;
     InputAction moveAction;
-    InputAction sprintAction;
     InputAction jumpAction;
     InputAction quickBoostAction;
     InputAction assaultBoostAction;
@@ -138,12 +137,10 @@ public class MechMovementController : MonoBehaviour
 
         runtimeInputActions = MechInputActions.Create(inputActions);
         moveAction = runtimeInputActions.FindAction("Player/Move", false);
-        sprintAction = runtimeInputActions.FindAction("Player/Sprint", false);
         jumpAction = runtimeInputActions.FindAction("Player/Jump", false);
         quickBoostAction = runtimeInputActions.FindAction("Player/QuickBoost", false);
         assaultBoostAction = runtimeInputActions.FindAction("Player/AssaultBoost", false);
         moveAction?.Enable();
-        sprintAction?.Enable();
         jumpAction?.Enable();
         quickBoostAction?.Enable();
         assaultBoostAction?.Enable();
@@ -152,12 +149,11 @@ public class MechMovementController : MonoBehaviour
     void OnDisable()
     {
         moveAction?.Disable();
-        sprintAction?.Disable();
         jumpAction?.Disable();
         quickBoostAction?.Disable();
         assaultBoostAction?.Disable();
         MechInputActions.Release(ref runtimeInputActions);
-        moveAction = sprintAction = jumpAction = quickBoostAction = assaultBoostAction = null;
+        moveAction = jumpAction = quickBoostAction = assaultBoostAction = null;
         bool wasAssaultBoosting = assaultBoostActive;
         assaultBoostActive = false;
         assaultBoostRequiresRelease = false;
@@ -184,7 +180,6 @@ public class MechMovementController : MonoBehaviour
         MechLocomotionInput input = new MechLocomotionInput
         {
             move = ReadMoveInput(),
-            sprint = ReadSprintInput(),
             jump = WasJumpPressedThisFrame(),
             jumpHeld = jumpAction != null ? jumpAction.IsPressed()
                 : Keyboard.current != null && Keyboard.current.spaceKey.isPressed,
@@ -201,6 +196,9 @@ public class MechMovementController : MonoBehaviour
         if (deltaTime <= 0f || !isActiveAndEnabled || !characterController.enabled)
             return;
 
+        // Retain the command field for existing replay/AI callers, but sprint
+        // no longer changes speed or state. Dash is a separate pressed action.
+        input.sprint = false;
         input.move = Vector2.ClampMagnitude(input.move, 1f);
         MechLocomotionSettings settings = Settings;
         bool wasGrounded = IsGrounded;
@@ -372,14 +370,6 @@ public class MechMovementController : MonoBehaviour
         if (previousState != nextState) StateChanged?.Invoke(previousState, nextState);
     }
 
-    bool ReadSprintInput()
-    {
-        if (sprintAction != null)
-            return sprintAction.IsPressed();
-
-        return Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed;
-    }
-
     bool WasJumpPressedThisFrame()
     {
         if (jumpAction != null)
@@ -393,7 +383,7 @@ public class MechMovementController : MonoBehaviour
         if (quickBoostAction != null)
             return quickBoostAction.WasPressedThisFrame();
 
-        return Keyboard.current != null && Keyboard.current.leftAltKey.wasPressedThisFrame;
+        return Keyboard.current != null && Keyboard.current.leftShiftKey.wasPressedThisFrame;
     }
 
     void StartQuickBoost(Vector3 movementDirection, Transform cameraTransform)

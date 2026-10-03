@@ -25,6 +25,8 @@ WASD movement is always camera-relative. Hard lock rotates that camera, so the m
 
 Update order is camera input/toggle/flick in Update (-100), movement in Update, camera rig in LateUpdate (-100), Cinemachine at its default order, selection/lock validation (100), then cursor projection (200). Hard lock suppresses automatic center-crossing switches and retains offscreen targets while the camera catches up. Disabled/destroyed targets, range loss, and loss of eligible colliders replace the selection without changing the selected camera mode.
 
+Camera collision uses Cinemachine Third Person Follow in free aim and both lock modes. It moves in immediately when a solid obstacle blocks the rig, then returns smoothly after clearance. Its radius covers the near-plane corners, including wider screens and boost FOV. The reusable solid map prefabs under `Prefabs/Map Elements` have static mesh colliders matching their visual surfaces; platforms in JhMapScene inherit these without scene overrides. New structures need solid colliders on the camera's Obstacle Layers (Default by default). Triggers and the Player tag are ignored. `Tools > Mech > Map > Add Missing Structure Colliders` restores missing colliders on these prefabs without modifying the imported models; grass remains decorative.
+
 The camera reports actual free-look input through `ReportAimInput` before soft selection. That intent is consumed each selection frame; follow motion and enemy movement do not count as player aim. Both lock modes default to a 20-degree downward orbit pitch with a 1.5-unit raised pivot. Close or low enemies steepen the angle to keep the sightline above the mech. `Hard Lock Pitch`, `Hard Lock Height`, and `Hard Lock Orbit Response` on the camera tune this framing; these existing serialized settings now apply to soft lock too. Soft lock keeps manual yaw and hard lock tracks the enemy. Soft lock looks at an independent focus ahead of the mech (Soft Lock Aim Distance, default 20 m), so the actual screen-center ray can cross enemies instead of pointing through the raised player pivot. Small vertical aim adjustments move this focus while the orbit stays elevated; selecting or moving an enemy does not steer the focus.
 
 While targeting is enabled, soft-lock mouse pitch has a shared 20-degree baseline plus/minus 3 degrees at 25% vertical sensitivity. Close-range body clearance can raise the camera further in either mode. Set Lock On Vertical Range to zero for a fixed manual pitch. Hard mode ignores vertical mouse input; free aim retains its -18 to 30 degree range. The shared settings retain their original Hard Lock field names to preserve prefab tuning.
@@ -33,7 +35,7 @@ During a committed melee swing against a selected enemy within 6 m ahead and nea
 
 ## Extension points
 
-Movement states describe implemented actions only: `Grounded` (idle/walking), `GroundBoost` (sprinting with movement input), `Airborne` (jump/fall or hover), `QuickBoost`, and `AssaultBoost`. Equipped locomotion modules decide jump and air-boost support; standalone/biped movement retains ground-only boosts. Weapons run independently of the movement state machine. See [modular locomotion and animated legs](../GroundMovement/Locomotion.md) for fast/heavy animation swapping, hover/tank behavior, debug controls and the animation-data contract.
+Movement states describe implemented actions only: `Grounded` (idle/walking), `GroundBoost` (reserved legacy value; sprinting is removed), `Airborne` (jump/fall or hover), `QuickBoost`, and `AssaultBoost`. Equipped locomotion modules decide jump and air-boost support; standalone/biped movement retains ground-only boosts. Weapons run independently of the movement state machine. See [modular locomotion and animated legs](../GroundMovement/Locomotion.md) for fast/heavy animation swapping, hover/tank behavior, debug controls and the animation-data contract.
 
 | Signal | Meaning / intended consumer |
 | --- | --- |
@@ -60,8 +62,8 @@ The serialized `normalProfile` name and its members are retained to preserve exi
 | Control | Action |
 | --- | --- |
 | WASD | Camera-relative movement |
-| Left Shift | Ground boost (existing sprint) |
-| Left Alt | Quick Boost, 20 energy |
+| Left Shift | Quick Boost (dash), 20 energy |
+| Left Alt | No movement action |
 | Hold Left Ctrl | Ground Assault Boost; release to cancel |
 | Middle mouse from free aim | Restore last used soft/hard targeting mode |
 | Short middle-mouse click while targeting | Switch soft/hard mode on release |

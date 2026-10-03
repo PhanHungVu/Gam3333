@@ -45,8 +45,8 @@ public static class MechAnimationV2Checks
             check(Mathf.Abs(Driver().Animator.GetFloat("PlaybackSpeed") - 1f) < 0.03f, "Normal walk uses normal clip cadence");
             Step(player, view.transform, 100, Vector2.up, sprint: true);
             CheckPose(Driver(), MechLegAnimator.PoseState.Locomotion, "Biped_Run", check);
-            check(Mathf.Abs(motor.AnimationData.Speed - 12f) < 0.1f && Mathf.Abs(Driver().Animator.GetFloat("PlaybackSpeed") - 2f) < 0.03f,
-                "Shift runs at twice the walk speed using the same clip at twice its cadence");
+            check(Mathf.Abs(motor.AnimationData.Speed - 6f) < 0.1f && Mathf.Abs(Driver().Animator.GetFloat("PlaybackSpeed") - 1f) < 0.03f,
+                "Removed sprint retains the ordinary Fast walk clip and cadence");
 
             Step(player, view.transform, 90);
             Step(player, view.transform, 6, quick: true);
@@ -102,8 +102,8 @@ public static class MechAnimationV2Checks
             swap.TrySwap(1);
             Step(player, view.transform, 100, Vector2.up, sprint: true);
             CheckPose(Driver(), MechLegAnimator.PoseState.Locomotion, "Heavy_Walk.001", check);
-            check(Mathf.Abs(motor.AnimationData.Speed - 6f) < 0.1f && Mathf.Abs(Driver().Animator.GetFloat("PlaybackSpeed") - 2f) < 0.03f,
-                "Heavy running also reuses its walk clip at higher cadence");
+            check(Mathf.Abs(motor.AnimationData.Speed - 3f) < 0.1f && Mathf.Abs(Driver().Animator.GetFloat("PlaybackSpeed") - 1f) < 0.03f,
+                "Removed sprint retains the ordinary Heavy walk clip and cadence");
             Step(player, view.transform, 90);
             CheckPose(Driver(), MechLegAnimator.PoseState.Neutral, "Heavy_Neutral", check);
             Step(player, view.transform, 6, jump: true);

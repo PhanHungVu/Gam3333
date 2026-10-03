@@ -50,11 +50,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
-  muzzle: {fileID: 0}
+  muzzle: {fileID: 4068936624590580542}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: 0ab9726b31e49c948a1f584e15cb5d16, type: 2}
   partType: 2
-  isStartingPart: 1
+  isStartingPart: 0
   isEquipped: 0
 --- !u!114 &8973416839419337696
 MonoBehaviour:
@@ -66,11 +66,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 39a10c3e992074141b45ab35cbdc9981, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechWeaponAnimator
   animator: {fileID: 4728523529228817153}
   animations: {fileID: 11400000, guid: cee9dad4229e3cf4c9c2331176e2a1ac, type: 2}
   placement: {fileID: 0}
+  loadedProjectileRenderers: []
 --- !u!1 &4271604733969079332
 GameObject:
   m_ObjectHideFlags: 0
@@ -183,6 +184,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &5014094580915790290
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4068936624590580542}
+  m_Layer: 0
+  m_Name: Muzzle
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4068936624590580542
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5014094580915790290}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.010882616, y: -1.3575075, z: 0.07295324}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2883663974681439843}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5858749676096860013
 GameObject:
   m_ObjectHideFlags: 0
@@ -233,7 +265,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage:
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -268,6 +300,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8954574662915129871}
+  - {fileID: 4068936624590580542}
   m_Father: {fileID: 1607623841225000526}
   m_LocalEulerAnglesHint: {x: 7.310087, y: 0, z: 0}
 --- !u!1 &6383595128121280252

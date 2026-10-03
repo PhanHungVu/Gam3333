@@ -22,9 +22,9 @@ public static class MechWeaponAnimationSetup
                 {
                     Seed("Cannon", "PartData_Shoulder_Cannon", "CanonRig", "Canon", "Cannon", "CanonBody"),
                     Seed("Crossbow", "PartData_Shoulder_LargeCrossbow", "CrossBowRig", "CrossBow", "Crossbow", "CrossBowBody"),
-                    Seed("ArmCrossbow", "PartData_Arm_SmallCrossbow", "CrossBowArmRig", "CrossBowArm", "CrossbowArm", "CrossBowArmBody", preview:true),
+                    Seed("ArmCrossbow", "PartData_Arm_SmallCrossbow", "CrossBowArmRig", "CrossBowArm", "CrossbowArm", "CrossBowArmBody"),
                     Seed("Sword", "PartData_Arm_Sword", "SwordArmRig", "SwordArm", "SwordArm", "SwordArmBody"),
-                    Seed("Mace", "PartData_Arm_Mace", "MaceArmRig", "MaceArm", "MaceArm", "MaceArmBody", preview:true),
+                    Seed("Mace", "PartData_Arm_Mace", "MaceArmRig", "MaceArm", "MaceArm", "MaceArmBody"),
                     Seed("ThrowingAxe", "PartData_Arm_ThrowingAxe", "ThrowingAxeRig", "ThrowingAxe", "ThrowingAxeArm", "ThrowingAxeBody", "Barrel")
                 };
                 AssetDatabase.CreateAsset(settings, MechWeaponAnimationImport.SettingsPath);

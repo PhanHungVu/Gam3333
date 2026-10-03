@@ -13,10 +13,13 @@ public sealed class MechWeaponAnimator : MonoBehaviour
     [SerializeField] MechWeaponAnimationSet animations;
     [Tooltip("Optional authored attachment bone, e.g. the axe's unanimated Barrel bone.")]
     [SerializeField] Transform placement;
+    [Tooltip("The displayed axe/bolt follows the rig while loaded, and hides until reloaded after a shot.")]
+    [SerializeField] Renderer[] loadedProjectileRenderers = new Renderer[0];
     Part part;
     MechCombatController owner;
     MechEquipmentCombat equipment;
     EnemyAttack enemyOwner;
+    AudioSource attackAudio;
     PlayableGraph graph;
     AnimationMixerPlayable mixer;
     readonly AnimationClipPlayable[] clips = new AnimationClipPlayable[3];
@@ -84,6 +87,7 @@ public sealed class MechWeaponAnimator : MonoBehaviour
         AnimationPlayableOutput.Create(graph, "Weapon", animator).SetSourcePlayable(mixer);
         graph.Play();
         CurrentPose = PoseState.Neutral;
+        RefreshLoadedProjectile();
         age = neutralTime = 0f;
         graph.Evaluate(0f);
     }
@@ -98,6 +102,7 @@ public sealed class MechWeaponAnimator : MonoBehaviour
 
     void StopGraph()
     {
+        if (attackAudio != null) attackAudio.Stop();
         if (graph.IsValid())
         {
             // Dropped/disabled parts must not retain a transient firing pose.
@@ -109,6 +114,7 @@ public sealed class MechWeaponAnimator : MonoBehaviour
         if (animator != null) animator.enabled = false;
         age = neutralTime = 0f;
         CurrentPose = PoseState.Neutral;
+        RefreshLoadedProjectile();
     }
 
     void Update() => RefreshEquipment();
@@ -119,6 +125,7 @@ public sealed class MechWeaponAnimator : MonoBehaviour
         enemyOwner = isActiveAndEnabled && part != null && part.isEquipped ? GetComponentInParent<EnemyAttack>() : null;
         var next = isActiveAndEnabled && part != null && part.isEquipped && part.EquippedBy != null ? part.EquippedBy.GetComponent<MechCombatController>() : null;
         if (next == owner) return;
+        if (attackAudio != null) attackAudio.Stop();
         if (owner != null) owner.WeaponAttackStarted -= OnAttack;
         owner = next;
         equipment = owner != null ? owner.GetComponent<MechEquipmentCombat>() : null;
@@ -128,7 +135,18 @@ public sealed class MechWeaponAnimator : MonoBehaviour
 
     void OnAttack(Part attacked)
     {
-        if (attacked == part) PlayAttack(Mathf.Max(0.01f, part.ReadyAt - Time.time));
+        if (attacked == part)
+        {
+            PlayAttack(Mathf.Max(0.01f, part.ReadyAt - Time.time));
+            RefreshLoadedProjectile();
+        }
+    }
+
+    void RefreshLoadedProjectile()
+    {
+        bool visible = owner == null || part == null || !part.isEquipped
+            || part.RemainingAmmo > 0 && part.ReadyAt <= Time.time;
+        foreach (var renderer in loadedProjectileRenderers) if (renderer != null) renderer.enabled = visible;
     }
 
     public bool PlayAttack(float cooldown, float requestedFireDuration = 0f)
@@ -148,7 +166,31 @@ public sealed class MechWeaponAnimator : MonoBehaviour
         clips[1].SetTime(0f);
         ChangePose(PoseState.Fire);
         Tick(0f);
+        PlayAttackSound();
         return true;
+    }
+
+    void PlayAttackSound()
+    {
+        if (animations.attackSound == null || animations.attackVolume <= 0f) return;
+        if (attackAudio == null)
+        {
+            var audioObject = new GameObject("Weapon Attack Audio");
+            audioObject.transform.SetParent(transform, false);
+            attackAudio = audioObject.AddComponent<AudioSource>();
+            attackAudio.playOnAwake = false;
+            attackAudio.dopplerLevel = 0f;
+            attackAudio.rolloffMode = AudioRolloffMode.Linear;
+            attackAudio.minDistance = 4f;
+            attackAudio.maxDistance = 40f;
+        }
+        // Each physical weapon owns one voice. Repeated attacks restart it,
+        // avoiding stacked tails on short cooldowns; other weapons stay independent.
+        attackAudio.Stop();
+        attackAudio.clip = animations.attackSound;
+        attackAudio.volume = animations.attackVolume;
+        attackAudio.spatialBlend = owner != null ? 0.35f : 1f;
+        attackAudio.Play();
     }
 
     public bool TryAnimationOnlyAttack()
@@ -188,6 +230,7 @@ public sealed class MechWeaponAnimator : MonoBehaviour
             mixer.SetInputWeight(i, weights[i]);
         }
         graph.Evaluate(0f);
+        RefreshLoadedProjectile();
     }
 
     void ChangePose(PoseState pose)

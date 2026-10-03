@@ -10,7 +10,7 @@ public enum StatType
     Damage, MagSize, Ammo, CooldownReload, Range, SingleShot, AutoAim
 }
 
-public enum MechPartWeapon { None, Sword, ThrowingAxe, Cannon, Crossbow }
+public enum MechPartWeapon { None, Sword, ThrowingAxe, Cannon, Crossbow, ArmCrossbow, Mace }
 public enum MechPartAbilityKind { None, ResonancePulse, ZigzagBarrage, BloomMissile }
 
 [System.Serializable]
@@ -30,6 +30,8 @@ public class PartData : ScriptableObject
     [Header("Combat integration (Range stat is in golem lengths)")]
     public MechPartWeapon weapon;
     public MechPartAbilityKind ability;
+    [Tooltip("Optional projectile prefab. Contains visual meshes and MechProjectile, with no physics colliders.")]
+    public GameObject projectilePrefab;
     [Min(0.01f)] public float metresPerGolem = 4f;
     [Min(1f)] public float maximumRangeMultiplier = 1.5f;
     [Min(0f)] public float cannonExplosionRadius = 6f;
