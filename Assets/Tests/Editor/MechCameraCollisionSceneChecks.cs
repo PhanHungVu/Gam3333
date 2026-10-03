@@ -51,7 +51,7 @@ public static class MechCameraCollisionSceneChecks
                     Check(collider != null && collider.enabled && !collider.isTrigger && collider.sharedMesh == filter.sharedMesh,
                         filter.name + " inherits its solid mesh collider in the real scene");
                 }
-                control = Object.FindFirstObjectByType<CameraControlThirdPerson>();
+                control = Object.FindAnyObjectByType<CameraControlThirdPerson>();
                 Check(control != null && control.isActiveAndEnabled && control.Target != null,
                     "JhMapScene uses the active player camera with a bound target");
                 view = control.GetComponent<Camera>();

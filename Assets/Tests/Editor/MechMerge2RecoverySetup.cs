@@ -52,7 +52,6 @@ public static class MechMerge2RecoverySetup
             RestoreComponent<MechLocomotionDebug>(backup, player);
             RestoreComponent<MechUpperBodyAnimation>(backup, player);
             RestoreComponent<CombatHealth>(backup, player);
-            RestoreComponent<MechHealthHud>(backup, player);
 
             var legs = parts.Single(p => p.partType == PartCategory.Legs);
             if (legs.GetComponent<MechLegAnimator>() == null)
@@ -122,12 +121,13 @@ public static class MechMerge2RecoverySetup
         }
         finally { EditorSceneManager.CloseScene(savedScene, true); }
         var player = scene.GetRootGameObjects().Single(go => go.GetComponent<MechMovementController>() != null);
-        if (player.GetComponent<MechHealthHud>() == null || player.GetComponent<MechEquipmentLocomotion>() == null)
+        if (player.GetComponent<CombatHealth>() == null || player.GetComponent<MechEquipmentLocomotion>() == null)
             throw new InvalidOperationException("Scene does not inherit the restored player systems.");
         if (scene.GetRootGameObjects().Count(go => go.GetComponent<EnemySpawnerManager>() != null) != 2
             || GameObject.Find("Canvas/PartSwapHUD") == null || GameObject.Find("Canvas/PartSwapPopup") == null)
             throw new InvalidOperationException("Merged spawners or selection canvas are missing.");
         EditorSceneManager.MarkSceneDirty(scene);
+        MechHealthHudSetup.PlaceInScene(scene);
         EditorSceneManager.SaveScene(scene);
         Debug.Log("MERGE2 SCENE RESTORED; merged camera, canvas, spawner prefabs and course retained");
     }

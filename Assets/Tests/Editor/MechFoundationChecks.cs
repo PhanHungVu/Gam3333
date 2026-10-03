@@ -91,6 +91,7 @@ public static class MechFoundationChecks
             MechSfxChecks.Run(Check);
             MechDashMeleeChecks.Run(Check);
             MechCameraCollisionChecks.Run(Check);
+            MechHealthHudChecks.Run(Check);
             Debug.Log("MECH CHECKS COMPLETE: " + checks);
             EditorApplication.Exit(0);
         }

@@ -42,6 +42,10 @@ public class MechMovementController : MonoBehaviour
     [SerializeField, Min(0f)] float assaultBoostMinimumEnergy = 10f;
     [SerializeField, Min(0f)] float quickBoostEnergyCost = 20f;
 
+    [Header("Boost Stopping")]
+    [Tooltip("How quickly dash/boost momentum settles to the requested walking velocity after the boost ends.")]
+    [SerializeField, Min(0f)] float boostStopDeceleration = 64f;
+
     [Header("Ground Contact and Existing Jump")]
     [SerializeField] float gravity = -25f;
     [SerializeField] float jumpHeight = 1.5f;
@@ -55,6 +59,7 @@ public class MechMovementController : MonoBehaviour
     Vector3 assaultBoostDirection;
     bool assaultBoostActive;
     bool assaultBoostRequiresRelease;
+    bool brakingAfterBoost;
     Vector3 planarVelocity;
     Vector3 quickBoostDirection;
     float verticalVelocity;
@@ -157,6 +162,7 @@ public class MechMovementController : MonoBehaviour
         bool wasAssaultBoosting = assaultBoostActive;
         assaultBoostActive = false;
         assaultBoostRequiresRelease = false;
+        brakingAfterBoost = false;
         bool wasBoosting = IsQuickBoosting;
         quickBoostTimer = 0f;
         quickBoostRecoveryTimer = 0f;
@@ -215,6 +221,11 @@ public class MechMovementController : MonoBehaviour
         }
         UpdateAssaultBoost(input, movementDirection, cameraTransform, deltaTime);
 
+        if (boostEnded || wasAssaultBoosting && !assaultBoostActive)
+            brakingAfterBoost = true;
+        if (IsQuickBoosting || assaultBoostActive)
+            brakingAfterBoost = false;
+
         UpdatePlanarVelocity(input.sprint, movementDirection, settings, deltaTime);
         UpdateFacing(movementDirection, cameraTransform, settings.rotationSharpness, deltaTime);
         verticalVelocity = CurrentModule != null
@@ -235,6 +246,7 @@ public class MechMovementController : MonoBehaviour
         {
             assaultBoostActive = false;
             assaultBoostRequiresRelease = true;
+            brakingAfterBoost = true;
         }
         energy?.TickRecovery(deltaTime, !IsQuickBoosting && !assaultBoostActive);
 
@@ -274,9 +286,18 @@ public class MechMovementController : MonoBehaviour
         }
         else
         {
+            if (brakingAfterBoost)
+            {
+                // Recover movement control promptly even when walking or changing
+                // direction after a dash. Normal module tuning resumes at the target.
+                settings.acceleration = Mathf.Max(settings.acceleration, boostStopDeceleration);
+                settings.deceleration = Mathf.Max(settings.deceleration, boostStopDeceleration);
+            }
             planarVelocity = CurrentModule != null
                 ? CurrentModule.PlanarVelocity(planarVelocity, movementDirection, sprinting, settings, deltaTime)
                 : LocomotionModule.GroundPlanarVelocity(planarVelocity, movementDirection, sprinting, settings, deltaTime);
+            if ((planarVelocity - movementDirection * settings.moveSpeed).sqrMagnitude < 0.0001f)
+                brakingAfterBoost = false;
         }
     }
 
@@ -414,6 +435,7 @@ public class MechMovementController : MonoBehaviour
         sprintSpeed = Mathf.Max(0f, sprintSpeed);
         acceleration = Mathf.Max(0f, acceleration);
         deceleration = Mathf.Max(0f, deceleration);
+        boostStopDeceleration = Mathf.Max(0f, boostStopDeceleration);
         boostAcceleration = Mathf.Max(0f, boostAcceleration);
         rotationSharpness = Mathf.Max(0f, rotationSharpness);
         gravity = Mathf.Min(0f, gravity);

@@ -16,6 +16,7 @@ public class CombatHealth : MonoBehaviour
     public bool IsDead => CurrentHealth <= 0f;
     public event Action<float> Damaged;
     public event Action Died;
+    public event Action<bool> AvailabilityChanged;
     LineRenderer bar;
     Camera view;
 
@@ -36,8 +37,16 @@ public class CombatHealth : MonoBehaviour
         bar.receiveShadows = false;
     }
 
-    void OnEnable() { if (equipment != null) equipment.EquipmentChanged += RefreshMaximum; }
-    void OnDisable() { if (equipment != null) equipment.EquipmentChanged -= RefreshMaximum; }
+    void OnEnable()
+    {
+        if (equipment != null) equipment.EquipmentChanged += RefreshMaximum;
+        AvailabilityChanged?.Invoke(true);
+    }
+    void OnDisable()
+    {
+        if (equipment != null) equipment.EquipmentChanged -= RefreshMaximum;
+        AvailabilityChanged?.Invoke(false);
+    }
     void RefreshMaximum()
     {
         maximumHealth = Mathf.Max(1f, equipment.Health);

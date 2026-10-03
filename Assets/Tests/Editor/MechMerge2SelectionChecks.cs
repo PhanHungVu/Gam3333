@@ -22,7 +22,7 @@ public static class MechMerge2SelectionChecks
         var selector = motor.GetComponent<PartSwapHUDScript>();
         var detector = motor.GetComponentInChildren<PickupDetector>();
         var health = motor.GetComponent<CombatHealth>();
-        var hud = motor.GetComponent<MechHealthHud>();
+        var hud = Object.FindObjectsByType<MechHealthHud>().Single(h => h.Health == health);
         var camera = Camera.main.GetComponent<CameraControlThirdPerson>();
         Check(selector != null && selector.IsAvailable && detector.highlightElementPrefab != null,
             "Teammate selector, popup and pickup highlighting remain wired");

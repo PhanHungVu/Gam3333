@@ -9,6 +9,7 @@ public static class MechLocomotionChecks
     public static void Run(Action<bool, string> check)
     {
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/FullPlayer_mech_base.prefab");
+        CheckBoostStopping(check, prefab);
         var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
         floor.transform.position = new Vector3(30000, -0.5f, 0);
         floor.transform.localScale = new Vector3(500, 1, 500);
@@ -162,6 +163,67 @@ public static class MechLocomotionChecks
             Object.DestroyImmediate(player);
             Object.DestroyImmediate(floor);
             Object.DestroyImmediate(view);
+        }
+    }
+
+    static void CheckBoostStopping(Action<bool, string> check, GameObject prefab)
+    {
+        var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        floor.transform.position = new Vector3(90000f, -0.5f, 0f);
+        floor.transform.localScale = new Vector3(500f, 1f, 500f);
+        var view = new GameObject("Boost braking view");
+        var player = Object.Instantiate(prefab, new Vector3(90000f, 1.6f, 0f), Quaternion.identity);
+        var motor = player.GetComponent<MechMovementController>();
+        motor.ReadPlayerInput = false;
+        var energy = player.GetComponent<MechEnergyController>();
+        try
+        {
+            Physics.SyncTransforms();
+            Step(motor, view, 90);
+            void Boost()
+            {
+                energy.TickRecovery(10f, true);
+                for (int i = 0; i < 50; i++)
+                    motor.Tick(new MechLocomotionInput { move = Vector2.up, assaultBoost = true }, view.transform, 0.02f);
+                check(motor.IsAssaultBoosting && Near(motor.AnimationData.Speed, 28f),
+                    "Stronger boost stopping preserves the full 28 m/s active boost");
+            }
+            Boost();
+            Vector3 releasedAt = player.transform.position;
+            Step(motor, view, 22);
+            check(!motor.IsAssaultBoosting && motor.AnimationData.Speed < 0.02f
+                && Vector3.Distance(player.transform.position, releasedAt) < 6.3f,
+                "Released boost stops within 0.44 seconds and about six metres of travel");
+            Step(motor, view, 60, Vector2.up);
+            Step(motor, view);
+            check(Near(motor.AnimationData.Speed, 5.36f),
+                "Ordinary 32 m/s² walking braking resumes after boost momentum settles");
+            Boost();
+            Step(motor, view, 18, Vector2.up);
+            check(!motor.IsAssaultBoosting && Near(motor.AnimationData.Speed, 6f),
+                "Holding forward after boost returns to walking speed within 0.36 seconds");
+            Step(motor, view, 90);
+            energy.TickRecovery(10f, true);
+            Step(motor, view, 1, Vector2.up, boost: true);
+            check(motor.IsQuickBoosting && Near(motor.AnimationData.Speed, 27.3f),
+                "Faster dash stopping preserves its authored ignition curve and speed");
+            for (int i = 0; motor.IsQuickBoosting && i < 30; i++) Step(motor, view);
+            releasedAt = player.transform.position;
+            Step(motor, view, 6);
+            check(motor.AnimationData.Speed < 0.02f && Vector3.Distance(player.transform.position, releasedAt) < 0.8f,
+                "Dash residual momentum settles within 0.12 seconds after its active duration");
+            check(player.GetComponent<MechLocomotionDebug>().TrySwap(1), "Heavy legs equip for boost stopping check");
+            Step(motor, view, 90);
+            Boost();
+            Step(motor, view, 20, Vector2.up);
+            check(Near(motor.AnimationData.Speed, 3f),
+                "Post-boost braking returns heavy legs to their own 3 m/s travel speed");
+        }
+        finally
+        {
+            Object.DestroyImmediate(player);
+            Object.DestroyImmediate(view);
+            Object.DestroyImmediate(floor);
         }
     }
 

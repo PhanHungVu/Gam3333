@@ -1,74 +1,121 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
-[RequireComponent(typeof(CombatHealth))]
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(350)]
 public sealed class MechHealthHud : MonoBehaviour
 {
-    CombatHealth health;
+    [Header("Player Binding")]
+    [Tooltip("Assign the scene player's CombatHealth. If empty, auto binding looks for MechPlayerRig, never an enemy.")]
+    [SerializeField] CombatHealth health;
+    [SerializeField] bool autoFindPlayer = true;
+    CombatHealth subscribedHealth;
     EquipManager equipment;
-    Canvas canvas;
-    Image fill;
-    Text label;
+    float nextPlayerSearch;
+    [Header("Editable UI References")]
+    [SerializeField] Canvas canvas;
+    [Tooltip("Supports a horizontally Filled Image or a regular/Sliced Image that shrinks with health.")]
+    [SerializeField] Image fill;
+    [SerializeField] Text label;
+    [Tooltip("Optional replacement for the legacy Text label. Either label may be left empty.")]
+    [SerializeField] TMP_Text tmpLabel;
+    [Header("Fill Tint")]
+    [Tooltip("Disable to preserve the designer's Image colour and sprite appearance.")]
+    [SerializeField] bool tintFillByHealth = true;
+    [SerializeField] Color healthyColor = new Color(0.3f, 0.95f, 0.5f);
+    [SerializeField] Color lowHealthColor = new Color(1f, 0.3f, 0.25f);
+    [SerializeField, Range(0f, 1f)] float lowHealthThreshold = 0.25f;
     public Canvas Canvas => canvas;
-    public float NormalizedHealth => fill != null ? fill.rectTransform.anchorMax.x : 0f;
-    public string Readout => label != null ? label.text : string.Empty;
+    public CombatHealth Health => health;
+    public float NormalizedHealth => fill == null ? 0f
+        : fill.type == Image.Type.Filled ? fill.fillAmount : fill.rectTransform.anchorMax.x;
+    public string Readout => tmpLabel != null ? tmpLabel.text : label != null ? label.text : string.Empty;
 
     void Awake()
     {
-        health = GetComponent<CombatHealth>(); equipment = GetComponent<EquipManager>();
-        var root = new GameObject("Player Health HUD", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
-        root.transform.SetParent(transform, false);
-        canvas = root.GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 10;
-        var scaler = root.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1280f, 720f); scaler.matchWidthOrHeight = 0.5f;
-        var panel = Image("Health Panel", root.transform, new Color(0.03f, 0.05f, 0.07f, 0.85f));
-        var rect = panel.rectTransform;
-        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
-        rect.anchoredPosition = new Vector2(24f, -24f); rect.sizeDelta = new Vector2(300f, 78f);
-        var text = new GameObject("Health Readout", typeof(RectTransform), typeof(Text), typeof(Shadow));
-        text.transform.SetParent(panel.transform, false); label = text.GetComponent<Text>();
-        label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); label.fontSize = 19;
-        label.fontStyle = FontStyle.Bold; label.alignment = TextAnchor.MiddleLeft; label.raycastTarget = false;
-        var textRect = label.rectTransform;
-        textRect.anchorMin = new Vector2(0f, 0.5f); textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = new Vector2(14f, 0f); textRect.offsetMax = new Vector2(-14f, -8f);
-        text.GetComponent<Shadow>().effectDistance = new Vector2(1f, -1f);
-        var track = Image("Health Track", panel.transform, new Color(0.15f, 0.18f, 0.2f));
-        var trackRect = track.rectTransform;
-        trackRect.anchorMin = trackRect.anchorMax = new Vector2(0f, 0f); trackRect.pivot = Vector2.zero;
-        trackRect.anchoredPosition = new Vector2(14f, 14f); trackRect.sizeDelta = new Vector2(272f, 18f);
-        fill = Image("Health Fill", track.transform, Color.white);
-        fill.rectTransform.anchorMin = Vector2.zero; fill.rectTransform.anchorMax = Vector2.one;
-        fill.rectTransform.offsetMin = fill.rectTransform.offsetMax = Vector2.zero;
+        if (canvas == null || fill == null)
+            Debug.LogWarning("Assign Canvas and Fill on the standalone Player Health HUD prefab.", this);
+        FindPlayerIfNeeded();
         Refresh();
-    }
-    static Image Image(string name, Transform parent, Color color)
-    {
-        var go = new GameObject(name, typeof(RectTransform), typeof(Image)); go.transform.SetParent(parent, false);
-        var image = go.GetComponent<Image>(); image.color = color; image.raycastTarget = false; return image;
     }
     void OnEnable()
     {
-        health.Damaged += OnDamaged;
-        if (equipment != null) equipment.EquipmentChanged += Refresh;
-        canvas.enabled = true; Refresh();
+        FindPlayerIfNeeded();
+        UpdateBinding();
+        Refresh();
     }
     void OnDisable()
     {
-        health.Damaged -= OnDamaged;
-        if (equipment != null) equipment.EquipmentChanged -= Refresh;
+        Unsubscribe();
         if (canvas != null) canvas.enabled = false;
+    }
+    public void Bind(CombatHealth playerHealth)
+    {
+        health = playerHealth;
+        UpdateBinding();
+        Refresh();
+    }
+    void LateUpdate()
+    {
+        if (health == null && autoFindPlayer && Time.unscaledTime >= nextPlayerSearch)
+        {
+            nextPlayerSearch = Time.unscaledTime + 0.5f;
+            FindPlayerIfNeeded();
+        }
+        UpdateBinding();
+        UpdateVisibility();
+    }
+    void FindPlayerIfNeeded()
+    {
+        if (health != null || !autoFindPlayer) return;
+        var player = FindAnyObjectByType<MechPlayerRig>();
+        if (player != null) health = player.GetComponent<CombatHealth>();
+    }
+    void UpdateBinding()
+    {
+        if (!isActiveAndEnabled || subscribedHealth == health) return;
+        Unsubscribe();
+        subscribedHealth = health;
+        if (subscribedHealth != null)
+        {
+            subscribedHealth.Damaged += OnDamaged;
+            subscribedHealth.AvailabilityChanged += OnAvailabilityChanged;
+            equipment = subscribedHealth.GetComponent<EquipManager>();
+            if (equipment != null) equipment.EquipmentChanged += Refresh;
+        }
+        Refresh();
+    }
+    void Unsubscribe()
+    {
+        if (subscribedHealth != null)
+        {
+            subscribedHealth.Damaged -= OnDamaged;
+            subscribedHealth.AvailabilityChanged -= OnAvailabilityChanged;
+        }
+        if (equipment != null) equipment.EquipmentChanged -= Refresh;
+        subscribedHealth = null; equipment = null;
+    }
+    void OnAvailabilityChanged(bool _) => Refresh();
+    void UpdateVisibility()
+    {
+        if (canvas != null) canvas.enabled = isActiveAndEnabled && health != null
+            && health.isActiveAndEnabled && !health.IsDead;
     }
     void OnDamaged(float _) => Refresh();
     void Refresh()
     {
-        if (fill == null || health == null) return;
+        UpdateVisibility();
+        if (health == null) return;
         float ratio = Mathf.Clamp01(health.CurrentHealth / Mathf.Max(1f, health.MaximumHealth));
-        fill.rectTransform.anchorMax = new Vector2(ratio, 1f);
-        fill.color = ratio <= 0.25f ? new Color(1f, 0.3f, 0.25f) : new Color(0.3f, 0.95f, 0.5f);
-        label.text = "HEALTH  " + Mathf.CeilToInt(health.CurrentHealth) + " / " + Mathf.CeilToInt(health.MaximumHealth);
+        if (fill != null)
+        {
+            if (fill.type == Image.Type.Filled) fill.fillAmount = ratio;
+            else fill.rectTransform.anchorMax = new Vector2(ratio, fill.rectTransform.anchorMax.y);
+            if (tintFillByHealth) fill.color = ratio <= lowHealthThreshold ? lowHealthColor : healthyColor;
+        }
+        string readout = "HEALTH  " + Mathf.CeilToInt(health.CurrentHealth) + " / " + Mathf.CeilToInt(health.MaximumHealth);
+        if (label != null) label.text = readout;
+        if (tmpLabel != null) tmpLabel.text = readout;
     }
 }
