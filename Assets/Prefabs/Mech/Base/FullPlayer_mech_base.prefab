@@ -16019,6 +16019,7 @@ GameObject:
   - component: {fileID: 1112537626230324030}
   - component: {fileID: 2323618638901885361}
   - component: {fileID: 5078484892979301344}
+  - component: {fileID: 7013231834875586270}
   m_Layer: 0
   m_Name: FullPlayer_mech_base
   m_TagString: Player
@@ -16186,7 +16187,7 @@ MonoBehaviour:
   impulseStrength: 0.09
   impulseDuration: 0.14
   impulseRange: 45
-  fireAudio: 1
+  fireAudio: 0
   impactAudio: 1
   confirmationAudio: 1
   cannonFireClip: {fileID: 0}
@@ -16484,6 +16485,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe22ae185d639e040abbc75971581a01, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::MechHealthHud
+--- !u!114 &7013231834875586270
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3053454427299694765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2d82b4923b447919128641029d59c27, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::MechMovementAudio
+  movementSound: {fileID: 8300000, guid: 0d78b4bb67abde745a1ca2c3cd1e2f43, type: 3}
+  volume: 0.3
+  referenceSpeed: 6
 --- !u!1 &3220106313594343585
 GameObject:
   m_ObjectHideFlags: 0

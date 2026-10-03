@@ -24469,6 +24469,7 @@ GameObject:
   - component: {fileID: 891469501826834895}
   - component: {fileID: 2183906395315735722}
   - component: {fileID: 1100166363754713640}
+  - component: {fileID: 8897457053625716240}
   m_Layer: 0
   m_Name: Enemy_mace
   m_TagString: Untagged
@@ -24615,6 +24616,7 @@ MonoBehaviour:
   verticalReach: 2.5
   projectileSpeed: 18
   projectileMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
+  projectilePrefab: {fileID: 0}
   hitLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -24634,6 +24636,21 @@ MonoBehaviour:
   poses: {fileID: 4318844594098711568}
   body: {fileID: 1527588307945618020}
   head: {fileID: 1603518856483139345}
+  referenceSpeed: 6
+--- !u!114 &8897457053625716240
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1767564731750688855}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2d82b4923b447919128641029d59c27, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::MechMovementAudio
+  movementSound: {fileID: 8300000, guid: 0d78b4bb67abde745a1ca2c3cd1e2f43, type: 3}
+  volume: 0.3
   referenceSpeed: 6
 --- !u!1 &1977460072594296530
 GameObject:

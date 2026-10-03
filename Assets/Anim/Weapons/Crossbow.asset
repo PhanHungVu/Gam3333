@@ -15,5 +15,7 @@ MonoBehaviour:
   neutral: {fileID: 7400000, guid: ebe4af9c8b7fc5a46b1be159d4304a2c, type: 2}
   fire: {fileID: 7400000, guid: a2a8b270e1f761d469b3dd7db4f4fc16, type: 2}
   reload: {fileID: 7400000, guid: 17efb45b38e0934409a2dc1ae684681a, type: 2}
+  attackSound: {fileID: 8300000, guid: 13eab9cc3cd7e8c489e60ab1a9b54fd8, type: 3}
+  attackVolume: 0.75
   blendDuration: 0.04
   animationOnly: 0

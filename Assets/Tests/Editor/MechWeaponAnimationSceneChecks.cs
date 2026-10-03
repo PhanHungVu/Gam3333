@@ -38,6 +38,12 @@ public static class MechWeaponAnimationSceneChecks
         var driver = Driver(category);
         Check(driver != null && driver.Animations.name == family && driver.CurrentPose == pose,
             "Actual input plays " + family + " " + pose + " (actual=" + (driver != null ? driver.CurrentPose.ToString() : "missing") + ")");
+        if (pose == MechWeaponAnimator.PoseState.Fire)
+        {
+            var source = driver.transform.Find("Weapon Attack Audio")?.GetComponent<AudioSource>();
+            Check(source != null && source.isPlaying && source.clip == driver.Animations.attackSound,
+                "Actual input plays " + family + " attack SFX");
+        }
     }
     static void Keys(params Key[] keys) => InputSystem.QueueStateEvent(keyboard, new KeyboardState(keys));
     static bool LoadedModelVisible(Part part, string meshName) => part.GetComponentsInChildren<MeshFilter>(true)
@@ -98,6 +104,8 @@ public static class MechWeaponAnimationSceneChecks
                 case 2:
                     Pose(PartCategory.ArmL, MechWeaponAnimator.PoseState.Fire, "Sword");
                     Check(motor.AnimationData.Speed > 0f, "Sword attack runs alongside existing locomotion");
+                    Check(motor.transform.Find("Leg Movement Audio")?.GetComponent<AudioSource>().isPlaying == true,
+                        "Actual walking input starts the movement SFX alongside combat");
                     Check(motor.GetComponent<MechEquipmentCombat>().IdleWeapon == null,
                         "Actual movement and attack cancel the stationary Neutral selection");
                     Capture("sword-fire"); Button(); Keys(); delay = 0.5f; break;

@@ -19,6 +19,7 @@ public sealed class MechWeaponAnimator : MonoBehaviour
     MechCombatController owner;
     MechEquipmentCombat equipment;
     EnemyAttack enemyOwner;
+    AudioSource attackAudio;
     PlayableGraph graph;
     AnimationMixerPlayable mixer;
     readonly AnimationClipPlayable[] clips = new AnimationClipPlayable[3];
@@ -101,6 +102,7 @@ public sealed class MechWeaponAnimator : MonoBehaviour
 
     void StopGraph()
     {
+        if (attackAudio != null) attackAudio.Stop();
         if (graph.IsValid())
         {
             // Dropped/disabled parts must not retain a transient firing pose.
@@ -123,6 +125,7 @@ public sealed class MechWeaponAnimator : MonoBehaviour
         enemyOwner = isActiveAndEnabled && part != null && part.isEquipped ? GetComponentInParent<EnemyAttack>() : null;
         var next = isActiveAndEnabled && part != null && part.isEquipped && part.EquippedBy != null ? part.EquippedBy.GetComponent<MechCombatController>() : null;
         if (next == owner) return;
+        if (attackAudio != null) attackAudio.Stop();
         if (owner != null) owner.WeaponAttackStarted -= OnAttack;
         owner = next;
         equipment = owner != null ? owner.GetComponent<MechEquipmentCombat>() : null;
@@ -163,7 +166,31 @@ public sealed class MechWeaponAnimator : MonoBehaviour
         clips[1].SetTime(0f);
         ChangePose(PoseState.Fire);
         Tick(0f);
+        PlayAttackSound();
         return true;
+    }
+
+    void PlayAttackSound()
+    {
+        if (animations.attackSound == null || animations.attackVolume <= 0f) return;
+        if (attackAudio == null)
+        {
+            var audioObject = new GameObject("Weapon Attack Audio");
+            audioObject.transform.SetParent(transform, false);
+            attackAudio = audioObject.AddComponent<AudioSource>();
+            attackAudio.playOnAwake = false;
+            attackAudio.dopplerLevel = 0f;
+            attackAudio.rolloffMode = AudioRolloffMode.Linear;
+            attackAudio.minDistance = 4f;
+            attackAudio.maxDistance = 40f;
+        }
+        // Each physical weapon owns one voice. Repeated attacks restart it,
+        // avoiding stacked tails on short cooldowns; other weapons stay independent.
+        attackAudio.Stop();
+        attackAudio.clip = animations.attackSound;
+        attackAudio.volume = animations.attackVolume;
+        attackAudio.spatialBlend = owner != null ? 0.35f : 1f;
+        attackAudio.Play();
     }
 
     public bool TryAnimationOnlyAttack()
