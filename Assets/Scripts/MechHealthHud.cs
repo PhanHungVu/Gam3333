@@ -15,8 +15,12 @@ public sealed class MechHealthHud : MonoBehaviour
     float nextPlayerSearch;
     [Header("Editable UI References")]
     [SerializeField] Canvas canvas;
+    [Tooltip("Hides only the health meter, leaving the shared Canvas and movement UI active.")]
+    [SerializeField] CanvasGroup visibility;
     [Tooltip("Supports a horizontally Filled Image or a regular/Sliced Image that shrinks with health.")]
     [SerializeField] Image fill;
+    [Tooltip("Glow stretches horizontally with health; the front Image is cropped independently.")]
+    [SerializeField] Image glow;
     [SerializeField] Text label;
     [Tooltip("Optional replacement for the legacy Text label. Either label may be left empty.")]
     [SerializeField] TMP_Text tmpLabel;
@@ -28,14 +32,17 @@ public sealed class MechHealthHud : MonoBehaviour
     [SerializeField, Range(0f, 1f)] float lowHealthThreshold = 0.25f;
     public Canvas Canvas => canvas;
     public CombatHealth Health => health;
+    public bool IsVisible => visibility != null ? visibility.alpha > 0f : canvas != null && canvas.enabled;
     public float NormalizedHealth => fill == null ? 0f
         : fill.type == Image.Type.Filled ? fill.fillAmount : fill.rectTransform.anchorMax.x;
     public string Readout => tmpLabel != null ? tmpLabel.text : label != null ? label.text : string.Empty;
 
     void Awake()
     {
+        if (canvas == null) canvas = GetComponentInParent<Canvas>();
+        if (visibility == null) visibility = GetComponent<CanvasGroup>();
         if (canvas == null || fill == null)
-            Debug.LogWarning("Assign Canvas and Fill on the standalone Player Health HUD prefab.", this);
+            Debug.LogWarning("Place Player Health HUD under a Canvas and assign its BarFront Image.", this);
         FindPlayerIfNeeded();
         Refresh();
     }
@@ -48,7 +55,7 @@ public sealed class MechHealthHud : MonoBehaviour
     void OnDisable()
     {
         Unsubscribe();
-        if (canvas != null) canvas.enabled = false;
+        SetVisible(false);
     }
     public void Bind(CombatHealth playerHealth)
     {
@@ -99,8 +106,13 @@ public sealed class MechHealthHud : MonoBehaviour
     void OnAvailabilityChanged(bool _) => Refresh();
     void UpdateVisibility()
     {
-        if (canvas != null) canvas.enabled = isActiveAndEnabled && health != null
-            && health.isActiveAndEnabled && !health.IsDead;
+        SetVisible(isActiveAndEnabled && health != null && health.isActiveAndEnabled && !health.IsDead);
+    }
+    void SetVisible(bool visible)
+    {
+        if (visibility != null) visibility.alpha = visible ? 1f : 0f;
+        // Compatibility for an older standalone Canvas; never disable a shared parent.
+        else if (canvas != null && canvas.transform == transform) canvas.enabled = visible;
     }
     void OnDamaged(float _) => Refresh();
     void Refresh()
@@ -113,6 +125,11 @@ public sealed class MechHealthHud : MonoBehaviour
             if (fill.type == Image.Type.Filled) fill.fillAmount = ratio;
             else fill.rectTransform.anchorMax = new Vector2(ratio, fill.rectTransform.anchorMax.y);
             if (tintFillByHealth) fill.color = ratio <= lowHealthThreshold ? lowHealthColor : healthyColor;
+        }
+        if (glow != null)
+        {
+            Vector3 scale = glow.rectTransform.localScale;
+            glow.rectTransform.localScale = new Vector3(ratio, scale.y, scale.z);
         }
         string readout = "HEALTH  " + Mathf.CeilToInt(health.CurrentHealth) + " / " + Mathf.CeilToInt(health.MaximumHealth);
         if (label != null) label.text = readout;
