@@ -28,6 +28,12 @@ Ammo and reload deadlines belong to each physical Part instance. Dropping and re
 
 `EquipManager.Health` exposes the sum of positive Health stats on the currently equipped parts. Dropping or swapping a part changes the total automatically; grounded pickups contribute nothing. Edit Health entries on the existing PartCatalogue assets. The player has `CombatHealth` with **Use Equipment Stats** enabled: it starts at this maximum and accepts damage. Capacity changes clamp current health and never refill lost health. `MechHealthHud` shows an upper-left bar and current/max values, turns red at 25% health or below, and follows the existing player HUD enable/disable lifecycle. Zero health disables the player; respawn is not implemented. Movement and energy retain their existing tuning.
 
+## Part swap model previews
+
+The shared `Prefabs/UI/PartSwapSelectPod.prefab` displays the selected pickup and current equipped parts as framed 3D model snapshots, using their visible meshes and materials. Empty sockets show no model. The existing names, stats and socket buttons are retained. Opening the menu copies mesh visuals only; it does not run pickup scripts, clone colliders, change ammo or animate ground weapons. Render textures and baked skinned meshes are released when the menu closes or its cards are replaced. The menu scales to fit its Canvas at smaller resolutions.
+
+Select the prefab's `Sprite` child to adjust **Part Model Preview** resolution, view angles, framing padding and background. Future part models are previewed automatically from the displayed Part; no separate icons are required. `Tools > Mech > UI > Set Up Part Model Previews` restores the preview component on the shared card prefab if needed. `PartModelPreviewSceneChecks.RunBatch` verifies real rendered pixels, empty slots, cleanup and the existing equip callbacks in a disposable project.
+
 ## Three independently equippable ability modules
 
 `Assets/Prefabs/Abilities` contains ResonancePulse Part, ZigzagBarrage Part and BloomMissile Part. These are distinct abilities, each with its own PartData and Part component. Their default category is ShoulderL. Drag a prefab into a scene, approach it and press F; Q then activates the equipped ability instead of firing an unequipped cannon. Re-equip the dropped cannon to restore normal firing. No test key or automatic weapon-impact hook is enabled by default.

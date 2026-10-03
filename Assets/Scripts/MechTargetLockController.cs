@@ -39,7 +39,6 @@ public class MechTargetLockController : MonoBehaviour
     float gestureTime;
     float quietTime;
     float cooldownRemaining;
-    bool playerAimedThisFrame;
 
     public MechTargetable CurrentTarget => currentTarget;
     public Camera GameplayCamera => gameplayCamera;
@@ -53,7 +52,6 @@ public class MechTargetLockController : MonoBehaviour
     {
         if (targetingEnabled) rememberedHardLock = hardLockEnabled;
         targetingEnabled = false;
-        playerAimedThisFrame = false;
         SetHardLock(false);
         SetTarget(null);
     }
@@ -62,7 +60,6 @@ public class MechTargetLockController : MonoBehaviour
     {
         if (!isActiveAndEnabled || targetingEnabled) return;
         targetingEnabled = true;
-        playerAimedThisFrame = false;
         if (gameplayCamera == null) gameplayCamera = Camera.main;
         SelectTarget(gameplayCamera);
         // Retain a remembered hard mode even if there is no enemy yet. Acquisition
@@ -101,12 +98,6 @@ public class MechTargetLockController : MonoBehaviour
     {
         lockButtonTracking = lockButtonConsumed = false;
         lockButtonTime = 0f;
-    }
-
-    // The camera reports actual look input, not enemy motion or camera follow motion.
-    public void ReportAimInput(Vector2 lookInput)
-    {
-        playerAimedThisFrame = targetingEnabled && lookInput.sqrMagnitude > 0f;
     }
 
     public void ToggleHardLock()
@@ -226,7 +217,6 @@ public class MechTargetLockController : MonoBehaviour
             return;
         }
         SelectTarget(gameplayCamera);
-        playerAimedThisFrame = false;
     }
 
     // The camera can refresh before framing, so death never produces a soft-camera frame.
@@ -235,7 +225,6 @@ public class MechTargetLockController : MonoBehaviour
     {
         if (!IsHardLockMode) return;
         if (gameplayCamera == null) gameplayCamera = Camera.main;
-        playerAimedThisFrame = false;
         bool found = false;
         int count = QueryCandidates();
         for (int i = 0; i < count; i++)
@@ -276,7 +265,10 @@ public class MechTargetLockController : MonoBehaviour
             keepCurrentTarget |= targetable == currentTarget;
             Vector2 screenPoint = viewCamera.WorldToScreenPoint(targetable.AimPosition);
             float score = (screenPoint - screenCenter).sqrMagnitude;
-            float distance = (targetable.AimPosition - transform.position).sqrMagnitude;
+            // Soft acquisition follows hidden aim, including when no collider is
+            // directly under it. Hard-lock recovery keeps its world-distance rule.
+            float distance = hardLockEnabled
+                ? (targetable.AimPosition - transform.position).sqrMagnitude : score;
             if (distance < nearestScore)
             {
                 nearestScore = distance;
@@ -298,11 +290,11 @@ public class MechTargetLockController : MonoBehaviour
             }
         }
 
-        // Distance is only the fallback for initial acquisition or loss. A valid lock
-        // changes only when the player actively aims at another enemy. Enemies moving
-        // across the stationary center ray cannot steal the visible cursor.
+        // Hidden screen-center aim is evaluated every frame. No mouse speed,
+        // travel, or new input is required; an enemy crossing the aim can be selected.
+        // Empty space keeps a valid selection instead of cycling through enemies.
         MechTargetable aimedTarget = rayTarget != null ? rayTarget : centeredTarget;
-        SetTarget(playerAimedThisFrame && aimedTarget != null ? aimedTarget
+        SetTarget(!hardLockEnabled && aimedTarget != null ? aimedTarget
             : keepCurrentTarget ? currentTarget : nearestTarget);
         Array.Clear(candidates, 0, candidateCount);
     }

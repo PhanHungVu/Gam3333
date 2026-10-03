@@ -35,6 +35,7 @@ public class PartSwapHUDScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (isOpen) FitMenuToCanvas();
         if (isOpen && UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ClosePartList();
     }
 
@@ -85,6 +86,18 @@ public class PartSwapHUDScript : MonoBehaviour
         {
             InitPod(equippedPartPos3, 1);
         }
+        FitMenuToCanvas();
+    }
+
+    void FitMenuToCanvas()
+    {
+        // The existing menu was authored at 1920 x 1080 on a constant-pixel Canvas.
+        // Scale only this panel so its cards fit without changing other scene UI.
+        var menu = partSwapHUDPrefab.transform as RectTransform;
+        var parent = menu != null ? menu.parent as RectTransform : null;
+        if (parent == null || menu.rect.width <= 0f || menu.rect.height <= 0f) return;
+        float scale = Mathf.Min(1f, parent.rect.width / menu.rect.width, parent.rect.height / menu.rect.height);
+        if (scale > 0f) menu.localScale = Vector3.one * scale;
     }
 
     public void InitPod(GameObject gObject, int i)
@@ -92,6 +105,7 @@ public class PartSwapHUDScript : MonoBehaviour
         Transform partPos = gObject.transform;
         GameObject newPartSwapPod = Instantiate(partSwapHudPodPrefab, partPos); 
         TMP_Text[] texts = newPartSwapPod.GetComponentsInChildren<TMP_Text>();
+        newPartSwapPod.GetComponentInChildren<PartModelPreview>(true)?.Show(totalPartList[i]);
 
         //set button for equipped part to swap with new part, do not activate new button
         var selectedPart = manager.GetSelectedPart();
