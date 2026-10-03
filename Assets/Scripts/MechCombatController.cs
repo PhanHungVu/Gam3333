@@ -29,8 +29,8 @@ public class MechCombatController : MonoBehaviour
     [SerializeField] CannonSpiralBarrage.Settings spiralSettings = CannonSpiralBarrage.Settings.Default;
     CannonSpiralBarrage barrageRunner;
     [Header("Melee Weapon")]
-    [SerializeField] Vector3 meleeCenter = new Vector3(0f, 0f, 2.25f);
-    [SerializeField] Vector3 meleeSize = new Vector3(3f, 2.5f, 3.5f);
+    [SerializeField] Vector3 meleeCenter = new Vector3(0f, 0f, 2.75f);
+    [SerializeField] Vector3 meleeSize = new Vector3(5f, 3.5f, 5.5f);
     [SerializeField, Min(0f)] float meleeDamage = 100f;
     [SerializeField, Min(0.01f)] float meleeCooldown = 0.7f;
     [SerializeField] bool showMeleeBox = true;
@@ -50,6 +50,7 @@ public class MechCombatController : MonoBehaviour
     public void BindCamera(Camera camera) => gameplayCamera = camera;
     public bool HasWeapon(MechWeaponSlot slot) => equipment == null || equipment.HasWeapon(slot);
     public bool HasSword => equipment == null || equipment.HasSword;
+    public bool HasMelee => equipment == null || equipment.HasMelee;
     public MechWeaponStats GetWeapon(MechWeaponSlot slot) => equipment != null && equipment.GetWeapon(slot) != null
         ? equipment.GetWeapon(slot) : GetDefaultWeapon(slot);
     public MechWeaponStats GetDefaultWeapon(MechWeaponSlot slot) => slot == MechWeaponSlot.Cannon ? cannon
@@ -63,6 +64,8 @@ public class MechCombatController : MonoBehaviour
     CharacterController movementCapsule;
     MechMovementController movement;
     bool meleePending;
+    Part activeMeleePart;
+    PartCategory activeMeleeCategory;
     float approachTime, approachDistance, meleeExtension, meleeCameraTimer;
     Quaternion strikeRotation;
     MechTargetable assistedTarget;
@@ -176,6 +179,8 @@ public class MechCombatController : MonoBehaviour
             return TryFire(MechWeaponSlot.ArmCrossbow, part);
         if (part != null && part.data != null && part.data.weapon == MechPartWeapon.ThrowingAxe)
             return TryFire(MechWeaponSlot.ThrowingAxe, part);
+        if (equipment.GetMeleePart(PartCategory.ArmR) != null)
+        { TryMelee(PartCategory.ArmR); return null; }
         var ability = equipment.GetAbility(MechWeaponSlot.ThrowingAxe);
         if (ability != null) ability.TryActivate(); else TryAnimationOnlyAttack(PartCategory.ArmR);
         return null;
@@ -259,19 +264,24 @@ public class MechCombatController : MonoBehaviour
         return aimPoint;
     }
 
-    public bool TryMelee()
+    public bool TryMelee() => TryMelee(PartCategory.ArmL);
+
+    bool TryMelee(PartCategory category)
     {
-        var arm = equipment != null ? equipment.GetEquippedPart(PartCategory.ArmL) : null;
+        var arm = equipment != null ? equipment.GetEquippedPart(category) : null;
         if (arm != null && arm.data != null && (arm.data.weapon == MechPartWeapon.ArmCrossbow || arm.data.weapon == MechPartWeapon.ThrowingAxe))
             return TryFire(arm.data.weapon == MechPartWeapon.ArmCrossbow ? MechWeaponSlot.ArmCrossbow : MechWeaponSlot.ThrowingAxe, arm) != null;
-        if (isActiveAndEnabled && !HasSword && equipment != null)
-            return equipment.TryMeleeAbility() || TryAnimationOnlyAttack(PartCategory.ArmL);
-        if (!isActiveAndEnabled || !HasSword || meleeTimer > 0f || meleePending
-            || equipment != null && equipment.Sword.ReadyAt > Time.time) return false;
-        strikeDamage = equipment != null ? equipment.Sword.data.GetStat(StatType.Damage) : meleeDamage;
-        meleeTimer = equipment != null ? Mathf.Max(0.01f, equipment.Sword.data.GetStat(StatType.CooldownReload)) : meleeCooldown;
-        if (equipment != null) equipment.Sword.Consume(meleeTimer, false);
-        if (equipment != null) WeaponAttackStarted?.Invoke(equipment.Sword);
+        var meleePart = equipment != null ? equipment.GetMeleePart(category) : null;
+        if (isActiveAndEnabled && meleePart == null && equipment != null)
+            return (category == PartCategory.ArmL && equipment.TryMeleeAbility()) || TryAnimationOnlyAttack(category);
+        if (!isActiveAndEnabled || equipment != null && meleePart == null || equipment == null && meleeTimer > 0f || meleePending
+            || meleePart != null && meleePart.ReadyAt > Time.time) return false;
+        activeMeleePart = meleePart;
+        activeMeleeCategory = category;
+        strikeDamage = meleePart != null ? Mathf.Max(0f, meleePart.data.GetStat(StatType.Damage)) : meleeDamage;
+        meleeTimer = meleePart != null ? Mathf.Max(0.01f, meleePart.data.GetStat(StatType.CooldownReload)) : meleeCooldown;
+        if (meleePart != null) meleePart.Consume(meleeTimer, false);
+        if (meleePart != null) WeaponAttackStarted?.Invoke(meleePart);
         meleeCameraTimer = meleeCameraHold;
         strikeRotation = transform.rotation;
         meleeExtension = 0f;
@@ -339,7 +349,8 @@ public class MechCombatController : MonoBehaviour
     {
         if (!meleePending || deltaTime <= 0f) return;
         if (assistedTarget == null || !assistedTarget.isActiveAndEnabled
-            || !HasSword || movement != null && (movement.IsQuickBoosting || !movement.IsGrounded))
+            || !HasMelee || equipment != null && equipment.GetMeleePart(activeMeleeCategory) != activeMeleePart
+            || movement != null && (movement.IsQuickBoosting || !movement.IsGrounded))
         {
             meleePending = false;
             meleeExtension = 0f;
@@ -396,8 +407,9 @@ public class MechCombatController : MonoBehaviour
     Vector3 AbsScale()
     {
         var scale = transform.lossyScale;
-        float reachScale = equipment != null && equipment.HasSword
-            ? Mathf.Max(0.01f, equipment.Sword.data.GetStat(StatType.Range) * equipment.Sword.data.metresPerGolem / 4f) : 1f;
+        var part = equipment != null ? (activeMeleePart != null && (meleeTimer > 0f || meleePending || flashTimer > 0f) ? activeMeleePart
+            : equipment.GetMeleePart(PartCategory.ArmL) ?? equipment.GetMeleePart(PartCategory.ArmR)) : null;
+        float reachScale = part != null ? Mathf.Max(0.01f, part.data.GetStat(StatType.Range) * part.data.metresPerGolem / 4f) : 1f;
         return new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z) * reachScale);
     }
 
@@ -427,8 +439,8 @@ public class MechCombatController : MonoBehaviour
     {
         if (meleeOutline == null) return;
         if (!meleePending && flashTimer <= 0f) strikeRotation = transform.rotation;
-        meleeOutline.enabled = showMeleeBox && HasSword;
-        groundOutline.enabled = showMeleeBox && HasSword;
+        meleeOutline.enabled = showMeleeBox && HasMelee;
+        groundOutline.enabled = showMeleeBox && HasMelee;
         // Walk every edge of the box, retracing only the edges needed to connect them.
         meleeOutline.positionCount = BoxCorners.Length;
         for (int i = 0; i < BoxCorners.Length; i++)
@@ -455,6 +467,7 @@ public class MechCombatController : MonoBehaviour
 
     public void CancelEquippedMelee()
     {
+        activeMeleePart = null;
         meleePending = false;
         meleeExtension = meleeCameraTimer = flashTimer = 0;
     }

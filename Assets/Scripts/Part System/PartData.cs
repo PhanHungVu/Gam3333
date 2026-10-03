@@ -10,7 +10,7 @@ public enum StatType
     Damage, MagSize, Ammo, CooldownReload, Range, SingleShot, AutoAim
 }
 
-public enum MechPartWeapon { None, Sword, ThrowingAxe, Cannon, Crossbow, ArmCrossbow }
+public enum MechPartWeapon { None, Sword, ThrowingAxe, Cannon, Crossbow, ArmCrossbow, Mace }
 public enum MechPartAbilityKind { None, ResonancePulse, ZigzagBarrage, BloomMissile }
 
 [System.Serializable]

@@ -70,6 +70,13 @@ public sealed class MechEquipmentCombat : MonoBehaviour
     public Part GetEquippedPart(PartCategory category) => equipment.GetEquipped(category);
     public bool HasWeapon(MechWeaponSlot slot) => isActiveAndEnabled && Usable(GetPart(slot));
     public bool HasSword => isActiveAndEnabled && Usable(Sword);
+    public bool HasMelee => GetMeleePart(PartCategory.ArmL) != null || GetMeleePart(PartCategory.ArmR) != null;
+    public Part GetMeleePart(PartCategory category)
+    {
+        var part = equipment != null ? equipment.GetEquipped(category) : null;
+        return isActiveAndEnabled && Usable(part) && part.data != null
+            && (part.data.weapon == MechPartWeapon.Sword || part.data.weapon == MechPartWeapon.Mace) ? part : null;
+    }
     static bool Usable(Part part) => part != null && part.isEquipped && part.isActiveAndEnabled && part.EquippedBy != null;
     static MechAbilityDriver AbilityOn(Part part)
     {

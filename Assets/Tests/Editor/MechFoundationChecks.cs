@@ -89,6 +89,8 @@ public static class MechFoundationChecks
             MechEnemyCombatChecks.Run(Check);
             MechProjectileModelChecks.Run(Check);
             MechSfxChecks.Run(Check);
+            MechDashMeleeChecks.Run(Check);
+            MechCameraCollisionChecks.Run(Check);
             Debug.Log("MECH CHECKS COMPLETE: " + checks);
             EditorApplication.Exit(0);
         }
@@ -828,6 +830,8 @@ public static class MechFoundationChecks
         Set(targeting, "gameplayCamera", view);
         var combat = player.AddComponent<MechCombatController>();
         // Keep collision/timing fixtures independent of weapon balance defaults.
+        Set(combat, "meleeSize", new Vector3(3f, 2.5f, 3.5f));
+        Set(combat, "meleeCenter", new Vector3(0f, 0f, 2.25f));
         Set(combat, "meleeDamage", 60f);
         Set(combat, "meleeCooldown", 0.65f);
         var fixtureWeapon = combat.GetWeapon(MechWeaponSlot.ThrowingAxe);
@@ -959,6 +963,8 @@ public static class MechFoundationChecks
         Set(targeting, "gameplayCamera", view);
         var combat = player.AddComponent<MechCombatController>();
         // Keep collision/timing fixtures independent of weapon balance defaults.
+        Set(combat, "meleeSize", new Vector3(3f, 2.5f, 3.5f));
+        Set(combat, "meleeCenter", new Vector3(0f, 0f, 2.25f));
         Set(combat, "meleeDamage", 60f);
         Set(combat, "meleeCooldown", 0.65f);
         var fixtureWeapon = combat.GetWeapon(MechWeaponSlot.ThrowingAxe);
@@ -1281,10 +1287,10 @@ public static class MechFoundationChecks
         for (int i = 0; i < 30; i++) Step(motor, view, Vector2.up);
         Check(Mathf.Abs(motor.Velocity.z - 6f) < 0.01f, "Normal ground speed remains 6");
         for (int i = 0; i < 30; i++) Step(motor, view, Vector2.up, sprint: true);
-        Check(Mathf.Abs(motor.Velocity.z - 12f) < 0.01f
-            && motor.State == MechMovementController.MovementState.GroundBoost, "Ground boost remains 12 and reports state");
+        Check(Mathf.Abs(motor.Velocity.z - 6f) < 0.01f
+            && motor.State == MechMovementController.MovementState.Grounded, "Removed sprint command preserves ordinary walking speed/state");
         Step(motor, view);
-        Check(Mathf.Abs(((Vector3)Get(motor, "planarVelocity")).z - 11.36f) < 0.01f,
+        Check(Mathf.Abs(((Vector3)Get(motor, "planarVelocity")).z - 5.36f) < 0.01f,
             "Deceleration preserves original 32 units per second squared");
         Step(motor, view, Vector2.right, boost: true);
         Check(started == 1 && motor.IsQuickBoosting && motor.QuickBoostProgress == 0f,

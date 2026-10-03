@@ -8,8 +8,8 @@ Open **A33** or **Merge Test** and enter Play mode. Both use `FullPlayer_mech_ba
 | 3 / 4 | Swap Hover / Tank placeholder lower bodies |
 | WASD | Camera-relative movement |
 | Space | Biped jump; hold for hover lift; ignored by tank |
-| Shift | Run using the walking clip at faster cadence |
-| Alt | Quick Boost; tank bursts along its current forward direction |
+| Shift | Quick Boost (dash); tank bursts along its current forward direction |
+| Alt | No movement action |
 | Ctrl | Assault Boost; hover also supports this in the air |
 | F8 | Show/hide locomotion data |
 | F | Existing nearby-part pickup, including locomotion parts |
@@ -24,14 +24,14 @@ The root retains one `CharacterController`, input instance, collision resolution
 
 The motor reads devices once into `MechLocomotionInput` and passes commands to the strategy. `Tick(input, cameraTransform, deltaTime)` is also available for deterministic checks. Automatic player input normally calls it from Update; external drivers set `ReadPlayerInput = false` to prevent double ticks. Modules never read input devices or move the root directly. Camera/targeting continue to own aim and hard-lock facing.
 
-| Module | Travel / Shift speed | Acceleration / braking | Vertical behavior |
+| Module | Travel speed | Acceleration / braking | Vertical behavior |
 | --- | --- | --- | --- |
-| Fast biped (default) | Existing 6 / 12 m/s | Existing 20 / 32 m/s² | Existing jump and gravity; ground-only boosts |
-| Heavy biped | 3 / 6 m/s | Existing 20 / 32 m/s² | Same jump and gravity as fast legs |
-| Hover | 12 / 18 m/s | 20 / 6 m/s² | Follows surfaces at 0.7 m clearance; Space raises clearance to 3 m |
-| Tank | 4.5 / 8 m/s | 15 / 18 m/s² | Gravity, no jump; forward Quick Boost |
+| Fast biped (default) | 6 m/s | Existing 20 / 32 m/s² | Existing jump and gravity; ground-only boosts |
+| Heavy biped | 3 m/s | Existing 20 / 32 m/s² | Same jump and gravity as fast legs |
+| Hover | 12 m/s | 20 / 6 m/s² | Follows surfaces at 0.7 m clearance; Space raises clearance to 3 m |
+| Tank | 4.5 m/s | 15 / 18 m/s² | Gravity, no jump; forward Quick Boost |
 
-Biped inherits the motor's serialized settings so existing prefab tuning survives. The animated biped prefabs enable `usePartSpeedRating`: their existing catalogue MoveSpeed ratings (50 fast / 25 heavy) scale travel and sprint relative to a reference rating of 50. Legacy biped parts leave this disabled. Hover/tank tuning lives on their module components. Quick/Assault Boost speed, energy costs and cooldowns remain shared motor settings. Tank travel stays camera-relative in this prototype; track steering and animation are later work. Hover probes below the root capsule, ignores self/trigger colliders, and falls under gravity over gaps deeper than its probe range. Releasing Space returns to normal hover clearance. Grounded means actual capsule contact, so a stable hover is airborne.
+Biped inherits the motor's serialized settings so existing prefab tuning survives. The animated biped prefabs enable `usePartSpeedRating`: their existing catalogue MoveSpeed ratings (50 fast / 25 heavy) scale travel relative to a reference rating of 50. Legacy biped parts leave this disabled. Hover/tank tuning lives on their module components. Quick/Assault Boost speed, energy costs and cooldowns remain shared motor settings. Tank travel stays camera-relative in this prototype; track steering and animation are later work. Hover probes below the root capsule, ignores self/trigger colliders, and falls under gravity over gaps deeper than its probe range. Releasing Space returns to normal hover clearance. Grounded means actual capsule contact, so a stable hover is airborne.
 
 Swapping does not teleport, zero velocity, restart an active Quick Boost, refill energy or rebuild input. An active Quick Boost completes with its captured direction; new commands use the replacement module. Assault Boost cancels on the next tick if the new module cannot sustain it at the current ground contact. Modules missing from old legs, disabled/destroyed modules, and an empty Legs slot use legacy biped movement as a deliberate prototype fallback.
 
@@ -46,8 +46,8 @@ The source is `Anim/golem2_v2.glb`. The animated export omits textures, so both 
 | Presentation state | Clip / behavior |
 | --- | --- |
 | Neutral | Fast uses the authored `Fast_Neutral` motion in `Biped_Neutral.anim`; Heavy uses `Heavy_Neutral.anim` |
-| Walk / Run | Fast uses `Biped_Run`, Heavy uses `Heavy_Walk.001`; Shift reuses that clip at faster cadence |
-| Dash / Boost | Alt Quick Boost and held Ctrl Assault Boost share the equipped family's looping `Fast_Boost` or `Heavy_Boost`; the motor determines their duration |
+| Walk | Fast uses `Biped_Run`, Heavy uses `Heavy_Walk.001`; sprinting is removed |
+| Dash / Boost | Shift Quick Boost and held Ctrl Assault Boost share the equipped family's looping `Fast_Boost` or `Heavy_Boost`; the motor determines their duration |
 | DashStop / BoostStop | The equipped family's `Fast_BoostStop` or `Heavy_BoostStop`, corrected to a non-looping one-shot |
 | Jump / Fall | The equipped family's `Fast_Jump` or `Heavy_Jump`, played once and held until landing |
 
@@ -121,7 +121,7 @@ Read `MechMovementController.AnimationData` in a presentation component, or subs
 | ForwardSpeed / SideSpeed | Signed m/s along the gameplay root's forward/right axes |
 | VerticalSpeed | Signed world vertical m/s; downward ground-stick motion suppressed while grounded |
 | IsGrounded | Actual CharacterController contact |
-| IsBoosting | Shift movement boost, Quick Boost or Assault Boost, including hover air boosts |
+| IsBoosting | Quick Boost or Assault Boost, including hover air boosts |
 | TurnRate / IsTurning | Actual signed yaw degrees/second; turning threshold is 1 degree/second |
 | AimDirection | Normalized world direction to the selected target, or camera forward in free aim |
 | LocomotionType / State | Selected movement style and the existing movement state |

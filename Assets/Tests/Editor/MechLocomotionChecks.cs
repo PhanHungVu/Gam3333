@@ -71,8 +71,8 @@ public static class MechLocomotionChecks
             Step(motor, view, 150);
             check(Mathf.Abs(player.transform.position.y - hoverHeight) < 0.08f, "Releasing lift settles hover at a stable clearance");
             Step(motor, view, 60, Vector2.up, sprint: true);
-            check(motor.AnimationData.IsBoosting && !motor.AnimationData.IsGrounded && motor.AnimationData.Speed > 17f,
-                "Hover sprint reports boost while physically airborne");
+            check(!motor.AnimationData.IsBoosting && !motor.AnimationData.IsGrounded && motor.AnimationData.Speed < 17f,
+                "Removed sprint does not activate hover boost");
             Step(motor, view, 1, Vector2.right, boost: true);
             check(motor.IsQuickBoosting && energy.Current < charge, "Hover accepts airborne quick boost and spends existing energy");
             float cooldown = motor.QuickBoostCooldownRemaining;

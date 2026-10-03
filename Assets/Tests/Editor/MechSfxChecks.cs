@@ -75,8 +75,8 @@ public static class MechSfxChecks
             float walkPitch = walking.pitch;
             for (int i = 0; i < 30; i++) movement.Tick(new MechLocomotionInput { move = Vector2.up, sprint = true }, camera.transform, 0.02f);
             MovementTick(audio);
-            check(walking.pitch > walkPitch && audio.GetComponentsInChildren<AudioSource>().Count(s => s.loop) == 1,
-                "Running increases movement cadence while reusing one voice");
+            check(Mathf.Abs(walking.pitch - walkPitch) < 0.01f && audio.GetComponentsInChildren<AudioSource>().Count(s => s.loop) == 1,
+                "Removed sprint does not increase walking sound cadence or add voices");
             movement.Tick(new MechLocomotionInput { move = Vector2.up, quickBoost = true }, camera.transform, 0.02f); MovementTick(audio);
             check(!walking.isPlaying, "Boost stops walking audio");
             for (int i = 0; i < 60; i++) movement.Tick(default, camera.transform, 0.02f);

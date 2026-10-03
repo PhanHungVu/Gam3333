@@ -18,4 +18,4 @@ MonoBehaviour:
   attackSound: {fileID: 8300000, guid: 2a3add72749ff4949bfa12f12fb20e6f, type: 3}
   attackVolume: 0.75
   blendDuration: 0.04
-  animationOnly: 1
+  animationOnly: 0

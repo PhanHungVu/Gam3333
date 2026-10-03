@@ -66,10 +66,10 @@ public class MechWeaponHud : MonoBehaviour
 
     void LateUpdate()
     {
-        string melee = ArmProjectileLine(PartCategory.ArmL, "LMB") ?? (combat.HasSword ? "LMB  SWORD" : equipment != null && equipment.MeleeAbility != null
+        string melee = ArmMeleeLine(PartCategory.ArmL, "LMB") ?? ArmProjectileLine(PartCategory.ArmL, "LMB") ?? (equipment == null && combat.HasSword ? "LMB  SWORD" : equipment != null && equipment.MeleeAbility != null
             ? "LMB  " + equipment.MeleeAbility.name.ToUpperInvariant() : AnimationLine(equipment != null
                 ? equipment.GetEquippedPart(PartCategory.ArmL) : null, "LMB") ?? "LMB  NO SWORD EQUIPPED");
-        readout.text = melee + "\n" + (ArmProjectileLine(PartCategory.ArmR, "RMB") ?? WeaponLine(MechWeaponSlot.ThrowingAxe, "RMB")) + "\n"
+        readout.text = melee + "\n" + (ArmMeleeLine(PartCategory.ArmR, "RMB") ?? ArmProjectileLine(PartCategory.ArmR, "RMB") ?? WeaponLine(MechWeaponSlot.ThrowingAxe, "RMB")) + "\n"
             + WeaponLine(MechWeaponSlot.Cannon, "Q") + "\n" + WeaponLine(MechWeaponSlot.Crossbow, "E") + (equipment != null ? "\nF  EQUIP NEARBY PART" : "");
     }
 
@@ -80,6 +80,14 @@ public class MechWeaponHud : MonoBehaviour
         float remaining = Mathf.Max(0f, part.ReadyAt - Time.time);
         string state = part.RemainingAmmo == 0 ? "EMPTY" : remaining > 0f ? $"RELOAD {remaining:0.0}s" : "READY";
         return $"{key}  {part.data.partName.ToUpperInvariant()}  {part.RemainingAmmo}  {state}";
+    }
+
+    string ArmMeleeLine(PartCategory category, string key)
+    {
+        var part = equipment != null ? equipment.GetMeleePart(category) : null;
+        if (part == null) return null;
+        float remaining = Mathf.Max(0f, part.ReadyAt - Time.time);
+        return key + "  " + part.data.partName.ToUpperInvariant() + (remaining > 0f ? $"  {remaining:0.0}s" : "  READY");
     }
 
     static string AnimationLine(Part part, string key)

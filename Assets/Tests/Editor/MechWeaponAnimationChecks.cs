@@ -125,11 +125,11 @@ public static class MechWeaponAnimationChecks
                 int projectiles = 0;
                 Action<MechProjectile> onShot = shot => { projectiles++; Object.DestroyImmediate(shot.gameObject); };
                 combat.ShotFired += onShot;
-                if (name == "arm_mace") check(combat.TryMelee(), "Mace button admits an animation-only swing");
+                if (name == "arm_mace") check(combat.TryMelee(), "Mace button admits its damaging melee swing");
                 else combat.TryFire();
                 combat.ShotFired -= onShot;
                 check(driver.CurrentPose == MechWeaponAnimator.PoseState.Fire && projectiles == (name == "arm_crossbow" ? 1 : 0),
-                    name + " plays Fire with its configured projectile or melee preview behavior");
+                    name + " plays Fire with its configured projectile or melee behavior");
                 driver.Tick(0.1f);
                 CheckPose(driver, sets.weapons.Single(e => e.target == driver.Animations), reference, 0.1f, check);
                 if (driver.Animations.reload != null)

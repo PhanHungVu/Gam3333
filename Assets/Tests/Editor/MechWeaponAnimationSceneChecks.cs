@@ -16,6 +16,7 @@ public static class MechWeaponAnimationSceneChecks
     static MechMovementController motor;
     static EquipManager equipment;
     static Part originalSword, originalAxe;
+    static CombatHealth maceTarget;
     static float next = -1f, deadline;
     static int phase = -2, shots;
     static bool cycleHeld;
@@ -147,10 +148,17 @@ public static class MechWeaponAnimationSceneChecks
                     // the second test pickup's highlighted selection.
                     originalSword.GetComponent<Rigidbody>().isKinematic = true;
                     originalSword.transform.position += Vector3.right * 100f;
+                    var dummy = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    dummy.name = "Mace Damage Check";
+                    dummy.transform.position = motor.transform.position + motor.transform.forward * 3f + motor.transform.right * 2.2f;
+                    dummy.transform.localScale = Vector3.one * 0.3f;
+                    maceTarget = dummy.AddComponent<CombatHealth>();
                     Physics.SyncTransforms();
                     Keys(); Button(MouseButton.Left); delay = 0.15f; break;
                 case 13:
                     Pose(PartCategory.ArmL, MechWeaponAnimator.PoseState.Fire, "Mace");
+                    Check(maceTarget.CurrentHealth == 50f, "Actual LMB mace swing deals 50 damage inside its enlarged melee hitbox");
+                    Object.DestroyImmediate(maceTarget.gameObject);
                     Capture("mace-fire"); Button(); PlacePickup("Arm Crossbow Animation Pickup"); delay = 0.45f; break;
                 case 14:
                     if (!SelectPickupAndPressF("Arm Crossbow Animation Pickup")) { next = Time.time + 0.15f; return; }

@@ -16138,8 +16138,8 @@ MonoBehaviour:
     damageMultiplier: 0.35
     maximumSecondaryDamage: 200
     maximumSecondaryTargets: 5
-  meleeCenter: {x: 0, y: 0, z: 2.25}
-  meleeSize: {x: 3, y: 2.5, z: 3.5}
+  meleeCenter: {x: 0, y: 0, z: 2.75}
+  meleeSize: {x: 5, y: 3.5, z: 5.5}
   meleeDamage: 100
   meleeCooldown: 0.7
   showMeleeBox: 1
