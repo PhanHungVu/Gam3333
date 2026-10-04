@@ -41,12 +41,19 @@ public sealed class TempLevelObjective : MonoBehaviour
 
         if (winScreen != null) winScreen.SetActive(false);
         if (returnPoint != null && hideReturnUntilCollected) returnPoint.gameObject.SetActive(false);
-        toolTipText.text = "Collect the yellow cube objective and return to the spawn point.";
+        SetTooltip("Collect the yellow cube objective and return to the spawn point.");
     }
 
     void Update()
     {
-        if (player == null || state == State.Won) return;
+        if (player == null) return;
+        if (state == State.Won)
+        {
+            var keyboard = Keyboard.current;
+            if (keyboard != null && keyboard[inputKey].wasPressedThisFrame && sceneManager != null)
+                sceneManager.LoadScene("MainMenuScene");
+            return;
+        }
 
         if (state == State.NotCollected && item != null && Near(item, pickupRadius))
         {
@@ -54,7 +61,7 @@ public sealed class TempLevelObjective : MonoBehaviour
             item.gameObject.SetActive(false);
             if (returnPoint != null) returnPoint.gameObject.SetActive(true);
             //Debug.Log("Objective collected - return to the spawn point.");
-            toolTipText.text = "Objective collected - return to the spawn point.";
+            SetTooltip("Objective collected - return to the spawn point.");
         }
         else if (state == State.Collected && returnPoint != null && Near(returnPoint, returnRadius))
         {
@@ -62,12 +69,13 @@ public sealed class TempLevelObjective : MonoBehaviour
             if (winScreen != null) winScreen.SetActive(true);
             if (pauseOnWin) Time.timeScale = 0f;
             //Debug.Log("Level complete!");
-            toolTipText.text = "Level complete! Press F to go back to the main menu";
+            SetTooltip("Level complete! Press " + interactKey + " to go back to the main menu");
         }
-        if (state == State.Won && UnityEngine.InputSystem.Keyboard.current[inputKey].wasPressedThisFrame)
-        {
-            sceneManager.LoadScene("MainMenuScene");
-        }
+    }
+
+    void SetTooltip(string message)
+    {
+        if (toolTipText != null) toolTipText.text = message;
     }
 
     // Horizontal only, so differences in pivot height between the mech and the markers don't matter.

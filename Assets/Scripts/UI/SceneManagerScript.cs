@@ -1,17 +1,13 @@
-using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class SceneManagerScript : MonoBehaviour
 {
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
     public void LoadScene(string sceneName)
     {
-        EditorSceneManager.LoadScene("Assets/Scenes/" + sceneName + ".unity");
+        // The objective pauses on completion; the next scene must start normally.
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(sceneName);
     }
     public void ExitGame()
     {

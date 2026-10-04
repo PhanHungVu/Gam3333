@@ -40,3 +40,15 @@ Passed in an isolated Unity 6000.5.8f1 project:
 - `MechAnimatedLegSceneChecks.RunMergeBatch`: actual moving swaps, body/head presentation and normal F pickup.
 
 `MechMergeRecoverySetup.RecoverBatch` is an explicit recovery helper, not an automatic import hook. Do not rerun old full asset-generation helpers over the merged player: those recreate controllers or module data. Normal play and GLB imports do not require a setup command.
+
+## Merge `8906938`: shared HUD and scene flow recovery
+
+The player prefab, animation sets, weapon rigs, projectile models and muzzle markers, audio, camera collision, soft-lock selection and part preview UI survived this merge. The teammate's navigation prefab, map layout, enemy loot drops, objectives and menu controls are retained.
+
+JhMapScene had reverted to the prototype movement bar. Its health meter was left at the scene root with zero scale and no Canvas reference after the health prefab upgrade. Reattached it beside Movement HUD under the existing Canvas, restored its player binding and placement, and restored the three sprite layers on movement. Both fronts crop horizontally, their glows scale on X, and their backs remain full-sized.
+
+A33 still referenced the deleted legacy Enemy prefab. Reconnected that instance to the existing CubeTest_Enemy prefab at the original `(3.4, 1, 10.5)` position. Archived backup scenes were left unchanged.
+
+SceneManagerScript now uses the runtime SceneManager and restores time scale when loading a scene. The map objective checks its return-to-menu key after winning, rather than returning before reading input; its optional tooltip is safe to leave empty. Menu button callbacks and scene names are preserved.
+
+Validation: 927 foundation checks; merged enemy waves, weapons and part selection; live JhMapScene camera collision; map completion and F return, menu-to-zoo and zoo-to-menu, and starting a fresh map; reference audit of MainMenuScene, A33, Merge Test, JhMapScene and ZooScene with no missing scripts or broken references. The isolated attack-timing fixture disables random enemy loot so a dropped collider cannot obstruct a later scenario; gameplay loot settings are unchanged.

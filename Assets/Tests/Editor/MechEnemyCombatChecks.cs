@@ -13,6 +13,9 @@ public static class MechEnemyCombatChecks
         var enemy = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemies/Enemy_" + family + ".prefab"),
             player.transform.position - Vector3.forward * distance, Quaternion.identity);
         var agent = enemy.GetComponent<EnemyAgent>(); agent.enabled = false;
+        // Random physical loot from an earlier death can obstruct a later attack scenario.
+        var drops = enemy.GetComponent<EnemyPartDrop>();
+        if (drops != null) drops.enabled = false;
         typeof(EnemyAgent).GetField("target", Private).SetValue(agent, player.transform);
         Physics.SyncTransforms();
         return enemy.GetComponent<EnemyAttack>();
