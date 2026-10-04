@@ -1043,7 +1043,7 @@ GameObject:
   - component: {fileID: 127516617}
   m_Layer: 0
   m_Name: InvisBox (7)
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1217,7 +1217,7 @@ GameObject:
   - component: {fileID: 133259021}
   m_Layer: 0
   m_Name: InvisBox (3)
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2057,7 +2057,7 @@ GameObject:
   - component: {fileID: 197858618}
   m_Layer: 0
   m_Name: InvisBox (2)
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2169,7 +2169,7 @@ GameObject:
   - component: {fileID: 200009487}
   m_Layer: 0
   m_Name: Invisramp (2)
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2826,7 +2826,7 @@ GameObject:
   - component: {fileID: 285862666}
   m_Layer: 0
   m_Name: Invisramp (1)
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3223,7 +3223,7 @@ GameObject:
   - component: {fileID: 328463539}
   m_Layer: 0
   m_Name: InvisBox (6)
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3781,7 +3781,7 @@ GameObject:
   - component: {fileID: 388895568}
   m_Layer: 0
   m_Name: InvisBox (5)
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4141,7 +4141,7 @@ GameObject:
   - component: {fileID: 445652239}
   m_Layer: 0
   m_Name: Bridge (1)
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -6225,7 +6225,7 @@ GameObject:
   - component: {fileID: 623496388}
   m_Layer: 0
   m_Name: FloatingPlatform
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -7720,6 +7720,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2513704603322567164, guid: c02199da86f4fca478af0cc11e45e613, type: 3}
+      propertyPath: goal
+      value: 
+      objectReference: {fileID: 921493717}
     - target: {fileID: 9085587845121245294, guid: c02199da86f4fca478af0cc11e45e613, type: 3}
       propertyPath: m_Name
       value: NavGrid
@@ -7855,7 +7859,7 @@ GameObject:
   - component: {fileID: 887124039}
   m_Layer: 0
   m_Name: InvisBox
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -8029,7 +8033,7 @@ GameObject:
   - component: {fileID: 895462391}
   m_Layer: 0
   m_Name: Bridge
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -8343,6 +8347,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc15aad914b342bc859e2ab8c19fce6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
+--- !u!4 &921493717 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2832213520374762835, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}
+  m_PrefabInstance: {fileID: 921493715}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &924169837
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8667,7 +8676,7 @@ GameObject:
   - component: {fileID: 1002232897}
   m_Layer: 0
   m_Name: InvisBox (9)
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -10751,7 +10760,7 @@ GameObject:
   - component: {fileID: 1306310386}
   m_Layer: 0
   m_Name: InvisBox (4)
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -11495,7 +11504,7 @@ GameObject:
   - component: {fileID: 1385147905}
   m_Layer: 0
   m_Name: InvisBox (8)
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -12473,7 +12482,7 @@ GameObject:
   - component: {fileID: 1505884897}
   m_Layer: 0
   m_Name: Invisramp
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -13658,7 +13667,7 @@ GameObject:
   - component: {fileID: 1624209420}
   m_Layer: 0
   m_Name: Invisramp (3)
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -15318,7 +15327,7 @@ GameObject:
   - component: {fileID: 1816604742}
   m_Layer: 0
   m_Name: FloatingPlatform (1)
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -15430,7 +15439,7 @@ GameObject:
   - component: {fileID: 1821950830}
   m_Layer: 0
   m_Name: InvisBox (1)
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
