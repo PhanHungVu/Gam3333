@@ -720,7 +720,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5612884456999447422, guid: 6c2939aec845f0c4a8bd71439e707f92, type: 3}
       propertyPath: health
-      value:
+      value: 
       objectReference: {fileID: 1098106129}
     - target: {fileID: 8078721102987646690, guid: 6c2939aec845f0c4a8bd71439e707f92, type: 3}
       propertyPath: m_Name
@@ -1462,7 +1462,7 @@ Canvas:
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
   m_UseReflectionProbes: 0
-  m_AdditionalShaderChannelsFlag: 0
+  m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -1587,7 +1587,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc15aad914b342bc859e2ab8c19fce6d, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
 --- !u!1001 &1113304451
 PrefabInstance:
@@ -3343,81 +3343,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1548283073}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &1719337905
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1719337907}
-  - component: {fileID: 1719337906}
-  - component: {fileID: 1719337908}
-  m_Layer: 0
-  m_Name: NavGrid
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1719337906
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1719337905}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 00782742a26ea9048b8c449ff4558675, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NavGrid
-  origin: {x: 0, y: 0, z: 0}
-  width: 200
-  depth: 200
-  cellSize: 1
-  obstacleTag: Obstacle
-  bodyRadiusPadding: 0.6
-  stepHeight: 0.3
-  shoulderHeight: 1.6
-  drawBlockedCells: 1
-  drawOpenCells: 1
-  blockedColor: {r: 0.85, g: 0.25, b: 0.2, a: 0.5}
-  openColor: {r: 0.2, g: 0.8, b: 0.3, a: 0.15}
---- !u!4 &1719337907
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1719337905}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1719337908
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1719337905}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fd6729e6581b814f826170faf1e9a55, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FlowField
-  goal: {fileID: 0}
-  rebuildDistance: 3
-  wallAdjacencyCost: 4
-  drawArrows: 1
-  arrowColor: {r: 0.3, g: 0.5, b: 0.95, a: 0.9}
-  gizmoStride: 2
 --- !u!1 &1735031572
 GameObject:
   m_ObjectHideFlags: 0
@@ -4288,6 +4213,63 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3c93e3bc34dac5e4394db937a5e4f772, type: 3}
+--- !u!1001 &7377402863702230729
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2080765808515747233, guid: c02199da86f4fca478af0cc11e45e613, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2080765808515747233, guid: c02199da86f4fca478af0cc11e45e613, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2080765808515747233, guid: c02199da86f4fca478af0cc11e45e613, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2080765808515747233, guid: c02199da86f4fca478af0cc11e45e613, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2080765808515747233, guid: c02199da86f4fca478af0cc11e45e613, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2080765808515747233, guid: c02199da86f4fca478af0cc11e45e613, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2080765808515747233, guid: c02199da86f4fca478af0cc11e45e613, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2080765808515747233, guid: c02199da86f4fca478af0cc11e45e613, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2080765808515747233, guid: c02199da86f4fca478af0cc11e45e613, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2080765808515747233, guid: c02199da86f4fca478af0cc11e45e613, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9085587845121245294, guid: c02199da86f4fca478af0cc11e45e613, type: 3}
+      propertyPath: m_Name
+      value: NavGrid
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: c02199da86f4fca478af0cc11e45e613, type: 3}
 --- !u!1001 &7863936839611539483
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4420,7 +4402,7 @@ SceneRoots:
   - {fileID: 1054055419}
   - {fileID: 2079817370}
   - {fileID: 1251375240}
-  - {fileID: 1719337907}
+  - {fileID: 7377402863702230729}
   - {fileID: 1098106125}
   - {fileID: 386053909645579831}
   - {fileID: 2868873665420062629}
