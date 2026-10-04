@@ -91,8 +91,8 @@ public class PartSwapHUDScript : MonoBehaviour
 
     void FitMenuToCanvas()
     {
-        // The existing menu was authored at 1920 x 1080 on a constant-pixel Canvas.
-        // Scale only this panel so its cards fit without changing other scene UI.
+        // Fit in logical Canvas units. CanvasScaler handles resolution scaling;
+        // this extra fit only keeps the authored panel inside narrower aspect ratios.
         var menu = partSwapHUDPrefab.transform as RectTransform;
         var parent = menu != null ? menu.parent as RectTransform : null;
         if (parent == null || menu.rect.width <= 0f || menu.rect.height <= 0f) return;

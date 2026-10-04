@@ -62,7 +62,7 @@ public static class MechHealthHudSetup
         var asset = AssetDatabase.LoadAssetAtPath<GameObject>(CursorPath);
         var preview = new SerializedObject(asset.GetComponent<RectTransform>());
         preview.FindProperty("m_LocalScale").vector3Value = Vector3.one;
-        preview.FindProperty("m_SizeDelta").vector2Value = new Vector2(1280f, 720f);
+        preview.FindProperty("m_SizeDelta").vector2Value = new Vector2(1920f, 1080f);
         preview.ApplyModifiedPropertiesWithoutUndo();
         PrefabUtility.SavePrefabAsset(asset);
     }
