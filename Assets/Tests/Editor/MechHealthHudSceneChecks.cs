@@ -26,8 +26,10 @@ public static class MechHealthHudSceneChecks
     static void Value()
     {
         Check(Mathf.Abs(hud.NormalizedHealth - health.CurrentHealth / health.MaximumHealth) < 0.001f
-            && hud.Readout == "HEALTH  " + Mathf.CeilToInt(health.CurrentHealth) + " / " + Mathf.CeilToInt(health.MaximumHealth),
-            "Bar and numbers show actual current/max health at phase " + phase);
+            && Mathf.Abs(hud.transform.Find("Glow").localScale.x - hud.NormalizedHealth) < 0.001f
+            && hud.transform.Find("BarFront").localScale == Vector3.one
+            && hud.transform.Find("BarBack").localScale == Vector3.one,
+            "Front crops and glow squeezes to actual health at phase " + phase);
     }
     static void Capture(string name) => typeof(CombatFeedbackSceneChecks).GetMethod("Capture", BindingFlags.Static | BindingFlags.NonPublic)
         .Invoke(null, new object[] { "health-" + name });
@@ -44,10 +46,17 @@ public static class MechHealthHudSceneChecks
                     foreach (var spawner in Object.FindObjectsByType<EnemySpawnerManager>()) spawner.enabled = false;
                     foreach (var enemy in Object.FindObjectsByType<EnemyAgent>()) enemy.gameObject.SetActive(false);
                     hud = Object.FindAnyObjectByType<MechHealthHud>(); health = hud.Health; player = health.gameObject;
-                    Check(hud != null && Object.FindObjectsByType<MechHealthHud>().Length == 1, "Scene has one standalone health HUD");
-                    Check(hud.transform.parent == null && player.GetComponentInChildren<MechHealthHud>() == null,
-                        "Health HUD is a separate scene root, outside the player prefab");
-                    foreach (var graphic in hud.Canvas.GetComponentsInChildren<Graphic>()) Check(!graphic.raycastTarget, "Health UI never intercepts gameplay clicks");
+                    var energy = Object.FindAnyObjectByType<MechEnergyHud>();
+                    Check(hud != null && Object.FindObjectsByType<MechHealthHud>().Length == 1, "Scene has one health meter");
+                    Check(hud.transform.parent == energy.transform.parent && hud.Canvas == energy.GetComponentInParent<Canvas>()
+                        && player.GetComponentInChildren<MechHealthHud>() == null,
+                        "Health and movement share one Canvas outside the player prefab");
+                    Check(((RectTransform)hud.transform).anchoredPosition == new Vector2(28f, 124f)
+                        && ((RectTransform)energy.transform).anchoredPosition == new Vector2(28f, 42f),
+                        "Scene places health above movement with both glows inside the screen");
+                    Check(hud.transform.childCount == 3 && energy.transform.childCount == 3,
+                        "Both meters contain Glow, BarBack and BarFront");
+                    foreach (var graphic in hud.GetComponentsInChildren<Graphic>()) Check(!graphic.raycastTarget, "Health UI never intercepts gameplay clicks");
                     Value(); Capture("full"); health.ApplyDamage(40f); break;
                 case 1:
                     Value(); Capture("damaged");
@@ -57,15 +66,16 @@ public static class MechHealthHudSceneChecks
                     Value(); Capture("capacity"); health.ApplyDamage(health.CurrentHealth - 20f); break;
                 case 2:
                     Value();
-                    Check(hud.Canvas.transform.Find("Health Panel/Health Track/Health Fill").GetComponent<Image>().color.r > 0.9f,
-                        "Low health uses a red fill");
-                    Capture("low"); player.SetActive(false); Check(!hud.Canvas.enabled, "Disabling player hides health HUD");
+                    Check(hud.transform.Find("BarFront").GetComponent<Image>().color == Color.white,
+                        "Low health retains the supplied sprite colours");
+                    Capture("low"); player.SetActive(false); Check(!hud.IsVisible && hud.Canvas.enabled, "Disabling player hides HP while keeping shared Canvas active");
                     player.SetActive(true); break;
                 case 3:
-                    Check(hud.Canvas.enabled && Object.FindObjectsByType<MechHealthHud>().Length == 1,
-                        "Re-enabling player restores the standalone HUD without duplication");
+                    Check(hud.IsVisible && Object.FindObjectsByType<MechHealthHud>().Length == 1,
+                        "Re-enabling player restores its health meter without duplication");
                     Value(); health.ApplyDamage(10000f);
-                    Check(health.IsDead && !hud.Canvas.enabled && hud.NormalizedHealth == 0f, "Death clears fill and follows existing player UI lifecycle");
+                    Check(health.IsDead && !hud.IsVisible && hud.Canvas.enabled && hud.NormalizedHealth == 0f
+                        && hud.transform.Find("Glow").localScale.x == 0f, "Death clears front and glow without hiding shared Canvas");
                     SessionState.SetBool(Pending, false); Debug.Log("HEALTH HUD CHECKS COMPLETE"); EditorApplication.Exit(0); return;
             }
             phase++; next = Time.time + 0.3f;

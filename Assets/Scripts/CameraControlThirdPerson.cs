@@ -377,7 +377,6 @@ public class CameraControlThirdPerson : MonoBehaviour
         else
         {
             cameraYaw += lookInput.x * lookSensitivity;
-            targetingController?.ReportAimInput(lookInput);
         }
         if (targetingActive)
         {

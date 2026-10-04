@@ -1,142 +1,175 @@
 using System;
-using UnityEditor;
-using UnityEngine;
-using UnityEngine.UI;
 using System.Linq;
+using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public static class MechHealthHudSetup
 {
     public const string HudPath = "Assets/Prefabs/UI/Player Health HUD.prefab";
+    public const string CursorPath = "Assets/Prefabs/Mech Cursor Canvas.prefab";
+    public static readonly string[] ScenePaths = { "Assets/Scenes/A33.unity", "Assets/Scenes/Merge Test.unity", "Assets/Scenes/JhMapScene.unity", "Assets/Scenes/ZooScene.unity" };
 
-    public static readonly string[] ScenePaths = { "Assets/Scenes/A33.unity", "Assets/Scenes/Merge Test.unity", "Assets/Scenes/JhMapScene.unity" };
-
-    [MenuItem("Tools/Mech/UI/Create Standalone Player Health HUD")]
+    [MenuItem("Tools/Mech/UI/Set Up Shared Health And Movement Bars")]
     public static void CreateEditableHud()
     {
         if (!AssetDatabase.IsValidFolder("Assets/Prefabs/UI")) AssetDatabase.CreateFolder("Assets/Prefabs", "UI");
         if (AssetDatabase.LoadAssetAtPath<GameObject>(HudPath) == null)
         {
-            var view = BuildView();
-            try { PrefabUtility.SaveAsPrefabAsset(view, HudPath); }
-            finally { UnityEngine.Object.DestroyImmediate(view); }
+            var empty = new GameObject("Player Health HUD", typeof(RectTransform));
+            try { PrefabUtility.SaveAsPrefabAsset(empty, HudPath); }
+            finally { UnityEngine.Object.DestroyImmediate(empty); }
         }
-        var viewRoot = PrefabUtility.LoadPrefabContents(HudPath);
+        var root = PrefabUtility.LoadPrefabContents(HudPath);
         try
         {
-            var hud = viewRoot.GetComponent<MechHealthHud>() ?? viewRoot.AddComponent<MechHealthHud>();
-            var data = new SerializedObject(hud);
-            AssignIfMissing(data, "canvas", viewRoot.GetComponent<Canvas>());
-            AssignIfMissing(data, "fill", viewRoot.transform.Find("Health Panel/Health Track/Health Fill")?.GetComponent<Image>());
-            if (data.FindProperty("tmpLabel").objectReferenceValue == null)
-                AssignIfMissing(data, "label", viewRoot.transform.Find("Health Panel/Health Readout")?.GetComponent<Text>());
-            data.ApplyModifiedPropertiesWithoutUndo();
-            PrefabUtility.SaveAsPrefabAsset(viewRoot, HudPath);
-        }
-        finally { PrefabUtility.UnloadPrefabContents(viewRoot); }
-        SaveAssetPreview(AssetDatabase.LoadAssetAtPath<GameObject>(HudPath), "");
-        var root = PrefabUtility.LoadPrefabContents(MechAnimatedLegsSetup.PlayerPath);
-        try
-        {
-            if (root.GetComponent<CombatHealth>() == null) throw new InvalidOperationException("Player health is missing.");
+            // Upgrade the old independent Canvas into a meter that shares its parent's Canvas.
+            foreach (var component in root.GetComponents<CanvasScaler>()) UnityEngine.Object.DestroyImmediate(component);
+            foreach (var component in root.GetComponents<Canvas>()) UnityEngine.Object.DestroyImmediate(component);
+            RemoveChild(root, "Health Panel");
+            var group = root.GetComponent<CanvasGroup>();
+            if (group == null) group = root.AddComponent<CanvasGroup>();
+            group.alpha = 1f; group.blocksRaycasts = false; group.interactable = false;
+            ConfigureMeter(root, "Hp", new Vector2(28f, 124f));
             var hud = root.GetComponent<MechHealthHud>();
-            if (hud != null) UnityEngine.Object.DestroyImmediate(hud);
-            var ui = root.transform.Find("Player Health HUD");
-            if (ui != null) UnityEngine.Object.DestroyImmediate(ui.gameObject);
-            PrefabUtility.SaveAsPrefabAsset(root, MechAnimatedLegsSetup.PlayerPath);
+            if (hud == null) hud = root.AddComponent<MechHealthHud>();
+            var data = new SerializedObject(hud);
+            data.FindProperty("canvas").objectReferenceValue = null;
+            data.FindProperty("visibility").objectReferenceValue = group;
+            data.FindProperty("fill").objectReferenceValue = root.transform.Find("BarFront").GetComponent<Image>();
+            data.FindProperty("glow").objectReferenceValue = root.transform.Find("Glow").GetComponent<Image>();
+            data.FindProperty("label").objectReferenceValue = null;
+            data.FindProperty("tmpLabel").objectReferenceValue = null;
+            data.FindProperty("tintFillByHealth").boolValue = false;
+            data.ApplyModifiedPropertiesWithoutUndo();
+            PrefabUtility.SaveAsPrefabAsset(root, HudPath);
         }
         finally { PrefabUtility.UnloadPrefabContents(root); }
+        var cursor = PrefabUtility.LoadPrefabContents(CursorPath);
+        try
+        {
+            ConfigureMovement(cursor.GetComponentInChildren<MechEnergyHud>(true));
+            var hud = cursor.GetComponentInChildren<MechHealthHud>(true);
+            if (hud == null)
+                hud = ((GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(HudPath), cursor.transform)).GetComponent<MechHealthHud>();
+            PlaceHealth(hud, cursor.transform);
+            Bind(hud, cursor.GetComponent<Canvas>(), null);
+            PrefabUtility.SaveAsPrefabAsset(cursor, CursorPath);
+        }
+        finally { PrefabUtility.UnloadPrefabContents(cursor); }
+        var asset = AssetDatabase.LoadAssetAtPath<GameObject>(CursorPath);
+        var preview = new SerializedObject(asset.GetComponent<RectTransform>());
+        preview.FindProperty("m_LocalScale").vector3Value = Vector3.one;
+        preview.FindProperty("m_SizeDelta").vector2Value = new Vector2(1280f, 720f);
+        preview.ApplyModifiedPropertiesWithoutUndo();
+        PrefabUtility.SavePrefabAsset(asset);
     }
 
     public static void PlaceInScene(Scene scene)
     {
-        var player = scene.GetRootGameObjects().SelectMany(go => go.GetComponentsInChildren<MechPlayerRig>(true)).Single();
-        var hud = scene.GetRootGameObjects().SelectMany(go => go.GetComponentsInChildren<MechHealthHud>(true)).FirstOrDefault();
+        var roots = scene.GetRootGameObjects();
+        var player = roots.SelectMany(go => go.GetComponentsInChildren<MechPlayerRig>(true)).Single();
+        var movement = roots.SelectMany(go => go.GetComponentsInChildren<MechEnergyHud>(true)).Single();
+        ConfigureMovement(movement);
+        var canvas = movement.GetComponentInParent<Canvas>();
+        if (canvas == null) throw new InvalidOperationException("Movement HUD has no Canvas in " + scene.path);
+        var hud = roots.SelectMany(go => go.GetComponentsInChildren<MechHealthHud>(true)).SingleOrDefault();
         if (hud == null)
             hud = ((GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(HudPath), scene)).GetComponent<MechHealthHud>();
-        hud.transform.SetParent(null, false);
-        var data = new SerializedObject(hud);
-        data.FindProperty("health").objectReferenceValue = player.GetComponent<CombatHealth>();
-        data.ApplyModifiedPropertiesWithoutUndo();
+        // Clear the old screen-sized Canvas transform overrides before reparenting.
+        if (PrefabUtility.IsPartOfPrefabInstance(hud.transform))
+            PrefabUtility.RevertObjectOverride(hud.transform, InteractionMode.AutomatedAction);
+        PlaceHealth(hud, movement.transform.parent);
+        Bind(hud, canvas, player.GetComponent<CombatHealth>());
+        PrefabUtility.RecordPrefabInstancePropertyModifications(hud);
         EditorSceneManager.MarkSceneDirty(scene);
     }
 
-    static void SaveAssetPreview(GameObject asset, string child)
+    static void PlaceHealth(MechHealthHud hud, Transform parent)
     {
-        var rect = (child.Length == 0 ? asset.transform : asset.transform.Find(child)) as RectTransform;
-        if (rect == null || rect.localScale != Vector3.zero && rect.sizeDelta != Vector2.zero) return;
-        // Edit the persistent prefab after saving. Its Canvas isn't in a live scene,
-        // so driven screen dimensions cannot overwrite these authored preview values.
-        var data = new SerializedObject(rect);
-        data.FindProperty("m_LocalScale").vector3Value = Vector3.one;
-        data.FindProperty("m_SizeDelta").vector2Value = new Vector2(1280f, 720f);
-        data.FindProperty("m_Pivot").vector2Value = new Vector2(0.5f, 0.5f);
+        var source = AssetDatabase.LoadAssetAtPath<GameObject>(HudPath).GetComponent<RectTransform>();
+        var rect = (RectTransform)hud.transform;
+        rect.SetParent(parent, false);
+        rect.anchorMin = source.anchorMin; rect.anchorMax = source.anchorMax; rect.pivot = source.pivot;
+        rect.sizeDelta = source.sizeDelta; rect.anchoredPosition3D = source.anchoredPosition3D;
+        rect.localScale = source.localScale; rect.localRotation = source.localRotation;
+        PrefabUtility.RecordPrefabInstancePropertyModifications(rect);
+    }
+
+    static void Bind(MechHealthHud hud, Canvas canvas, CombatHealth health)
+    {
+        var data = new SerializedObject(hud);
+        data.FindProperty("canvas").objectReferenceValue = canvas;
+        data.FindProperty("health").objectReferenceValue = health;
         data.ApplyModifiedPropertiesWithoutUndo();
-        PrefabUtility.SavePrefabAsset(asset);
     }
 
-    static void AssignIfMissing(SerializedObject data, string property, UnityEngine.Object value)
+    static void ConfigureMovement(MechEnergyHud hud)
     {
-        if (data.FindProperty(property).objectReferenceValue == null) data.FindProperty(property).objectReferenceValue = value;
+        if (hud == null) throw new InvalidOperationException("Movement HUD is missing.");
+        RemoveChild(hud.gameObject, "Energy Fill"); RemoveChild(hud.gameObject, "Energy Label");
+        var oldBackground = hud.GetComponent<Image>();
+        if (oldBackground != null) UnityEngine.Object.DestroyImmediate(oldBackground);
+        ConfigureMeter(hud.gameObject, "Energy", new Vector2(28f, 42f));
+        var data = new SerializedObject(hud);
+        data.FindProperty("fill").objectReferenceValue = hud.transform.Find("BarFront").GetComponent<Image>();
+        data.FindProperty("glow").objectReferenceValue = hud.transform.Find("Glow").GetComponent<Image>();
+        data.FindProperty("label").objectReferenceValue = null;
+        data.FindProperty("tintFillByEnergy").boolValue = false;
+        data.ApplyModifiedPropertiesWithoutUndo();
     }
 
-    static GameObject BuildView()
+    static void ConfigureMeter(GameObject root, string prefix, Vector2 position)
     {
-        var root = new GameObject("Player Health HUD", typeof(RectTransform));
         root.layer = 5;
-        // Set the authored rectangle before Canvas starts driving it. Unity saves
-        // the original values of driven properties, rather than their live values.
-        SetPreviewRect(root.GetComponent<RectTransform>());
-        var canvas = root.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 10;
-        var scaler = root.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1280f, 720f); scaler.matchWidthOrHeight = 0.5f;
-        var panel = Image("Health Panel", root.transform, new Color(0.03f, 0.05f, 0.07f, 0.85f));
-        var rect = panel.rectTransform;
-        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
-        rect.anchoredPosition = new Vector2(24f, -24f); rect.sizeDelta = new Vector2(300f, 78f);
-        var text = new GameObject("Health Readout", typeof(RectTransform), typeof(Text), typeof(Shadow));
-        text.layer = 5;
-        text.transform.SetParent(panel.transform, false);
-        var label = text.GetComponent<Text>();
-        label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); label.fontSize = 19;
-        label.fontStyle = FontStyle.Bold; label.alignment = TextAnchor.MiddleLeft; label.raycastTarget = false;
-        label.text = "HEALTH  100 / 100";
-        var textRect = label.rectTransform;
-        textRect.anchorMin = new Vector2(0f, 0.5f); textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = new Vector2(14f, 0f); textRect.offsetMax = new Vector2(-14f, -8f);
-        text.GetComponent<Shadow>().effectDistance = new Vector2(1f, -1f);
-        var track = Image("Health Track", panel.transform, new Color(0.15f, 0.18f, 0.2f));
-        var trackRect = track.rectTransform;
-        trackRect.anchorMin = trackRect.anchorMax = Vector2.zero; trackRect.pivot = Vector2.zero;
-        trackRect.anchoredPosition = new Vector2(14f, 14f); trackRect.sizeDelta = new Vector2(272f, 18f);
-        var fill = Image("Health Fill", track.transform, new Color(0.3f, 0.95f, 0.5f));
-        fill.rectTransform.anchorMin = Vector2.zero; fill.rectTransform.anchorMax = Vector2.one;
-        fill.rectTransform.offsetMin = fill.rectTransform.offsetMax = Vector2.zero;
-        SetPreviewRect(root.GetComponent<RectTransform>());
-        return root;
+        var frontSprite = Sprite(prefix + "Bar");
+        float width = 360f, scale = width / frontSprite.rect.width;
+        var size = frontSprite.rect.size * scale;
+        var rect = root.GetComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = rect.pivot = Vector2.zero;
+        rect.localScale = Vector3.one; rect.localRotation = Quaternion.identity;
+        rect.anchoredPosition = position; rect.sizeDelta = size;
+        var glow = Layer(root, "Glow", Sprite(prefix + "BarGlow"));
+        glow.transform.SetSiblingIndex(0);
+        glow.rectTransform.anchorMin = glow.rectTransform.anchorMax = Vector2.zero;
+        glow.rectTransform.pivot = new Vector2(0f, 0.5f);
+        glow.rectTransform.sizeDelta = glow.sprite.rect.size * scale;
+        glow.rectTransform.anchoredPosition = new Vector2((size.x - glow.rectTransform.sizeDelta.x) * 0.5f, size.y * 0.5f);
+        glow.color = new Color(1f, 1f, 1f, 0.3f);
+        var back = Layer(root, "BarBack", Sprite(prefix + "BarBack")); back.transform.SetSiblingIndex(1);
+        var front = Layer(root, "BarFront", frontSprite); front.transform.SetSiblingIndex(2);
+        foreach (var image in new[] { back, front })
+        {
+            image.rectTransform.anchorMin = image.rectTransform.anchorMax = image.rectTransform.pivot = Vector2.zero;
+            image.rectTransform.anchoredPosition = Vector2.zero; image.rectTransform.sizeDelta = size;
+        }
+        front.type = Image.Type.Filled; front.fillMethod = Image.FillMethod.Horizontal;
+        front.fillOrigin = 0; front.fillAmount = 1f;
     }
 
-    static void SetPreviewRect(RectTransform rect)
+    static Image Layer(GameObject root, string name, Sprite sprite)
     {
-        // A headless editor has no screen dimensions. Save a useful editor preview
-        // instead of the zero-sized transform Canvas initially drives there.
-        rect.localScale = Vector3.one;
-        rect.anchorMin = rect.anchorMax = Vector2.zero;
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = Vector2.zero;
-        rect.sizeDelta = new Vector2(1280f, 720f);
+        var child = root.transform.Find(name);
+        if (child == null)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(root.transform, false); child = go.transform;
+        }
+        child.gameObject.layer = 5;
+        var image = child.GetComponent<Image>();
+        image.sprite = sprite; image.color = Color.white; image.raycastTarget = false;
+        image.type = Image.Type.Simple; child.localScale = Vector3.one;
+        return image;
     }
-
-    static Image Image(string name, Transform parent, Color color)
+    static Sprite Sprite(string name) => AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/" + name + ".png")
+        ?? throw new InvalidOperationException("Missing sprite " + name);
+    static void RemoveChild(GameObject root, string name)
     {
-        var go = new GameObject(name, typeof(RectTransform), typeof(Image));
-        go.layer = 5; go.transform.SetParent(parent, false);
-        var image = go.GetComponent<Image>(); image.color = color; image.raycastTarget = false; return image;
+        var child = root.transform.Find(name);
+        if (child != null) UnityEngine.Object.DestroyImmediate(child.gameObject);
     }
-
     public static void BuildBatch()
     {
         if (!Application.isBatchMode) throw new InvalidOperationException("Disposable project only.");
@@ -145,9 +178,15 @@ public static class MechHealthHudSetup
             CreateEditableHud();
             foreach (string path in ScenePaths)
             {
-                var scene = EditorSceneManager.OpenScene(path);
-                PlaceInScene(scene);
-                EditorSceneManager.SaveScene(scene);
+                var scene = EditorSceneManager.OpenScene(path); PlaceInScene(scene); EditorSceneManager.SaveScene(scene);
+                var health = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<MechHealthHud>(true)).Single();
+                var energy = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<MechEnergyHud>(true)).Single();
+                if (health.transform.parent != energy.transform.parent || health.Canvas != energy.GetComponentInParent<Canvas>())
+                    throw new InvalidOperationException("Meters do not share the same Canvas in " + path);
+                if (((RectTransform)health.transform).anchoredPosition != new Vector2(28f, 124f)
+                    || ((RectTransform)energy.transform).anchoredPosition != new Vector2(28f, 42f))
+                    throw new InvalidOperationException("Meter placement is incorrect in " + path);
+                Debug.Log("SHARED METER SCENE PASS: " + path);
             }
             Debug.Log("PLAYER HEALTH HUD BUILD COMPLETE"); EditorApplication.Exit(0);
         }
