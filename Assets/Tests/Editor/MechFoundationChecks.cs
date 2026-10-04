@@ -119,7 +119,7 @@ public static class MechFoundationChecks
         var b = Enemy(new Vector3(7, 0, 20));
         Physics.SyncTransforms();
         Call(targeting, "LateUpdate");
-        Check(targeting.CurrentTarget == a && changes == 1, "Acquire nearest world-distance target and publish one change");
+        Check(targeting.CurrentTarget == a && changes == 1, "Acquire enemy nearest hidden aim and publish one change");
         Call(targeting, "LateUpdate");
         Check(changes == 1, "Keeping a target does not repeat change events");
         view.transform.rotation = Quaternion.LookRotation(new Vector3(4, 0, 20));
@@ -129,7 +129,6 @@ public static class MechFoundationChecks
         Check(Vector2.Distance(RectTransformUtility.WorldToScreenPoint(null, cursor.position),
             view.WorldToScreenPoint(a.AimPosition)) < 0.1f, "Cursor overlays target after camera rotation");
         view.transform.rotation = Quaternion.LookRotation(b.AimPosition);
-        targeting.ReportAimInput(Vector2.right);
         Quaternion rotation = view.transform.rotation;
         Call(targeting, "LateUpdate");
         Check(targeting.CurrentTarget == b && changes == 2, "Center aim switches targets exactly once");
@@ -207,41 +206,51 @@ public static class MechFoundationChecks
         var side = Enemy(player.transform.position + new Vector3(4, 0, 20));
         Physics.SyncTransforms();
         Call(targeting, "LateUpdate");
-        Check(targeting.CurrentTarget == near, "Initial soft lock uses distance from mech, not distance from screen center");
-        centered.transform.position = player.transform.position + new Vector3(0, 0, 10);
-        Physics.SyncTransforms();
-        Call(targeting, "LateUpdate");
-        Check(targeting.CurrentTarget == near, "A nearer enemy crossing stationary hidden aim cannot steal soft lock");
+        Check(targeting.CurrentTarget == centered, "Initial soft lock selects the aimed enemy instead of a closer off-center enemy");
         view.transform.rotation = Quaternion.Euler(0, 7, 0);
-        targeting.ReportAimInput(Vector2.right);
         Call(targeting, "LateUpdate");
-        Check(targeting.CurrentTarget == near, "Aiming at empty space preserves a valid soft lock");
-        centered.transform.position = player.transform.position + new Vector3(0, 0, 30);
-        view.transform.rotation = Quaternion.identity;
+        Check(targeting.CurrentTarget == centered, "Aiming at empty space preserves a valid soft lock");
+        view.transform.rotation = Quaternion.LookRotation(side.AimPosition - view.transform.position);
+        targeting.ProcessSwitchInput(Vector2.right * 0.001f, 0.02f);
+        Call(targeting, "LateUpdate");
+        Check(targeting.CurrentTarget == side, "Soft lock selects hidden aim without a flick, travel threshold, or minimum speed");
+        int changes = 0;
+        targeting.TargetChanged += (previous, next) => changes++;
+        Call(targeting, "LateUpdate");
+        Check(changes == 0, "Stationary hidden aim keeps its target without repeated selection events");
+        near.transform.position = view.transform.position + view.transform.forward * 8f;
         Physics.SyncTransforms();
-        targeting.ReportAimInput(Vector2.left);
         Call(targeting, "LateUpdate");
-        Check(targeting.CurrentTarget == centered, "Deliberate hidden aim selects a farther enemy over the closer selection");
-        near.transform.position = player.transform.position + new Vector3(0, 0, 8);
+        Check(targeting.CurrentTarget == near && changes == 1, "Enemy crossing stationary hidden aim is selected without new mouse input");
+        targeting.ToggleHardLock();
+        centered.transform.position = view.transform.position + view.transform.forward * 5f;
         Physics.SyncTransforms();
         Call(targeting, "LateUpdate");
-        Check(targeting.CurrentTarget == centered, "Aim input is consumed: next-frame enemy movement cannot switch targets");
+        Check(targeting.IsHardLocked && targeting.CurrentTarget == near,
+            "Hard lock keeps its committed enemy when hidden aim crosses a different enemy");
         targeting.ToggleHardLock();
-        Check(targeting.IsHardLocked && targeting.CurrentTarget == centered,
-            "Hard-lock toggle preserves the visible selection even with a nearer enemy on center aim");
-        targeting.ToggleHardLock();
+        Call(targeting, "LateUpdate");
+        Check(targeting.CurrentTarget == centered, "Returning to soft lock immediately selects the enemy under hidden aim");
         centered.enabled = false;
         Call(targeting, "LateUpdate");
-        Check(targeting.CurrentTarget == near, "Losing a selected enemy automatically picks nearest without mouse input");
+        Check(targeting.CurrentTarget == near, "Losing an aimed enemy selects the next enemy on the same aim ray");
         centered.enabled = true;
+        centered.transform.position = player.transform.position + new Vector3(0, 0, 30);
         near.transform.position = player.transform.position + new Vector3(-30, 0, 15);
         Physics.SyncTransforms();
         Call(targeting, "LateUpdate");
-        Check(targeting.CurrentTarget == side, "Enemy exiting screen picks nearest visible replacement rather than center-most enemy");
+        Check(targeting.CurrentTarget == side, "Offscreen soft-lock target is replaced by the aimed visible enemy");
         Object.DestroyImmediate(side.gameObject);
         Call(targeting, "LateUpdate");
-        Check(targeting.CurrentTarget == centered, "Destroyed soft-lock target automatically advances to the next nearest enemy");
+        Check(targeting.CurrentTarget == centered, "Destroyed soft-lock target falls back to the visible enemy nearest hidden aim");
+        var worldNear = Enemy(player.transform.position + new Vector3(-4, 0, 10));
+        var aimNear = Enemy(view.transform.position + view.transform.forward * 25f + view.transform.right * 1.5f);
         centered.gameObject.SetActive(false);
+        Physics.SyncTransforms();
+        Call(targeting, "LateUpdate");
+        Check(targeting.CurrentTarget == aimNear, "With no direct aim hit, soft-lock recovery uses screen distance instead of world distance");
+        worldNear.gameObject.SetActive(false);
+        aimNear.gameObject.SetActive(false);
         Call(targeting, "LateUpdate");
         Check(targeting.CurrentTarget == null, "Soft lock clears when no visible enemy remains");
         player.SetActive(false);
@@ -267,9 +276,9 @@ public static class MechFoundationChecks
         var near = Enemy(player.transform.position + new Vector3(-4, 0, 15));
         var far = Enemy(player.transform.position + new Vector3(5, 0, 20));
         Physics.SyncTransforms();
-        view.transform.SetPositionAndRotation(player.transform.position, Quaternion.identity);
+        view.transform.SetPositionAndRotation(player.transform.position, Quaternion.LookRotation(near.AimPosition - player.transform.position));
         targeting.ResumeTargeting();
-        Check(targeting.CurrentTarget == near, "Rig regression starts locked onto the nearer enemy");
+        Check(targeting.CurrentTarget == near, "Rig regression starts with hidden aim selecting the left enemy");
 
         void Aim(Vector2 input)
         {
@@ -280,9 +289,15 @@ public static class MechFoundationChecks
             Call(targeting, "LateUpdate");
         }
         Aim(Vector2.zero);
-        Aim(Vector2.right * (Mathf.Atan2(5, 20) * Mathf.Rad2Deg / 0.12f));
+        float remainingLook = Mathf.Atan2(5, 20) * Mathf.Rad2Deg / 0.12f;
+        while (remainingLook > 0f)
+        {
+            float amount = Mathf.Min(1f, remainingLook);
+            Aim(Vector2.right * amount);
+            remainingLook -= amount;
+        }
         Check(targeting.CurrentTarget == far,
-            "Actual soft camera mouse look switches to the farther aimed enemy while the old target remains valid");
+            "Slow one-pixel camera aim selects the farther enemy without a mouse flick");
         var projected = view.WorldToViewportPoint(far.AimPosition);
         Check(Mathf.Abs(projected.x - 0.5f) < 0.01f && Mathf.Abs(projected.y - 0.5f) < 0.025f,
             "Soft camera puts forward enemies within reach of the real hidden screen-center aim");
@@ -291,7 +306,7 @@ public static class MechFoundationChecks
         Physics.SyncTransforms();
         Aim(Vector2.zero);
         Check(targeting.CurrentTarget == far && Quaternion.Angle(orientation, view.transform.rotation) < 0.01f,
-            "A closer enemy cannot steal soft lock or turn the soft camera without look input");
+            "Enemy outside hidden aim cannot change selection or turn the soft camera");
         near.transform.position = player.transform.position + Vector3.forward * 14f;
         far.transform.position = player.transform.position + Vector3.forward * 30f;
         Physics.SyncTransforms();
@@ -321,7 +336,6 @@ public static class MechFoundationChecks
         Set(targeting, "gameplayCamera", view);
         var enemy = Enemy(player.transform.position + Vector3.forward * 20);
         Physics.SyncTransforms();
-        targeting.ReportAimInput(Vector2.right);
         Call(targeting, "LateUpdate");
         Check(targeting.IsFreeAim && targeting.CurrentTarget == null,
             "Startup free aim never acquires an enemy, even when the player aims at it");
@@ -366,7 +380,6 @@ public static class MechFoundationChecks
             "Crossing 1.2 seconds clears target and camera follow into free aim");
         targeting.ProcessLockButton(false, true, false, 3f);
         targeting.ProcessLockButton(false, false, true, 0.02f);
-        targeting.ReportAimInput(Vector2.left);
         Call(targeting, "LateUpdate");
         Check(targeting.IsFreeAim && targeting.CurrentTarget == null,
             "Long-hold release and subsequent aiming cannot reactivate targeting");
