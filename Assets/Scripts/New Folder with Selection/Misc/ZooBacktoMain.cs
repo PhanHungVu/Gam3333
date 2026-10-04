@@ -9,16 +9,14 @@ public class ZooBacktoMain : MonoBehaviour
     Key inputKey;
     TMP_Text text;
     [SerializeField] bool activated = false;
-    public GameObject toggleObject;
-    SceneManagerScript sceneManager;
+    public SceneManagerScript sceneManager;
     void Start()
     {
         Enum.TryParse(interactKey.ToString(), out inputKey);
         text = GetComponentInChildren<TMP_Text>();
-        if (toggleObject != null)
+        if (sceneManager != null)
         {
             text.text = "Back to Menu";
-            sceneManager = toggleObject.GetComponent<SceneManagerScript>();
         }
         else
         {
@@ -30,7 +28,7 @@ public class ZooBacktoMain : MonoBehaviour
     {
         if (UnityEngine.InputSystem.Keyboard.current[inputKey].wasPressedThisFrame && activated == true)
         {
-            Debug.Log("Toggling " + toggleObject.name);
+            //Debug.Log("Going back to menu via " + sceneManager.gameObject.name);
             sceneManager.LoadScene("MainMenuScene");
         }
     }

@@ -1,5 +1,7 @@
+using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 // TEMPORARY prototype objective: walk to the item to collect it, then walk back to
 // the return point to win. Uses distance checks instead of triggers, so it needs no
@@ -23,6 +25,8 @@ public sealed class TempLevelObjective : MonoBehaviour
     [SerializeField] bool pauseOnWin = true;
     public TMP_Text toolTipText;
     public SceneManagerScript sceneManager;
+    public KeyCode interactKey = KeyCode.F;
+    Key inputKey;
 
     enum State { NotCollected, Collected, Won }
     State state = State.NotCollected;
@@ -30,12 +34,14 @@ public sealed class TempLevelObjective : MonoBehaviour
 
     void Start()
     {
+        Enum.TryParse(interactKey.ToString(), out inputKey);
         var found = GameObject.FindWithTag("Player");
         if (found != null) player = found.transform;
         else Debug.LogWarning("TempLevelObjective: no object tagged 'Player' found.", this);
 
         if (winScreen != null) winScreen.SetActive(false);
         if (returnPoint != null && hideReturnUntilCollected) returnPoint.gameObject.SetActive(false);
+        toolTipText.text = "Collect the yellow cube objective and return to the spawn point.";
     }
 
     void Update()
@@ -56,9 +62,9 @@ public sealed class TempLevelObjective : MonoBehaviour
             if (winScreen != null) winScreen.SetActive(true);
             if (pauseOnWin) Time.timeScale = 0f;
             //Debug.Log("Level complete!");
-            toolTipText.text = "Level complete! Press ESC to go back to the main menu";
+            toolTipText.text = "Level complete! Press F to go back to the main menu";
         }
-        if (state == State.Won && Input.GetKeyDown(KeyCode.Escape))
+        if (state == State.Won && UnityEngine.InputSystem.Keyboard.current[inputKey].wasPressedThisFrame)
         {
             sceneManager.LoadScene("MainMenuScene");
         }
