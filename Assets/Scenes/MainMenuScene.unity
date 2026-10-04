@@ -131,7 +131,6 @@ GameObject:
   - component: {fileID: 82537994}
   - component: {fileID: 82537993}
   - component: {fileID: 82537992}
-  - component: {fileID: 82537991}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -139,18 +138,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &82537991
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 82537990}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3f7aad0f8eb646b4187bb0361d380de3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MainMenuScript
 --- !u!114 &82537992
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -494,8 +481,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 82537991}
-        m_TargetAssemblyTypeName: MainMenuScript, Assembly-CSharp
+      - m_Target: {fileID: 779096706}
+        m_TargetAssemblyTypeName: SceneManagerScript, Assembly-CSharp
         m_MethodName: LoadScene
         m_Mode: 5
         m_Arguments:
@@ -702,8 +689,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 82537991}
-        m_TargetAssemblyTypeName: MainMenuScript, Assembly-CSharp
+      - m_Target: {fileID: 779096706}
+        m_TargetAssemblyTypeName: SceneManagerScript, Assembly-CSharp
         m_MethodName: ExitGame
         m_Mode: 1
         m_Arguments:
@@ -827,6 +814,50 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 767125128}
   m_CullTransparentMesh: 1
+--- !u!1 &779096705
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 779096707}
+  - component: {fileID: 779096706}
+  m_Layer: 0
+  m_Name: SceneManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &779096706
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 779096705}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a227eca4bfc104649a1ca011301c827e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SceneManagerScript
+--- !u!4 &779096707
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 779096705}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1018.1858, y: 0.00002, z: 1106.5767}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &955205471
 GameObject:
   m_ObjectHideFlags: 0
@@ -1388,8 +1419,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 82537991}
-        m_TargetAssemblyTypeName: MainMenuScript, Assembly-CSharp
+      - m_Target: {fileID: 779096706}
+        m_TargetAssemblyTypeName: SceneManagerScript, Assembly-CSharp
         m_MethodName: LoadScene
         m_Mode: 5
         m_Arguments:
@@ -1583,3 +1614,4 @@ SceneRoots:
   - {fileID: 955205473}
   - {fileID: 82537995}
   - {fileID: 109700353}
+  - {fileID: 779096707}

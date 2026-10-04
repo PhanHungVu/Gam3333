@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 // TEMPORARY prototype objective: walk to the item to collect it, then walk back to
@@ -20,6 +21,8 @@ public sealed class TempLevelObjective : MonoBehaviour
     [SerializeField] bool hideReturnUntilCollected = true;
     [Tooltip("Pause the game (timeScale 0) when the level is won.")]
     [SerializeField] bool pauseOnWin = true;
+    public TMP_Text toolTipText;
+    public SceneManagerScript sceneManager;
 
     enum State { NotCollected, Collected, Won }
     State state = State.NotCollected;
@@ -44,14 +47,20 @@ public sealed class TempLevelObjective : MonoBehaviour
             state = State.Collected;
             item.gameObject.SetActive(false);
             if (returnPoint != null) returnPoint.gameObject.SetActive(true);
-            Debug.Log("Objective collected - return to the spawn point.");
+            //Debug.Log("Objective collected - return to the spawn point.");
+            toolTipText.text = "Objective collected - return to the spawn point.";
         }
         else if (state == State.Collected && returnPoint != null && Near(returnPoint, returnRadius))
         {
             state = State.Won;
             if (winScreen != null) winScreen.SetActive(true);
             if (pauseOnWin) Time.timeScale = 0f;
-            Debug.Log("Level complete!");
+            //Debug.Log("Level complete!");
+            toolTipText.text = "Level complete! Press ESC to go back to the main menu";
+        }
+        if (state == State.Won && Input.GetKeyDown(KeyCode.Escape))
+        {
+            sceneManager.LoadScene("MainMenuScene");
         }
     }
 
