@@ -107,7 +107,7 @@ public static class SpiralBarrageSceneChecks
             }
             else if (phase == 1)
             {
-                shot = combat.TryFire(MechWeaponSlot.Cannon);
+                shot = combat.TryFire(PartCategory.ShoulderL);
                 Check(shot != null && shot.IsLive, "Actual cannon launches its normal projectile with optional pattern enabled");
                 phase = 2;
             }
@@ -132,7 +132,7 @@ public static class SpiralBarrageSceneChecks
             {
                 var runner = combat.GetComponent<CannonSpiralBarrage>();
                 Check(runner.ActiveCount == 0 && runner.PoolSize == 1 && feedback.ActiveEffects == 0
-                    && feedback.PoolSize == initialPool && combat.AmmoRemaining(MechWeaponSlot.Cannon) == 19,
+                    && feedback.PoolSize == initialPool && combat.AmmoRemaining(MechWeaponType.Cannon) == 19,
                     "Live sequence and effects clean up without growing the prewarmed pool or consuming extra ammo");
                 Debug.Log("SPIRAL SCENE CHECKS COMPLETE");
                 SessionState.SetBool(Key, false);

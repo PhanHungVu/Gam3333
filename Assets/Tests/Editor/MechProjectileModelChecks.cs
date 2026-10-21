@@ -70,7 +70,7 @@ public static class MechProjectileModelChecks
         {
             var equipment = player.GetComponent<EquipManager>();
             var combat = player.GetComponent<MechCombatController>(); combat.ReadPlayerInput = false; combat.BindCamera(view);
-            foreach (var slot in new[] { MechWeaponSlot.Crossbow, MechWeaponSlot.ThrowingAxe })
+            foreach (var slot in new[] { MechWeaponType.Crossbow, MechWeaponType.ThrowingAxe })
             {
                 var part = player.GetComponent<MechEquipmentCombat>().GetPart(slot);
                 var muzzle = part.muzzle.position;
@@ -78,15 +78,15 @@ public static class MechProjectileModelChecks
                 var target = GameObject.CreatePrimitive(PrimitiveType.Cube); cleanup.Add(target);
                 target.transform.position = muzzle + Vector3.forward * 6f;
                 var health = target.AddComponent<CombatHealth>(); Physics.SyncTransforms();
-                var shot = combat.TryFire(slot);
-                Model(shot, slot == MechWeaponSlot.Crossbow ? "CrossbowBoltMesh" : "ThrowingAxeMesh", check);
+                var shot = combat.TryFire(TestMounts.For(slot));
+                Model(shot, slot == MechWeaponType.Crossbow ? "CrossbowBoltMesh" : "ThrowingAxeMesh", check);
                 check(Vector3.Distance(shot.transform.position, muzzle) < 0.001f && Vector3.Dot(shot.transform.forward, shot.Direction) > 0.999f,
                     slot + " launches from its authored muzzle toward aim");
-                var loaded = part.GetComponentsInChildren<MeshFilter>().Single(m => m.sharedMesh.name == (slot == MechWeaponSlot.Crossbow ? "CrossbowBoltMesh" : "ThrowingAxeMesh")).GetComponent<Renderer>();
+                var loaded = part.GetComponentsInChildren<MeshFilter>().Single(m => m.sharedMesh.name == (slot == MechWeaponType.Crossbow ? "CrossbowBoltMesh" : "ThrowingAxeMesh")).GetComponent<Renderer>();
                 check(!loaded.enabled, slot + " hides the loaded model as its projectile leaves");
                 var visual = shot.transform.Find("Projectile Visual"); var rotation = visual.localRotation; var direction = shot.Direction;
                 Fly(shot, 0.01f);
-                check(shot.Direction == direction && (slot == MechWeaponSlot.ThrowingAxe
+                check(shot.Direction == direction && (slot == MechWeaponType.ThrowingAxe
                     ? Quaternion.Angle(rotation, visual.localRotation) > 1f : Quaternion.Angle(rotation, visual.localRotation) < 0.01f),
                     slot + " has the correct bolt/spinning-axe flight without homing");
                 Fly(shot, 0.1f);
@@ -97,7 +97,7 @@ public static class MechProjectileModelChecks
                 Object.DestroyImmediate(shot.gameObject); Object.DestroyImmediate(target);
             }
 
-            int shoulderAmmo = combat.AmmoRemaining(MechWeaponSlot.Crossbow);
+            int shoulderAmmo = combat.AmmoRemaining(MechWeaponType.Crossbow);
             var original = equipment.GetEquipped(PartCategory.ArmR);
             var right = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/Parts/arm_crossbow.prefab")).GetComponent<Part>();
             check(equipment.TryEquip(right, PartCategory.ArmR), "Arm crossbow equips normally"); cleanup.Add(original.gameObject);
@@ -106,10 +106,10 @@ public static class MechProjectileModelChecks
             original.transform.position += Vector3.right * 100f; Physics.SyncTransforms();
             view.transform.SetPositionAndRotation(right.muzzle.position, Quaternion.identity);
             var bolt = combat.TryFire(); Model(bolt, "CrossbowBoltMesh", check);
-            check(bolt.Weapon == MechWeaponSlot.ArmCrossbow && right.RemainingAmmo == 29
-                && combat.GetWeapon(MechWeaponSlot.ArmCrossbow).damage == 100f && combat.ReloadRemaining(MechWeaponSlot.ArmCrossbow) > 1.9f,
+            check(bolt.Weapon == MechWeaponType.ArmCrossbow && right.RemainingAmmo == 29
+                && combat.GetWeapon(MechWeaponType.ArmCrossbow).damage == 100f && combat.ReloadRemaining(MechWeaponType.ArmCrossbow) > 1.9f,
                 "RMB arm crossbow uses its existing damage, ammo and cooldown stats");
-            check(combat.TryFire() == null && combat.AmmoRemaining(MechWeaponSlot.Crossbow) == shoulderAmmo,
+            check(combat.TryFire() == null && combat.AmmoRemaining(MechWeaponType.Crossbow) == shoulderAmmo,
                 "Arm reload rejects duplicate shots without consuming shoulder ammo");
             Object.DestroyImmediate(bolt.gameObject);
             var left = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/Parts/arm_crossbow.prefab")).GetComponent<Part>();
@@ -122,12 +122,12 @@ public static class MechProjectileModelChecks
             combat.ShotFired += fired;
             check(combat.TryMelee(), "LMB fires the actual left arm crossbow while the right reloads");
             combat.ShotFired -= fired; Model(leftShot, "CrossbowBoltMesh", check);
-            check(left.RemainingAmmo == 29 && right.RemainingAmmo == 29 && combat.AmmoRemaining(MechWeaponSlot.Crossbow) == shoulderAmmo,
+            check(left.RemainingAmmo == 29 && right.RemainingAmmo == 29 && combat.AmmoRemaining(MechWeaponType.Crossbow) == shoulderAmmo,
                 "Both arm weapons own independent ammo and keep shoulder state intact");
             Object.DestroyImmediate(leftShot.gameObject);
             equipment.Unequip(PartCategory.ArmR); cleanup.Add(right.gameObject);
             check(combat.TryFire() == null, "Empty right arm cannot secretly fire the left arm's crossbow");
-            check(combat.TryFire((MechWeaponSlot)99) == null, "Unknown projectile slot is safely rejected");
+            check(combat.TryFire((PartCategory)99) == null, "Unknown socket is safely rejected");
         }
         finally
         {

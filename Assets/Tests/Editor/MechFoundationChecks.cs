@@ -848,7 +848,7 @@ public static class MechFoundationChecks
         Set(combat, "meleeCenter", new Vector3(0f, 0f, 2.25f));
         Set(combat, "meleeDamage", 60f);
         Set(combat, "meleeCooldown", 0.65f);
-        var fixtureWeapon = combat.GetWeapon(MechWeaponSlot.ThrowingAxe);
+        var fixtureWeapon = combat.GetWeapon(MechWeaponType.ThrowingAxe);
         fixtureWeapon.damage = 15f;
         fixtureWeapon.reloadSeconds = 0.2f;
         fixtureWeapon.projectileSpeed = 30f;
@@ -981,7 +981,7 @@ public static class MechFoundationChecks
         Set(combat, "meleeCenter", new Vector3(0f, 0f, 2.25f));
         Set(combat, "meleeDamage", 60f);
         Set(combat, "meleeCooldown", 0.65f);
-        var fixtureWeapon = combat.GetWeapon(MechWeaponSlot.ThrowingAxe);
+        var fixtureWeapon = combat.GetWeapon(MechWeaponType.ThrowingAxe);
         fixtureWeapon.damage = 15f;
         fixtureWeapon.reloadSeconds = 0.2f;
         fixtureWeapon.projectileSpeed = 30f;
@@ -1104,25 +1104,25 @@ public static class MechFoundationChecks
         var combat = player.AddComponent<MechCombatController>();
         Set(combat, "gameplayCamera", view);
         view.transform.SetPositionAndRotation(origin, Quaternion.identity);
-        var axe = combat.GetWeapon(MechWeaponSlot.ThrowingAxe);
-        var cannon = combat.GetWeapon(MechWeaponSlot.Cannon);
-        var crossbow = combat.GetWeapon(MechWeaponSlot.Crossbow);
+        var axe = combat.GetWeapon(MechWeaponType.ThrowingAxe);
+        var cannon = combat.GetWeapon(MechWeaponType.Cannon);
+        var crossbow = combat.GetWeapon(MechWeaponType.Crossbow);
         Check(axe.damage == 50 && axe.ammunition == 30 && axe.reloadSeconds == 0.5f
             && cannon.damage == 100 && cannon.ammunition == 20 && cannon.reloadSeconds == 3
             && crossbow.damage == 30 && crossbow.ammunition == 50 && crossbow.reloadSeconds == 1,
             "Ranged loadout uses the supplied damage, ammo, and reload table");
-        foreach (MechWeaponSlot slot in new[] { MechWeaponSlot.ThrowingAxe, MechWeaponSlot.Cannon, MechWeaponSlot.Crossbow })
+        foreach (MechWeaponType slot in new[] { MechWeaponType.ThrowingAxe, MechWeaponType.Cannon, MechWeaponType.Crossbow })
         {
-            var shot = combat.TryFire(slot);
+            var shot = combat.TryFire(TestMounts.For(slot));
             Check(shot != null && combat.AmmoRemaining(slot) == combat.GetWeapon(slot).ammunition - 1,
                 $"{slot} fires independently and consumes exactly one round");
             Object.DestroyImmediate(shot.gameObject);
-            Check(combat.TryFire(slot) == null, $"{slot} one-round magazine cannot fire during reload");
+            Check(combat.TryFire(TestMounts.For(slot)) == null, $"{slot} one-round magazine cannot fire during reload");
         }
         Call(combat, "TickCooldowns", 0.5f);
-        Check(combat.ReloadRemaining(MechWeaponSlot.ThrowingAxe) == 0
-            && combat.ReloadRemaining(MechWeaponSlot.Cannon) == 2.5f
-            && combat.ReloadRemaining(MechWeaponSlot.Crossbow) == 0.5f,
+        Check(combat.ReloadRemaining(MechWeaponType.ThrowingAxe) == 0
+            && combat.ReloadRemaining(MechWeaponType.Cannon) == 2.5f
+            && combat.ReloadRemaining(MechWeaponType.Crossbow) == 0.5f,
             "Reload clocks remain independent across all three ranged slots");
         for (int i = 0; i < 29; i++)
         {
@@ -1131,11 +1131,11 @@ public static class MechFoundationChecks
             Object.DestroyImmediate(shot.gameObject);
             Call(combat, "TickCooldowns", 0.5f);
         }
-        Check(combat.AmmoRemaining(MechWeaponSlot.ThrowingAxe) == 0 && combat.TryFire() == null,
+        Check(combat.AmmoRemaining(MechWeaponType.ThrowingAxe) == 0 && combat.TryFire() == null,
             "The axe has exactly 30 total shots and cannot fire on empty");
         combat.enabled = false;
         combat.enabled = true;
-        Check(combat.AmmoRemaining(MechWeaponSlot.ThrowingAxe) == 0, "Re-enabling weapons cannot refill ammunition");
+        Check(combat.AmmoRemaining(MechWeaponType.ThrowingAxe) == 0, "Re-enabling weapons cannot refill ammunition");
         var swordEnemy = Enemy(origin + Vector3.forward * 2);
         var swordHealth = swordEnemy.gameObject.AddComponent<CombatHealth>();
         Physics.SyncTransforms();

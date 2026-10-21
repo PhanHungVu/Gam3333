@@ -139,11 +139,11 @@ public static class MechWeaponAnimationSceneChecks
                     Keys(); delay = 1.2f; break;
                 case 10: PlacePickup("Mace Animation Pickup"); delay = 0.45f; break;
                 case 11:
-                    if (!SelectPickupAndPressF("Mace Animation Pickup")) { next = Time.time + 0.15f; return; }
+                    if (!SelectPickup("Mace Animation Pickup")) { next = Time.time + 0.15f; return; }
                     break;
                 case 12:
-                    ConfirmPickup("EquippedPartPos1");
-                    Check(Driver(PartCategory.ArmL).Animations.name == "Mace", "F and the left swap button equip the animated mace");
+                    SwapSelectedInto(PartCategory.ArmL);
+                    Check(Driver(PartCategory.ArmL).Animations.name == "Mace", "Swapping into the left arm equips the animated mace");
                     // Keep the dropped sword outside pickup range before selecting
                     // the second test pickup's highlighted selection.
                     originalSword.GetComponent<Rigidbody>().isKinematic = true;
@@ -161,11 +161,11 @@ public static class MechWeaponAnimationSceneChecks
                     Object.DestroyImmediate(maceTarget.gameObject);
                     Capture("mace-fire"); Button(); PlacePickup("Arm Crossbow Animation Pickup"); delay = 0.45f; break;
                 case 14:
-                    if (!SelectPickupAndPressF("Arm Crossbow Animation Pickup")) { next = Time.time + 0.15f; return; }
+                    if (!SelectPickup("Arm Crossbow Animation Pickup")) { next = Time.time + 0.15f; return; }
                     break;
                 case 15:
-                    ConfirmPickup("EquippedPartPos2");
-                    Check(Driver(PartCategory.ArmR).Animations.name == "ArmCrossbow", "F and the right swap button equip the animated arm crossbow");
+                    SwapSelectedInto(PartCategory.ArmR);
+                    Check(Driver(PartCategory.ArmR).Animations.name == "ArmCrossbow", "Swapping into the right arm equips the animated arm crossbow");
                     Check(!originalAxe.isEquipped && LoadedModelVisible(originalAxe, "ThrowingAxeMesh"),
                         "Dropped throwing axe retains its visible model on the ground");
                     Keys(); Button(MouseButton.Right); delay = 0.1f; break;
@@ -211,16 +211,10 @@ public static class MechWeaponAnimationSceneChecks
         Physics.SyncTransforms();
     }
 
-    static void ConfirmPickup(string position)
-    {
-        var selector = motor.GetComponent<PartSwapHUDScript>();
-        if (selector == null || !selector.IsAvailable) return;
-        var button = GameObject.Find("Canvas/PartSwapHUD/" + position)?.GetComponentInChildren<UnityEngine.UI.Button>();
-        Check(button != null && button.interactable, "F opens the actual teammate swap menu");
-        button.onClick.Invoke();
-    }
+    static void SwapSelectedInto(PartCategory socket) =>
+        Check(equipment.TrySwapSelectedInto(socket), "Selected pickup swaps into " + socket);
 
-    static bool SelectPickupAndPressF(string name)
+    static bool SelectPickup(string name)
     {
         var pickup = GameObject.Find(name).GetComponent<Part>();
         Check(motor.GetComponentInChildren<PickupDetector>().NearbyParts.Contains(pickup),
@@ -235,7 +229,6 @@ public static class MechWeaponAnimationSceneChecks
             return false;
         }
         cycleHeld = false;
-        Keys(Key.F);
         return true;
     }
 

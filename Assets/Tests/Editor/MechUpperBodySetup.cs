@@ -33,9 +33,9 @@ public static class MechUpperBodySetup
         }
         var player = PrefabUtility.LoadPrefabContents(MechAnimatedLegsSetup.PlayerPath);
         var parts = player.GetComponentsInChildren<Part>(true);
-        var torso = parts.Single(p => p.partType == PartCategory.Torso);
-        var head = parts.Single(p => p.partType == PartCategory.Head);
-        var rig = parts.Single(p => p.partType == PartCategory.Legs).GetComponentInChildren<Animator>(true).transform;
+        var torso = parts.Single(p => p.partType == PartType.Torso);
+        var head = parts.Single(p => p.partType == PartType.Head);
+        var rig = parts.Single(p => p.partType == PartType.Legs).GetComponentInChildren<Animator>(true).transform;
         var original = torso.GetComponent<MeshRenderer>();
         var visual = torso.transform.Find("Animated Torso Visual");
         if (visual == null)

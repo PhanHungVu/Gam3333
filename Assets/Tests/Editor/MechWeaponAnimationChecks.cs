@@ -57,7 +57,7 @@ public static class MechWeaponAnimationChecks
                     check(AnimationUtility.GetCurveBindings(clip).All(b => b.path.StartsWith(entry.rigPath + "/", StringComparison.Ordinal)),
                         clip.name + " affects only its weapon rig");
             }
-            foreach (var slot in new[] { MechWeaponSlot.Cannon, MechWeaponSlot.Crossbow, MechWeaponSlot.ThrowingAxe })
+            foreach (var slot in new[] { MechWeaponType.Cannon, MechWeaponType.Crossbow, MechWeaponType.ThrowingAxe })
             {
                 var part = player.GetComponent<MechEquipmentCombat>().GetPart(slot);
                 var driver = part.GetComponent<MechWeaponAnimator>();
@@ -68,7 +68,7 @@ public static class MechWeaponAnimationChecks
                     + sets.weapons.Single(e => e.part == part.data).bodyBone);
                 var rest = body.position; var rotation = body.rotation;
                 int ammo = combat.AmmoRemaining(slot);
-                var projectile = combat.TryFire(slot);
+                var projectile = combat.TryFire(TestMounts.For(slot));
                 check(bridge.IdleWeapon == null, slot + " attack cancels the shared idle selection");
                 check(projectile != null && combat.AmmoRemaining(slot) == ammo - 1 && driver.CurrentPose == MechWeaponAnimator.PoseState.Fire,
                     slot + " starts Fire only after gameplay admits a real shot");
@@ -78,7 +78,7 @@ public static class MechWeaponAnimationChecks
                     slot + " authored Fire curves visibly move its bone");
                 check(player.transform.position == root && part.transform.localPosition == partPosition,
                     slot + " firing never moves the player or equipment root");
-                check(combat.TryFire(slot) == null && driver.CurrentPose == MechWeaponAnimator.PoseState.Fire,
+                check(combat.TryFire(TestMounts.For(slot)) == null && driver.CurrentPose == MechWeaponAnimator.PoseState.Fire,
                     slot + " rejected cooldown input does not restart presentation");
                 if (driver.Animations.reload != null)
                 {
@@ -118,8 +118,10 @@ public static class MechWeaponAnimationChecks
                 groundDriver.Tick(10f);
                 check(!groundDriver.Animator.enabled && !groundDriver.CanAnimate && groundDriver.NormalizedTime == 0f,
                     name + " pickup has no running Animator or advancing neutral clock on the ground");
-                var old = equipment.GetEquipped(part.partType);
-                check(equipment.TryEquip(part), name + " equips through the normal part system");
+                // Parts carry no side, so name the slot each weapon is tested in.
+                var slot = name == "arm_mace" ? PartCategory.ArmL : PartCategory.ArmR;
+                var old = equipment.GetEquipped(slot);
+                check(equipment.TryEquip(part, slot), name + " equips through the normal part system");
                 if (old != null) detached.Add(old.gameObject);
                 var driver = part.GetComponent<MechWeaponAnimator>();
                 int projectiles = 0;

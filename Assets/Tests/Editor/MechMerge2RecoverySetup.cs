@@ -53,7 +53,7 @@ public static class MechMerge2RecoverySetup
             RestoreComponent<MechUpperBodyAnimation>(backup, player);
             RestoreComponent<CombatHealth>(backup, player);
 
-            var legs = parts.Single(p => p.partType == PartCategory.Legs);
+            var legs = parts.Single(p => p.partType == PartType.Legs);
             if (legs.GetComponent<MechLegAnimator>() == null)
             {
                 var socket = legs.transform.parent;
@@ -64,7 +64,7 @@ public static class MechMerge2RecoverySetup
                 animated.transform.localScale = Vector3.one;
                 animated.GetComponent<Part>().isStartingPart = true;
             }
-            var torso = parts.Single(p => p.partType == PartCategory.Torso);
+            var torso = parts.Single(p => p.partType == PartType.Torso);
             var visual = torso.transform.Find("Animated Torso Visual");
             if (visual == null)
             {
@@ -75,22 +75,21 @@ public static class MechMerge2RecoverySetup
             }
             visual.GetComponent<MeshRenderer>().enabled = true;
             torso.GetComponent<MeshRenderer>().enabled = false;
-            RestoreReceiver(savedParts.Single(p => p.partType == PartCategory.Torso), torso, torso.transform.Cast<Transform>()
+            RestoreReceiver(savedParts.Single(p => p.partType == PartType.Torso), torso, torso.transform.Cast<Transform>()
                 .Where(t => t == visual || t.GetComponent<Socket>() != null && t.GetComponent<Socket>().socketType != PartCategory.Legs).ToArray());
-            var head = parts.Single(p => p.partType == PartCategory.Head);
-            RestoreReceiver(savedParts.Single(p => p.partType == PartCategory.Head), head, head.transform.Cast<Transform>().ToArray());
+            var head = parts.Single(p => p.partType == PartType.Head);
+            RestoreReceiver(savedParts.Single(p => p.partType == PartType.Head), head, head.transform.Cast<Transform>().ToArray());
 
             var settings = AssetDatabase.LoadAssetAtPath<MechWeaponAnimationImportSettings>(MechWeaponAnimationImport.SettingsPath);
             if (settings == null || settings.source == null) throw new InvalidOperationException("Saved weapon animation references are missing.");
-            foreach (var part in parts.Where(p => p != null && (p.partType == PartCategory.ArmL || p.partType == PartCategory.ArmR
-                || p.partType == PartCategory.ShoulderL || p.partType == PartCategory.ShoulderR)))
+            foreach (var part in parts.Where(p => p != null && (p.partType == PartType.Arm || p.partType == PartType.Shoulder)))
             {
                 if (part.GetComponent<MechWeaponAnimator>() != null) continue;
                 var entry = settings.weapons.Single(e => e.part == part.data);
                 MechWeaponAnimationSetup.BuildRig(part, settings.source, entry);
             }
-            if (player.GetComponent<PartSwapHUDScript>() == null || player.GetComponentInChildren<PickupDetector>().highlightElementPrefab == null)
-                throw new InvalidOperationException("Teammate's selection UI must survive recovery.");
+            if (player.GetComponentInChildren<PickupDetector>().highlightElementPrefab == null)
+                throw new InvalidOperationException("Pickup highlighting must survive recovery.");
             if (EditorJsonUtility.ToJson(player.GetComponent<MechMovementController>()) != movement
                 || EditorJsonUtility.ToJson(player.GetComponent<MechCombatController>()) != combat
                 || player.GetComponentsInChildren<ParticleSystem>(true).Length != particles)
@@ -124,8 +123,8 @@ public static class MechMerge2RecoverySetup
         if (player.GetComponent<CombatHealth>() == null || player.GetComponent<MechEquipmentLocomotion>() == null)
             throw new InvalidOperationException("Scene does not inherit the restored player systems.");
         if (scene.GetRootGameObjects().Count(go => go.GetComponent<EnemySpawnerManager>() != null) != 2
-            || GameObject.Find("Canvas/PartSwapHUD") == null || GameObject.Find("Canvas/PartSwapPopup") == null)
-            throw new InvalidOperationException("Merged spawners or selection canvas are missing.");
+            || GameObject.Find("Canvas/PartSwapPopup") == null)
+            throw new InvalidOperationException("Merged spawners or pickup popup are missing.");
         EditorSceneManager.MarkSceneDirty(scene);
         MechHealthHudSetup.PlaceInScene(scene);
         EditorSceneManager.SaveScene(scene);

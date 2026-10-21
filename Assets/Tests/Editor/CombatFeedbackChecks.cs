@@ -66,7 +66,7 @@ public static class CombatFeedbackChecks
         extra.transform.SetParent(b.transform, false);
         Physics.SyncTransforms();
         targeting.ResumeTargeting();
-        var shot = combat.TryFire(MechWeaponSlot.Cannon);
+        var shot = combat.TryFire(PartCategory.ShoulderL);
         check(shot != null && feedback.ActiveEffects == 1 && body.localPosition.z < 0,
             "Cannon fire produces a pooled muzzle flash and immediate visual recoil");
         check(player.transform.position == origin && player.transform.rotation == Quaternion.identity
@@ -127,12 +127,12 @@ public static class CombatFeedbackChecks
         var offC = Enemy(origin + new Vector3(-1.5f, 0, 7), () => deaths++);
         Physics.SyncTransforms();
         Call(combat, "TickCooldowns", 3f);
-        shot = combat.TryFire(MechWeaponSlot.Cannon);
+        shot = combat.TryFire(PartCategory.ShoulderL);
         Call(shot, "Step", 0.2f);
         check(deaths == 6 && result.Kills == 3 && feedback.ActiveEffects == 0 && feedback.KillConfirmationCount == 1
             && listener.Gain == 0 && body.localPosition == Vector3.zero,
             "Master presentation toggle preserves identical triple-kill gameplay with all new feedback muted");
-        check(combat.AmmoRemaining(MechWeaponSlot.Cannon) == 18 && combat.ReloadRemaining(MechWeaponSlot.Cannon) == 3,
+        check(combat.AmmoRemaining(MechWeaponType.Cannon) == 18 && combat.ReloadRemaining(MechWeaponType.Cannon) == 3,
             "Feedback does not alter ammunition or reload timing");
         Set(feedback, "presentationEnabled", true);
         var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -142,7 +142,7 @@ public static class CombatFeedbackChecks
         for (int i = 0; i < 17; i++)
         {
             Call(combat, "TickCooldowns", 3f);
-            shot = combat.TryFire(MechWeaponSlot.Cannon);
+            shot = combat.TryFire(PartCategory.ShoulderL);
             Call(shot, "Step", 0.2f);
             Call(feedback, "Tick", 1f);
         }
@@ -152,7 +152,7 @@ public static class CombatFeedbackChecks
         wall.transform.localScale = new Vector3(0.05f, 2, 2);
         Physics.SyncTransforms();
         Call(combat, "TickCooldowns", 3f);
-        shot = combat.TryFire(MechWeaponSlot.Cannon);
+        shot = combat.TryFire(PartCategory.ShoulderL);
         check(!shot.IsLive && impacts == 20, "Muzzle-obstructed cannon still publishes its immediate impact exactly once");
         for (int i = 0; i < 100; i++) feedback.PlayDeath(origin, 1);
         check(feedback.PoolSize == 8 && feedback.ActiveEffects == 8, "An effect burst cannot grow beyond the configured pool cap");

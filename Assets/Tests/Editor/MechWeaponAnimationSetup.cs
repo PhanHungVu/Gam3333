@@ -41,8 +41,7 @@ public static class MechWeaponAnimationSetup
                     bool changed = false;
                     foreach (var part in root.GetComponentsInChildren<Part>(true))
                     {
-                        if (part.partType != PartCategory.ArmL && part.partType != PartCategory.ArmR
-                            && part.partType != PartCategory.ShoulderL && part.partType != PartCategory.ShoulderR) continue;
+                        if (part.partType != PartType.Arm && part.partType != PartType.Shoulder) continue;
                         var meshes = part.GetComponentsInChildren<MeshFilter>(true)
                             .Where(m => m.GetComponentInParent<Part>() == part && m.sharedMesh != null).ToArray();
                         var entry = settings.weapons.SingleOrDefault(e => meshes.Any(m => m.sharedMesh.name == e.referenceMesh + "Mesh"));

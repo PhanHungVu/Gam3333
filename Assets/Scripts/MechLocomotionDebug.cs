@@ -39,7 +39,7 @@ public sealed class MechLocomotionDebug : MonoBehaviour
     {
         if (!isActiveAndEnabled || index < 0 || index >= cached.Length) return false;
         Part prefab = modulePrefabs[index];
-        if (prefab == null || prefab.data == null || prefab.partType != PartCategory.Legs || prefab.GetComponent<LocomotionModule>() == null)
+        if (prefab == null || prefab.data == null || prefab.partType != PartType.Legs || prefab.GetComponent<LocomotionModule>() == null)
             return false;
         Part old = equipment.GetEquipped(PartCategory.Legs);
         // Identity belongs to the part definition, not its locomotion family.

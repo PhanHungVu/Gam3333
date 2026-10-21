@@ -4,7 +4,6 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
-using UnityEngine.UI;
 using UnityEditor;
 using Object = UnityEngine.Object;
 
@@ -19,13 +18,10 @@ public static class MechMerge2SelectionChecks
     public static void Run(MechMovementController motor)
     {
         var equipment = motor.GetComponent<EquipManager>();
-        var selector = motor.GetComponent<PartSwapHUDScript>();
         var detector = motor.GetComponentInChildren<PickupDetector>();
         var health = motor.GetComponent<CombatHealth>();
         var hud = Object.FindObjectsByType<MechHealthHud>().Single(h => h.Health == health);
-        var camera = Camera.main.GetComponent<CameraControlThirdPerson>();
-        Check(selector != null && selector.IsAvailable && detector.highlightElementPrefab != null,
-            "Teammate selector, popup and pickup highlighting remain wired");
+        Check(detector.highlightElementPrefab != null, "Pickup highlighting remains wired");
         Check(hud != null && health != null && hud.Canvas.enabled && health.MaximumHealth == equipment.Health,
             "Restored health HUD uses the merged player's equipment");
         foreach (string name in new[] { "Heavy Legs Pickup", "Mace Animation Pickup", "Arm Crossbow Animation Pickup" })
@@ -61,23 +57,20 @@ public static class MechMerge2SelectionChecks
             InputSystem.QueueStateEvent(keyboard, new KeyboardState()); InputSystem.Update();
             Check(!axe.GetComponent<MechWeaponAnimator>().CanAnimate, "Selected ground weapon stays unanimated");
 
-            // Real UI callbacks, including choosing a different side from the
-            // module's default and replacing an empty socket.
-            selector.ShowPartList();
-            Check(!camera.enabled && Cursor.lockState == CursorLockMode.None, "Selection opens with a clickable cursor and camera suspended");
-            Click("EquippedPartPos1");
+            // Hold-F swaps, including putting a part on either side and
+            // replacing an empty socket.
+            Check(equipment.TrySwapSelectedInto(PartCategory.ArmL), "Swapping the selected part into the left arm succeeds");
             Check(equipment.GetEquipped(PartCategory.ArmL) == axe && equipment.GetEquipped(PartCategory.ArmR) == originalAxe,
-                "Left button equips into left arm without replacing the right arm");
+                "Left arm swap does not replace the right arm");
             Check(axe.GetComponent<MechWeaponAnimator>().CanAnimate && !originalSword.GetComponent<MechWeaponAnimator>().CanAnimate,
                 "Equip activates animation and drop stops the former weapon");
-            Check(!detector.NearbyParts.Contains(axe) && camera.enabled,
-                "Equip removes every collider from selection and restores camera");
+            Check(!detector.NearbyParts.Contains(axe), "Equip removes every collider from selection");
             equipment.Unequip(PartCategory.ArmL);
             equipment.Unequip(PartCategory.ArmR);
             equipment.SetSelectedPart(axe);
-            selector.ShowPartList(); Click("EquippedPartPos2");
+            Check(equipment.TrySwapSelectedInto(PartCategory.ArmR), "Swapping into an empty right arm succeeds");
             Check(equipment.GetEquipped(PartCategory.ArmR) == axe && equipment.GetEquipped(PartCategory.ArmL) == null,
-                "Right button handles an empty right socket without a null reference");
+                "Right arm swap handles an empty socket without a null reference");
             equipment.Unequip(PartCategory.ArmR);
             Check(equipment.TryEquip(originalSword, PartCategory.ArmL) && equipment.TryEquip(originalAxe, PartCategory.ArmR),
                 "Original teammate arm loadout can be restored without lost functionality");
@@ -85,35 +78,26 @@ public static class MechMerge2SelectionChecks
             float before = health.CurrentHealth;
             health.ApplyDamage(20f);
             float injured = health.CurrentHealth;
-            equipment.SetSelectedPart(heavy); selector.ShowPartList(); Click("EquippedPartPos3");
+            equipment.SetSelectedPart(heavy);
+            Check(equipment.TrySwapSelectedInto(PartCategory.Legs), "Swapping the selected legs succeeds");
             Check(equipment.GetEquipped(PartCategory.Legs) == heavy && motor.CurrentModule == heavy.GetComponent<LocomotionModule>(),
-                "Selector swaps to the Heavy animation/locomotion module");
+                "Legs swap switches to the Heavy animation/locomotion module");
             Check(health.CurrentHealth == injured && injured == before - 20f && health.MaximumHealth == equipment.Health
                 && Mathf.Abs(hud.NormalizedHealth - health.CurrentHealth / health.MaximumHealth) < 0.001f,
                 "Heavy swap updates health capacity and UI without healing damage");
-            Check(motor.GetComponent<MechLocomotionDebug>().TrySwap(0), "Fast default remains available after UI swap");
-            Check(!equipment.TryEquip(heavy, PartCategory.Head) && heavy.partType == PartCategory.Legs,
+            Check(motor.GetComponent<MechLocomotionDebug>().TrySwap(0), "Fast default remains available after a swap");
+            Check(!equipment.TryEquip(heavy, PartCategory.Head) && heavy.partType == PartType.Legs,
                 "Invalid destination rejects the swap without changing part identity");
-            selector.ShowPartList(); // no selected pickup: must not disable the camera
-            Check(camera.enabled, "Opening without a selection does not strand the camera");
             Check(motor.GetComponent<MechEquipmentCombat>().HasSword
-                && motor.GetComponent<MechEquipmentCombat>().HasWeapon(MechWeaponSlot.ThrowingAxe),
-                "Restored weapon and animation bridges survive teammate UI swaps");
+                && motor.GetComponent<MechEquipmentCombat>().HasWeapon(MechWeaponType.ThrowingAxe),
+                "Restored weapon and animation bridges survive swaps");
         }
         finally
         {
-            selector.ClosePartList();
             if (keyboard != null) InputSystem.RemoveDevice(keyboard);
             if (heavy != null && !heavy.isEquipped) Object.DestroyImmediate(heavy.gameObject);
             if (axe != null && !axe.isEquipped) Object.DestroyImmediate(axe.gameObject);
             detector.enabled = false; detector.enabled = true;
         }
-    }
-
-    static void Click(string position)
-    {
-        var button = GameObject.Find("Canvas/PartSwapHUD/" + position).GetComponentInChildren<Button>();
-        Check(button != null && button.interactable, "Real swap button is available: " + position);
-        button.onClick.Invoke();
     }
 }

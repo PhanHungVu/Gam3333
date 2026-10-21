@@ -34,7 +34,7 @@ public static class MechLocomotionSetup
         var player = PrefabUtility.LoadPrefabContents(PlayerPath);
         if (player.GetComponent<MechEquipmentLocomotion>() == null) player.AddComponent<MechEquipmentLocomotion>();
         foreach (var part in player.GetComponentsInChildren<Part>(true))
-            if (part.partType == PartCategory.Legs && part.GetComponent<LocomotionModule>() == null)
+            if (part.partType == PartType.Legs && part.GetComponent<LocomotionModule>() == null)
                 part.gameObject.AddComponent<BipedLocomotionModule>();
         var debug = player.GetComponent<MechLocomotionDebug>();
         if (debug == null) debug = player.AddComponent<MechLocomotionDebug>();
@@ -54,7 +54,7 @@ public static class MechLocomotionSetup
         string name = type + "Module";
         var root = new GameObject(name);
         var part = root.AddComponent<Part>();
-        part.partType = PartCategory.Legs;
+        part.partType = PartType.Legs;
         part.isStartingPart = false;
         string dataPath = ModuleFolder + "/" + name + ".asset";
         var data = AssetDatabase.LoadAssetAtPath<PartData>(dataPath);

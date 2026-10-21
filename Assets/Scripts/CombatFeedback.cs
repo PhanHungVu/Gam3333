@@ -165,7 +165,7 @@ public sealed class CombatFeedback : MonoBehaviour
 
     void OnShot(MechProjectile shot)
     {
-        if (!presentationEnabled || shot.Weapon != MechWeaponSlot.Cannon) return;
+        if (!presentationEnabled || shot.Weapon != MechWeaponType.Cannon) return;
         if (muzzleFlash) PlayEffect(CombatFeedbackEffect.Kind.Muzzle, combat.MuzzlePosition, muzzleSize, muzzleDuration, explosionColor, true, false, false);
         if (visualRecoil && recoilVisual != null) { recoiling = true; recoilAge = 0; ApplyRecoil(); }
         if (fireAudio) PlayAudio(cannonFireClip, combat.MuzzlePosition, false);
@@ -173,7 +173,7 @@ public sealed class CombatFeedback : MonoBehaviour
 
     void OnImpact(MechProjectileImpact result)
     {
-        if (!presentationEnabled || result.Weapon != MechWeaponSlot.Cannon) return;
+        if (!presentationEnabled || result.Weapon != MechWeaponType.Cannon) return;
         if (!result.ConfirmationOnly) PlayImpact(result);
         if (result.DeferConfirmation || result.Kills <= 0) return;
         ConfirmKills(result.Kills);

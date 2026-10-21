@@ -73,7 +73,7 @@ public static class CombatFeedbackSceneChecks
             else if (phase == 1)
             {
                 Capture("before");
-                Check(combat.TryFire(MechWeaponSlot.Cannon) != null && feedback.ActiveEffects == 1, "Firing activates the muzzle effect in the real scene");
+                Check(combat.TryFire(PartCategory.ShoulderL) != null && feedback.ActiveEffects == 1, "Firing activates the muzzle effect in the real scene");
                 Capture("fire");
                 phase = 2;
             }
@@ -97,7 +97,7 @@ public static class CombatFeedbackSceneChecks
             {
                 Check(feedback.ActiveEffects == 0 && feedback.PoolSize == initialPoolSize,
                     "Scene effects finish and reuse the prewarmed pool without growth");
-                Check(combat.AmmoRemaining(MechWeaponSlot.Cannon) == 19, "Presentation consumes only the original single cannon round");
+                Check(combat.AmmoRemaining(MechWeaponType.Cannon) == 19, "Presentation consumes only the original single cannon round");
                 Capture("settled");
                 Debug.Log("COMBAT FEEL SCENE CHECKS COMPLETE");
                 SessionState.SetBool(Key, false);

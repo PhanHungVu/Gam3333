@@ -96,8 +96,8 @@ public static class MechUpperBodyChecks
             check(Vector3.Distance(torsoMesh.localPosition, bodyRest) > 0.02f && Vector3.Distance(headMesh.localPosition, headRest) > 0.01f,
                 "Heavy clip drives body and head as well as the working legs");
             var cannon = player.GetComponent<MechCombatController>();
-            var projectile = cannon.TryFire(MechWeaponSlot.Cannon);
-            check(projectile != null && cannon.AmmoRemaining(MechWeaponSlot.Cannon) == 19, "Weapons still fire with animated attachment sockets");
+            var projectile = cannon.TryFire(PartCategory.ShoulderL);
+            check(projectile != null && cannon.AmmoRemaining(MechWeaponType.Cannon) == 19, "Weapons still fire with animated attachment sockets");
             if (projectile != null) Object.DestroyImmediate(projectile.gameObject);
 
             presentation.enabled = false;

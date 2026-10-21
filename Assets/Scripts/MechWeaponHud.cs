@@ -48,16 +48,24 @@ public class MechWeaponHud : MonoBehaviour
     void OnEnable() { if (canvas != null) canvas.enabled = true; }
     void OnDisable() { if (canvas != null) canvas.enabled = false; }
 
-    string WeaponLine(MechWeaponSlot slot, string key)
+    // What a socket's button does: its ability, its ranged weapon, or nothing.
+    string MountLine(PartCategory mount, string key)
     {
-        var ability = equipment != null ? equipment.GetAbility(slot) : null;
+        if (equipment == null) return WeaponLine(MechCombatController.LegacyWeaponFor(mount), key);
+        var ability = equipment.GetAbility(mount);
         if (ability != null) return key + "  " + ability.name.ToUpperInvariant() + (ability.CooldownRemaining > 0 ? $"  {ability.CooldownRemaining:0.0}s" : "  READY");
-        if (!combat.HasWeapon(slot))
-        {
-            var preview = slot == MechWeaponSlot.ThrowingAxe && equipment != null
-                ? equipment.GetEquippedPart(PartCategory.ArmR) : null;
-            return AnimationLine(preview, key) ?? key + "  NO PART EQUIPPED";
-        }
+        var part = equipment.GetEquippedPart(mount);
+        var stats = equipment.GetWeapon(part);
+        if (stats == null) return AnimationLine(part, key) ?? key + "  NO PART EQUIPPED";
+        float remaining = Mathf.Max(0f, part.ReadyAt - Time.time);
+        string ready = part.RemainingAmmo == 0 ? "EMPTY" : remaining > 0f ? $"RELOAD {remaining:0.0}s" : "READY";
+        return $"{key}  {stats.displayName.ToUpperInvariant()}  {part.RemainingAmmo}  {ready}";
+    }
+
+    // Prototype fixtures without an EquipManager: the fixed loadout, by weapon.
+    string WeaponLine(MechWeaponType slot, string key)
+    {
+        if (!combat.HasWeapon(slot)) return key + "  NO PART EQUIPPED";
         int ammo = combat.AmmoRemaining(slot);
         float reload = combat.ReloadRemaining(slot);
         string state = ammo == 0 ? "EMPTY" : reload > 0 ? $"RELOAD {reload:0.0}s" : "READY";
@@ -66,11 +74,11 @@ public class MechWeaponHud : MonoBehaviour
 
     void LateUpdate()
     {
-        string melee = ArmMeleeLine(PartCategory.ArmL, "LMB") ?? ArmProjectileLine(PartCategory.ArmL, "LMB") ?? (equipment == null && combat.HasSword ? "LMB  SWORD" : equipment != null && equipment.MeleeAbility != null
-            ? "LMB  " + equipment.MeleeAbility.name.ToUpperInvariant() : AnimationLine(equipment != null
+        string melee = ArmMeleeLine(PartCategory.ArmL, "LMB") ?? ArmProjectileLine(PartCategory.ArmL, "LMB") ?? (equipment == null && combat.HasSword ? "LMB  SWORD" : equipment != null && equipment.GetAbility(PartCategory.ArmL) != null
+            ? "LMB  " + equipment.GetAbility(PartCategory.ArmL).name.ToUpperInvariant() : AnimationLine(equipment != null
                 ? equipment.GetEquippedPart(PartCategory.ArmL) : null, "LMB") ?? "LMB  NO SWORD EQUIPPED");
-        readout.text = melee + "\n" + (ArmMeleeLine(PartCategory.ArmR, "RMB") ?? ArmProjectileLine(PartCategory.ArmR, "RMB") ?? WeaponLine(MechWeaponSlot.ThrowingAxe, "RMB")) + "\n"
-            + WeaponLine(MechWeaponSlot.Cannon, "Q") + "\n" + WeaponLine(MechWeaponSlot.Crossbow, "E") + (equipment != null ? "\nF  EQUIP NEARBY PART" : "");
+        readout.text = melee + "\n" + (ArmMeleeLine(PartCategory.ArmR, "RMB") ?? ArmProjectileLine(PartCategory.ArmR, "RMB") ?? MountLine(PartCategory.ArmR, "RMB")) + "\n"
+            + MountLine(PartCategory.ShoulderL, "Q") + "\n" + MountLine(PartCategory.ShoulderR, "E") + (equipment != null ? "\nHOLD F + BUTTON  SWAP PART" : "");
     }
 
     string ArmProjectileLine(PartCategory category, string key)

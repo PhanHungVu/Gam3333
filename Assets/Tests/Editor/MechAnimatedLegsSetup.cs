@@ -23,7 +23,7 @@ public static class MechAnimatedLegsSetup
         var fastClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(MechBipedAnimationImport.Folder + "/Biped_Run.anim");
         var heavyClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(MechBipedAnimationImport.Folder + "/Heavy_Walk.anim");
         var player = PrefabUtility.LoadPrefabContents(PlayerPath);
-        var oldLegs = player.GetComponentsInChildren<Part>(true).Single(p => p.partType == PartCategory.Legs);
+        var oldLegs = player.GetComponentsInChildren<Part>(true).Single(p => p.partType == PartType.Legs);
         var oldModel = oldLegs.GetComponent<MechLegAnimator>() != null
             ? oldLegs.transform.Find("BlenderVisual")
             : oldLegs.GetComponentsInChildren<MeshRenderer>(true).Single(r => r.name == "Golem1Legs").transform;
@@ -131,7 +131,7 @@ public static class MechAnimatedLegsSetup
     {
         var root = new GameObject(name);
         var part = root.AddComponent<Part>();
-        part.partType = PartCategory.Legs;
+        part.partType = PartType.Legs;
         part.data = data;
         part.isStartingPart = false;
         var locomotion = root.AddComponent<BipedLocomotionModule>();
@@ -215,11 +215,13 @@ public static class MechAnimatedLegsSetup
 
         var player = PrefabUtility.LoadPrefabContents(PlayerPath);
         var equipment = player.GetComponent<EquipManager>();
-        var parts = player.GetComponentsInChildren<Part>(true).OrderBy(p => p.partType == PartCategory.Torso ? 0 : 1).ToArray();
+        var parts = player.GetComponentsInChildren<Part>(true).OrderBy(p => p.partType == PartType.Torso ? 0 : 1).ToArray();
         var sockets = player.GetComponentsInChildren<Socket>(true);
         foreach (var part in parts)
         {
-            var socket = sockets.FirstOrDefault(s => s.socketType == part.partType);
+            // Parts have no side; re-seat each one in the socket it already sits under.
+            var socket = part.transform.parent != null ? part.transform.parent.GetComponent<Socket>() : null;
+            if (socket == null) socket = sockets.FirstOrDefault(s => PartSlots.Fits(s.socketType, part.partType));
             typeof(EquipManager).GetMethod("Place", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(equipment, new object[] { socket, part });
             Debug.Log("PLAYER PART " + part.partType + " pos=" + part.transform.position + " rot=" + part.transform.eulerAngles + " scale=" + part.transform.lossyScale);
             foreach (var r in part.GetComponentsInChildren<Renderer>(true).Where(r => r.GetComponentInParent<Part>() == part))

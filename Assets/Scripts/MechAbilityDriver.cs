@@ -18,7 +18,7 @@ public sealed class MechAbilityDriver : MonoBehaviour
     [SerializeField, Min(0)] float activationCooldown = 2;
     [Header("Optional Weapon Impact Adapter")]
     [SerializeField] bool activateOnWeaponImpact;
-    [SerializeField] MechWeaponSlot sourceWeapon;
+    [SerializeField] MechWeaponType sourceWeapon;
     MechCombatController combat;
     MechTargetLockController targeting;
     CombatFeedback feedback;

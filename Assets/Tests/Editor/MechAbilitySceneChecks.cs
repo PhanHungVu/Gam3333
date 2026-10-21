@@ -55,7 +55,7 @@ public static class MechAbilitySceneChecks
                 Check(Camera.main.GetComponent<CameraControlThirdPerson>().Target == combat.transform,
                     "Merged scene camera tracks the parts-based player");
                 foreach (var enemy in Object.FindObjectsByType<MechTargetable>()) enemy.gameObject.SetActive(false);
-                ammo = combat.AmmoRemaining(MechWeaponSlot.Cannon);
+                ammo = combat.AmmoRemaining(MechWeaponType.Cannon);
             }
             if (phase == 0)
             {
@@ -101,7 +101,7 @@ public static class MechAbilitySceneChecks
             else
             {
                 Check(feedback.ActiveEffects == 0 && feedback.PoolSize <= 32
-                    && combat.AmmoRemaining(MechWeaponSlot.Cannon) == ammo,
+                    && combat.AmmoRemaining(MechWeaponType.Cannon) == ammo,
                     Names[pattern] + " releases pooled visuals and preserves weapon ammunition");
                 Object.Destroy(part);
                 foreach (var enemy in enemies) Object.Destroy(enemy);

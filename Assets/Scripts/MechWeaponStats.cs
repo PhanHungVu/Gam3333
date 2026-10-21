@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 // Append entries so existing serialized slots keep their meaning.
-public enum MechWeaponSlot { ThrowingAxe, Cannon, Crossbow, ArmCrossbow }
+public enum MechWeaponType { ThrowingAxe, Cannon, Crossbow, ArmCrossbow }
 
 [Serializable]
 public class MechWeaponStats

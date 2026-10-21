@@ -45,7 +45,7 @@ public static class MechSfxChecks
                 Physics.SyncTransforms();
                 MechProjectile shot = null;
                 if (i == 0 || i == 4) check(combat.TryMelee(), parts[i] + " admits its melee/preview attack");
-                else shot = i == 2 ? combat.TryFire(MechWeaponSlot.Cannon) : i == 3 ? combat.TryFire(MechWeaponSlot.Crossbow) : combat.TryFire();
+                else shot = i == 2 ? combat.TryFire(PartCategory.ShoulderL) : i == 3 ? combat.TryFire(PartCategory.ShoulderR) : combat.TryFire();
                 var source = AttackSource(driver);
                 check(source != null && source.clip == MechSfxSetup.Clip(MechSfxSetup.Sounds[i]) && source.isPlaying,
                     parts[i] + " accepted attack plays exactly its assigned sound");
@@ -53,7 +53,7 @@ public static class MechSfxChecks
                     parts[i] + " attack has configured volume and spatial playback");
                 source.time = source.clip.length * 0.3f; int audioFrame = source.timeSamples;
                 if (i == 0 || i == 4) check(!combat.TryMelee(), parts[i] + " cooldown rejects another attack");
-                else check((i == 2 ? combat.TryFire(MechWeaponSlot.Cannon) : i == 3 ? combat.TryFire(MechWeaponSlot.Crossbow) : combat.TryFire()) == null,
+                else check((i == 2 ? combat.TryFire(PartCategory.ShoulderL) : i == 3 ? combat.TryFire(PartCategory.ShoulderR) : combat.TryFire()) == null,
                     parts[i] + " cooldown rejects another shot");
                 check(source.timeSamples == audioFrame && driver.GetComponentsInChildren<AudioSource>().Length == 1,
                     parts[i] + " rejected attack does not restart audio or create more voices");

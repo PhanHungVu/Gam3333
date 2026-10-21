@@ -7,6 +7,6 @@ public class MechRulesConfig : ScriptableObject
 
     public bool CanEquip(Socket socket, Part part)
     {
-        return allowMixedTypes || socket.socketType == part.partType;
+        return allowMixedTypes || PartSlots.Fits(socket.socketType, part.partType);
     }
 }

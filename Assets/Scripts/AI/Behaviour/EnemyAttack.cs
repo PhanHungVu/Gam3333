@@ -123,7 +123,7 @@ public sealed class EnemyAttack : MonoBehaviour
         if (direction.sqrMagnitude < 0.001f) direction = transform.forward;
         var projectile = MechProjectile.Create(projectilePrefab, "Enemy Crossbow Bolt",
             new Vector3(transform.position.x, position.y, transform.position.z), 0.12f, projectileMaterial, new Color(1f, 0.3f, 0.15f));
-        projectile.Weapon = MechWeaponSlot.Crossbow;
+        projectile.Weapon = MechWeaponType.Crossbow;
         projectile.DamageTarget = attackTarget;
         projectile.Launch(transform, direction, projectileSpeed, damage, 0.12f, Mathf.Max(25f, agent.AttackRange * 2f), hitLayers, position);
     }

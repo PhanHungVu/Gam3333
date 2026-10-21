@@ -98,10 +98,10 @@ public static class MechMergeSceneChecks
                     Check(new SerializedObject(spawner).FindProperty("totalSpawned").intValue > 2,
                         spawner.name + " continues its staggered wave");
                 var combat = motor.GetComponent<MechCombatController>();
-                foreach (var slot in new[] { MechWeaponSlot.Cannon, MechWeaponSlot.Crossbow, MechWeaponSlot.ThrowingAxe })
+                foreach (var slot in new[] { MechWeaponType.Cannon, MechWeaponType.Crossbow, MechWeaponType.ThrowingAxe })
                 {
                     int ammo = combat.AmmoRemaining(slot);
-                    var projectile = combat.TryFire(slot);
+                    var projectile = combat.TryFire(TestMounts.For(slot));
                     Check(projectile != null && combat.AmmoRemaining(slot) == ammo - 1,
                         "Recovered animated sockets retain functioning " + slot);
                     if (projectile != null) Object.DestroyImmediate(projectile.gameObject);

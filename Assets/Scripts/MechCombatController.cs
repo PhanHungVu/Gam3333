@@ -46,17 +46,18 @@ public class MechCombatController : MonoBehaviour
     readonly float[] reloadTimers = new float[4];
     readonly int[] remainingAmmo = new int[4];
     MechEquipmentCombat equipment;
+    EquipManager parts;
     float strikeDamage;
     public void BindCamera(Camera camera) => gameplayCamera = camera;
-    public bool HasWeapon(MechWeaponSlot slot) => equipment == null || equipment.HasWeapon(slot);
+    public bool HasWeapon(MechWeaponType slot) => equipment == null || equipment.HasWeapon(slot);
     public bool HasSword => equipment == null || equipment.HasSword;
     public bool HasMelee => equipment == null || equipment.HasMelee;
-    public MechWeaponStats GetWeapon(MechWeaponSlot slot) => equipment != null && equipment.GetWeapon(slot) != null
+    public MechWeaponStats GetWeapon(MechWeaponType slot) => equipment != null && equipment.GetWeapon(slot) != null
         ? equipment.GetWeapon(slot) : GetDefaultWeapon(slot);
-    public MechWeaponStats GetDefaultWeapon(MechWeaponSlot slot) => slot == MechWeaponSlot.Cannon ? cannon
-        : slot == MechWeaponSlot.Crossbow ? crossbow : slot == MechWeaponSlot.ArmCrossbow ? armCrossbow : throwingAxe;
-    public int AmmoRemaining(MechWeaponSlot slot) => equipment != null ? (HasWeapon(slot) ? equipment.GetPart(slot).RemainingAmmo : 0) : remainingAmmo[(int)slot];
-    public float ReloadRemaining(MechWeaponSlot slot) => equipment != null ? (HasWeapon(slot) ? Mathf.Max(0, equipment.GetPart(slot).ReadyAt - Time.time) : 0) : reloadTimers[(int)slot];
+    public MechWeaponStats GetDefaultWeapon(MechWeaponType slot) => slot == MechWeaponType.Cannon ? cannon
+        : slot == MechWeaponType.Crossbow ? crossbow : slot == MechWeaponType.ArmCrossbow ? armCrossbow : throwingAxe;
+    public int AmmoRemaining(MechWeaponType slot) => equipment != null ? (HasWeapon(slot) ? equipment.GetPart(slot).RemainingAmmo : 0) : remainingAmmo[(int)slot];
+    public float ReloadRemaining(MechWeaponType slot) => equipment != null ? (HasWeapon(slot) ? Mathf.Max(0, equipment.GetPart(slot).ReadyAt - Time.time) : 0) : reloadTimers[(int)slot];
     Collider[] meleeCandidates = new Collider[32];
     readonly HashSet<CombatHealth> damaged = new HashSet<CombatHealth>();
     LineRenderer meleeOutline;
@@ -79,9 +80,9 @@ public class MechCombatController : MonoBehaviour
     public event Action<int> MeleePerformed;
     // Presentation starts on admission, independently of impact/damage resolution.
     public event Action<Part> WeaponAttackStarted;
-    MechWeaponSlot lastFiredSlot = MechWeaponSlot.Cannon;
+    MechWeaponType lastFiredSlot = MechWeaponType.Cannon;
     public Vector3 MuzzlePosition => GetMuzzlePosition(lastFiredSlot);
-    public Vector3 GetMuzzlePosition(MechWeaponSlot slot)
+    public Vector3 GetMuzzlePosition(MechWeaponType slot)
     {
         var part = equipment != null ? equipment.GetPart(slot) : null;
         return part != null && part.muzzle != null ? part.muzzle.position : transform.TransformPoint(muzzleOffset);
@@ -90,11 +91,12 @@ public class MechCombatController : MonoBehaviour
     void Awake()
     {
         equipment = GetComponent<MechEquipmentCombat>();
+        parts = GetComponent<EquipManager>();
         targeting = GetComponent<MechTargetLockController>();
         movementCapsule = GetComponent<CharacterController>();
         movement = GetComponent<MechMovementController>();
         if (gameplayCamera == null) gameplayCamera = Camera.main;
-        for (int i = 0; i < remainingAmmo.Length; i++) remainingAmmo[i] = GetWeapon((MechWeaponSlot)i).ammunition;
+        for (int i = 0; i < remainingAmmo.Length; i++) remainingAmmo[i] = GetWeapon((MechWeaponType)i).ammunition;
         if (combatMaterial != null) CreateMeleeOutline();
     }
 
@@ -155,11 +157,22 @@ public class MechCombatController : MonoBehaviour
         bool melee = meleeAction != null ? meleeAction.WasPressedThisFrame() : Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
         // A click to recapture the mouse should not also fire a weapon.
         if (!inputArmed) { inputArmed = !fireHeld && !meleeHeld && !cannonHeld && !crossbowHeld; return; }
+        // Holding the swap key with a part selected turns each attack button into
+        // "swap the part in that socket" instead of firing it.
+        if (parts != null && parts.IsSwapHeld)
+        {
+            if (melee) parts.TrySwapSelectedInto(PartCategory.ArmL);
+            if (fire) parts.TrySwapSelectedInto(PartCategory.ArmR);
+            if (fireCannon) parts.TrySwapSelectedInto(PartCategory.ShoulderL);
+            if (fireCrossbow) parts.TrySwapSelectedInto(PartCategory.ShoulderR);
+            return;
+        }
         if (fire || melee || fireCannon || fireCrossbow) Physics.SyncTransforms();
-        if (melee) TryMelee();
-        if (fire) TryFire();
-        if (fireCannon) TryFire(MechWeaponSlot.Cannon);
-        if (fireCrossbow) TryFire(MechWeaponSlot.Crossbow);
+        // Each button fires whatever is mounted in its socket.
+        if (melee) TryMelee();                              // LMB: left arm
+        if (fire) TryFire();                                // RMB: right arm
+        if (fireCannon) TryFire(PartCategory.ShoulderL);    // Q: left shoulder
+        if (fireCrossbow) TryFire(PartCategory.ShoulderR);  // E: right shoulder
     }
 
     void TickCooldowns(float deltaTime)
@@ -171,41 +184,51 @@ public class MechCombatController : MonoBehaviour
         if (!meleePending && flashTimer <= 0f) meleeExtension = 0f;
     }
 
-    public MechProjectile TryFire()
+    // RMB: the right arm.
+    public MechProjectile TryFire() => TryFire(PartCategory.ArmR);
+
+    // Fire whatever is mounted in this socket. Shoulders use their ability or ranged weapon;
+    // arms fire a ranged weapon, otherwise melee, their own ability, or an animation-only attack.
+    public MechProjectile TryFire(PartCategory mount)
     {
-        if (equipment == null) return TryFire(MechWeaponSlot.ThrowingAxe);
-        var part = equipment.GetEquippedPart(PartCategory.ArmR);
-        if (part != null && part.data != null && part.data.weapon == MechPartWeapon.ArmCrossbow)
-            return TryFire(MechWeaponSlot.ArmCrossbow, part);
-        if (part != null && part.data != null && part.data.weapon == MechPartWeapon.ThrowingAxe)
-            return TryFire(MechWeaponSlot.ThrowingAxe, part);
-        if (equipment.GetMeleePart(PartCategory.ArmR) != null)
-        { TryMelee(PartCategory.ArmR); return null; }
-        var ability = equipment.GetAbility(MechWeaponSlot.ThrowingAxe);
-        if (ability != null) ability.TryActivate(); else TryAnimationOnlyAttack(PartCategory.ArmR);
+        if (equipment == null) return LegacyFire(mount);
+        var part = equipment.GetEquippedPart(mount);
+        bool arm = mount == PartCategory.ArmL || mount == PartCategory.ArmR;
+        if (!arm && isActiveAndEnabled && equipment.TryAbility(mount)) return null;
+        if (TryGetRangedWeapon(part, out var weapon)) return TryFire(weapon, part);
+        if (arm) TryMelee(mount);
         return null;
     }
 
-    public MechProjectile TryFire(MechWeaponSlot slot)
+    // Which ranged weapon a part is (projectile, default stats); None for melee/ability parts.
+    static bool TryGetRangedWeapon(Part part, out MechWeaponType weapon)
     {
-        if ((int)slot < 0 || (int)slot >= remainingAmmo.Length) return null;
-        return TryFire(slot, equipment != null ? equipment.GetPart(slot) : null);
+        weapon = default;
+        if (part == null || part.data == null) return false;
+        var type = part.data.weapon;
+        if (type < MechPartWeapon.ThrowingAxe || type > MechPartWeapon.ArmCrossbow) return false;
+        weapon = (MechWeaponType)((int)type - (int)MechPartWeapon.ThrowingAxe);
+        return true;
     }
 
-    MechProjectile TryFire(MechWeaponSlot slot, Part part)
+    // Prototype fixtures without an EquipManager keep the original fixed loadout.
+    public static MechWeaponType LegacyWeaponFor(PartCategory mount) => mount == PartCategory.ShoulderL ? MechWeaponType.Cannon
+        : mount == PartCategory.ShoulderR ? MechWeaponType.Crossbow : MechWeaponType.ThrowingAxe;
+    MechProjectile LegacyFire(PartCategory mount)
     {
-        if (equipment != null && isActiveAndEnabled)
-        {
-            var ability = equipment.GetAbility(slot);
-            if (ability != null) { ability.TryActivate(); return null; }
-        }
+        if (mount == PartCategory.ArmL) { TryMelee(mount); return null; }
+        return TryFire(LegacyWeaponFor(mount), null);
+    }
+
+    MechProjectile TryFire(MechWeaponType slot, Part part)
+    {
         int index = (int)slot;
         if (!isActiveAndEnabled || index < 0 || index >= remainingAmmo.Length) return null;
         bool usable = part != null ? equipment != null && equipment.isActiveAndEnabled
             && part.isEquipped && part.isActiveAndEnabled && part.EquippedBy != null : HasWeapon(slot);
         if (!usable)
         {
-            if (slot == MechWeaponSlot.ThrowingAxe) TryAnimationOnlyAttack(PartCategory.ArmR);
+            if (slot == MechWeaponType.ThrowingAxe) TryAnimationOnlyAttack(PartCategory.ArmR);
             return null;
         }
         if (part != null && (part.ReadyAt > Time.time || part.RemainingAmmo <= 0)
@@ -221,15 +244,15 @@ public class MechCombatController : MonoBehaviour
         if (equipment != null) part.Consume(weapon.reloadSeconds, true);
         else { reloadTimers[index] = weapon.reloadSeconds; remainingAmmo[index]--; }
         var prefab = part != null && part.data != null && part.data.projectilePrefab != null ? part.data.projectilePrefab
-            : slot == MechWeaponSlot.ThrowingAxe ? throwingAxeProjectilePrefab
-            : slot == MechWeaponSlot.Crossbow || slot == MechWeaponSlot.ArmCrossbow ? crossbowProjectilePrefab : null;
+            : slot == MechWeaponType.ThrowingAxe ? throwingAxeProjectilePrefab
+            : slot == MechWeaponType.Crossbow || slot == MechWeaponType.ArmCrossbow ? crossbowProjectilePrefab : null;
         var projectile = MechProjectile.Create(prefab, weapon.displayName + " Projectile",
             new Vector3(transform.position.x, muzzle.y, transform.position.z), weapon.projectileRadius, combatMaterial, weapon.color);
         projectile.Weapon = slot;
         // Subscribe before Launch: a wall intersecting the muzzle can impact immediately.
         projectile.ImpactResolved += ForwardProjectileImpact;
         projectile.ConfigureRangeAndExplosion(weapon.effectiveRange, weapon.explosionRadius, combatMaterial, weapon.color);
-        if (slot == MechWeaponSlot.Cannon && spiralBarrage)
+        if (slot == MechWeaponType.Cannon && spiralBarrage)
         {
             if (barrageRunner == null)
             {
@@ -270,10 +293,10 @@ public class MechCombatController : MonoBehaviour
     {
         var arm = equipment != null ? equipment.GetEquippedPart(category) : null;
         if (arm != null && arm.data != null && (arm.data.weapon == MechPartWeapon.ArmCrossbow || arm.data.weapon == MechPartWeapon.ThrowingAxe))
-            return TryFire(arm.data.weapon == MechPartWeapon.ArmCrossbow ? MechWeaponSlot.ArmCrossbow : MechWeaponSlot.ThrowingAxe, arm) != null;
+            return TryFire(arm.data.weapon == MechPartWeapon.ArmCrossbow ? MechWeaponType.ArmCrossbow : MechWeaponType.ThrowingAxe, arm) != null;
         var meleePart = equipment != null ? equipment.GetMeleePart(category) : null;
         if (isActiveAndEnabled && meleePart == null && equipment != null)
-            return (category == PartCategory.ArmL && equipment.TryMeleeAbility()) || TryAnimationOnlyAttack(category);
+            return equipment.TryAbility(category) || TryAnimationOnlyAttack(category);
         if (!isActiveAndEnabled || equipment != null && meleePart == null || equipment == null && meleeTimer > 0f || meleePending
             || meleePart != null && meleePart.ReadyAt > Time.time) return false;
         activeMeleePart = meleePart;

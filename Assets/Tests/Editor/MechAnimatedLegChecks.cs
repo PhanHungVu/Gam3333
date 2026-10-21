@@ -52,7 +52,7 @@ public static class MechAnimatedLegChecks
             float phase = driver.NormalizedPhase;
             Vector3 velocity = motor.Velocity;
             float charge = energy.Current;
-            int ammo = combat.AmmoRemaining(MechWeaponSlot.Cannon);
+            int ammo = combat.AmmoRemaining(MechWeaponType.Cannon);
             var torsoPosition = torso.transform.position;
             var legSocket = fast.transform.parent;
             check(debug.TrySwap(1), "Second shortcut equips a heavy biped even though both modules have the same locomotion family");
@@ -61,7 +61,7 @@ public static class MechAnimatedLegChecks
             check(heavy != fast && heavy.data.partId == "Legs_Heavy" && motor.CurrentModule.Type == LocomotionType.Biped,
                 "Fast/heavy identity is determined by part data, not Biped enum equality");
             check(player.transform.position == rootPosition && motor.Velocity == velocity && energy.Current == charge
-                && combat.AmmoRemaining(MechWeaponSlot.Cannon) == ammo && torso.transform.position == torsoPosition,
+                && combat.AmmoRemaining(MechWeaponType.Cannon) == ammo && torso.transform.position == torsoPosition,
                 "Animated leg swap preserves root motion, energy, weapons and torso attachment");
             check(ClipWeight(heavyDriver, "Heavy_Walk.001") > 0.99f && Mathf.Abs(heavyDriver.NormalizedPhase - phase) < 0.02f,
                 "Heavy walk is active immediately after a moving swap and inherits gait phase");

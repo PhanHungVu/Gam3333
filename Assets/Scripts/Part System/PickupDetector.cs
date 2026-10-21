@@ -16,7 +16,14 @@ public class PickupDetector : MonoBehaviour
     GameObject popup1;
     GameObject popup2;
     public GameObject highlightElementPrefab;
+    [Header("Highlight colour by part type")]
+    public Color armHighlight = new Color(0.147f, 0.81f, 0.819f, 1f);   // original cyan
+    public Color shoulderHighlight = new Color(0.25f, 0.9f, 0.3f, 1f);
+    public Color headHighlight = new Color(1f, 0.85f, 0.2f, 1f);
+    public Color legsHighlight = new Color(0.65f, 0.35f, 1f, 1f);
+    public Color torsoHighlight = Color.white;
     GameObject highlightElement;
+    PartType? highlightType;
     int selectedIndex = -1;
 
     void Awake()
@@ -140,14 +147,41 @@ public class PickupDetector : MonoBehaviour
     {
         if (highlightElementPrefab == null) return;
         if (highlightElement == null)
+        {
             highlightElement = Instantiate(highlightElementPrefab);
+            highlightType = null;
+        }
         highlightElement.transform.position = part.transform.position;
+        if (highlightType != part.partType) Recolour(part.partType);
+    }
+
+    public Color HighlightColour(PartType type) => type switch
+    {
+        PartType.Arm => armHighlight,
+        PartType.Shoulder => shoulderHighlight,
+        PartType.Head => headHighlight,
+        PartType.Legs => legsHighlight,
+        _ => torsoHighlight,
+    };
+
+    // Restart the effect in the new colour so particles of the previous type don't linger.
+    void Recolour(PartType type)
+    {
+        highlightType = type;
+        foreach (var system in highlightElement.GetComponentsInChildren<ParticleSystem>(true))
+        {
+            var main = system.main;
+            main.startColor = HighlightColour(type);
+            system.Clear(true);
+            system.Play(true);
+        }
     }
 
     void ClearHighlight()
     {
         if (highlightElement != null) Destroy(highlightElement);
         highlightElement = null;
+        highlightType = null;
     }
 
     public void PartEquipped(Part part)

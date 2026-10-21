@@ -87,7 +87,7 @@ public static class MechPartsIntegration
             string dataPath="Assets/PartCatalogue/PartData_"+name+".asset";
             var data=AssetDatabase.LoadAssetAtPath<PartData>(dataPath);
             if(data==null) {data=ScriptableObject.CreateInstance<PartData>();data.partId="ability"+name;data.partName=name;AssetDatabase.CreateAsset(data,dataPath);}
-            part.data=data; part.partType=PartCategory.ShoulderL; part.isStartingPart=true; part.authoredScale=Vector3.one;
+            part.data=data; part.partType=PartType.Shoulder; part.isStartingPart=true; part.authoredScale=Vector3.one;
             var model=GameObject.CreatePrimitive(PrimitiveType.Cube);model.name="Ability Module";model.transform.SetParent(root.transform,false);
             model.transform.localPosition=new Vector3(-0.15f,0.2f,0);model.transform.localScale=new Vector3(0.3f,0.7f,0.3f);
             model.GetComponent<Renderer>().sharedMaterial=AssetDatabase.LoadAssetAtPath<Material>("Assets/Combat/Prototype Combat.mat");
@@ -118,13 +118,13 @@ public static class MechPartsIntegration
         foreach(var part in parts) part.transform.SetParent(visual,true);
         var torsoSocket=new GameObject("Torso Socket").AddComponent<Socket>();
         torsoSocket.socketType=PartCategory.Torso; torsoSocket.transform.SetParent(visual,false);
-        Part torso=null; foreach(var part in parts) if(part.partType==PartCategory.Torso) torso=part;
+        Part torso=null; foreach(var part in parts) if(part.partType==PartType.Torso) torso=part;
         torso.transform.SetParent(torsoSocket.transform,true); torso.transform.localPosition=Vector3.zero;
         foreach(var part in parts)
         {
             if(part==torso) continue;
             foreach(var socket in torso.GetComponentsInChildren<Socket>())
-                if(socket.socketType==part.partType)
+                if(PartSlots.Fits(socket.socketType,part.partType) && socket.GetComponentInChildren<Part>()==null)
                 {part.transform.SetParent(socket.transform,true);part.transform.SetPositionAndRotation(socket.transform.position,socket.transform.rotation);break;}
         }
         visual.localRotation=Quaternion.Euler(0,-90,0); visual.localScale=Vector3.one*1.5f;

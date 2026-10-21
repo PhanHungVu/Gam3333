@@ -771,7 +771,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   data: {fileID: 0}
-  partType: 2
+  partType: 1
   isStartingPart: 0
   isEquipped: 0
 --- !u!33 &9197254581338901340

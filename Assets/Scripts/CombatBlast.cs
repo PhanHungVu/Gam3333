@@ -19,7 +19,7 @@ public sealed class CombatBlast : IComparer<Collider>
     readonly HashSet<CombatHealth> damaged = new HashSet<CombatHealth>();
     Vector3 sortOrigin;
 
-    public MechProjectileImpact Resolve(MechWeaponSlot weapon, Vector3 origin, float radius, float damage,
+    public MechProjectileImpact Resolve(MechWeaponType weapon, Vector3 origin, float radius, float damage,
         Transform owner, LayerMask layers, Collider direct = null, Budget budget = null,
         float innerRadius = -1, float waveHalfHeight = 1.5f, HashSet<CombatHealth> hitHistory = null,
         Action<CombatHealth> onHit = null)

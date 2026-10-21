@@ -29,7 +29,7 @@ public static class MechLocomotionChecks
             foreach (string name in new[] { "Biped", "Hover", "Tank" })
             {
                 var module = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Locomotion/" + name + "Module.prefab");
-                check(module != null && module.GetComponent<Part>().partType == PartCategory.Legs
+                check(module != null && module.GetComponent<Part>().partType == PartType.Legs
                     && module.GetComponent<LocomotionModule>() != null
                     && module.GetComponentsInChildren<MechMovementController>(true).Length == 0
                     && module.GetComponentsInChildren<CharacterController>(true).Length == 0,
@@ -45,14 +45,14 @@ public static class MechLocomotionChecks
             Quaternion rotation = player.transform.rotation;
             Vector3 velocity = motor.Velocity;
             float charge = energy.Current;
-            int ammo = combat.AmmoRemaining(MechWeaponSlot.Cannon);
+            int ammo = combat.AmmoRemaining(MechWeaponType.Cannon);
             var inputField = typeof(MechMovementController).GetField("runtimeInputActions", BindingFlags.Instance | BindingFlags.NonPublic);
             object inputInstance = inputField.GetValue(motor);
             check(debug.TrySwap(2), "Development swap selects hover through EquipManager");
             check(player.transform.position == position && player.transform.rotation == rotation && motor.Velocity == velocity,
                 "Moving lower-body swap preserves root pose and resolved velocity");
             check(equipment.GetEquipped(PartCategory.Torso) == torso && torso.transform.localPosition == torsoPosition
-                && combat.AmmoRemaining(MechWeaponSlot.Cannon) == ammo && energy.Current == charge,
+                && combat.AmmoRemaining(MechWeaponType.Cannon) == ammo && energy.Current == charge,
                 "Lower-body swap preserves torso, ammunition and energy");
             check(ReferenceEquals(inputField.GetValue(motor), inputInstance) && controller == player.GetComponent<CharacterController>()
                 && player.GetComponentsInChildren<MechMovementController>(true).Length == 1 && player.GetComponent<Rigidbody>() == null,

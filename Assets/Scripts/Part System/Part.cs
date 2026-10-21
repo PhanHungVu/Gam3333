@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class Part : MonoBehaviour
 {
@@ -7,7 +6,10 @@ public class Part : MonoBehaviour
     public Transform muzzle;
     public Vector3 authoredScale = Vector3.one;
     public PartData data;    
-    public PartCategory partType;
+    [Tooltip("What this part is. Parts have no side: which arm/shoulder socket it uses is decided when it is equipped.")]
+    public PartType partType;
+    // Slot this part currently occupies; null while it is loose.
+    public PartCategory? Slot { get; internal set; }
     public bool isStartingPart = true;
     public bool isEquipped = false;
     public EquipManager EquippedBy { get; internal set; }

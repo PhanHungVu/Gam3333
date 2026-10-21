@@ -79,14 +79,14 @@ public static class MechAbilityChecks
         foreach (var ability in abilities) ability.enabled = true;
         Set(movement, "quickBoostTimer", 0.2f);
         Set(movement, "quickBoostDirection", Vector3.right);
-        int ammo = combat.AmmoRemaining(MechWeaponSlot.Cannon);
+        int ammo = combat.AmmoRemaining(MechWeaponType.Cannon);
         Quaternion cameraRotation = view.transform.rotation;
         for (int i = 0; i < abilities.Length; i++)
             check(abilities[i].TryActivate(new MechAbilityContext(player.transform, origin, Vector3.forward, feedback: feedback)),
                 "Independent part activation is allowed during boost");
         foreach (var ability in abilities) ability.Tick(0.05f);
         check(movement.IsQuickBoosting && (Vector3)Field(movement, "quickBoostDirection").GetValue(movement) == Vector3.right
-            && combat.AmmoRemaining(MechWeaponSlot.Cannon) == ammo && view.transform.rotation == cameraRotation,
+            && combat.AmmoRemaining(MechWeaponType.Cannon) == ammo && view.transform.rotation == cameraRotation,
             "Concurrent abilities preserve boost state/direction, weapon ammo and camera orientation");
         foreach (var ability in abilities) ability.Cancel();
         Call(feedback, "Tick", 2f);
@@ -115,11 +115,11 @@ public static class MechAbilityChecks
         part.GetComponent<Part>().isEquipped = true; // Explicit manual attachment for the legacy prototype fixture.
         driver.BindOwner(player.transform);
         Set(driver, "activateOnWeaponImpact", true);
-        Set(driver, "sourceWeapon", MechWeaponSlot.Crossbow);
+        Set(driver, "sourceWeapon", MechWeaponType.Crossbow);
         Set(driver, "activationCooldown", 0f);
         var target = Enemy(origin + Vector3.forward * 5);
         Physics.SyncTransforms();
-        var shot = combat.TryFire(MechWeaponSlot.Crossbow);
+        var shot = combat.TryFire(PartCategory.ShoulderR);
         Call(shot, "Step", 0.2f);
         check(part.GetComponent<MechPartAbility>().IsActive && target.CurrentHealth == 70,
             "Generic impact adapter equips Resonance on crossbow without changing original projectile damage");

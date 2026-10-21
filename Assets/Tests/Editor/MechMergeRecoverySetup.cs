@@ -21,7 +21,7 @@ public static class MechMergeRecoverySetup
             RestoreComponent<MechLocomotionDebug>(backup, player);
             RestoreComponent<MechUpperBodyAnimation>(backup, player);
             var parts = player.GetComponentsInChildren<Part>(true);
-            var oldLegs = parts.Single(p => p.partType == PartCategory.Legs);
+            var oldLegs = parts.Single(p => p.partType == PartType.Legs);
             if (oldLegs.GetComponent<MechLegAnimator>() == null)
             {
                 var socket = oldLegs.transform.parent;
@@ -32,11 +32,11 @@ public static class MechMergeRecoverySetup
                 legs.transform.localScale = Vector3.one;
                 legs.GetComponent<Part>().isStartingPart = true;
             }
-            var torso = parts.Single(p => p.partType == PartCategory.Torso);
-            var head = parts.Single(p => p.partType == PartCategory.Head);
+            var torso = parts.Single(p => p.partType == PartType.Torso);
+            var head = parts.Single(p => p.partType == PartType.Head);
             var savedParts = backup.GetComponentsInChildren<Part>(true);
-            var savedTorso = savedParts.Single(p => p.partType == PartCategory.Torso);
-            var savedHead = savedParts.Single(p => p.partType == PartCategory.Head);
+            var savedTorso = savedParts.Single(p => p.partType == PartType.Torso);
+            var savedHead = savedParts.Single(p => p.partType == PartType.Head);
             // Socket/model calibration is identical to the tested backup. Keep the
             // merged weapon socket placements and visuals; restore only pose routing.
             var visual = torso.transform.Find("Animated Torso Visual");
