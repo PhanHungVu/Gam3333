@@ -57,7 +57,7 @@ public sealed class ResonancePulseAbility : MechPartAbility
             if (!ring.Visual.IsValid && Feedback != null)
                 ring.Visual = Feedback.LeaseAbilityEffect(CombatFeedbackEffect.Kind.Wave, Context.Origin, Tint);
             ring.Visual.Wave(nextRadius, ringWidth);
-            var result = Blast.Resolve(default, Context.Origin, nextRadius + ringWidth * 0.5f, Damage,
+            var result = Blast.Resolve(Context.Origin, nextRadius + ringWidth * 0.5f, Damage,
                 Context.Owner, Context.HitLayers, budget: Budget,
                 innerRadius: Mathf.Max(0, ring.Radius - ringWidth * 0.5f), waveHalfHeight: height,
                 hitHistory: ring.Hit, onHit: applyKnockback);

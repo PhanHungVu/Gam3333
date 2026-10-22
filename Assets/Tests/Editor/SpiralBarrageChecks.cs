@@ -193,17 +193,17 @@ public static class SpiralBarrageChecks
         extra.transform.SetParent(far.transform, false);
         Physics.SyncTransforms();
         budget.Reset(60, 2);
-        var result = resolver.Resolve(MechWeaponType.Cannon, origin, 3, 50, owner, ~0, budget: budget);
+        var result = resolver.Resolve(origin, 3, 50, owner, ~0, budget: budget);
         check(near.IsDead && far.CurrentHealth == 65 && result.Hits == 2 && result.Kills == 1 && budget.RemainingDamage == 0,
             "Secondary damage budget counts actual health removed, caps the final hit, and deduplicates colliders");
-        resolver.Resolve(MechWeaponType.Cannon, origin, 3, 50, owner, ~0, budget: budget);
+        resolver.Resolve(origin, 3, 50, owner, ~0, budget: budget);
         check(far.CurrentHealth == 65, "Exhausted total damage budget applies across later detonations");
         near.gameObject.SetActive(false);
         var other = Enemy(origin + Vector3.left, 100);
         budget.Reset(100, 1);
         Physics.SyncTransforms();
-        resolver.Resolve(MechWeaponType.Cannon, origin, 3, 20, owner, ~0, budget: budget);
-        resolver.Resolve(MechWeaponType.Cannon, origin, 3, 20, owner, ~0, budget: budget);
+        resolver.Resolve(origin, 3, 20, owner, ~0, budget: budget);
+        resolver.Resolve(origin, 3, 20, owner, ~0, budget: budget);
         check(other.CurrentHealth == 60 && far.CurrentHealth == 65 && budget.Targets.Count == 1,
             "Distinct-target cap spans the barrage; overlapping later blasts hit admitted targets once per node");
         other.gameObject.SetActive(false);
@@ -213,12 +213,12 @@ public static class SpiralBarrageChecks
         mesh.transform.position = meshOrigin + Vector3.down;
         budget.Reset(100, 5);
         Physics.SyncTransforms();
-        result = resolver.Resolve(MechWeaponType.Cannon, meshOrigin, 3, 10, owner, ~0, budget: budget);
+        result = resolver.Resolve(meshOrigin, 3, 10, owner, ~0, budget: budget);
         check(result.Hits == 1 && meshEnemy.CurrentHealth == 90,
             "Non-convex ground meshes do not falsely suppress nearby spiral damage");
         mesh.transform.SetPositionAndRotation(meshOrigin + Vector3.forward, Quaternion.Euler(-90, 0, 0));
         Physics.SyncTransforms();
-        result = resolver.Resolve(MechWeaponType.Cannon, meshOrigin, 3, 10, owner, ~0, budget: budget);
+        result = resolver.Resolve(meshOrigin, 3, 10, owner, ~0, budget: budget);
         check(result.Hits == 0 && meshEnemy.CurrentHealth == 90,
             "Non-convex mesh walls still block secondary blast line of sight");
         Object.DestroyImmediate(meshEnemy.gameObject);
@@ -228,27 +228,27 @@ public static class SpiralBarrageChecks
         wall.transform.localScale = new Vector3(5, 5, 0.2f);
         budget.Reset(100, 5);
         Physics.SyncTransforms();
-        result = resolver.Resolve(MechWeaponType.Cannon, origin, 3, 30, owner, ~0, budget: budget);
+        result = resolver.Resolve(origin, 3, 30, owner, ~0, budget: budget);
         check(result.Hits == 0 && far.CurrentHealth == 65 && budget.RemainingDamage == 100,
             "World obstruction blocks secondary blast damage without spending its budget");
-        result = resolver.Resolve(MechWeaponType.Cannon, wall.transform.position, 3, 30, owner, ~0, budget: budget);
+        result = resolver.Resolve(wall.transform.position, 3, 30, owner, ~0, budget: budget);
         check(result.Hits == 0, "A secondary node inside a wall cannot bypass obstruction through an inside-origin ray");
         wall.SetActive(false);
         far.transform.position = owner.position;
         far.transform.SetParent(owner, true);
         Physics.SyncTransforms();
-        result = resolver.Resolve(MechWeaponType.Cannon, owner.position, 3, 30, owner, ~0, budget: budget);
+        result = resolver.Resolve(owner.position, 3, 30, owner, ~0, budget: budget);
         check(result.Hits == 0 && far.CurrentHealth == 65, "Secondary blasts preserve owner-hierarchy exclusion");
         far.transform.SetParent(null, true);
         far.transform.position = origin + Vector3.forward;
         far.GetComponent<BoxCollider>().isTrigger = true;
         extra.enabled = false;
         Physics.SyncTransforms();
-        result = resolver.Resolve(MechWeaponType.Cannon, origin, 3, 30, owner, ~0, budget: budget);
+        result = resolver.Resolve(origin, 3, 30, owner, ~0, budget: budget);
         check(result.Hits == 0, "Secondary blast queries preserve trigger exclusion");
         far.GetComponent<BoxCollider>().isTrigger = false;
         Physics.SyncTransforms();
-        result = resolver.Resolve(MechWeaponType.Cannon, origin, 3, 30, owner, 0, budget: budget);
+        result = resolver.Resolve(origin, 3, 30, owner, 0, budget: budget);
         check(result.Hits == 0, "Secondary blast queries preserve collision-layer filtering");
         Object.DestroyImmediate(near.gameObject);
         Object.DestroyImmediate(far.gameObject);

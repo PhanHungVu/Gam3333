@@ -166,10 +166,11 @@ public class MechProjectile : MonoBehaviour
         // Mark spent first: callbacks and compound colliders cannot cause repeat damage.
         Finish();
         var result = !targetOnly || damageTarget != null && collider.GetComponentInParent<CombatHealth>() == damageTarget
-            ? blast.Resolve(Weapon, impactPoint, explosionRadius, impactDamage, owner, collisionLayers, collider)
-            : new MechProjectileImpact(Weapon, impactPoint, explosionRadius, 0, 0);
+            ? blast.Resolve(impactPoint, explosionRadius, impactDamage, owner, collisionLayers, collider)
+            : default;
+        var impact = new MechProjectileImpact(Weapon, impactPoint, explosionRadius, result.Hits, result.Kills);
         bool barrageStarted = Weapon == MechWeaponType.Cannon && spiralBarrage != null
-            && spiralBarrage.TryBegin(result, impactDamage, direction, owner, collisionLayers, spiralSettings);
+            && spiralBarrage.TryBegin(impact, impactDamage, direction, owner, collisionLayers, spiralSettings);
         ImpactResolved?.Invoke(new MechProjectileImpact(Weapon, impactPoint, explosionRadius,
             result.Hits, result.Kills, deferConfirmation: barrageStarted, direction: direction));
         ImpactResolved = null;

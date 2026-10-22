@@ -24471,6 +24471,7 @@ GameObject:
   - component: {fileID: 1100166363754713640}
   - component: {fileID: 8897457053625716240}
   - component: {fileID: -1835539670090701261}
+  - component: {fileID: 130150662591981641}
   m_Layer: 0
   m_Name: Enemy_mace
   m_TagString: Untagged
@@ -24525,9 +24526,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
-  feedbackMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  healthBarHeight: 1.4
-  useEquipmentStats: 0
   currentHealth: 0
 --- !u!114 &5944626833141471218
 MonoBehaviour:
@@ -75403,3 +75401,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8802850597739263, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
   m_PrefabInstance: {fileID: 8077849729503133666}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &130150662591981641
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1767564731750688855}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1c7981b53be487eafcb9b3cb2fbc8c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HealthBarDisplay
+  material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
+  height: 1.4

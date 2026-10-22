@@ -17,18 +17,6 @@ public class EquipManager : MonoBehaviour
     Key inputKey;
     PickupDetector pickupDetector;
     public Part GetEquipped(PartCategory category) => equipped.TryGetValue(category, out var part) ? part : null;
-    // Maximum health supplied by the current loadout.
-    public float Health
-    {
-        get
-        {
-            float total = 0f;
-            foreach (var part in equipped.Values)
-                if (part != null && part.isEquipped && part.data != null)
-                    total += Mathf.Max(0f, part.data.GetStat(StatType.Health));
-            return total;
-        }
-    }
     void Awake()
     {
         Enum.TryParse(interactKey.ToString(), out inputKey);

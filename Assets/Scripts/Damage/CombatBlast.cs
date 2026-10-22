@@ -2,7 +2,16 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Shared by projectile impacts and delayed barrage nodes. Presentation never applies damage.
+// How many targets one damage event hit and killed.
+public readonly struct DamageResult
+{
+    public readonly int Hits, Kills;
+    public DamageResult(int hits, int kills) { Hits = hits; Kills = kills; }
+}
+
+// Shared damage rules for every attack: a direct hit plus area damage, or a box (melee).
+// Never hits the owner, walls block it, and each target is hit once even with several colliders.
+// Presentation never applies damage.
 public sealed class CombatBlast : IComparer<Collider>
 {
     public sealed class Budget
@@ -19,7 +28,7 @@ public sealed class CombatBlast : IComparer<Collider>
     readonly HashSet<CombatHealth> damaged = new HashSet<CombatHealth>();
     Vector3 sortOrigin;
 
-    public MechProjectileImpact Resolve(MechWeaponType weapon, Vector3 origin, float radius, float damage,
+    public DamageResult Resolve(Vector3 origin, float radius, float damage,
         Transform owner, LayerMask layers, Collider direct = null, Budget budget = null,
         float innerRadius = -1, float waveHalfHeight = 1.5f, HashSet<CombatHealth> hitHistory = null,
         Action<CombatHealth> onHit = null)
@@ -44,7 +53,7 @@ public sealed class CombatBlast : IComparer<Collider>
                         && (overlaps[i].ClosestPoint(origin) - origin).sqrMagnitude < 0.000001f)
                     {
                         Array.Clear(overlaps, 0, count);
-                        return new MechProjectileImpact(weapon, origin, radius, hits, kills);
+                        return new DamageResult(hits, kills);
                     }
             // Budget priority is nearest exposed collider, with a stable tie-breaker.
             if (budget != null) { sortOrigin = origin; Array.Sort(overlaps, 0, count, this); }
@@ -70,8 +79,35 @@ public sealed class CombatBlast : IComparer<Collider>
             Array.Clear(overlaps, 0, count);
         }
         damaged.Clear();
-        return new MechProjectileImpact(weapon, origin, radius, hits, kills);
+        return new DamageResult(hits, kills);
     }
+
+    // Damages every target inside an oriented box (melee). Walls are checked along a line
+    // from wallOrigin (the attacker) to each target.
+    public DamageResult ResolveBox(Vector3 center, Vector3 halfExtents, Quaternion rotation, float damage,
+        Transform owner, LayerMask layers, Vector3 wallOrigin)
+    {
+        damaged.Clear();
+        int hits = 0, kills = 0, count;
+        while ((count = Physics.OverlapBoxNonAlloc(center, halfExtents, overlaps, rotation, layers,
+            QueryTriggerInteraction.Ignore)) == overlaps.Length)
+            Array.Resize(ref overlaps, overlaps.Length * 2);
+        for (int i = 0; i < count; i++)
+        {
+            Collider candidate = overlaps[i];
+            if (IsOwner(candidate, owner)) continue;
+            var health = candidate.GetComponentInParent<CombatHealth>();
+            if (health == null || damaged.Contains(health) || Blocked(wallOrigin, candidate, owner, layers)) continue;
+            Apply(health, damage, null, ref hits, ref kills);
+        }
+        Array.Clear(overlaps, 0, count);
+        damaged.Clear();
+        return new DamageResult(hits, kills);
+    }
+
+    // True when something other than the owner or a damageable target is between origin and candidate.
+    public bool LineBlocked(Vector3 origin, Collider candidate, Transform owner, LayerMask layers)
+        => Blocked(origin, candidate, owner, layers);
 
     bool Apply(CombatHealth health, float damage, Budget budget, ref int hits, ref int kills)
     {

@@ -16015,6 +16015,7 @@ GameObject:
   - component: {fileID: 1112537626230324030}
   - component: {fileID: 2323618638901885361}
   - component: {fileID: 7013231834875586270}
+  - component: {fileID: 525387700647639762}
   m_Layer: 0
   m_Name: FullPlayer_mech_base
   m_TagString: Player
@@ -16451,9 +16452,6 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
-  feedbackMaterial: {fileID: 0}
-  healthBarHeight: 1.4
-  useEquipmentStats: 1
   currentHealth: 0
 --- !u!114 &7013231834875586270
 MonoBehaviour:
@@ -76821,3 +76819,15 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4186232574764014925, guid: 2ba5ceef0a390e04388bf714dcba3e2d, type: 3}
   m_PrefabInstance: {fileID: 5711687755352506188}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &525387700647639762
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3053454427299694765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a22b2bcb94884e68a023d7d643bc5e92, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MechStats

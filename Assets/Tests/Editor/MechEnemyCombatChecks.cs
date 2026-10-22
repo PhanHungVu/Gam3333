@@ -42,8 +42,8 @@ public static class MechEnemyCombatChecks
         GameObject wall = null;
         try
         {
-            var health = player.GetComponent<CombatHealth>(); var equipment = player.GetComponent<EquipManager>();
-            check(health != null && health.MaximumHealth == equipment.Health && health.CurrentHealth == equipment.Health,
+            var health = player.GetComponent<CombatHealth>(); var stats = player.GetComponent<MechStats>();
+            check(health != null && health.MaximumHealth == stats.MaxHealth && health.CurrentHealth == stats.MaxHealth,
                 "Player starts with real current/max health from equipped stats");
             mace = Enemy("mace", player, 2f);
             var root = mace.transform.position;
@@ -115,7 +115,7 @@ public static class MechEnemyCombatChecks
             check(health.CurrentHealth == before && !bolt.IsLive, "World geometry stops enemy bolts before player damage");
             Object.DestroyImmediate(bolt.gameObject); Object.DestroyImmediate(wall); wall = null;
             float injured = health.CurrentHealth;
-            check(player.GetComponent<MechLocomotionDebug>().TrySwap(1) && health.MaximumHealth == equipment.Health
+            check(player.GetComponent<MechLocomotionDebug>().TrySwap(1) && health.MaximumHealth == stats.MaxHealth
                 && health.CurrentHealth == injured, "Health capacity follows Heavy legs without healing damage on swaps");
             crossbow.enabled = false;
             check(crossbow.GetComponentsInChildren<MechWeaponAnimator>().All(w => !w.Animator.enabled),

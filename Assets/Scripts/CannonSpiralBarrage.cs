@@ -116,13 +116,13 @@ public sealed class CannonSpiralBarrage : MonoBehaviour
             // One node per sequence per frame. A hitch stretches the schedule rather
             // than dumping overdue damage/flashes at once; normal intervals are fixed.
             sequence.NextTime = now + sequence.Settings.nodeDelay;
-            var result = blast.Resolve(MechWeaponType.Cannon, position, sequence.Settings.blastRadius,
+            var result = blast.Resolve(position, sequence.Settings.blastRadius,
                 sequence.Damage, sequence.Owner, sequence.Layers, budget: sequence.Budget);
             sequence.Hits += result.Hits;
             sequence.Kills += result.Kills;
             try
             {
-                ImpactResolved?.Invoke(new MechProjectileImpact(result.Weapon, position, result.Radius,
+                ImpactResolved?.Invoke(new MechProjectileImpact(MechWeaponType.Cannon, position, sequence.Settings.blastRadius,
                     result.Hits, result.Kills, deferConfirmation: true, secondary: true));
             }
             finally

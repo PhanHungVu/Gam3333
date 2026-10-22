@@ -74,7 +74,7 @@ public abstract class MechPartAbility : MonoBehaviour
 
     protected void Detonate(Vector3 position, float radius, Collider direct = null)
     {
-        var result = Blast.Resolve(default, position, radius, Damage, Context.Owner, Context.HitLayers, direct, Budget);
+        var result = Blast.Resolve(position, radius, Damage, Context.Owner, Context.HitLayers, direct, Budget);
         if (Feedback != null) Feedback.PlayAbilityExplosion(position, radius, Tint);
         Publish(position, radius, result.Hits, result.Kills);
     }

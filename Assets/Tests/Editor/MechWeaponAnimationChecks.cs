@@ -21,15 +21,6 @@ public static class MechWeaponAnimationChecks
             player.GetComponent<MechMovementController>().ReadPlayerInput = false;
             var bridge = player.GetComponent<MechEquipmentCombat>();
             var drivers = player.GetComponentsInChildren<MechWeaponAnimator>();
-            check(equipment.Health == player.GetComponentsInChildren<Part>()
-                .Where(p => p.isEquipped && p.data != null).Sum(p => Mathf.Max(0f, p.data.GetStat(StatType.Health)))
-                && equipment.Health > 0f, "Player Health stat totals only equipped parts");
-            float health = equipment.Health;
-            var head = equipment.Unequip(PartCategory.Head);
-            detached.Add(head.gameObject);
-            check(equipment.Health == health - head.data.GetStat(StatType.Health), "Dropping a part removes its Health contribution");
-            check(equipment.TryEquip(head) && equipment.Health == health, "Re-equipping restores the Health stat without a health HUD");
-            detached.Remove(head.gameObject);
             bridge.ResetWeaponIdle();
             bridge.TickWeaponIdle(2.99f, true);
             foreach (var driver in drivers) driver.Tick(0.2f);

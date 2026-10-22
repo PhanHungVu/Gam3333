@@ -58,8 +58,7 @@ public class MechCombatController : MonoBehaviour
         : slot == MechWeaponType.Crossbow ? crossbow : slot == MechWeaponType.ArmCrossbow ? armCrossbow : throwingAxe;
     public int AmmoRemaining(MechWeaponType slot) => equipment != null ? (HasWeapon(slot) ? equipment.GetPart(slot).RemainingAmmo : 0) : remainingAmmo[(int)slot];
     public float ReloadRemaining(MechWeaponType slot) => equipment != null ? (HasWeapon(slot) ? Mathf.Max(0, equipment.GetPart(slot).ReadyAt - Time.time) : 0) : reloadTimers[(int)slot];
-    Collider[] meleeCandidates = new Collider[32];
-    readonly HashSet<CombatHealth> damaged = new HashSet<CombatHealth>();
+    readonly CombatBlast blast = new CombatBlast();
     LineRenderer meleeOutline;
     LineRenderer groundOutline;
     CharacterController movementCapsule;
@@ -348,7 +347,8 @@ public class MechCombatController : MonoBehaviour
             if (!candidate.enabled || candidate.isTrigger || !candidate.gameObject.activeInHierarchy
                 || (hitLayers.value & (1 << candidate.gameObject.layer)) == 0) continue;
             var health = candidate.GetComponentInParent<CombatHealth>();
-            if (health == null || health.IsDead || !health.isActiveAndEnabled || BlockedByWorld(candidate)) continue;
+            if (health == null || health.IsDead || !health.isActiveAndEnabled
+                || blast.LineBlocked(MeleeWallOrigin(), candidate, transform, hitLayers)) continue;
             Vector3 local = Quaternion.Inverse(strikeRotation) * (candidate.ClosestPoint(front) - center);
             if (Mathf.Abs(local.x) > halfSize.x || Mathf.Abs(local.y) > halfSize.y) continue;
             closestGap = Mathf.Min(closestGap, local.z - halfSize.z);
@@ -392,40 +392,16 @@ public class MechCombatController : MonoBehaviour
     void ResolveMelee()
     {
         flashTimer = 0.15f;
-        damaged.Clear();
         Vector3 center = MeleeBoxCenter(meleeExtension);
         Vector3 halfSize = Vector3.Scale(meleeSize, AbsScale()) * 0.5f;
-        int count;
-        while ((count = Physics.OverlapBoxNonAlloc(center, halfSize, meleeCandidates,
-            strikeRotation, hitLayers, QueryTriggerInteraction.Ignore)) == meleeCandidates.Length)
-            Array.Resize(ref meleeCandidates, meleeCandidates.Length * 2);
-        int hitCount = 0;
-        for (int i = 0; i < count; i++)
-        {
-            var candidate = meleeCandidates[i];
-            if (candidate.transform.IsChildOf(transform)) continue;
-            var health = candidate.GetComponentInParent<CombatHealth>();
-            if (health == null || damaged.Contains(health) || BlockedByWorld(candidate)) continue;
-            damaged.Add(health);
-            if (health.ApplyDamage(strikeDamage)) hitCount++;
-        }
-        Array.Clear(meleeCandidates, 0, count);
+        var result = blast.ResolveBox(center, halfSize, strikeRotation, strikeDamage, transform, hitLayers, MeleeWallOrigin());
         meleePending = false;
-        MeleePerformed?.Invoke(hitCount);
+        MeleePerformed?.Invoke(result.Hits);
         UpdateMeleeOutline();
     }
 
-    bool BlockedByWorld(Collider candidate)
-    {
-        Vector3 origin = transform.position + Vector3.up * muzzleOffset.y;
-        Vector3 displacement = candidate.ClosestPoint(origin) - origin;
-        if (displacement.sqrMagnitude < 0.0001f) return false;
-        foreach (var hit in Physics.RaycastAll(origin, displacement.normalized, displacement.magnitude,
-            hitLayers, QueryTriggerInteraction.Ignore))
-            if (!hit.transform.IsChildOf(transform) && hit.collider.GetComponentInParent<CombatHealth>() == null)
-                return true;
-        return false;
-    }
+    // Melee wall checks run from the mech's chest height to each target.
+    Vector3 MeleeWallOrigin() => transform.position + Vector3.up * muzzleOffset.y;
 
     Vector3 AbsScale()
     {

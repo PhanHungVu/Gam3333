@@ -14,11 +14,8 @@ public static class MechEnemyCombatSetup
             var player = PrefabUtility.LoadPrefabContents(MechAnimatedLegsSetup.PlayerPath);
             try
             {
-                var health = player.GetComponent<CombatHealth>() ?? player.AddComponent<CombatHealth>();
-                var settings = new SerializedObject(health);
-                settings.FindProperty("useEquipmentStats").boolValue = true;
-                settings.FindProperty("feedbackMaterial").objectReferenceValue = null;
-                settings.ApplyModifiedPropertiesWithoutUndo();
+                if (player.GetComponent<CombatHealth>() == null) player.AddComponent<CombatHealth>();
+                if (player.GetComponent<MechStats>() == null) player.AddComponent<MechStats>();
                 PrefabUtility.SaveAsPrefabAsset(player, MechAnimatedLegsSetup.PlayerPath);
             }
             finally { PrefabUtility.UnloadPrefabContents(player); }

@@ -47,6 +47,7 @@ GameObject:
   - component: {fileID: 2767738442611764658}
   - component: {fileID: 8915437707650772719}
   - component: {fileID: 934324623792514010}
+  - component: {fileID: 814648452732170037}
   m_Layer: 0
   m_Name: CubeTest_Enemy
   m_TagString: Untagged
@@ -100,8 +101,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
-  feedbackMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  healthBarHeight: 1.4
 --- !u!33 &4995853971059958302
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -243,3 +242,17 @@ MonoBehaviour:
   pivotHeight: 1
   groundY: 0
   debugState: 
+--- !u!114 &814648452732170037
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5350224854672764285}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1c7981b53be487eafcb9b3cb2fbc8c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HealthBarDisplay
+  material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
+  height: 1.4

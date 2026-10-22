@@ -87,7 +87,7 @@ public static class MechWeaponAnimationSceneChecks
                     break;
                 case -1: Button(); delay = 0.3f; break;
                 case 0:
-                    Check(equipment.Health > 0f, "Scene player exposes its equipped Health stat");
+                    Check(equipment.GetComponent<MechStats>().MaxHealth > 0f, "Scene player exposes its equipped Health stat");
                     foreach (var pickupName in new[] { "Mace Animation Pickup", "Arm Crossbow Animation Pickup" })
                     {
                         var ground = GameObject.Find(pickupName).GetComponent<MechWeaponAnimator>();

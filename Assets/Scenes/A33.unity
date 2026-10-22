@@ -2746,9 +2746,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
-  feedbackMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  healthBarHeight: 1.4
-  useEquipmentStats: 0
   currentHealth: 0
 --- !u!114 &880000002
 MonoBehaviour:
@@ -2763,9 +2760,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
-  feedbackMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  healthBarHeight: 1.4
-  useEquipmentStats: 0
   currentHealth: 0
 --- !u!114 &880000004
 MonoBehaviour:
@@ -2780,9 +2774,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
-  feedbackMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  healthBarHeight: 1.4
-  useEquipmentStats: 0
   currentHealth: 0
 --- !u!114 &880000006
 MonoBehaviour:
@@ -2797,9 +2788,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
-  feedbackMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  healthBarHeight: 1.4
-  useEquipmentStats: 0
   currentHealth: 0
 --- !u!114 &880000007
 MonoBehaviour:
@@ -2814,9 +2802,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
-  feedbackMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  healthBarHeight: 1.4
-  useEquipmentStats: 0
   currentHealth: 0
 --- !u!114 &880000008
 MonoBehaviour:
@@ -2831,9 +2816,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
-  feedbackMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  healthBarHeight: 1.4
-  useEquipmentStats: 0
   currentHealth: 0
 --- !u!114 &880000010
 MonoBehaviour:
@@ -2848,9 +2830,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
-  feedbackMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  healthBarHeight: 1.4
-  useEquipmentStats: 0
   currentHealth: 0
 --- !u!114 &880000011
 MonoBehaviour:
@@ -2865,9 +2844,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
-  feedbackMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  healthBarHeight: 1.4
-  useEquipmentStats: 0
   currentHealth: 0
 --- !u!114 &880000013
 MonoBehaviour:
@@ -2882,9 +2858,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
-  feedbackMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  healthBarHeight: 1.4
-  useEquipmentStats: 0
   currentHealth: 0
 --- !u!114 &890200001
 MonoBehaviour:

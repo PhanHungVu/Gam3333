@@ -20,9 +20,10 @@ public static class MechMerge2SelectionChecks
         var equipment = motor.GetComponent<EquipManager>();
         var detector = motor.GetComponentInChildren<PickupDetector>();
         var health = motor.GetComponent<CombatHealth>();
+        var stats = motor.GetComponent<MechStats>();
         var hud = Object.FindObjectsByType<MechHealthHud>().Single(h => h.Health == health);
         Check(detector.highlightElementPrefab != null, "Pickup highlighting remains wired");
-        Check(hud != null && health != null && hud.Canvas.enabled && health.MaximumHealth == equipment.Health,
+        Check(hud != null && health != null && hud.Canvas.enabled && health.MaximumHealth == stats.MaxHealth,
             "Restored health HUD uses the merged player's equipment");
         foreach (string name in new[] { "Heavy Legs Pickup", "Mace Animation Pickup", "Arm Crossbow Animation Pickup" })
             Check(GameObject.Find(name) != null, "Restored showcase pickup: " + name);
@@ -82,7 +83,7 @@ public static class MechMerge2SelectionChecks
             Check(equipment.TrySwapSelectedInto(PartCategory.Legs), "Swapping the selected legs succeeds");
             Check(equipment.GetEquipped(PartCategory.Legs) == heavy && motor.CurrentModule == heavy.GetComponent<LocomotionModule>(),
                 "Legs swap switches to the Heavy animation/locomotion module");
-            Check(health.CurrentHealth == injured && injured == before - 20f && health.MaximumHealth == equipment.Health
+            Check(health.CurrentHealth == injured && injured == before - 20f && health.MaximumHealth == stats.MaxHealth
                 && Mathf.Abs(hud.NormalizedHealth - health.CurrentHealth / health.MaximumHealth) < 0.001f,
                 "Heavy swap updates health capacity and UI without healing damage");
             Check(motor.GetComponent<MechLocomotionDebug>().TrySwap(0), "Fast default remains available after a swap");

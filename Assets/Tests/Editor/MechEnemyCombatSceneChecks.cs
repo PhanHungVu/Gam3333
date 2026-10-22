@@ -42,7 +42,7 @@ public static class MechEnemyCombatSceneChecks
                     player = Object.FindAnyObjectByType<MechMovementController>(); player.ReadPlayerInput = false;
                     player.GetComponent<MechCombatController>().ReadPlayerInput = false;
                     health = player.GetComponent<CombatHealth>();
-                    Check(health != null && health.CurrentHealth == player.GetComponent<EquipManager>().Health,
+                    Check(health != null && health.CurrentHealth == player.GetComponent<MechStats>().MaxHealth,
                         "Merge Test player starts with equipped health capacity");
                     Spawn("mace", 7f); delay = 0.45f; break;
                 case 1:

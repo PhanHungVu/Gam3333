@@ -50268,6 +50268,7 @@ GameObject:
   - component: {fileID: 5163642771340955098}
   - component: {fileID: 4002886853335233961}
   - component: {fileID: 2317099856583387135}
+  - component: {fileID: 388974039334746544}
   m_Layer: 0
   m_Name: Enemy_crossbow
   m_TagString: Untagged
@@ -50322,9 +50323,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
-  feedbackMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  healthBarHeight: 1.4
-  useEquipmentStats: 0
   currentHealth: 0
 --- !u!114 &2097355057362920606
 MonoBehaviour:
@@ -75569,3 +75567,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2883663974681439843, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
   m_PrefabInstance: {fileID: 4840287741179453413}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &388974039334746544
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7062185459325199375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1c7981b53be487eafcb9b3cb2fbc8c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HealthBarDisplay
+  material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
+  height: 1.4

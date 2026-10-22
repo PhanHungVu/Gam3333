@@ -81,6 +81,8 @@ public static class MechFoundationChecks
             SpiralBarrageChecks.Run(Check);
             MechAbilityChecks.Run(Check);
             MechPartsChecks.Run(Check);
+            DamageChecks.Run(Check);
+            MechStatsChecks.Run(Check);
             MechLocomotionChecks.Run(Check);
             MechAnimatedLegChecks.Run(Check);
             MechUpperBodyChecks.Run(Check);
