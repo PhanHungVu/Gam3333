@@ -6,8 +6,11 @@ public class Part : MonoBehaviour
     public Transform muzzle;
     public Vector3 authoredScale = Vector3.one;
     public PartData data;    
-    [Tooltip("What this part is. Parts have no side: which arm/shoulder socket it uses is decided when it is equipped.")]
-    public PartType partType;
+    // What this part is, read from its data (the single source of truth). Parts have no side:
+    // which arm/shoulder socket it uses is decided when it is equipped.
+    public PartType partType => data != null ? data.partType : default;
+    // This part's stats. Systems read stats only through here, so per-part stat rolls can plug in later.
+    public PartData Stats => data;
     // Slot this part currently occupies; null while it is loose.
     public PartCategory? Slot { get; internal set; }
     public bool isStartingPart = true;

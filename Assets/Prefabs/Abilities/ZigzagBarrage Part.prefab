@@ -108,7 +108,6 @@ MonoBehaviour:
   recoilVisual: {fileID: 0}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: 5d08aa29387251c4c9a5dcb44aa2695c, type: 2}
-  partType: 4
   isStartingPart: 1
   isEquipped: 0
 --- !u!1 &8294531255268243099

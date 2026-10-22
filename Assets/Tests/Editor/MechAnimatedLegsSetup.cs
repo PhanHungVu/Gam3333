@@ -131,8 +131,8 @@ public static class MechAnimatedLegsSetup
     {
         var root = new GameObject(name);
         var part = root.AddComponent<Part>();
-        part.partType = PartType.Legs;
         part.data = data;
+        data.partType = PartType.Legs;
         part.isStartingPart = false;
         var locomotion = root.AddComponent<BipedLocomotionModule>();
         var tuning = new SerializedObject(locomotion);

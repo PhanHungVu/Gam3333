@@ -51,7 +51,6 @@ MonoBehaviour:
   muzzle: {fileID: 2712000403948341540}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: 55c3987ff5a5221488425f98040b8852, type: 2}
-  partType: 4
   isStartingPart: 1
   isEquipped: 0
 --- !u!1 &5391299307338285425

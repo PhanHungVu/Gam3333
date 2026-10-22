@@ -15,6 +15,8 @@ MonoBehaviour:
   partId: weaponA2
   partName: Throwing Axe
   description: ranged weapon, unable to melee attack with it.
+  partType: 1
+  subtype: 1
   stats:
   - type: 2
     value: 50
@@ -28,9 +30,16 @@ MonoBehaviour:
     value: 3
   - type: 7
     value: 1
+  - type: 9
+    value: 1.5
+  - type: 10
+    value: 100
+  - type: 11
+    value: 0.18
   weapon: 2
   ability: 0
   projectilePrefab: {fileID: 1132485043371751997, guid: 6a5d247746bc0274d81f1d2797c0fd56, type: 3}
   metresPerGolem: 4
   maximumRangeMultiplier: 1.5
   cannonExplosionRadius: 6
+  projectileColor: {r: 0.3, g: 0.9, b: 1, a: 1}

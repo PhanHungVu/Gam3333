@@ -54,7 +54,6 @@ public static class MechLocomotionSetup
         string name = type + "Module";
         var root = new GameObject(name);
         var part = root.AddComponent<Part>();
-        part.partType = PartType.Legs;
         part.isStartingPart = false;
         string dataPath = ModuleFolder + "/" + name + ".asset";
         var data = AssetDatabase.LoadAssetAtPath<PartData>(dataPath);
@@ -66,6 +65,7 @@ public static class MechLocomotionSetup
             data.description = "Milestones 1-3 placeholder locomotion part.";
             AssetDatabase.CreateAsset(data, dataPath);
         }
+        data.partType = PartType.Legs;
         part.data = data;
         string materialPath = ModuleFolder + "/" + name + ".mat";
         var material = AssetDatabase.LoadAssetAtPath<Material>(materialPath);

@@ -4919,7 +4919,6 @@ MonoBehaviour:
   muzzle: {fileID: 0}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: e53a52aa63c1e6846b870999a563975b, type: 2}
-  partType: 0
   isStartingPart: 1
   isEquipped: 0
 --- !u!114 &2272169782406353439
@@ -10065,7 +10064,6 @@ MonoBehaviour:
   muzzle: {fileID: 3609361969142997334}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: 55c3987ff5a5221488425f98040b8852, type: 2}
-  partType: 4
   isStartingPart: 1
   isEquipped: 0
 --- !u!114 &4275918048326295482
@@ -30581,7 +30579,6 @@ MonoBehaviour:
   muzzle: {fileID: 4625275961266103779}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: cc03c119946ec9043b0bfe8e39af9144, type: 2}
-  partType: 4
   isStartingPart: 1
   isEquipped: 0
 --- !u!114 &471079275573238140
@@ -66348,7 +66345,6 @@ MonoBehaviour:
   muzzle: {fileID: 0}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: 95c2f3c62f08a9249bfc1432876a1e9a, type: 2}
-  partType: 6
   isStartingPart: 0
   isEquipped: 0
 --- !u!114 &2764551002602690378
@@ -66426,7 +66422,6 @@ MonoBehaviour:
   muzzle: {fileID: 2929522318582207901}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: 31a4ba2367672dd46aa2de4b0e857de9, type: 2}
-  partType: 1
   isStartingPart: 1
   isEquipped: 0
 --- !u!114 &9081373902490939735
@@ -76479,7 +76474,6 @@ MonoBehaviour:
   muzzle: {fileID: 3364410434815877825}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: 691dc3f793865b842b733326fc23f6e5, type: 2}
-  partType: 1
   isStartingPart: 1
   isEquipped: 0
 --- !u!114 &8504198856348557406

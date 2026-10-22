@@ -87,7 +87,7 @@ public static class MechPartsIntegration
             string dataPath="Assets/PartCatalogue/PartData_"+name+".asset";
             var data=AssetDatabase.LoadAssetAtPath<PartData>(dataPath);
             if(data==null) {data=ScriptableObject.CreateInstance<PartData>();data.partId="ability"+name;data.partName=name;AssetDatabase.CreateAsset(data,dataPath);}
-            part.data=data; part.partType=PartType.Shoulder; part.isStartingPart=true; part.authoredScale=Vector3.one;
+            data.partType=PartType.Shoulder; part.data=data; part.isStartingPart=true; part.authoredScale=Vector3.one;
             var model=GameObject.CreatePrimitive(PrimitiveType.Cube);model.name="Ability Module";model.transform.SetParent(root.transform,false);
             model.transform.localPosition=new Vector3(-0.15f,0.2f,0);model.transform.localScale=new Vector3(0.3f,0.7f,0.3f);
             model.GetComponent<Renderer>().sharedMaterial=AssetDatabase.LoadAssetAtPath<Material>("Assets/Combat/Prototype Combat.mat");
