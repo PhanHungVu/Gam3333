@@ -69,7 +69,7 @@ public static class MechProjectileModelChecks
         try
         {
             var equipment = player.GetComponent<EquipManager>();
-            var combat = player.GetComponent<MechCombat>(); combat.ReadPlayerInput = false; combat.BindCamera(view);
+            var combat = player.GetComponent<MechCombat>(); TestMech.StopPlayerInput(combat); combat.BindCamera(view);
             foreach (var slot in new[] { PartCategory.ShoulderR, PartCategory.ArmR })
             {
                 var part = player.GetComponent<MechCombat>().GetPart(slot);

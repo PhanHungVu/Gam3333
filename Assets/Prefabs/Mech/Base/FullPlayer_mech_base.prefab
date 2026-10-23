@@ -16017,6 +16017,7 @@ GameObject:
   - component: {fileID: 525387700647639762}
   - component: {fileID: 327758736479981224}
   - component: {fileID: 732845130996398655}
+  - component: {fileID: 671720309205676776}
   m_Layer: 0
   m_Name: FullPlayer_mech_base
   m_TagString: Player
@@ -16054,7 +16055,6 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::EquipManager
   rulesConfig: {fileID: 11400000, guid: ee7e37eb664fbfb4695ed0f740b434c4, type: 2}
-  interactKey: 102
   partScale: 0.5
   partSwapHUDScript: {fileID: 0}
 --- !u!114 &4187055195490756122
@@ -16069,8 +16069,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c201ada6e3e49d49292fc53f6dc0025, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::MechCombatController
-  inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  readPlayerInput: 1
   gameplayCamera: {fileID: 0}
   combatMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   hitLayers:
@@ -16190,8 +16188,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5040003381fcac46a32521a0c86364b, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::MechMovementController
-  inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  readPlayerInput: 1
   gameplayCamera: {fileID: 0}
   energy: {fileID: 6057257043024523587}
   moveSpeed: 6
@@ -76796,3 +76792,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MeleeBoxPreview
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   showMeleeBox: 1
+--- !u!114 &671720309205676776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3053454427299694765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67688985eee34d21b01f72d224bce207, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MechPlayerInput
+  inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  lockCursorOnPlay: 1

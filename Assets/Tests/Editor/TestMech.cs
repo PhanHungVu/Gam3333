@@ -64,6 +64,13 @@ public static class TestMech
         foreach (var part in player.GetComponentsInChildren<Part>(true)) ReadyAtField.SetValue(part, 0f);
     }
 
+    // Stops the player input on a mech so a check can drive its systems directly.
+    public static void StopPlayerInput(Component mech)
+    {
+        var input = mech.GetComponent<MechPlayerInput>();
+        if (input != null) input.enabled = false;
+    }
+
     // Reload times are measured against Time.time, so compare them with a small tolerance.
     public static bool Near(float value, float expected) => Mathf.Abs(value - expected) < 0.001f;
 

@@ -20,7 +20,7 @@ public static class MechAnimationV2Checks
         MechLegAnimator Driver() => equipment.GetEquipped(PartCategory.Legs).GetComponent<MechLegAnimator>();
         try
         {
-            motor.ReadPlayerInput = false;
+            TestMech.StopPlayerInput(motor);
             Physics.SyncTransforms();
             var neutral = Clip("Biped_Neutral");
             var jump = Clip("Biped_Jump");

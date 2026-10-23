@@ -15,7 +15,7 @@ public static class MechStatsChecks
         var detached = new List<GameObject>();
         try
         {
-            player.GetComponent<MechMovementController>().ReadPlayerInput = false;
+            TestMech.StopPlayerInput(player.GetComponent<MechMovementController>());
             var equipment = player.GetComponent<EquipManager>();
             var stats = player.GetComponent<MechStats>();
             var health = player.GetComponent<CombatHealth>();

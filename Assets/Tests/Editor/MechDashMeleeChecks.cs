@@ -21,7 +21,7 @@ public static class MechDashMeleeChecks
         var cleanup = new List<GameObject>();
         try
         {
-            var combat = player.GetComponent<MechCombat>(); combat.ReadPlayerInput = false;
+            var combat = player.GetComponent<MechCombat>(); TestMech.StopPlayerInput(combat);
             var equipment = player.GetComponent<EquipManager>();
             var settings = new SerializedObject(combat);
             check(settings.FindProperty("meleeSize").vector3Value == new Vector3(5f, 3.5f, 5.5f), "Scene player uses the enlarged 5 x 3.5 x 5.5 melee volume");

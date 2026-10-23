@@ -112,10 +112,10 @@ public static class MechAnimatedLegSceneChecks
                 Physics.SyncTransforms();
                 InputSystem.QueueStateEvent(keyboard, new KeyboardState());
             }
-            else if (phase == 5) InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.F, Key.W));
+            else if (phase == 5) { equipment.TrySwapSelectedInto(PartCategory.Legs); InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W)); }
             else if (phase == 6)
             {
-                Check(equipment.GetEquipped(PartCategory.Legs) == pickup, "F equips the scene's heavy pickup through detector and equipment input");
+                Check(equipment.GetEquipped(PartCategory.Legs) == pickup, "The highlighted heavy pickup swaps into the legs through the detector and part system");
                 Debug.Log("ANIMATED PICKUP STATE: speed=" + motor.AnimationData.Speed + " grounded=" + motor.IsGrounded
                     + " state=" + motor.AnimationData.State + " blend=" + pickup.GetComponent<MechLegAnimator>().Animator.GetFloat("MoveBlend")
                     + " weight=" + MechAnimatedLegChecks.ClipWeight(pickup.GetComponent<MechLegAnimator>(), "Heavy_Walk.001"));

@@ -46,15 +46,16 @@ public static class MechLocomotionChecks
             Vector3 velocity = motor.Velocity;
             float charge = energy.Current;
             int ammo = combat.AmmoRemaining(PartCategory.ShoulderL);
-            var inputField = typeof(MechMovementController).GetField("runtimeInputActions", BindingFlags.Instance | BindingFlags.NonPublic);
-            object inputInstance = inputField.GetValue(motor);
+            var playerInput = player.GetComponent<MechPlayerInput>();
+            var inputField = typeof(MechPlayerInput).GetField("runtimeInputActions", BindingFlags.Instance | BindingFlags.NonPublic);
+            object inputInstance = inputField.GetValue(playerInput);
             check(debug.TrySwap(2), "Development swap selects hover through EquipManager");
             check(player.transform.position == position && player.transform.rotation == rotation && motor.Velocity == velocity,
                 "Moving lower-body swap preserves root pose and resolved velocity");
             check(equipment.GetEquipped(PartCategory.Torso) == torso && torso.transform.localPosition == torsoPosition
                 && combat.AmmoRemaining(PartCategory.ShoulderL) == ammo && energy.Current == charge,
                 "Lower-body swap preserves torso, ammunition and energy");
-            check(ReferenceEquals(inputField.GetValue(motor), inputInstance) && controller == player.GetComponent<CharacterController>()
+            check(ReferenceEquals(inputField.GetValue(playerInput), inputInstance) && controller == player.GetComponent<CharacterController>()
                 && player.GetComponentsInChildren<MechMovementController>(true).Length == 1 && player.GetComponent<Rigidbody>() == null,
                 "Swap keeps the same input instance and one root CharacterController motor");
             check(motor.AnimationData.LocomotionType == LocomotionType.Hover, "Animation module identity updates immediately on equip");
@@ -174,7 +175,7 @@ public static class MechLocomotionChecks
         var view = new GameObject("Boost braking view");
         var player = Object.Instantiate(prefab, new Vector3(90000f, 1.6f, 0f), Quaternion.identity);
         var motor = player.GetComponent<MechMovementController>();
-        motor.ReadPlayerInput = false;
+        TestMech.StopPlayerInput(motor);
         var energy = player.GetComponent<MechEnergyController>();
         try
         {

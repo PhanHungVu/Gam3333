@@ -18,7 +18,7 @@ public static class MechWeaponAnimationChecks
         var reference = Object.Instantiate(source);
         try
         {
-            player.GetComponent<MechMovementController>().ReadPlayerInput = false;
+            TestMech.StopPlayerInput(player.GetComponent<MechMovementController>());
             var bridge = player.GetComponent<MechWeaponIdle>();
             var drivers = player.GetComponentsInChildren<MechWeaponAnimator>();
             bridge.ResetWeaponIdle();

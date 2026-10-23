@@ -12,7 +12,7 @@ public static class MechPartsChecks
         var equipment=player.GetComponent<EquipManager>(); var combat=player.GetComponent<MechCombat>();
         var bridge=player.GetComponent<MechCombat>();var rig=player.GetComponent<MechPlayerRig>();
         var floor=GameObject.CreatePrimitive(PrimitiveType.Cube);floor.transform.position=new Vector3(22000,-0.25f,0);floor.transform.localScale=new Vector3(100,0.5f,100);
-        check(player.GetComponent<SimpleMove>()==null && player.GetComponent<Rigidbody>()==null && player.GetComponent<CharacterController>()!=null,
+        check(player.GetComponent<Rigidbody>()==null && player.GetComponent<CharacterController>()!=null,
             "Merged player uses only the existing CharacterController movement");
         check(rig.GameplayCamera!=null && rig.GameplayCamera.GetComponent<CameraControlThirdPerson>().Target==player.transform,
             "Merged player creates/binds the existing Cinemachine camera before gameplay initialization");
@@ -94,7 +94,9 @@ public static class MechPartsChecks
         check(detector.HighlightColour(PartType.Arm)!=detector.HighlightColour(PartType.Shoulder),"Arm and shoulder pickups glow in different colours");
         Object.DestroyImmediate(secondCannon.gameObject);
         check(player.GetComponent<MechTargetLockController>().IsFreeAim==targetMode,"Equipment swaps preserve targeting mode");
-        check(equipment.interactKey==KeyCode.F,"Pickup does not conflict with Q/E weapon activation");
+        var swapAction=AssetDatabase.LoadAssetAtPath<UnityEngine.InputSystem.InputActionAsset>("Assets/InputSystem_Actions.inputactions").FindAction("Player/SwapPart");
+        check(swapAction!=null && System.Linq.Enumerable.Any(swapAction.bindings,b=>b.path=="<Keyboard>/f")
+            && !System.Linq.Enumerable.Any(swapAction.bindings,b=>b.path=="<Keyboard>/q"||b.path=="<Keyboard>/e"),"Pickup does not conflict with Q/E weapon activation");
         Object.DestroyImmediate(player);Object.DestroyImmediate(floor);
     }
 }

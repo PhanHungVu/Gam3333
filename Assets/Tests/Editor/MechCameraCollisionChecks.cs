@@ -39,7 +39,6 @@ public static class MechCameraCollisionChecks
         view.aspect = 2.4f;
         var control = cameraObject.AddComponent<CameraControlThirdPerson>();
         control.BindTarget(player.transform);
-        Set(control, "lockCursorOnPlay", false);
         cameraObject.SetActive(true);
         var rig = Get<CinemachineCamera>(control, "cinemachineCamera");
         var follow = rig.GetComponent<CinemachineThirdPersonFollow>();

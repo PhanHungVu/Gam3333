@@ -6,7 +6,6 @@ using UnityEngine.InputSystem;
 public class EquipManager : MonoBehaviour
 {
     public MechRulesConfig rulesConfig;
-    public KeyCode interactKey = KeyCode.F;
     [Min(0.01f)] public float partScale = 1f;
     public event Action EquipmentChanged;
     [Tooltip("Starting parts and the slot (side) each starts in. Parts placed under a socket on the player start in that socket, so this only needs entries to override that.")]
@@ -14,12 +13,10 @@ public class EquipManager : MonoBehaviour
     readonly Dictionary<PartCategory, Part> equipped = new Dictionary<PartCategory, Part>();
     Part selectedPart;
     Socket[] sockets;
-    Key inputKey;
     PickupDetector pickupDetector;
     public Part GetEquipped(PartCategory category) => equipped.TryGetValue(category, out var part) ? part : null;
     void Awake()
     {
-        Enum.TryParse(interactKey.ToString(), out inputKey);
         var starting = GetComponentsInChildren<Part>(true);
         pickupDetector = GetComponentInChildren<PickupDetector>(true);
         RefreshSockets();
@@ -59,11 +56,7 @@ public class EquipManager : MonoBehaviour
     public void SetSelectedPart(Part part) { if (part != null && !part.isEquipped) selectedPart = part; }
     public Part GetSelectedPart() => selectedPart != null && !selectedPart.isEquipped && selectedPart.gameObject.activeInHierarchy ? selectedPart : null;
     public void ClearSelectedPart(Part part) { if (selectedPart == part) selectedPart = null; }
-    // Hold the interact key (F) while a floor part is selected: MechCombat then
-    // routes the next attack button to TrySwapSelectedInto for that button's socket.
-    public bool IsSwapHeld => Time.timeScale > 0 && Keyboard.current != null && inputKey != Key.None
-        && Keyboard.current[inputKey].isPressed && GetSelectedPart() != null;
-    // Swap the selected floor part into this socket. Incompatible parts are refused by
+    // Swap the selected floor part into this socket (MechPlayerInput: hold SwapPart + an attack button). Incompatible parts are refused by
     // TryEquip's rules check (e.g. F + Q on an arm part does nothing).
     // Head and legs have no button yet; a future key alongside F will call this with Head/Legs.
     public bool TrySwapSelectedInto(PartCategory slot)

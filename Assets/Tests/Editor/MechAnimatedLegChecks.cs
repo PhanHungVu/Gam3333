@@ -22,7 +22,7 @@ public static class MechAnimatedLegChecks
         Part dropped = null;
         try
         {
-            motor.ReadPlayerInput = false;
+            TestMech.StopPlayerInput(motor);
             Physics.SyncTransforms();
             Step(motor, equipment, view, 90);
             var fast = equipment.GetEquipped(PartCategory.Legs);

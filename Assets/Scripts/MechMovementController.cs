@@ -8,9 +8,6 @@ public class MechMovementController : MonoBehaviour
 {
     public enum MovementState { Grounded, GroundBoost, Airborne, QuickBoost, AssaultBoost }
 
-    [SerializeField] InputActionAsset inputActions;
-    [SerializeField] bool readPlayerInput = true;
-    InputActionAsset runtimeInputActions;
     [SerializeField] Camera gameplayCamera;
     [SerializeField] MechEnergyController energy;
     [Header("Ground Locomotion")]
@@ -52,10 +49,6 @@ public class MechMovementController : MonoBehaviour
 
     CharacterController characterController;
     MechTargetLockController targetingController;
-    InputAction moveAction;
-    InputAction jumpAction;
-    InputAction quickBoostAction;
-    InputAction assaultBoostAction;
     Vector3 assaultBoostDirection;
     bool assaultBoostActive;
     bool assaultBoostRequiresRelease;
@@ -74,7 +67,6 @@ public class MechMovementController : MonoBehaviour
         ? locomotionModule : null;
     public LocomotionType LocomotionType => CurrentModule != null ? CurrentModule.Type : LocomotionType.Biped;
     public LocomotionAnimationData AnimationData { get; private set; }
-    public bool ReadPlayerInput { get => readPlayerInput; set => readPlayerInput = value; }
     public event Action<LocomotionAnimationData> AnimationDataUpdated;
 
     // Attachment changes never reset velocity, input instances, energy, or boost timers.
@@ -135,30 +127,8 @@ public class MechMovementController : MonoBehaviour
         PublishAnimationData(0f, transform.forward);
     }
 
-    void OnEnable()
-    {
-        if (inputActions == null)
-            return;
-
-        runtimeInputActions = MechInputActions.Create(inputActions);
-        moveAction = runtimeInputActions.FindAction("Player/Move", false);
-        jumpAction = runtimeInputActions.FindAction("Player/Jump", false);
-        quickBoostAction = runtimeInputActions.FindAction("Player/QuickBoost", false);
-        assaultBoostAction = runtimeInputActions.FindAction("Player/AssaultBoost", false);
-        moveAction?.Enable();
-        jumpAction?.Enable();
-        quickBoostAction?.Enable();
-        assaultBoostAction?.Enable();
-    }
-
     void OnDisable()
     {
-        moveAction?.Disable();
-        jumpAction?.Disable();
-        quickBoostAction?.Disable();
-        assaultBoostAction?.Disable();
-        MechInputActions.Release(ref runtimeInputActions);
-        moveAction = jumpAction = quickBoostAction = assaultBoostAction = null;
         bool wasAssaultBoosting = assaultBoostActive;
         assaultBoostActive = false;
         assaultBoostRequiresRelease = false;
@@ -178,22 +148,12 @@ public class MechMovementController : MonoBehaviour
             AssaultBoostEnded?.Invoke();
     }
 
-    void Update()
+    // Called each frame by MechPlayerInput with the player's input, using this mech's gameplay camera.
+    public void Tick(MechLocomotionInput input, float deltaTime)
     {
-        if (!readPlayerInput) return;
         if (gameplayCamera == null)
             gameplayCamera = Camera.main;
-        MechLocomotionInput input = new MechLocomotionInput
-        {
-            move = ReadMoveInput(),
-            jump = WasJumpPressedThisFrame(),
-            jumpHeld = jumpAction != null ? jumpAction.IsPressed()
-                : Keyboard.current != null && Keyboard.current.spaceKey.isPressed,
-            quickBoost = WasQuickBoostPressedThisFrame(),
-            assaultBoost = assaultBoostAction != null ? assaultBoostAction.IsPressed()
-                : Keyboard.current != null && Keyboard.current.leftCtrlKey.isPressed
-        };
-        Tick(input, gameplayCamera != null ? gameplayCamera.transform : null, Time.deltaTime);
+        Tick(input, gameplayCamera != null ? gameplayCamera.transform : null, deltaTime);
     }
 
     // Public command boundary also supports AI/replay/test callers without device input.
@@ -391,22 +351,6 @@ public class MechMovementController : MonoBehaviour
         if (previousState != nextState) StateChanged?.Invoke(previousState, nextState);
     }
 
-    bool WasJumpPressedThisFrame()
-    {
-        if (jumpAction != null)
-            return jumpAction.WasPressedThisFrame();
-
-        return Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
-    }
-
-    bool WasQuickBoostPressedThisFrame()
-    {
-        if (quickBoostAction != null)
-            return quickBoostAction.WasPressedThisFrame();
-
-        return Keyboard.current != null && Keyboard.current.leftShiftKey.wasPressedThisFrame;
-    }
-
     void StartQuickBoost(Vector3 movementDirection, Transform cameraTransform)
     {
         quickBoostDirection = movementDirection.sqrMagnitude > 0.001f
@@ -461,26 +405,6 @@ public class MechMovementController : MonoBehaviour
         return faceCameraDirection
             ? GetCameraForward(cameraTransform)
             : movementDirection;
-    }
-
-    Vector2 ReadMoveInput()
-    {
-        if (moveAction != null)
-            return Vector2.ClampMagnitude(moveAction.ReadValue<Vector2>(), 1f);
-
-        if (Keyboard.current == null)
-            return Vector2.zero;
-
-        Vector2 input = Vector2.zero;
-        if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed)
-            input.y += 1f;
-        if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed)
-            input.y -= 1f;
-        if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed)
-            input.x += 1f;
-        if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed)
-            input.x -= 1f;
-        return Vector2.ClampMagnitude(input, 1f);
     }
 
     static Vector3 GetCameraRelativeDirection(Vector2 input, Transform cameraTransform)

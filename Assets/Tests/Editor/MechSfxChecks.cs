@@ -29,8 +29,8 @@ public static class MechSfxChecks
         try
         {
             var equipment = player.GetComponent<EquipManager>();
-            var combat = player.GetComponent<MechCombat>(); combat.ReadPlayerInput = false; combat.BindCamera(camera);
-            var movement = player.GetComponent<MechMovementController>(); movement.ReadPlayerInput = false;
+            var combat = player.GetComponent<MechCombat>(); TestMech.StopPlayerInput(combat); combat.BindCamera(camera);
+            var movement = player.GetComponent<MechMovementController>(); TestMech.StopPlayerInput(movement);
             string[] parts = { "arm_sword", "arm_throwingaxe", "shoulder_cannon", "shoulder_crossbow", "arm_mace", "arm_crossbow" };
             PartCategory[] slots = { PartCategory.ArmL, PartCategory.ArmR, PartCategory.ShoulderL, PartCategory.ShoulderR, PartCategory.ArmL, PartCategory.ArmR };
             for (int i = 0; i < parts.Length; i++)

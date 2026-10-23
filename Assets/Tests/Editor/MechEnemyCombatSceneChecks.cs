@@ -39,8 +39,8 @@ public static class MechEnemyCombatSceneChecks
                     Time.captureDeltaTime = 1f / 60f;
                     foreach (var spawner in Object.FindObjectsByType<EnemySpawnerManager>()) spawner.enabled = false;
                     foreach (var agent in Object.FindObjectsByType<EnemyAgent>()) agent.gameObject.SetActive(false);
-                    player = Object.FindAnyObjectByType<MechMovementController>(); player.ReadPlayerInput = false;
-                    player.GetComponent<MechCombat>().ReadPlayerInput = false;
+                    player = Object.FindAnyObjectByType<MechMovementController>(); TestMech.StopPlayerInput(player);
+                    TestMech.StopPlayerInput(player.GetComponent<MechCombat>());
                     health = player.GetComponent<CombatHealth>();
                     Check(health != null && health.CurrentHealth == player.GetComponent<MechStats>().MaxHealth,
                         "Merge Test player starts with equipped health capacity");

@@ -55,9 +55,6 @@ public static class MechWeaponAnimationSceneChecks
     static void Update()
     {
         if (!SessionState.GetBool(Pending, false) || !EditorApplication.isPlaying || EditorApplication.isCompiling) return;
-        // Batch Unity has no native cursor capture. Keep the real input asset and
-        // dispatch code; supply captured-cursor policy through its public boundary.
-        if (motor != null) motor.GetComponent<MechCombat>().ProcessPlayerInput(true);
         if (next < 0f) { next = Time.time + 1.2f; deadline = Time.time + 30f; }
         if (Time.time < next) return;
         try
@@ -77,8 +74,9 @@ public static class MechWeaponAnimationSceneChecks
                     originalSword = equipment.GetEquipped(PartCategory.ArmL);
                     originalAxe = equipment.GetEquipped(PartCategory.ArmR);
                     motor.GetComponent<MechCombat>().ShotFired += _ => shots++;
-                    motor.GetComponent<MechCombat>().ReadPlayerInput = false;
-                    var data = new SerializedObject(motor.GetComponent<MechCombat>());
+                    // Batch Unity has no native cursor capture; the real input path runs as if captured.
+                    motor.GetComponent<MechPlayerInput>().AssumeCursorCaptured = true;
+                    var data = new SerializedObject(motor.GetComponent<MeleeBoxPreview>());
                     data.FindProperty("showMeleeBox").boolValue = false; data.ApplyModifiedPropertiesWithoutUndo();
                     keyboard = InputSystem.AddDevice<Keyboard>(); mouse = InputSystem.AddDevice<Mouse>();
                     Cursor.lockState = CursorLockMode.Locked;
@@ -140,10 +138,11 @@ public static class MechWeaponAnimationSceneChecks
                 case 10: PlacePickup("Mace Animation Pickup"); delay = 0.45f; break;
                 case 11:
                     if (!SelectPickup("Mace Animation Pickup")) { next = Time.time + 0.15f; return; }
-                    break;
+                    Keys(Key.F); Button(MouseButton.Left); break; // hold F + LMB: swap into the left arm
                 case 12:
-                    SwapSelectedInto(PartCategory.ArmL);
-                    Check(Driver(PartCategory.ArmL).Animations.name == "Mace", "Swapping into the left arm equips the animated mace");
+                    Keys(); Button();
+                    Check(equipment.GetEquipped(PartCategory.ArmL) != originalSword && Driver(PartCategory.ArmL).Animations.name == "Mace",
+                        "Holding F and clicking LMB swaps the highlighted mace into the left arm"); 
                     // Keep the dropped sword outside pickup range before selecting
                     // the second test pickup's highlighted selection.
                     originalSword.GetComponent<Rigidbody>().isKinematic = true;
@@ -162,10 +161,11 @@ public static class MechWeaponAnimationSceneChecks
                     Capture("mace-fire"); Button(); PlacePickup("Arm Crossbow Animation Pickup"); delay = 0.45f; break;
                 case 14:
                     if (!SelectPickup("Arm Crossbow Animation Pickup")) { next = Time.time + 0.15f; return; }
-                    break;
+                    Keys(Key.F); Button(MouseButton.Right); break; // hold F + RMB: swap into the right arm
                 case 15:
-                    SwapSelectedInto(PartCategory.ArmR);
-                    Check(Driver(PartCategory.ArmR).Animations.name == "ArmCrossbow", "Swapping into the right arm equips the animated arm crossbow");
+                    Keys(); Button();
+                    Check(equipment.GetEquipped(PartCategory.ArmR) != originalAxe && Driver(PartCategory.ArmR).Animations.name == "ArmCrossbow",
+                        "Holding F and clicking RMB swaps the highlighted arm crossbow into the right arm");
                     Check(!originalAxe.isEquipped && LoadedModelVisible(originalAxe, "ThrowingAxeMesh"),
                         "Dropped throwing axe retains its visible model on the ground");
                     Keys(); Button(MouseButton.Right); delay = 0.1f; break;
@@ -210,9 +210,6 @@ public static class MechWeaponAnimationSceneChecks
         pickup.transform.position += range.center + motor.transform.right * 0.75f - collider.bounds.center;
         Physics.SyncTransforms();
     }
-
-    static void SwapSelectedInto(PartCategory socket) =>
-        Check(equipment.TrySwapSelectedInto(socket), "Selected pickup swaps into " + socket);
 
     static bool SelectPickup(string name)
     {

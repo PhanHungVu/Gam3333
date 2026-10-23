@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 // What one TryAttack call did: whether an attack started, and the projectile if it fired one.
 public readonly struct AttackResult
@@ -20,14 +19,6 @@ public readonly struct AttackResult
 [RequireComponent(typeof(EquipManager))]
 public class MechCombat : MonoBehaviour
 {
-    // TEMPORARY: button reading moves to the player input component in its own step.
-    [SerializeField] InputActionAsset inputActions;
-    [SerializeField] bool readPlayerInput = true;
-    public bool ReadPlayerInput { get => readPlayerInput; set => readPlayerInput = value; }
-    InputActionAsset runtimeInputActions;
-    InputAction rightArmAction, leftArmAction, leftShoulderAction, rightShoulderAction;
-    bool inputArmed;
-
     [Header("Aiming")]
     [SerializeField] Camera gameplayCamera;
     [SerializeField] LayerMask hitLayers = ~0;
@@ -175,28 +166,12 @@ public class MechCombat : MonoBehaviour
     void OnEnable()
     {
         if (parts != null) { parts.EquipmentChanged += PrepareEquipment; PrepareEquipment(); }
-        runtimeInputActions = MechInputActions.Create(inputActions);
-        rightArmAction = runtimeInputActions != null ? runtimeInputActions.FindAction("Player/Attack", false) : null;
-        leftArmAction = runtimeInputActions != null ? runtimeInputActions.FindAction("Player/Melee", false) : null;
-        leftShoulderAction = runtimeInputActions != null ? runtimeInputActions.FindAction("Player/Cannon", false) : null;
-        rightShoulderAction = runtimeInputActions != null ? runtimeInputActions.FindAction("Player/Crossbow", false) : null;
-        rightArmAction?.Enable();
-        leftArmAction?.Enable();
-        leftShoulderAction?.Enable();
-        rightShoulderAction?.Enable();
     }
 
     void OnDisable()
     {
         if (parts != null) parts.EquipmentChanged -= PrepareEquipment;
         if (barrageRunner != null) barrageRunner.CancelAll();
-        rightArmAction?.Disable();
-        leftArmAction?.Disable();
-        leftShoulderAction?.Disable();
-        rightShoulderAction?.Disable();
-        MechInputActions.Release(ref runtimeInputActions);
-        rightArmAction = leftArmAction = leftShoulderAction = rightShoulderAction = null;
-        inputArmed = false;
         melee.Cancel();
     }
 
@@ -218,48 +193,10 @@ public class MechCombat : MonoBehaviour
     {
         TickCooldowns(Time.deltaTime);
         TickMelee(Time.deltaTime);
-        if (readPlayerInput) ProcessPlayerInput(Cursor.lockState == CursorLockMode.Locked);
     }
 
     void TickCooldowns(float deltaTime) => melee.TickTimers(deltaTime);
     void TickMelee(float deltaTime) => melee.Tick(deltaTime);
-
-    // TEMPORARY: moves to the player input component in its own step.
-    // External callers disable ReadPlayerInput first and supply their own cursor-capture policy.
-    public void ProcessPlayerInput(bool hasCapturedCursor)
-    {
-        if (!isActiveAndEnabled) return;
-        if (!hasCapturedCursor || Time.timeScale == 0f)
-        {
-            inputArmed = false;
-            return;
-        }
-        bool rightHeld = rightArmAction != null ? rightArmAction.IsPressed() : Mouse.current != null && Mouse.current.rightButton.isPressed;
-        bool right = rightArmAction != null ? rightArmAction.WasPressedThisFrame() : Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame;
-        bool leftShoulderHeld = leftShoulderAction != null ? leftShoulderAction.IsPressed() : Keyboard.current != null && Keyboard.current.qKey.isPressed;
-        bool rightShoulderHeld = rightShoulderAction != null ? rightShoulderAction.IsPressed() : Keyboard.current != null && Keyboard.current.eKey.isPressed;
-        bool leftShoulder = leftShoulderAction != null ? leftShoulderAction.WasPressedThisFrame() : Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame;
-        bool rightShoulder = rightShoulderAction != null ? rightShoulderAction.WasPressedThisFrame() : Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame;
-        bool leftHeld = leftArmAction != null ? leftArmAction.IsPressed() : Mouse.current != null && Mouse.current.leftButton.isPressed;
-        bool left = leftArmAction != null ? leftArmAction.WasPressedThisFrame() : Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
-        // A click to recapture the mouse should not also fire a weapon.
-        if (!inputArmed) { inputArmed = !rightHeld && !leftHeld && !leftShoulderHeld && !rightShoulderHeld; return; }
-        // Holding the swap key with a part selected turns each attack button into
-        // "swap the part in that socket" instead of attacking with it.
-        if (parts != null && parts.IsSwapHeld)
-        {
-            if (left) parts.TrySwapSelectedInto(PartCategory.ArmL);
-            if (right) parts.TrySwapSelectedInto(PartCategory.ArmR);
-            if (leftShoulder) parts.TrySwapSelectedInto(PartCategory.ShoulderL);
-            if (rightShoulder) parts.TrySwapSelectedInto(PartCategory.ShoulderR);
-            return;
-        }
-        if (right || left || leftShoulder || rightShoulder) Physics.SyncTransforms();
-        if (left) TryAttack(PartCategory.ArmL);                // LMB: left arm
-        if (right) TryAttack(PartCategory.ArmR);               // RMB: right arm
-        if (leftShoulder) TryAttack(PartCategory.ShoulderL);   // Q: left shoulder
-        if (rightShoulder) TryAttack(PartCategory.ShoulderR);  // E: right shoulder
-    }
 
     void OnValidate()
     {

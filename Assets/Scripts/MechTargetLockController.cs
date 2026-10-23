@@ -205,6 +205,12 @@ public class MechTargetLockController : MonoBehaviour
         EnterFreeAim();
     }
 
+    // Hard lock re-targets at the start of the frame, before the camera frames it.
+    void Update()
+    {
+        if (!IsFreeAim && hardLockEnabled) RefreshHardLockTarget();
+    }
+
     void LateUpdate()
     {
         if (IsFreeAim) return;

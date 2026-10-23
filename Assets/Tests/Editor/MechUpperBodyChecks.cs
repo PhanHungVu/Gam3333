@@ -31,7 +31,7 @@ public static class MechUpperBodyChecks
         Quaternion bodyRestRotation = torsoMesh.localRotation, headRestRotation = headMesh.localRotation;
         try
         {
-            motor.ReadPlayerInput = false;
+            TestMech.StopPlayerInput(motor);
             Physics.SyncTransforms();
             Step(player, view.transform, 60, Vector2.up);
             var driver = equipment.GetEquipped(PartCategory.Legs).GetComponent<MechLegAnimator>();

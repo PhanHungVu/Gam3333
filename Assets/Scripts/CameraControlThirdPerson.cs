@@ -22,13 +22,10 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     [Header("Player")]
     [SerializeField] Transform target;
-    [SerializeField] InputActionAsset inputActions;
-    InputActionAsset runtimeInputActions;
 
     [Header("Mouse Look")]
     [SerializeField] float lookSensitivity = 0.12f;
     [SerializeField] float initialPitch = 8f;
-    [SerializeField] bool lockCursorOnPlay = true;
     [Header("Shared Soft / Hard Lock Camera")]
     [Tooltip("Allowed mouse adjustment above/below soft-lock pitch. Set to zero to lock it completely.")]
     [SerializeField, Range(0f, 5f)] float lockOnVerticalRange = 3f;
@@ -103,8 +100,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     MechMovementController movementController;
     CharacterController movementCapsule;
     MechTargetLockController targetingController;
-    InputAction lookAction;
-    InputAction lockAction;
+    Vector2 lookInput; // this frame's look delta, supplied by MechPlayerInput
     bool wasHardLocked;
     Vector3 previousTargetPosition;
     float currentLateralOffset;
@@ -182,18 +178,8 @@ public class CameraControlThirdPerson : MonoBehaviour
         ApplySettings();
     }
 
-    void Start()
-    {
-        SetCursorLocked(lockCursorOnPlay);
-    }
-
     void OnEnable()
     {
-        runtimeInputActions = MechInputActions.Create(inputActions);
-        lookAction = runtimeInputActions != null ? runtimeInputActions.FindAction("Player/Look", false) : null;
-        lookAction?.Enable();
-        lockAction = runtimeInputActions != null ? runtimeInputActions.FindAction("Player/LockOn", false) : null;
-        lockAction?.Enable();
         if (cameraRigObject != null)
             cameraRigObject.SetActive(true);
         if (target != null)
@@ -202,40 +188,10 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     void OnDisable()
     {
-        lookAction?.Disable();
-        lockAction?.Disable();
-        MechInputActions.Release(ref runtimeInputActions);
-        lookAction = lockAction = null;
-        targetingController?.CancelLockButtonInput();
         movementFovOffset = 0f;
         assaultFraming = 0f;
         if (cameraRigObject != null)
             cameraRigObject.SetActive(false);
-        SetCursorLocked(false);
-    }
-
-    void Update()
-    {
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-            SetCursorLocked(false);
-        else if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
-            SetCursorLocked(true);
-
-        if (Cursor.lockState != CursorLockMode.Locked || Time.timeScale == 0f || targetingController == null)
-        {
-            targetingController?.CancelLockButtonInput();
-            return;
-        }
-        bool pressed = lockAction != null ? lockAction.WasPressedThisFrame()
-            : Mouse.current != null && Mouse.current.middleButton.wasPressedThisFrame;
-        bool held = lockAction != null ? lockAction.IsPressed()
-            : Mouse.current != null && Mouse.current.middleButton.isPressed;
-        bool released = lockAction != null ? lockAction.WasReleasedThisFrame()
-            : Mouse.current != null && Mouse.current.middleButton.wasReleasedThisFrame;
-        targetingController.ProcessLockButton(pressed, held, released, Time.unscaledDeltaTime);
-        if (!pressed && !held && !released)
-            targetingController.ProcessSwitchInput(Mouse.current != null ? Mouse.current.delta.ReadValue() : Vector2.zero,
-                Time.unscaledDeltaTime);
     }
 
     void LateUpdate()
@@ -338,17 +294,17 @@ public class CameraControlThirdPerson : MonoBehaviour
         return Mathf.Max(cameraRadius, nearCorner + 0.02f);
     }
 
+    // Look input arrives from MechPlayerInput each frame (zero while the cursor is free or paused).
+    public void SetLookInput(Vector2 delta) => lookInput = delta;
+
     void UpdateCameraTargetRotation()
     {
-        Vector2 lookInput = Cursor.lockState != CursorLockMode.Locked || Time.timeScale == 0f ? Vector2.zero
-            : lookAction != null ? lookAction.ReadValue<Vector2>()
-            : Mouse.current != null ? Mouse.current.delta.ReadValue() : Vector2.zero;
         UpdateCameraOrbit(lookInput, Time.deltaTime);
+        lookInput = Vector2.zero;
     }
 
     void UpdateCameraOrbit(Vector2 lookInput, float deltaTime)
     {
-        targetingController?.RefreshHardLockTarget();
         bool targetingActive = targetingController != null && targetingController.isActiveAndEnabled
             && !targetingController.IsFreeAim;
         bool hardLocked = targetingActive && targetingController.IsHardLocked;
@@ -427,12 +383,6 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     Vector3 ShoulderOffset() => new Vector3((cameraSide + currentLateralOffset)
         * (1f - meleeFraming * meleeShoulderCentering), shoulderHeight, 0f);
-
-    static void SetCursorLocked(bool locked)
-    {
-        Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
-        Cursor.visible = !locked;
-    }
 
     void OnValidate()
     {

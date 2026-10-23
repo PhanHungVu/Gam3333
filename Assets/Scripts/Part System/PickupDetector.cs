@@ -25,6 +25,10 @@ public class PickupDetector : MonoBehaviour
     GameObject highlightElement;
     PartType? highlightType;
     int selectedIndex = -1;
+    bool cycleRequested;
+
+    // Called by player input (CyclePart): move the highlight to the next nearby part.
+    public void CycleSelection() => cycleRequested = true;
 
     void Awake()
     {
@@ -47,6 +51,8 @@ public class PickupDetector : MonoBehaviour
     }
     private void Update()
     {
+        bool cycle = cycleRequested;
+        cycleRequested = false;
         if (manager == null) return;
         RebuildUnique();
         int count = uniqueParts.Count;
@@ -71,7 +77,7 @@ public class PickupDetector : MonoBehaviour
             // also guards against a stale index after parts leave the range
             if (selectedIndex < 0 || selectedIndex >= count) selectedIndex = 0;
 
-            if (Keyboard.current != null && Keyboard.current.vKey.wasPressedThisFrame)
+            if (cycle)
                 selectedIndex = (selectedIndex + 1) % count;
         }
 

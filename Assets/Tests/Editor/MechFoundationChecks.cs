@@ -1065,6 +1065,7 @@ public static class MechFoundationChecks
         replacement.gameObject.AddComponent<CombatHealth>();
         Physics.SyncTransforms();
         health.ApplyDamage(1000);
+        Call(targeting, "Update"); // frame order: targeting re-targets before the camera frames
         Call(control, "UpdateCameraOrbit", Vector2.zero, 0.02f);
         Check(targeting.IsHardLocked && targeting.CurrentTarget == replacement
             && (float)Get(control, "currentLockHeight") > 1.49f,
@@ -1188,26 +1189,15 @@ public static class MechFoundationChecks
         var player = new GameObject("Input Lifecycle Player");
         player.SetActive(false);
         player.transform.position = new Vector3(7000, 2, 0);
-        var movement = player.AddComponent<MechMovementController>();
-        var combat = player.AddComponent<MechCombat>();
-        Set(movement, "inputActions", source);
-        Set(combat, "inputActions", source);
-        var cameraRoot = new GameObject("Input Lifecycle Camera");
-        cameraRoot.SetActive(false);
-        cameraRoot.AddComponent<Camera>();
-        var camera = cameraRoot.AddComponent<CameraControlThirdPerson>();
-        Set(camera, "target", player.transform);
-        Set(camera, "inputActions", source);
+        player.AddComponent<MechMovementController>();
+        var input = player.AddComponent<MechPlayerInput>();
+        Set(input, "inputActions", source);
         player.SetActive(true);
-        cameraRoot.SetActive(true);
-        var moveCopy = (InputActionAsset)Get(movement, "runtimeInputActions");
-        var combatCopy = (InputActionAsset)Get(combat, "runtimeInputActions");
-        var cameraCopy = (InputActionAsset)Get(camera, "runtimeInputActions");
-        Check(moveCopy != source && combatCopy != source && cameraCopy != source
-            && moveCopy != combatCopy && cameraCopy != combatCopy,
-            "Movement, combat, and camera own separate runtime action state");
-        Check(moveCopy.FindAction("Player/Move").enabled && combatCopy.FindAction("Player/Cannon").enabled
-            && cameraCopy.FindAction("Player/Look").enabled, "Runtime copies enable their mapped gameplay inputs");
+        var copy = (InputActionAsset)Get(input, "runtimeInputActions");
+        Check(copy != null && copy != source, "Player input owns its own runtime copy of the action layout");
+        Check(copy.FindAction("Player/Move").enabled && copy.FindAction("Player/Look").enabled && copy.FindAction("Player/Cannon").enabled
+            && copy.FindAction("Player/SwapPart").enabled && copy.FindAction("Player/CyclePart").enabled,
+            "The runtime copy enables every mapped gameplay input");
         int errors = 0;
         Application.LogCallback onLog = (message, stack, type) =>
         {
@@ -1217,34 +1207,30 @@ public static class MechFoundationChecks
         Gamepad pad = null;
         try
         {
-            // Source layout edits cannot mutate the active controllers' native state.
+            // Source layout edits cannot mutate the running input's native state.
             source.Disable();
             source.FindActionMap("Player").AddAction("FutureWeapon").AddBinding("<Keyboard>/r");
             source.Enable();
-            Check(combatCopy.FindAction("Player/FutureWeapon", false) == null,
+            Check(copy.FindAction("Player/FutureWeapon", false) == null,
                 "Changing the source layout leaves a running input snapshot unchanged");
             for (int i = 0; i < 3; i++)
             {
                 pad = InputSystem.AddDevice<Gamepad>();
                 InputSystem.Update();
-                combat.enabled = false;
-                Check(source.FindAction("Player/Attack").enabled && moveCopy.FindAction("Player/Move").enabled
-                    && Get(combat, "runtimeInputActions") == null,
-                    "Disabling combat releases only its copy, leaving shared/UI and movement input enabled");
-                combat.enabled = true;
-                var refreshed = (InputActionAsset)Get(combat, "runtimeInputActions");
-                Check(refreshed.FindAction("Player/FutureWeapon", false) != null
-                    && refreshed.FindAction("Player/Cannon").enabled,
-                    "Re-enabling combat reads the latest source layout into fresh state");
+                input.enabled = false;
+                Check(source.FindAction("Player/Attack").enabled && Get(input, "runtimeInputActions") == null,
+                    "Disabling player input releases only its copy, leaving project-wide input enabled");
+                input.enabled = true;
+                var refreshed = (InputActionAsset)Get(input, "runtimeInputActions");
+                Check(refreshed.FindAction("Player/FutureWeapon", false) != null && refreshed.FindAction("Player/Cannon").enabled,
+                    "Re-enabling player input reads the latest source layout into fresh state");
                 InputSystem.RemoveDevice(pad);
                 pad = null;
                 InputSystem.Update();
             }
             player.SetActive(false);
-            cameraRoot.SetActive(false);
-            Check(Get(movement, "runtimeInputActions") == null && Get(camera, "runtimeInputActions") == null
-                && source.FindAction("Player/Look").enabled,
-                "Camera and movement clean up their copies without disabling project-wide input");
+            Check(Get(input, "runtimeInputActions") == null && source.FindAction("Player/Look").enabled,
+                "Player input cleans up its copy without disabling project-wide input");
             Check(errors == 0, "Device connection/removal and lifecycle changes produce no input assertions or errors");
         }
         finally
@@ -1252,7 +1238,6 @@ public static class MechFoundationChecks
             if (pad != null) InputSystem.RemoveDevice(pad);
             Application.logMessageReceived -= onLog;
             player.SetActive(false);
-            cameraRoot.SetActive(false);
             Object.DestroyImmediate(source);
         }
     }
