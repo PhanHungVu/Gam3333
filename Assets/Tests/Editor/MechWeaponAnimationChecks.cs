@@ -8,11 +8,11 @@ public static class MechWeaponAnimationChecks
 {
     public static void Run(Action<bool, string> check)
     {
-        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(MechAnimatedLegsSetup.PlayerPath),
+        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.PlayerPath),
             new Vector3(46000, 1.6f, 0), Quaternion.identity);
         var equipment = player.GetComponent<EquipManager>();
         var combat = player.GetComponent<MechCombat>();
-        var source = AssetDatabase.LoadAssetAtPath<GameObject>(MechWeaponAnimationSetup.Source);
+        var source = AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.WeaponAnimationModel);
         var sets = AssetDatabase.LoadAssetAtPath<MechWeaponAnimationImportSettings>(MechWeaponAnimationImport.SettingsPath);
         var detached = new System.Collections.Generic.List<GameObject>();
         var reference = Object.Instantiate(source);

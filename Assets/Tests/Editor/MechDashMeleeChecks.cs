@@ -16,7 +16,7 @@ public static class MechDashMeleeChecks
         foreach (var binding in dash.bindings)
         { shift |= binding.path == "<Keyboard>/leftShift"; alt |= binding.path == "<Keyboard>/leftAlt"; stick |= binding.path == "<Gamepad>/leftStickPress"; }
         check(shift && stick && !alt, "Dash uses former sprint bindings, including Left Shift, and no longer uses Alt");
-        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(MechAnimatedLegsSetup.PlayerPath),
+        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.PlayerPath),
             new Vector3(65000f, 2f, 0f), Quaternion.identity);
         var cleanup = new List<GameObject>();
         try

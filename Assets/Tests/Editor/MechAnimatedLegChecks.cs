@@ -8,7 +8,7 @@ public static class MechAnimatedLegChecks
 {
     public static void Run(Action<bool, string> check)
     {
-        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(MechAnimatedLegsSetup.PlayerPath);
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.PlayerPath);
         var player = Object.Instantiate(prefab, new Vector3(32000, 1.6f, 0), Quaternion.identity);
         var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
         floor.transform.position = new Vector3(32000, -0.5f, 0);

@@ -36,7 +36,7 @@ public static class MechEnemyCombatChecks
     }
     public static void Run(Action<bool, string> check)
     {
-        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(MechAnimatedLegsSetup.PlayerPath),
+        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.PlayerPath),
             new Vector3(52000f, 2f, 0f), Quaternion.identity);
         EnemyAttack mace = null, crossbow = null;
         GameObject wall = null;
@@ -53,7 +53,7 @@ public static class MechEnemyCombatChecks
             float before = health.CurrentHealth;
             check(mace.TryAttack() && mace.Weapon.CurrentPose == MechWeaponAnimator.PoseState.Fire
                 && health.CurrentHealth == before, "Mace starts its windup animation without instant damage");
-            check(mace.Weapon.GetComponentInChildren<AudioSource>().clip == MechSfxSetup.Clip("Mace_attack"),
+            check(mace.Weapon.GetComponentInChildren<AudioSource>().clip == TestMech.Sound("Mace_attack"),
                 "Enemy mace windup plays the authored mace attack sound");
             Step(mace, 0.2f);
             check(health.CurrentHealth == before && mace.Weapon.NormalizedTime > 0f,
@@ -85,7 +85,7 @@ public static class MechEnemyCombatChecks
             before = health.CurrentHealth;
             check(crossbow.TryAttack() && crossbow.Weapon.CurrentPose == MechWeaponAnimator.PoseState.Fire,
                 "Crossbow enemy starts the correct arm Fire animation");
-            check(crossbow.Weapon.GetComponentInChildren<AudioSource>().clip == MechSfxSetup.Clip("CrossbowArm_attack"),
+            check(crossbow.Weapon.GetComponentInChildren<AudioSource>().clip == TestMech.Sound("CrossbowArm_attack"),
                 "Enemy crossbow windup plays the authored arm crossbow sound");
             Step(crossbow, 0.2f);
             check(!Object.FindObjectsByType<MechProjectile>().Any(p => p.name == "Enemy Crossbow Bolt"),

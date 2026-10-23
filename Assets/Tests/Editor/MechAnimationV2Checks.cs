@@ -8,7 +8,7 @@ public static class MechAnimationV2Checks
 {
     public static void Run(Action<bool, string> check)
     {
-        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(MechAnimatedLegsSetup.PlayerPath),
+        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.PlayerPath),
             new Vector3(40000, 1.6f, 0), Quaternion.identity);
         var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
         floor.transform.position = new Vector3(40000, -0.5f, 0);
@@ -120,7 +120,7 @@ public static class MechAnimationV2Checks
     {
         check(driver.CurrentPose == MechLegAnimator.PoseState.Neutral, "Stopped module selects its authored Neutral");
         var clip = driver.Animator.GetCurrentAnimatorClipInfo(0).Single(c => c.weight > 0.99f).clip;
-        var reference = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(MechAnimatedLegsSetup.Source));
+        var reference = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.LegsModel));
         try
         {
             clip.SampleAnimation(reference, driver.NormalizedPhase * clip.length);

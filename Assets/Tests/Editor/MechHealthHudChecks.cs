@@ -10,8 +10,8 @@ public static class MechHealthHudChecks
 {
     public static void Run(Action<bool, string> check)
     {
-        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(MechAnimatedLegsSetup.PlayerPath);
-        var viewPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(MechHealthHudSetup.HudPath);
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.PlayerPath);
+        var viewPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.HealthHudPath);
         check(prefab.GetComponentInChildren<MechHealthHud>(true) == null, "Player prefab contains no health UI");
         check(viewPrefab.GetComponent<Canvas>() == null && viewPrefab.GetComponent<CombatHealth>() == null
             && viewPrefab.GetComponent<CanvasGroup>() != null && viewPrefab.transform.childCount == 3,
@@ -25,7 +25,7 @@ public static class MechHealthHudChecks
             "Health meter references all three supplied HP sprites");
         foreach (var graphic in viewPrefab.GetComponentsInChildren<Graphic>(true)) check(!graphic.raycastTarget, "Health artwork never consumes clicks");
         var player = Object.Instantiate(prefab, new Vector3(100000f, 2f, 0f), Quaternion.identity);
-        var ui = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(MechHealthHudSetup.CursorPath));
+        var ui = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.CursorPath));
         try
         {
             var hud = ui.GetComponentInChildren<MechHealthHud>();

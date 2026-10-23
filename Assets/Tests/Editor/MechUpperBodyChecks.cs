@@ -8,13 +8,13 @@ public static class MechUpperBodyChecks
 {
     public static void Run(Action<bool, string> check)
     {
-        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(MechAnimatedLegsSetup.PlayerPath),
+        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.PlayerPath),
             new Vector3(36000, 1.6f, 0), Quaternion.identity);
         var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
         floor.transform.SetPositionAndRotation(new Vector3(36000, -0.5f, 0), Quaternion.identity);
         floor.transform.localScale = new Vector3(300, 1, 300);
         var view = new GameObject("Upper Body Check View");
-        var reference = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(MechAnimatedLegsSetup.Source));
+        var reference = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.LegsModel));
         var equipment = player.GetComponent<EquipManager>();
         var motor = player.GetComponent<MechMovementController>();
         var presentation = player.GetComponent<MechUpperBodyAnimation>();

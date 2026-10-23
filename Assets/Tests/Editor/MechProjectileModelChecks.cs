@@ -17,8 +17,8 @@ public static class MechProjectileModelChecks
     {
         if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) return;
         var center = new Vector3(80000f, 2f, 0f);
-        var bolt = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(MechProjectileModelSetup.BoltPath), center + Vector3.left * 0.6f, Quaternion.identity);
-        var axe = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(MechProjectileModelSetup.AxePath), center + Vector3.right * 0.6f, Quaternion.identity);
+        var bolt = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.BoltPath), center + Vector3.left * 0.6f, Quaternion.identity);
+        var axe = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.AxePath), center + Vector3.right * 0.6f, Quaternion.identity);
         var camera = new GameObject("Projectile Model Preview").AddComponent<Camera>();
         var light = new GameObject("Projectile Preview Light").AddComponent<Light>();
         var texture = new RenderTexture(1280, 720, 24);
@@ -62,7 +62,7 @@ public static class MechProjectileModelChecks
 
     public static void Run(Action<bool, string> check)
     {
-        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(MechAnimatedLegsSetup.PlayerPath),
+        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.PlayerPath),
             new Vector3(56000f, 2f, 0f), Quaternion.identity);
         var view = new GameObject("Projectile Model Aim").AddComponent<Camera>();
         var cleanup = new List<GameObject>();

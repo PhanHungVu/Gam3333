@@ -10,7 +10,7 @@ public static class MechStatsChecks
 {
     public static void Run(Action<bool, string> check)
     {
-        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(MechAnimatedLegsSetup.PlayerPath),
+        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.PlayerPath),
             new Vector3(47000, 1.6f, 0), Quaternion.identity);
         var detached = new List<GameObject>();
         try

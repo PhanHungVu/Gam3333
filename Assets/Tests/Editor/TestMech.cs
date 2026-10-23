@@ -1,11 +1,24 @@
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEditor;
 using UnityEngine;
 
 // Builds part-based test mechs for the combat checks: test parts with fixed stats, so checks stay
 // independent of real part balance. The default weapons match the old built-in loadout's numbers.
 public static class TestMech
 {
+    // Assets the checks load.
+    public const string PlayerPath = "Assets/Prefabs/Mech/Base/FullPlayer_mech_base.prefab";
+    public const string LocomotionFolder = "Assets/Prefabs/Mech/Locomotion";
+    public const string LegsModel = "Assets/Anim/golem2_v2.glb";
+    public const string WeaponAnimationModel = "Assets/Anim/golem2_v3.glb";
+    public const string HealthHudPath = "Assets/Prefabs/UI/Player Health HUD.prefab";
+    public const string CursorPath = "Assets/Prefabs/Mech Cursor Canvas.prefab";
+    public const string BoltPath = "Assets/Prefabs/Combat/Projectiles/CrossbowBolt.prefab";
+    public const string AxePath = "Assets/Prefabs/Combat/Projectiles/ThrowingAxe.prefab";
+    public static readonly string[] WeaponSounds = { "StoneSword_attack", "ThrowingAxe_attack", "Cannon_attack", "Crossbow_attack", "Mace_attack", "CrossbowArm_attack" };
+    public static AudioClip Sound(string name) => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/SFX/" + name + ".wav");
+
     static readonly FieldInfo ReadyAtField =
         typeof(Part).GetField("<ReadyAt>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
     static readonly MethodInfo TickCombatTimers =

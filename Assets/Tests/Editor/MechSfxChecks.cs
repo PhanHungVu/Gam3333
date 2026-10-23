@@ -14,14 +14,14 @@ public static class MechSfxChecks
 
     public static void Run(Action<bool, string> check)
     {
-        foreach (string name in MechSfxSetup.Sounds.Concat(new[] { "Golem1Legs_Move" }))
+        foreach (string name in TestMech.WeaponSounds.Concat(new[] { "Golem1Legs_Move" }))
         {
-            var clip = MechSfxSetup.Clip(name);
+            var clip = TestMech.Sound(name);
             check(clip != null && clip.length > 0f && clip.channels == 1 && clip.LoadAudioData(), name + " is imported as a ready spatial audio clip");
             var samples = new float[clip.samples * clip.channels];
             check(clip.GetData(samples, 0) && samples.Any(s => Mathf.Abs(s) > 0.01f), name + " contains playable, non-silent audio");
         }
-        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(MechAnimatedLegsSetup.PlayerPath), new Vector3(60000f, 1.6f, 0f), Quaternion.identity);
+        var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.PlayerPath), new Vector3(60000f, 1.6f, 0f), Quaternion.identity);
         var plane = GameObject.CreatePrimitive(PrimitiveType.Plane); plane.transform.position = new Vector3(60000f, 0f, 0f);
         plane.transform.localScale = Vector3.one * 10f;
         var camera = new GameObject("SFX Aim").AddComponent<Camera>();
@@ -47,7 +47,7 @@ public static class MechSfxChecks
                 if (i == 0 || i == 4) check(combat.TryAttack(PartCategory.ArmL).Started, parts[i] + " admits its melee/preview attack");
                 else shot = i == 2 ? combat.TryAttack(PartCategory.ShoulderL).Projectile : i == 3 ? combat.TryAttack(PartCategory.ShoulderR).Projectile : combat.TryAttack(PartCategory.ArmR).Projectile;
                 var source = AttackSource(driver);
-                check(source != null && source.clip == MechSfxSetup.Clip(MechSfxSetup.Sounds[i]) && source.isPlaying,
+                check(source != null && source.clip == TestMech.Sound(TestMech.WeaponSounds[i]) && source.isPlaying,
                     parts[i] + " accepted attack plays exactly its assigned sound");
                 check(source.volume == driver.Animations.attackVolume && !source.playOnAwake && source.spatialBlend > 0f,
                     parts[i] + " attack has configured volume and spatial playback");
@@ -71,7 +71,7 @@ public static class MechSfxChecks
             check(audio.transform.Find("Leg Movement Audio") == null, "Idle player has no movement audio voice");
             for (int i = 0; i < 30; i++) movement.Tick(new MechLocomotionInput { move = Vector2.up }, camera.transform, 0.02f);
             MovementTick(audio); var walking = audio.transform.Find("Leg Movement Audio").GetComponent<AudioSource>();
-            check(walking.isPlaying && walking.loop && walking.clip == MechSfxSetup.Clip("Golem1Legs_Move"), "Resolved grounded walking starts the leg movement loop");
+            check(walking.isPlaying && walking.loop && walking.clip == TestMech.Sound("Golem1Legs_Move"), "Resolved grounded walking starts the leg movement loop");
             float walkPitch = walking.pitch;
             for (int i = 0; i < 30; i++) movement.Tick(new MechLocomotionInput { move = Vector2.up, sprint = true }, camera.transform, 0.02f);
             MovementTick(audio);
