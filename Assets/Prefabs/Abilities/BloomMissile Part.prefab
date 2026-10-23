@@ -91,7 +91,6 @@ MonoBehaviour:
   testKey: 0
   activationCooldown: 2
   activateOnWeaponImpact: 0
-  sourceWeapon: 0
 --- !u!114 &6794681628262941557
 MonoBehaviour:
   m_ObjectHideFlags: 0

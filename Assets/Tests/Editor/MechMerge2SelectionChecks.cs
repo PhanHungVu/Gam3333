@@ -89,8 +89,8 @@ public static class MechMerge2SelectionChecks
             Check(motor.GetComponent<MechLocomotionDebug>().TrySwap(0), "Fast default remains available after a swap");
             Check(!equipment.TryEquip(heavy, PartCategory.Head) && heavy.partType == PartType.Legs,
                 "Invalid destination rejects the swap without changing part identity");
-            Check(motor.GetComponent<MechEquipmentCombat>().HasSword
-                && motor.GetComponent<MechEquipmentCombat>().HasWeapon(MechWeaponType.ThrowingAxe),
+            Check(motor.GetComponent<MechCombat>().SubtypeOf(PartCategory.ArmL) == PartSubtype.Melee
+                && motor.GetComponent<MechCombat>().SubtypeOf(PartCategory.ArmR) == PartSubtype.Projectile,
                 "Restored weapon and animation bridges survive swaps");
         }
         finally

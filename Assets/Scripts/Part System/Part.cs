@@ -3,6 +3,8 @@ using UnityEngine;
 public class Part : MonoBehaviour
 {
     public Transform recoilVisual;
+    [Tooltip("Direction the recoil visual kicks, in its local space.")]
+    public Vector3 recoilAxis = Vector3.left;
     public Transform muzzle;
     public Vector3 authoredScale = Vector3.one;
     public PartData data;    

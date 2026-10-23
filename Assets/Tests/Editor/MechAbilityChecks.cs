@@ -43,7 +43,7 @@ public static class MechAbilityChecks
         var floor = Wall(origin + Vector3.down * 1.25f, new Vector3(200, 0.5f, 200));
         var player = new GameObject("Ability Owner");
         player.SetActive(false); player.transform.position = origin;
-        var combat = player.AddComponent<MechCombatController>();
+        var combat = player.AddComponent<MechCombat>();
         TestMech.Equip(player, (PartCategory.ShoulderL, TestMech.Cannon()), (PartCategory.ShoulderR, TestMech.Crossbow()));
         var movement = player.AddComponent<MechMovementController>();
         var ownerHealth = player.AddComponent<CombatHealth>();
@@ -80,14 +80,14 @@ public static class MechAbilityChecks
         foreach (var ability in abilities) ability.enabled = true;
         Set(movement, "quickBoostTimer", 0.2f);
         Set(movement, "quickBoostDirection", Vector3.right);
-        int ammo = combat.AmmoRemaining(MechWeaponType.Cannon);
+        int ammo = combat.AmmoRemaining(PartCategory.ShoulderL);
         Quaternion cameraRotation = view.transform.rotation;
         for (int i = 0; i < abilities.Length; i++)
             check(abilities[i].TryActivate(new MechAbilityContext(player.transform, origin, Vector3.forward, feedback: feedback)),
                 "Independent part activation is allowed during boost");
         foreach (var ability in abilities) ability.Tick(0.05f);
         check(movement.IsQuickBoosting && (Vector3)Field(movement, "quickBoostDirection").GetValue(movement) == Vector3.right
-            && combat.AmmoRemaining(MechWeaponType.Cannon) == ammo && view.transform.rotation == cameraRotation,
+            && combat.AmmoRemaining(PartCategory.ShoulderL) == ammo && view.transform.rotation == cameraRotation,
             "Concurrent abilities preserve boost state/direction, weapon ammo and camera orientation");
         foreach (var ability in abilities) ability.Cancel();
         Call(feedback, "Tick", 2f);
@@ -116,11 +116,11 @@ public static class MechAbilityChecks
         part.GetComponent<Part>().isEquipped = true; // Explicit manual attachment for the legacy prototype fixture.
         driver.BindOwner(player.transform);
         Set(driver, "activateOnWeaponImpact", true);
-        Set(driver, "sourceWeapon", MechWeaponType.Crossbow);
+        Set(driver, "sourceSocket", PartCategory.ShoulderR);
         Set(driver, "activationCooldown", 0f);
         var target = Enemy(origin + Vector3.forward * 5);
         Physics.SyncTransforms();
-        var shot = combat.TryFire(PartCategory.ShoulderR);
+        var shot = combat.TryAttack(PartCategory.ShoulderR).Projectile;
         Call(shot, "Step", 0.2f);
         check(part.GetComponent<MechPartAbility>().IsActive && target.CurrentHealth == 70,
             "Generic impact adapter equips Resonance on crossbow without changing original projectile damage");

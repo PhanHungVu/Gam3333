@@ -57,7 +57,7 @@ public static class MechWeaponAnimationSceneChecks
         if (!SessionState.GetBool(Pending, false) || !EditorApplication.isPlaying || EditorApplication.isCompiling) return;
         // Batch Unity has no native cursor capture. Keep the real input asset and
         // dispatch code; supply captured-cursor policy through its public boundary.
-        if (motor != null) motor.GetComponent<MechCombatController>().ProcessPlayerInput(true);
+        if (motor != null) motor.GetComponent<MechCombat>().ProcessPlayerInput(true);
         if (next < 0f) { next = Time.time + 1.2f; deadline = Time.time + 30f; }
         if (Time.time < next) return;
         try
@@ -76,9 +76,9 @@ public static class MechWeaponAnimationSceneChecks
                     equipment = motor.GetComponent<EquipManager>();
                     originalSword = equipment.GetEquipped(PartCategory.ArmL);
                     originalAxe = equipment.GetEquipped(PartCategory.ArmR);
-                    motor.GetComponent<MechCombatController>().ShotFired += _ => shots++;
-                    motor.GetComponent<MechCombatController>().ReadPlayerInput = false;
-                    var data = new SerializedObject(motor.GetComponent<MechCombatController>());
+                    motor.GetComponent<MechCombat>().ShotFired += _ => shots++;
+                    motor.GetComponent<MechCombat>().ReadPlayerInput = false;
+                    var data = new SerializedObject(motor.GetComponent<MechCombat>());
                     data.FindProperty("showMeleeBox").boolValue = false; data.ApplyModifiedPropertiesWithoutUndo();
                     keyboard = InputSystem.AddDevice<Keyboard>(); mouse = InputSystem.AddDevice<Mouse>();
                     Cursor.lockState = CursorLockMode.Locked;
@@ -107,7 +107,7 @@ public static class MechWeaponAnimationSceneChecks
                     Check(motor.AnimationData.Speed > 0f, "Sword attack runs alongside existing locomotion");
                     Check(motor.transform.Find("Leg Movement Audio")?.GetComponent<AudioSource>().isPlaying == true,
                         "Actual walking input starts the movement SFX alongside combat");
-                    Check(motor.GetComponent<MechEquipmentCombat>().IdleWeapon == null,
+                    Check(motor.GetComponent<MechWeaponIdle>().IdleWeapon == null,
                         "Actual movement and attack cancel the stationary Neutral selection");
                     Capture("sword-fire"); Button(); Keys(); delay = 0.5f; break;
                 case 3: Button(MouseButton.Right); delay = 0.15f; break;

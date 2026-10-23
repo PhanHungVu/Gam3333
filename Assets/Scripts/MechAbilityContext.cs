@@ -5,13 +5,14 @@ public readonly struct MechAbilityContext
     public readonly Transform Owner;
     public readonly Vector3 Origin, Direction;
     public readonly MechTargetable Target;
-    public readonly MechWeaponStats WeaponStats;
+    // The part whose hit triggered this activation, if any (its stats can scale the ability).
+    public readonly Part SourcePart;
     public readonly LayerMask HitLayers;
     public readonly CombatFeedback Feedback;
     public MechAbilityContext(Transform owner, Vector3 origin, Vector3 direction, MechTargetable target = null,
-        MechWeaponStats weaponStats = null, LayerMask? hitLayers = null, CombatFeedback feedback = null)
+        Part sourcePart = null, LayerMask? hitLayers = null, CombatFeedback feedback = null)
     {
-        Owner = owner; Origin = origin; Direction = direction; Target = target; WeaponStats = weaponStats;
+        Owner = owner; Origin = origin; Direction = direction; Target = target; SourcePart = sourcePart;
         HitLayers = hitLayers ?? (LayerMask)~0; Feedback = feedback;
     }
 }

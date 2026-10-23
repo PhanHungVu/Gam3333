@@ -16,8 +16,8 @@ public sealed class MechWeaponAnimator : MonoBehaviour
     [Tooltip("The displayed axe/bolt follows the rig while loaded, and hides until reloaded after a shot.")]
     [SerializeField] Renderer[] loadedProjectileRenderers = new Renderer[0];
     Part part;
-    MechCombatController owner;
-    MechEquipmentCombat equipment;
+    MechCombat owner;
+    MechWeaponIdle equipment;
     EnemyAttack enemyOwner;
     AudioSource attackAudio;
     PlayableGraph graph;
@@ -123,12 +123,12 @@ public sealed class MechWeaponAnimator : MonoBehaviour
     void BindOwner()
     {
         enemyOwner = isActiveAndEnabled && part != null && part.isEquipped ? GetComponentInParent<EnemyAttack>() : null;
-        var next = isActiveAndEnabled && part != null && part.isEquipped && part.EquippedBy != null ? part.EquippedBy.GetComponent<MechCombatController>() : null;
+        var next = isActiveAndEnabled && part != null && part.isEquipped && part.EquippedBy != null ? part.EquippedBy.GetComponent<MechCombat>() : null;
         if (next == owner) return;
         if (attackAudio != null) attackAudio.Stop();
         if (owner != null) owner.WeaponAttackStarted -= OnAttack;
         owner = next;
-        equipment = owner != null ? owner.GetComponent<MechEquipmentCombat>() : null;
+        equipment = owner != null ? owner.GetComponent<MechWeaponIdle>() : null;
         if (owner != null) owner.WeaponAttackStarted += OnAttack;
         if (graph.IsValid()) { age = 0f; ChangePose(PoseState.Neutral); }
     }

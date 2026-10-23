@@ -16008,7 +16008,6 @@ GameObject:
   - component: {fileID: 3300747675196267006}
   - component: {fileID: 6057257043024523587}
   - component: {fileID: 4847610582748452699}
-  - component: {fileID: 259791631179473285}
   - component: {fileID: 5100146461133784099}
   - component: {fileID: 6889486293204489853}
   - component: {fileID: 8456050643938572305}
@@ -16016,6 +16015,8 @@ GameObject:
   - component: {fileID: 2323618638901885361}
   - component: {fileID: 7013231834875586270}
   - component: {fileID: 525387700647639762}
+  - component: {fileID: 327758736479981224}
+  - component: {fileID: 732845130996398655}
   m_Layer: 0
   m_Name: FullPlayer_mech_base
   m_TagString: Player
@@ -16076,53 +16077,6 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   muzzleOffset: {x: 0.65, y: 0.5, z: 0.65}
-  throwingAxe:
-    displayName: Throwing axe
-    damage: 50
-    ammunition: 30
-    reloadSeconds: 0.5
-    effectiveRange: 12
-    maximumRange: 18
-    projectileSpeed: 100
-    projectileRadius: 0.18
-    explosionRadius: 0
-    color: {r: 0.3, g: 0.9, b: 1, a: 1}
-  cannon:
-    displayName: Cannon
-    damage: 100
-    ammunition: 20
-    reloadSeconds: 3
-    effectiveRange: 20
-    maximumRange: 30
-    projectileSpeed: 100
-    projectileRadius: 0.3
-    explosionRadius: 6
-    color: {r: 1, g: 0.5, b: 0.15, a: 1}
-  crossbow:
-    displayName: Large crossbow
-    damage: 30
-    ammunition: 50
-    reloadSeconds: 1
-    effectiveRange: 40
-    maximumRange: 60
-    projectileSpeed: 160
-    projectileRadius: 0.07
-    explosionRadius: 0
-    color: {r: 1, g: 0.9, b: 0.3, a: 1}
-  armCrossbow:
-    displayName: Arm crossbow
-    damage: 100
-    ammunition: 30
-    reloadSeconds: 2
-    effectiveRange: 20
-    maximumRange: 30
-    projectileSpeed: 160
-    projectileRadius: 0.07
-    explosionRadius: 0
-    color: {r: 1, g: 0.9, b: 0.3, a: 1}
-  crossbowProjectilePrefab: {fileID: 1465189720993408064, guid: ed7887b3b88626a4089da49f33479a2a, type: 3}
-  throwingAxeProjectilePrefab: {fileID: 1132485043371751997, guid: 6a5d247746bc0274d81f1d2797c0fd56, type: 3}
-  spiralBarrage: 0
   spiralSettings:
     nodeCount: 8
     angularIncrement: 137.5
@@ -16136,9 +16090,6 @@ MonoBehaviour:
     maximumSecondaryTargets: 5
   meleeCenter: {x: 0, y: 0, z: 2.75}
   meleeSize: {x: 5, y: 3.5, z: 5.5}
-  meleeDamage: 100
-  meleeCooldown: 0.7
-  showMeleeBox: 1
   maximumMeleeApproach: 1
   maximumMeleeAssistAngle: 30
   meleeApproachDuration: 0.12
@@ -16368,19 +16319,6 @@ MonoBehaviour:
   leanResponse: 0.12
   showThrusters: 1
   playAudio: 1
---- !u!114 &259791631179473285
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3053454427299694765}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f32834dbb9502634c88d8de4b2608632, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::MechEquipmentCombat
-  weaponIdleDelay: 3
 --- !u!114 &5100146461133784099
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -76831,3 +76769,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a22b2bcb94884e68a023d7d643bc5e92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechStats
+--- !u!114 &327758736479981224
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3053454427299694765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6d46aaaa823483587a36b4e35a57f01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MechWeaponIdle
+  weaponIdleDelay: 3
+--- !u!114 &732845130996398655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3053454427299694765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8149786338b64b96a8f3fe81f45855fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeleeBoxPreview
+  material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
+  showMeleeBox: 1

@@ -143,7 +143,7 @@ public static class MechWeaponAnimationSetup
         data.FindProperty("animations").objectReferenceValue = entry.target;
         data.FindProperty("placement").objectReferenceValue = marker;
         data.ApplyModifiedPropertiesWithoutUndo();
-        if (part.data.weapon == MechPartWeapon.Cannon) part.recoilVisual = null;
+        if (part.data.subtype == PartSubtype.Explosive) part.recoilVisual = null;
         Debug.Log("WEAPON RIG BUILT " + part.name + " set=" + entry.target.name + " meshes=" + oldMeshes.Length
             + " local=" + wrapper.transform.localPosition + " rot=" + wrapper.transform.localEulerAngles + " scale=" + wrapper.transform.localScale);
     }

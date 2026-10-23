@@ -34,8 +34,8 @@ public abstract class MechPartAbility : MonoBehaviour
             || !context.Owner.gameObject.activeInHierarchy) return false;
         Context = context;
         Feedback = context.Feedback != null ? context.Feedback : context.Owner.GetComponent<CombatFeedback>();
-        Damage = Mathf.Max(0, useWeaponDamage && context.WeaponStats != null
-            ? context.WeaponStats.damage * weaponDamageMultiplier : damage);
+        Damage = Mathf.Max(0, useWeaponDamage && context.SourcePart != null && context.SourcePart.Stats != null
+            ? context.SourcePart.Stats.GetStat(StatType.Damage) * weaponDamageMultiplier : damage);
         Tint = effectColor;
         DetonationLimit = Mathf.Clamp(maximumDetonations, 1, 32);
         if (Feedback != null && !Feedback.CanReserveAbilityEffects(RequiredVisuals))

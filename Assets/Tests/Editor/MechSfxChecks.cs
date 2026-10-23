@@ -29,7 +29,7 @@ public static class MechSfxChecks
         try
         {
             var equipment = player.GetComponent<EquipManager>();
-            var combat = player.GetComponent<MechCombatController>(); combat.ReadPlayerInput = false; combat.BindCamera(camera);
+            var combat = player.GetComponent<MechCombat>(); combat.ReadPlayerInput = false; combat.BindCamera(camera);
             var movement = player.GetComponent<MechMovementController>(); movement.ReadPlayerInput = false;
             string[] parts = { "arm_sword", "arm_throwingaxe", "shoulder_cannon", "shoulder_crossbow", "arm_mace", "arm_crossbow" };
             PartCategory[] slots = { PartCategory.ArmL, PartCategory.ArmR, PartCategory.ShoulderL, PartCategory.ShoulderR, PartCategory.ArmL, PartCategory.ArmR };
@@ -44,16 +44,16 @@ public static class MechSfxChecks
                 camera.transform.SetPositionAndRotation(part.muzzle != null ? part.muzzle.position : player.transform.position, Quaternion.identity);
                 Physics.SyncTransforms();
                 MechProjectile shot = null;
-                if (i == 0 || i == 4) check(combat.TryMelee(), parts[i] + " admits its melee/preview attack");
-                else shot = i == 2 ? combat.TryFire(PartCategory.ShoulderL) : i == 3 ? combat.TryFire(PartCategory.ShoulderR) : combat.TryFire();
+                if (i == 0 || i == 4) check(combat.TryAttack(PartCategory.ArmL).Started, parts[i] + " admits its melee/preview attack");
+                else shot = i == 2 ? combat.TryAttack(PartCategory.ShoulderL).Projectile : i == 3 ? combat.TryAttack(PartCategory.ShoulderR).Projectile : combat.TryAttack(PartCategory.ArmR).Projectile;
                 var source = AttackSource(driver);
                 check(source != null && source.clip == MechSfxSetup.Clip(MechSfxSetup.Sounds[i]) && source.isPlaying,
                     parts[i] + " accepted attack plays exactly its assigned sound");
                 check(source.volume == driver.Animations.attackVolume && !source.playOnAwake && source.spatialBlend > 0f,
                     parts[i] + " attack has configured volume and spatial playback");
                 source.time = source.clip.length * 0.3f; int audioFrame = source.timeSamples;
-                if (i == 0 || i == 4) check(!combat.TryMelee(), parts[i] + " cooldown rejects another attack");
-                else check((i == 2 ? combat.TryFire(PartCategory.ShoulderL) : i == 3 ? combat.TryFire(PartCategory.ShoulderR) : combat.TryFire()) == null,
+                if (i == 0 || i == 4) check(!combat.TryAttack(PartCategory.ArmL).Started, parts[i] + " cooldown rejects another attack");
+                else check((i == 2 ? combat.TryAttack(PartCategory.ShoulderL).Projectile : i == 3 ? combat.TryAttack(PartCategory.ShoulderR).Projectile : combat.TryAttack(PartCategory.ArmR).Projectile) == null,
                     parts[i] + " cooldown rejects another shot");
                 check(source.timeSamples == audioFrame && driver.GetComponentsInChildren<AudioSource>().Length == 1,
                     parts[i] + " rejected attack does not restart audio or create more voices");

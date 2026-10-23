@@ -15,7 +15,6 @@ public enum StatType
 // How a part attacks. None for parts that don't attack (head, legs, torso, ability parts).
 public enum PartSubtype { None, Projectile, Explosive, Melee }
 
-public enum MechPartWeapon { None, Sword, ThrowingAxe, Cannon, Crossbow, ArmCrossbow, Mace }
 public enum MechPartAbilityKind { None, ResonancePulse, ZigzagBarrage, BloomMissile }
 
 [System.Serializable]
@@ -36,16 +35,12 @@ public class PartData : ScriptableObject
     [Tooltip("How the part attacks.")]
     public PartSubtype subtype;
     public List<StatEntry> stats;
-    [Header("Combat integration (Range stat is in golem lengths)")]
-    public MechPartWeapon weapon;
+    [Header("Combat (Range stat is in golem lengths; metres per golem is in MechRulesConfig)")]
     public MechPartAbilityKind ability;
     [Tooltip("Optional projectile prefab. Contains visual meshes and MechProjectile, with no physics colliders.")]
     public GameObject projectilePrefab;
     [Tooltip("Projectile colour (the plain sphere used when no projectile prefab is set, and its trail).")]
     public Color projectileColor = Color.white;
-    [Min(0.01f)] public float metresPerGolem = 4f;
-    [Min(1f)] public float maximumRangeMultiplier = 1.5f;
-    [Min(0f)] public float cannonExplosionRadius = 6f;
 
     public float GetStat(StatType type)
     {

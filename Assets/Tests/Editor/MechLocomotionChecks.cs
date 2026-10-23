@@ -19,7 +19,7 @@ public static class MechLocomotionChecks
         var equipment = player.GetComponent<EquipManager>();
         var debug = player.GetComponent<MechLocomotionDebug>();
         var energy = player.GetComponent<MechEnergyController>();
-        var combat = player.GetComponent<MechCombatController>();
+        var combat = player.GetComponent<MechCombat>();
         var controller = player.GetComponent<CharacterController>();
         GameObject wall = null;
         Part dropped = null;
@@ -45,14 +45,14 @@ public static class MechLocomotionChecks
             Quaternion rotation = player.transform.rotation;
             Vector3 velocity = motor.Velocity;
             float charge = energy.Current;
-            int ammo = combat.AmmoRemaining(MechWeaponType.Cannon);
+            int ammo = combat.AmmoRemaining(PartCategory.ShoulderL);
             var inputField = typeof(MechMovementController).GetField("runtimeInputActions", BindingFlags.Instance | BindingFlags.NonPublic);
             object inputInstance = inputField.GetValue(motor);
             check(debug.TrySwap(2), "Development swap selects hover through EquipManager");
             check(player.transform.position == position && player.transform.rotation == rotation && motor.Velocity == velocity,
                 "Moving lower-body swap preserves root pose and resolved velocity");
             check(equipment.GetEquipped(PartCategory.Torso) == torso && torso.transform.localPosition == torsoPosition
-                && combat.AmmoRemaining(MechWeaponType.Cannon) == ammo && energy.Current == charge,
+                && combat.AmmoRemaining(PartCategory.ShoulderL) == ammo && energy.Current == charge,
                 "Lower-body swap preserves torso, ammunition and energy");
             check(ReferenceEquals(inputField.GetValue(motor), inputInstance) && controller == player.GetComponent<CharacterController>()
                 && player.GetComponentsInChildren<MechMovementController>(true).Length == 1 && player.GetComponent<Rigidbody>() == null,

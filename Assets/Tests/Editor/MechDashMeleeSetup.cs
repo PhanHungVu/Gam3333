@@ -12,7 +12,7 @@ public static class MechDashMeleeSetup
             var root = PrefabUtility.LoadPrefabContents(MechAnimatedLegsSetup.PlayerPath);
             try
             {
-                var settings = new SerializedObject(root.GetComponent<MechCombatController>());
+                var settings = new SerializedObject(root.GetComponent<MechCombat>());
                 settings.FindProperty("meleeCenter").vector3Value = new Vector3(0f, 0f, 2.75f);
                 settings.FindProperty("meleeSize").vector3Value = new Vector3(5f, 3.5f, 5.5f);
                 settings.ApplyModifiedPropertiesWithoutUndo();

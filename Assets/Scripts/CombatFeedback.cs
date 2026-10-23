@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
-[RequireComponent(typeof(MechCombatController))]
+[RequireComponent(typeof(MechCombat))]
 [DefaultExecutionOrder(400)]
 public sealed class CombatFeedback : MonoBehaviour
 {
@@ -52,7 +52,8 @@ public sealed class CombatFeedback : MonoBehaviour
     [SerializeField] AudioClip multiKillClip;
     [SerializeField, Range(0, 1)] float audioVolume = 0.5f;
 
-    MechCombatController combat;
+    MechCombat combat;
+    Transform defaultRecoilVisual;
     CombatFeedbackEffect[] effects;
     GameObject poolRoot;
     int created;
@@ -96,13 +97,14 @@ public sealed class CombatFeedback : MonoBehaviour
 
     void Awake()
     {
-        combat = GetComponent<MechCombatController>();
+        combat = GetComponent<MechCombat>();
         if (recoilVisual == null) recoilVisual = transform.Find("VisualMech/Body");
         // Never displace a gameplay collider or the boost presentation's VisualMech root.
         if (recoilVisual != null && (!recoilVisual.IsChildOf(transform) || recoilVisual == transform
             || recoilVisual == transform.Find("VisualMech") || recoilVisual.GetComponentInChildren<Collider>(true) != null))
             recoilVisual = null;
         if (recoilVisual != null) { restPosition = recoilVisual.localPosition; restRotation = recoilVisual.localRotation; }
+        defaultRecoilVisual = recoilVisual;
         effects = new CombatFeedbackEffect[Mathf.Clamp(maximumEffects, 4, 64)];
         poolRoot = new GameObject("Combat Feedback Pool");
         if (effectMaterial != null)
@@ -165,15 +167,22 @@ public sealed class CombatFeedback : MonoBehaviour
 
     void OnShot(MechProjectile shot)
     {
-        if (!presentationEnabled || shot.Weapon != MechWeaponType.Cannon) return;
+        if (!presentationEnabled || shot.Subtype != PartSubtype.Explosive) return;
         if (muzzleFlash) PlayEffect(CombatFeedbackEffect.Kind.Muzzle, combat.MuzzlePosition, muzzleSize, muzzleDuration, explosionColor, true, false, false);
-        if (visualRecoil && recoilVisual != null) { recoiling = true; recoilAge = 0; ApplyRecoil(); }
+        if (visualRecoil)
+        {
+            // Recoil plays on the part that fired, along its own axis; otherwise on the mech's default visual.
+            var source = shot.Source;
+            bool own = source != null && source.recoilVisual != null;
+            BindRecoilVisual(own ? source.recoilVisual : defaultRecoilVisual, own ? source.recoilAxis : Vector3.zero);
+            if (recoilVisual != null) { recoiling = true; recoilAge = 0; ApplyRecoil(); }
+        }
         if (fireAudio) PlayAudio(cannonFireClip, combat.MuzzlePosition, false);
     }
 
     void OnImpact(MechProjectileImpact result)
     {
-        if (!presentationEnabled || result.Weapon != MechWeaponType.Cannon) return;
+        if (!presentationEnabled || result.Subtype != PartSubtype.Explosive) return;
         if (!result.ConfirmationOnly) PlayImpact(result);
         if (result.DeferConfirmation || result.Kills <= 0) return;
         ConfirmKills(result.Kills);

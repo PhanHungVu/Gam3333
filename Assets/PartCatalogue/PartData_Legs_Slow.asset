@@ -22,8 +22,4 @@ MonoBehaviour:
     value: 50
   - type: 1
     value: 25
-  weapon: 0
   ability: 0
-  metresPerGolem: 4
-  maximumRangeMultiplier: 1.5
-  cannonExplosionRadius: 6

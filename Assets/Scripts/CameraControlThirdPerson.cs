@@ -99,7 +99,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     Transform cameraTarget;
     Transform meleeFocus;
     Transform softLockFocus;
-    MechCombatController combatController;
+    MechCombat combatController;
     MechMovementController movementController;
     CharacterController movementCapsule;
     MechTargetLockController targetingController;
@@ -141,7 +141,7 @@ public class CameraControlThirdPerson : MonoBehaviour
         if (cameraTarget == null) return; // Before Awake, preserve normal rig initialization.
         cameraTarget.SetParent(player, false);
         movementController = player.GetComponent<MechMovementController>();
-        combatController = player.GetComponent<MechCombatController>();
+        combatController = player.GetComponent<MechCombat>();
         movementCapsule = player.GetComponent<CharacterController>();
         targetingController = player.GetComponent<MechTargetLockController>();
         previousTargetPosition = player.position;
@@ -170,7 +170,7 @@ public class CameraControlThirdPerson : MonoBehaviour
         cameraTarget = new GameObject("CameraTarget").transform;
         cameraTarget.SetParent(target, false);
         movementController = target.GetComponent<MechMovementController>();
-        combatController = target.GetComponent<MechCombatController>();
+        combatController = target.GetComponent<MechCombat>();
         meleeFocus = new GameObject("Melee Camera Focus").transform;
         softLockFocus = new GameObject("Soft Lock Aim Focus").transform;
         movementCapsule = target.GetComponent<CharacterController>();

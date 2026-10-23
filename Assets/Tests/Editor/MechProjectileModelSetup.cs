@@ -24,7 +24,7 @@ public static class MechProjectileModelSetup
                     .Single(m => m.GetComponent<Renderer>().enabled);
                 bolt = BuildModel(BoltPath, "Assets/Models/Golem1Models/CrossbowBolt.glb", boltReference, false);
                 axe = BuildModel(AxePath, "Assets/Models/Golem1Models/ThrowingAxe.glb", axeReference, true);
-                var combat = new SerializedObject(player.GetComponent<MechCombatController>());
+                var combat = new SerializedObject(player.GetComponent<MechCombat>());
                 combat.FindProperty("crossbowProjectilePrefab").objectReferenceValue = bolt;
                 combat.FindProperty("throwingAxeProjectilePrefab").objectReferenceValue = axe;
                 combat.ApplyModifiedPropertiesWithoutUndo();
@@ -36,7 +36,7 @@ public static class MechProjectileModelSetup
             {
                 var data = AssetDatabase.LoadAssetAtPath<PartData>("Assets/PartCatalogue/" + name + ".asset");
                 data.projectilePrefab = name.EndsWith("ThrowingAxe", StringComparison.Ordinal) ? axe : bolt;
-                if (name == "PartData_Arm_SmallCrossbow") data.weapon = MechPartWeapon.ArmCrossbow;
+                if (name == "PartData_Arm_SmallCrossbow") data.subtype = PartSubtype.Projectile;
                 EditorUtility.SetDirty(data);
             }
             var set = AssetDatabase.LoadAssetAtPath<MechWeaponAnimationSet>("Assets/Anim/Weapons/ArmCrossbow.asset");

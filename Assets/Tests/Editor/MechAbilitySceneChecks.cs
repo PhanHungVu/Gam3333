@@ -9,7 +9,7 @@ public static class MechAbilitySceneChecks
 {
     const string Key = "MechAbilitySceneChecks.Pending";
     static readonly string[] Names = { "ResonancePulse", "ZigzagBarrage", "BloomMissile" };
-    static MechCombatController combat;
+    static MechCombat combat;
     static CombatFeedback feedback;
     static MechPartAbility ability;
     static GameObject part;
@@ -48,14 +48,14 @@ public static class MechAbilitySceneChecks
             if (combat == null)
             {
                 Time.captureDeltaTime = 1f / 60;
-                combat = Object.FindAnyObjectByType<MechCombatController>();
+                combat = Object.FindAnyObjectByType<MechCombat>();
                 feedback = combat.GetComponent<CombatFeedback>();
-                Check(combat.GetComponent<MechPlayerRig>() != null && Object.FindObjectsByType<MechCombatController>().Length == 1,
+                Check(combat.GetComponent<MechPlayerRig>() != null && Object.FindObjectsByType<MechCombat>().Length == 1,
                     "Merged scene has exactly one integrated player");
                 Check(Camera.main.GetComponent<CameraControlThirdPerson>().Target == combat.transform,
                     "Merged scene camera tracks the parts-based player");
                 foreach (var enemy in Object.FindObjectsByType<MechTargetable>()) enemy.gameObject.SetActive(false);
-                ammo = combat.AmmoRemaining(MechWeaponType.Cannon);
+                ammo = combat.AmmoRemaining(PartCategory.ShoulderL);
             }
             if (phase == 0)
             {
@@ -101,7 +101,7 @@ public static class MechAbilitySceneChecks
             else
             {
                 Check(feedback.ActiveEffects == 0 && feedback.PoolSize <= 32
-                    && combat.AmmoRemaining(MechWeaponType.Cannon) == ammo,
+                    && combat.AmmoRemaining(PartCategory.ShoulderL) == ammo,
                     Names[pattern] + " releases pooled visuals and preserves weapon ammunition");
                 Object.Destroy(part);
                 foreach (var enemy in enemies) Object.Destroy(enemy);

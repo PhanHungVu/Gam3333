@@ -18,8 +18,9 @@ public sealed class MechAbilityDriver : MonoBehaviour
     [SerializeField, Min(0)] float activationCooldown = 2;
     [Header("Optional Weapon Impact Adapter")]
     [SerializeField] bool activateOnWeaponImpact;
-    [SerializeField] MechWeaponType sourceWeapon;
-    MechCombatController combat;
+    [Tooltip("Socket whose weapon hits trigger this ability.")]
+    [SerializeField] PartCategory sourceSocket = PartCategory.ShoulderR;
+    MechCombat combat;
     MechTargetLockController targeting;
     CombatFeedback feedback;
     readonly AbilityPhysics queries = new AbilityPhysics();
@@ -33,7 +34,7 @@ public sealed class MechAbilityDriver : MonoBehaviour
         equippedPart = GetComponentInParent<Part>();
         if (!bound)
         {
-            var parent = GetComponentInParent<MechCombatController>();
+            var parent = GetComponentInParent<MechCombat>();
             BindOwner(equippedPart != null ? equippedPart.EquippedBy != null ? equippedPart.EquippedBy.transform : null
                 : owner != null ? owner : parent != null ? parent.transform : transform.root);
         }
@@ -44,7 +45,7 @@ public sealed class MechAbilityDriver : MonoBehaviour
         if (ability == null) ability = GetComponent<MechPartAbility>();
         ability?.Cancel();
         bound = true; owner = nextOwner;
-        combat = owner != null ? owner.GetComponent<MechCombatController>() : null;
+        combat = owner != null ? owner.GetComponent<MechCombat>() : null;
         targeting = owner != null ? owner.GetComponent<MechTargetLockController>() : null;
         feedback = owner != null ? owner.GetComponent<CombatFeedback>() : null;
         gameplayCamera = targeting != null && targeting.GameplayCamera != null ? targeting.GameplayCamera : Camera.main;
@@ -78,7 +79,8 @@ public sealed class MechAbilityDriver : MonoBehaviour
 
     void OnImpact(MechProjectileImpact impact)
     {
-        if (!activateOnWeaponImpact || impact.Weapon != sourceWeapon || impact.Secondary || impact.ConfirmationOnly) return;
+        if (!activateOnWeaponImpact || impact.Source == null || combat == null || impact.Source != combat.GetPart(sourceSocket)
+            || impact.Secondary || impact.ConfirmationOnly) return;
         ActivateAt(impact.Position, impact.Direction, null);
     }
 
@@ -86,7 +88,7 @@ public sealed class MechAbilityDriver : MonoBehaviour
     {
         if (!isActiveAndEnabled || owner == null || !owner.gameObject.activeInHierarchy || ability == null || equippedPart != null && !equippedPart.isEquipped || Time.timeScale <= 0 || Time.time < nextActivation) return false;
         bool started = ability.TryActivate(new MechAbilityContext(owner, position, direction, target,
-            combat != null ? combat.GetWeapon(sourceWeapon) : null, hitLayers, feedback));
+            combat != null ? combat.GetPart(sourceSocket) : null, hitLayers, feedback));
         if (started) nextActivation = Time.time + Mathf.Max(0, activationCooldown);
         return started;
     }

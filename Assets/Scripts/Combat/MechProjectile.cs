@@ -4,16 +4,18 @@ using UnityEngine;
 // One result per resolved impact, emitted only after all gameplay damage is applied.
 public readonly struct MechProjectileImpact
 {
-    public readonly MechWeaponType Weapon;
+    // The part that fired (null for enemy shots) and how it attacks.
+    public readonly Part Source;
+    public readonly PartSubtype Subtype;
     public readonly Vector3 Position;
     public readonly Vector3 Direction;
     public readonly float Radius;
     public readonly int Hits, Kills;
     public readonly bool DeferConfirmation, Secondary, ConfirmationOnly;
-    public MechProjectileImpact(MechWeaponType weapon, Vector3 position, float radius, int hits, int kills,
+    public MechProjectileImpact(Part source, PartSubtype subtype, Vector3 position, float radius, int hits, int kills,
         bool deferConfirmation = false, bool secondary = false, bool confirmationOnly = false, Vector3 direction = default)
     {
-        Weapon = weapon; Position = position; Radius = radius; Hits = hits; Kills = kills;
+        Source = source; Subtype = subtype; Position = position; Radius = radius; Hits = hits; Kills = kills;
         DeferConfirmation = deferConfirmation; Secondary = secondary; ConfirmationOnly = confirmationOnly;
         Direction = direction;
     }
@@ -37,7 +39,9 @@ public class MechProjectile : MonoBehaviour
     CannonSpiralBarrage.Settings spiralSettings;
     public Vector3 Direction => direction;
     public bool IsLive => live;
-    public MechWeaponType Weapon { get; set; }
+    // The part that fired this shot (null for enemy shots) and how it attacks.
+    public Part Source { get; set; }
+    public PartSubtype Subtype { get; set; }
     // Optional enemy shot filter. Other bodies still block the shot, without friendly damage.
     CombatHealth damageTarget;
     bool targetOnly;
@@ -68,11 +72,10 @@ public class MechProjectile : MonoBehaviour
     public void ConfigureSpiralBarrage(CannonSpiralBarrage barrage, CannonSpiralBarrage.Settings settings)
     { spiralBarrage = barrage; spiralSettings = settings; }
 
-    public void ConfigureRangeAndExplosion(float effective, float blastRadius, Material material, Color color)
+    public void ConfigureRangeAndExplosion(float effective, float blastRadius)
     {
         effectiveRange = Mathf.Max(0f, effective);
         explosionRadius = Mathf.Max(0f, blastRadius);
-        // Retain the existing API; visuals now belong to the event-driven feedback layer.
     }
 
     public static float RangeMultiplier(float distance, float effective, float maximum)
@@ -168,10 +171,10 @@ public class MechProjectile : MonoBehaviour
         var result = !targetOnly || damageTarget != null && collider.GetComponentInParent<CombatHealth>() == damageTarget
             ? blast.Resolve(impactPoint, explosionRadius, impactDamage, owner, collisionLayers, collider)
             : default;
-        var impact = new MechProjectileImpact(Weapon, impactPoint, explosionRadius, result.Hits, result.Kills);
-        bool barrageStarted = Weapon == MechWeaponType.Cannon && spiralBarrage != null
+        var impact = new MechProjectileImpact(Source, Subtype, impactPoint, explosionRadius, result.Hits, result.Kills);
+        bool barrageStarted = spiralBarrage != null
             && spiralBarrage.TryBegin(impact, impactDamage, direction, owner, collisionLayers, spiralSettings);
-        ImpactResolved?.Invoke(new MechProjectileImpact(Weapon, impactPoint, explosionRadius,
+        ImpactResolved?.Invoke(new MechProjectileImpact(Source, Subtype, impactPoint, explosionRadius,
             result.Hits, result.Kills, deferConfirmation: barrageStarted, direction: direction));
         ImpactResolved = null;
     }

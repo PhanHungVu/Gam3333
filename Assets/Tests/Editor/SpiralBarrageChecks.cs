@@ -47,8 +47,9 @@ public static class SpiralBarrageChecks
         var player = new GameObject("Spiral Integration Player");
         player.SetActive(false);
         player.transform.position = origin;
-        var combat = player.AddComponent<MechCombatController>();
-        TestMech.Equip(player, (PartCategory.ShoulderL, TestMech.Cannon()), (PartCategory.ArmR, TestMech.Axe()),
+        var combat = player.AddComponent<MechCombat>();
+        var cannonData = TestMech.Cannon();
+        TestMech.Equip(player, (PartCategory.ShoulderL, cannonData), (PartCategory.ArmR, TestMech.Axe()),
             (PartCategory.ShoulderR, TestMech.Crossbow()));
         var feedback = player.AddComponent<CombatFeedback>();
         Set(feedback, "effectMaterial", AssetDatabase.LoadAssetAtPath<Material>("Assets/Combat/Prototype Combat.mat"));
@@ -58,8 +59,8 @@ public static class SpiralBarrageChecks
         var view = new GameObject("Spiral Integration Camera").AddComponent<Camera>();
         view.transform.SetPositionAndRotation(origin, Quaternion.identity);
         Set(combat, "gameplayCamera", view);
-        check(!(bool)Get(combat, "spiralBarrage"), "Spiral mode is off by default");
-        Set(combat, "spiralBarrage", true);
+        check(!cannonData.GetBool(StatType.SpiralBarrage), "Spiral mode is off by default");
+        TestMech.SetStat(cannonData, StatType.SpiralBarrage, 1f);
         Set(combat, "spiralSettings", settings);
         player.SetActive(true);
         var events = new List<MechProjectileImpact>();
@@ -68,11 +69,11 @@ public static class SpiralBarrageChecks
         int deaths = 0;
         primary.Died += () => deaths++;
         Physics.SyncTransforms();
-        var shot = combat.TryFire(PartCategory.ShoulderL);
+        var shot = combat.TryAttack(PartCategory.ShoulderL).Projectile;
         var runner = player.GetComponent<CannonSpiralBarrage>();
         check(runner != null && runner.ActiveCount == 0, "Firing creates the reusable scheduler but starts no barrage before collision");
         // Switching the Inspector toggle after firing must not mutate the in-flight shot.
-        Set(combat, "spiralBarrage", false);
+        TestMech.SetStat(cannonData, StatType.SpiralBarrage, 0f);
         Call(shot, "Step", 0.2f);
         check(primary.IsDead && deaths == 1 && events.Count == 1 && events[0].DeferConfirmation
             && runner.ActiveCount == 1 && feedback.KillConfirmationCount == 0,
@@ -106,7 +107,7 @@ public static class SpiralBarrageChecks
         check(deaths == 3 && events.Count == 5 && events[4].ConfirmationOnly && events[4].Kills == 3
             && feedback.KillConfirmationCount == 1 && feedback.LastConfirmedKills == 3 && runner.ActiveCount == 0,
             "Initial and secondary kills produce one complete-barrage triple-kill confirmation");
-        check(combat.AmmoRemaining(MechWeaponType.Cannon) == 19 && TestMech.Near(combat.ReloadRemaining(MechWeaponType.Cannon), 3f),
+        check(combat.AmmoRemaining(PartCategory.ShoulderL) == 19 && TestMech.Near(combat.ReloadRemaining(PartCategory.ShoulderL), 3f),
             "Secondary detonations consume no extra ammo and do not change the cannon cooldown");
         Call(feedback, "Tick", 1f);
         check(feedback.ActiveEffects == 0, "Secondary visuals expire back into the existing pool");
@@ -116,7 +117,7 @@ public static class SpiralBarrageChecks
         Physics.SyncTransforms();
         TestMech.Advance(player, 3f);
         int before = events.Count;
-        shot = combat.TryFire(PartCategory.ShoulderL);
+        shot = combat.TryAttack(PartCategory.ShoulderL).Projectile;
         Call(shot, "Step", 0.2f);
         check(normalEnemy.IsDead && events.Count == before + 1 && !events[before].DeferConfirmation
             && runner.ActiveCount == 0 && feedback.KillConfirmationCount == 2,
@@ -124,7 +125,7 @@ public static class SpiralBarrageChecks
 
         CheckBlastRules(check, origin + Vector3.right * 100, player.transform);
 
-        var emptyImpact = new MechProjectileImpact(MechWeaponType.Cannon, origin + Vector3.forward * 100, 6, 0, 0);
+        var emptyImpact = new MechProjectileImpact(null, PartSubtype.Explosive, origin + Vector3.forward * 100, 6, 0, 0);
         var visualOffSettings = settings;
         visualOffSettings.nodeCount = 1;
         var visualOffEnemy = Enemy(CannonSpiralBarrage.NodePosition(emptyImpact.Position, Vector3.forward, visualOffSettings, 0));
@@ -137,12 +138,12 @@ public static class SpiralBarrageChecks
             "Muting presentation does not disable scheduled spiral gameplay damage");
         Set(feedback, "presentationEnabled", true);
         Object.DestroyImmediate(visualOffEnemy.gameObject);
-        Set(combat, "spiralBarrage", true);
+        TestMech.SetStat(cannonData, StatType.SpiralBarrage, 1f);
         var otherWeaponEnemy = Enemy(origin + Vector3.forward * 5);
         Physics.SyncTransforms();
-        shot = combat.TryFire(PartCategory.ArmR);
+        shot = combat.TryAttack(PartCategory.ArmR).Projectile;
         Call(shot, "Step", 0.2f);
-        shot = combat.TryFire(PartCategory.ShoulderR);
+        shot = combat.TryAttack(PartCategory.ShoulderR).Projectile;
         Call(shot, "Step", 0.2f);
         check(otherWeaponEnemy.CurrentHealth == 20 && runner.ActiveCount == 0,
             "Enabling the cannon pattern leaves axe and crossbow damage and impact behavior unchanged");

@@ -845,28 +845,24 @@ public static class MechFoundationChecks
         var playerHealth = player.AddComponent<CombatHealth>();
         var targeting = player.AddComponent<MechTargetLockController>();
         Set(targeting, "gameplayCamera", view);
-        var combat = player.AddComponent<MechCombatController>();
+        var combat = player.AddComponent<MechCombat>();
         // Keep collision/timing fixtures independent of weapon balance: test parts with fixed stats.
         Set(combat, "meleeSize", new Vector3(3f, 2.5f, 3.5f));
         Set(combat, "meleeCenter", new Vector3(0f, 0f, 2.25f));
         TestMech.Equip(player, (PartCategory.ArmL, TestMech.Sword(60f, 0.65f)),
-            (PartCategory.ArmR, TestMech.Ranged("Fixture axe", PartType.Arm, PartSubtype.Projectile, MechPartWeapon.ThrowingAxe,
+            (PartCategory.ArmR, TestMech.Ranged("Fixture axe", PartType.Arm, PartSubtype.Projectile,
                 15f, 30, 0.2f, 15f, 30f, 0.12f, maxRange: 1f)));
         Set(combat, "gameplayCamera", view);
         player.SetActive(true);
-        // Projectile speed and size still come from combat's own prototype stats until MechCombat reads part data.
-        var fixtureWeapon = combat.GetWeapon(MechWeaponType.ThrowingAxe);
-        fixtureWeapon.projectileSpeed = 30f;
-        fixtureWeapon.projectileRadius = 0.12f;
         var target = Enemy(origin + Vector3.forward * 12);
         var health = target.gameObject.AddComponent<CombatHealth>();
         Physics.SyncTransforms();
         targeting.ResumeTargeting();
-        var projectile = combat.TryFire();
+        var projectile = combat.TryAttack(PartCategory.ArmR).Projectile;
         Vector3 muzzle = player.transform.TransformPoint((Vector3)Get(combat, "muzzleOffset"));
         Check(projectile != null && Vector3.Angle(projectile.Direction, target.AimPosition - muzzle) < 0.01f,
             "Soft-locked projectile launches toward the selected enemy's current aim point");
-        Check(combat.TryFire() == null, "Fire cadence blocks repeated shots in the same interval");
+        Check(combat.TryAttack(PartCategory.ArmR).Projectile == null, "Fire cadence blocks repeated shots in the same interval");
         Call(projectile, "Step", 0.1f);
         Check(projectile.IsLive && health.CurrentHealth == 100f, "Projectile travels through space instead of applying instant damage");
         Call(projectile, "Step", 0.5f);
@@ -876,7 +872,7 @@ public static class MechFoundationChecks
         Check(health.CurrentHealth == 85f, "Spent projectile cannot deal repeated damage");
 
         TestMech.Advance(player, 0.2f);
-        projectile = combat.TryFire();
+        projectile = combat.TryAttack(PartCategory.ArmR).Projectile;
         Vector3 launchDirection = projectile.Direction;
         target.transform.position += Vector3.right * 5;
         Physics.SyncTransforms();
@@ -891,14 +887,14 @@ public static class MechFoundationChecks
         wall.transform.localScale = new Vector3(4, 4, 0.1f);
         Physics.SyncTransforms();
         TestMech.Advance(player, 0.2f);
-        projectile = combat.TryFire();
+        projectile = combat.TryAttack(PartCategory.ArmR).Projectile;
         Call(projectile, "Step", 1f);
         Check(!projectile.IsLive && health.CurrentHealth == 85f, "Thin walls stop projectiles before enemies even in a long physics step");
         wall.transform.position = origin + new Vector3(0.325f, 0.5f, 0.325f);
         wall.transform.localScale = new Vector3(0.05f, 2, 2);
         Physics.SyncTransforms();
         TestMech.Advance(player, 0.2f);
-        projectile = combat.TryFire();
+        projectile = combat.TryAttack(PartCategory.ArmR).Projectile;
         Check(!projectile.IsLive && health.CurrentHealth == 85f, "A muzzle extending through a wall cannot spawn a shot beyond it");
         Object.DestroyImmediate(wall);
         var side = Enemy(origin + new Vector3(5, 0, 12));
@@ -907,13 +903,13 @@ public static class MechFoundationChecks
         Call(targeting, "SetTarget", side);
         targeting.ToggleHardLock();
         TestMech.Advance(player, 0.2f);
-        projectile = combat.TryFire();
+        projectile = combat.TryAttack(PartCategory.ArmR).Projectile;
         Check(Vector3.Angle(projectile.Direction, side.AimPosition - muzzle) < 0.01f,
             "Hard-locked shots use the visible selection as their launch aim");
         Object.DestroyImmediate(projectile.gameObject);
         targeting.EnterFreeAim();
         TestMech.Advance(player, 0.2f);
-        projectile = combat.TryFire();
+        projectile = combat.TryAttack(PartCategory.ArmR).Projectile;
         Check(projectile.Direction.x < 0f, "Free-aim shots follow the center camera ray instead of the old locked enemy");
         Object.DestroyImmediate(projectile.gameObject);
         side.gameObject.SetActive(false);
@@ -932,17 +928,17 @@ public static class MechFoundationChecks
         int meleeHits = -1;
         combat.MeleePerformed += count => meleeHits = count;
         Physics.SyncTransforms();
-        Check(combat.TryMelee() && meleeHits == 2 && frontHealth.CurrentHealth == 40 && adjacentHealth.CurrentHealth == 40,
+        Check(combat.TryAttack(PartCategory.ArmL).Started && meleeHits == 2 && frontHealth.CurrentHealth == 40 && adjacentHealth.CurrentHealth == 40,
             "Melee damages each enemy in the front box once, including enemies with multiple colliders");
         Check(behindHealth.CurrentHealth == 100 && outsideHealth.CurrentHealth == 100 && playerHealth.CurrentHealth == 100,
             "Melee excludes the owner and enemies behind or outside its volume");
-        Check(!combat.TryMelee() && frontHealth.CurrentHealth == 40, "Melee cooldown blocks repeat damage");
+        Check(!combat.TryAttack(PartCategory.ArmL).Started && frontHealth.CurrentHealth == 40, "Melee cooldown blocks repeat damage");
         wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
         wall.transform.position = origin + Vector3.forward;
         wall.transform.localScale = new Vector3(4, 4, 0.15f);
         Physics.SyncTransforms();
         TestMech.Advance(player, 0.65f);
-        Check(combat.TryMelee() && meleeHits == 0 && frontHealth.CurrentHealth == 40,
+        Check(combat.TryAttack(PartCategory.ArmL).Started && meleeHits == 0 && frontHealth.CurrentHealth == 40,
             "Melee cannot damage enemies through a wall inside its preview box");
         Object.DestroyImmediate(wall);
         var rotated = Enemy(origin + Vector3.right * 2);
@@ -953,7 +949,7 @@ public static class MechFoundationChecks
         player.transform.rotation = Quaternion.Euler(0, 90, 0);
         Physics.SyncTransforms();
         TestMech.Advance(player, 0.65f);
-        combat.TryMelee();
+        combat.TryAttack(PartCategory.ArmL);
         Check(rotatedHealth.CurrentHealth == 40 && frontHealth.CurrentHealth == 40,
             "Melee box follows the mech's facing instead of camera or selected enemy direction");
         int deaths = 0;
@@ -964,7 +960,7 @@ public static class MechFoundationChecks
         Check(deaths == 1 && rotatedHealth.IsDead && !rotated.gameObject.activeSelf,
             "Lethal damage publishes death once and removes enemy movement, collision, and targeting eligibility");
         combat.enabled = false;
-        Check(combat.TryFire() == null && !combat.TryMelee(), "Disabled combat cannot attack");
+        Check(combat.TryAttack(PartCategory.ArmR).Projectile == null && !combat.TryAttack(PartCategory.ArmL).Started, "Disabled combat cannot attack");
         foreach (var obj in new[] { player, front.gameObject, adjacent.gameObject, behind.gameObject, outside.gameObject })
             obj.SetActive(false);
         view.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
@@ -979,7 +975,7 @@ public static class MechFoundationChecks
         player.transform.position = origin;
         var targeting = player.AddComponent<MechTargetLockController>();
         Set(targeting, "gameplayCamera", view);
-        var combat = player.AddComponent<MechCombatController>();
+        var combat = player.AddComponent<MechCombat>();
         // Keep collision/timing fixtures independent of weapon balance: a test sword with fixed stats.
         Set(combat, "meleeSize", new Vector3(3f, 2.5f, 3.5f));
         Set(combat, "meleeCenter", new Vector3(0f, 0f, 2.25f));
@@ -991,29 +987,29 @@ public static class MechFoundationChecks
         targeting.ResumeTargeting();
         int hits = -1;
         combat.MeleePerformed += count => hits = count;
-        Check(combat.TryMelee() && combat.IsMeleeApproaching && health.CurrentHealth == 100,
+        Check(combat.TryAttack(PartCategory.ArmL).Started && combat.IsMeleeApproaching && health.CurrentHealth == 100,
             "Just-out-of-reach selected enemy starts a timed approach without immediate damage");
         Call(combat, "TickMelee", 0.06f);
         Check(combat.MeleeExtension > 0 && combat.MeleeExtension < 1 && health.CurrentHealth == 100,
             "Attack box advances gradually during approach");
-        Check(!combat.TryMelee(), "Pending approach cannot start a second swing");
+        Check(!combat.TryAttack(PartCategory.ArmL).Started, "Pending approach cannot start a second swing");
         Call(combat, "TickMelee", 0.06f);
         Check(!combat.IsMeleeApproaching && hits == 1 && health.CurrentHealth == 40 && combat.MeleeExtension <= 1,
             "Assisted strike resolves once after 0.12 seconds within the one metre budget");
         Check(player.transform.position == origin && player.transform.rotation == Quaternion.identity,
             "Melee assistance never translates or rotates the movement root");
         TestMech.Advance(player, 1f);
-        combat.TryMelee();
+        combat.TryAttack(PartCategory.ArmL);
         enemy.transform.position += Vector3.forward * 3;
         Call(combat, "TickMelee", 0.12f);
         Check(hits == 0 && health.CurrentHealth == 40, "Moving enemy can escape an assisted swing");
         TestMech.Advance(player, 1f);
-        combat.TryMelee();
+        combat.TryAttack(PartCategory.ArmL);
         Check(!combat.IsMeleeApproaching && hits == 0, "Distant enemy receives an ordinary missed swing");
         enemy.transform.position = origin + new Vector3(3, 0, 4);
         Physics.SyncTransforms();
         TestMech.Advance(player, 1f);
-        combat.TryMelee();
+        combat.TryAttack(PartCategory.ArmL);
         Check(!combat.IsMeleeApproaching && hits == 0, "Enemy outside the forward assist angle does not pull the attack sideways");
         enemy.transform.position = origin + Vector3.forward * 5;
         var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -1021,7 +1017,7 @@ public static class MechFoundationChecks
         wall.transform.localScale = new Vector3(4, 4, 0.1f);
         Physics.SyncTransforms();
         TestMech.Advance(player, 1f);
-        combat.TryMelee();
+        combat.TryAttack(PartCategory.ArmL);
         Check(!combat.IsMeleeApproaching && hits == 0 && health.CurrentHealth == 40,
             "A wall prevents reach assistance and damage beyond it");
         wall.SetActive(false);
@@ -1056,7 +1052,7 @@ public static class MechFoundationChecks
         Call(control, "UpdateCameraOrbit", Vector2.zero, 5f);
         float closePitch = (float)Get(control, "cameraPitch");
         TestMech.Advance(player, 1f);
-        combat.TryMelee();
+        combat.TryAttack(PartCategory.ArmL);
         Call(control, "UpdateCameraOrbit", Vector2.zero, 5f);
         Call(control, "UpdateMovementFeedback", 5f);
         Call(control, "ApplySettings");
@@ -1100,37 +1096,37 @@ public static class MechFoundationChecks
         var player = new GameObject("Three Weapon Player");
         player.SetActive(false);
         player.transform.position = origin;
-        var combat = player.AddComponent<MechCombatController>();
+        var combat = player.AddComponent<MechCombat>();
         Set(combat, "gameplayCamera", view);
         TestMech.Equip(player, (PartCategory.ArmR, TestMech.Axe()), (PartCategory.ShoulderL, TestMech.Cannon()),
             (PartCategory.ShoulderR, TestMech.Crossbow()));
         player.SetActive(true);
         view.transform.SetPositionAndRotation(origin, Quaternion.identity);
-        foreach (MechWeaponType slot in new[] { MechWeaponType.ThrowingAxe, MechWeaponType.Cannon, MechWeaponType.Crossbow })
+        foreach (PartCategory slot in new[] { PartCategory.ArmR, PartCategory.ShoulderL, PartCategory.ShoulderR })
         {
-            var shot = combat.TryFire(TestMounts.For(slot));
-            Check(shot != null && combat.AmmoRemaining(slot) == combat.GetWeapon(slot).ammunition - 1,
+            var shot = combat.TryAttack(slot).Projectile;
+            Check(shot != null && combat.AmmoRemaining(slot) == (int)combat.GetPart(slot).Stats.GetStat(StatType.Ammo) - 1,
                 $"{slot} fires independently and consumes exactly one round");
             Object.DestroyImmediate(shot.gameObject);
-            Check(combat.TryFire(TestMounts.For(slot)) == null, $"{slot} one-round magazine cannot fire during reload");
+            Check(combat.TryAttack(slot).Projectile == null, $"{slot} one-round magazine cannot fire during reload");
         }
-        Check(TestMech.Near(combat.ReloadRemaining(MechWeaponType.ThrowingAxe), 0.5f)
-            && TestMech.Near(combat.ReloadRemaining(MechWeaponType.Cannon), 3f)
-            && TestMech.Near(combat.ReloadRemaining(MechWeaponType.Crossbow), 1f),
+        Check(TestMech.Near(combat.ReloadRemaining(PartCategory.ArmR), 0.5f)
+            && TestMech.Near(combat.ReloadRemaining(PartCategory.ShoulderL), 3f)
+            && TestMech.Near(combat.ReloadRemaining(PartCategory.ShoulderR), 1f),
             "Reload clocks remain independent across all three ranged slots");
         TestMech.Advance(player, 0.5f);
         for (int i = 0; i < 29; i++)
         {
-            var shot = combat.TryFire();
+            var shot = combat.TryAttack(PartCategory.ArmR).Projectile;
             Check(shot != null, "Available axe round fires after reload");
             Object.DestroyImmediate(shot.gameObject);
             TestMech.Advance(player, 0.5f);
         }
-        Check(combat.AmmoRemaining(MechWeaponType.ThrowingAxe) == 0 && combat.TryFire() == null,
+        Check(combat.AmmoRemaining(PartCategory.ArmR) == 0 && combat.TryAttack(PartCategory.ArmR).Projectile == null,
             "An empty weapon does nothing");
         combat.enabled = false;
         combat.enabled = true;
-        Check(combat.AmmoRemaining(MechWeaponType.ThrowingAxe) == 0, "Re-enabling weapons cannot refill ammunition");
+        Check(combat.AmmoRemaining(PartCategory.ArmR) == 0, "Re-enabling weapons cannot refill ammunition");
         Check(MechProjectile.RangeMultiplier(5, 5, 10) == 1
             && MechProjectile.RangeMultiplier(7.5f, 5, 10) == 0.5f
             && MechProjectile.RangeMultiplier(10, 5, 10) == 0,
@@ -1139,7 +1135,7 @@ public static class MechFoundationChecks
         var rangeHealth = rangeEnemy.gameObject.AddComponent<CombatHealth>();
         var projectile = new GameObject("Range Test").AddComponent<MechProjectile>();
         projectile.transform.position = origin;
-        projectile.ConfigureRangeAndExplosion(5, 0, null, Color.white);
+        projectile.ConfigureRangeAndExplosion(5, 0);
         Physics.SyncTransforms();
         projectile.Launch(player.transform, Vector3.forward, 100, 100, 0.1f, 10, ~0, origin);
         Call(projectile, "Step", 1f);
@@ -1149,7 +1145,7 @@ public static class MechFoundationChecks
         float previousHealth = rangeHealth.CurrentHealth;
         projectile = new GameObject("Maximum Range Test").AddComponent<MechProjectile>();
         projectile.transform.position = origin;
-        projectile.ConfigureRangeAndExplosion(5, 0, null, Color.white);
+        projectile.ConfigureRangeAndExplosion(5, 0);
         Physics.SyncTransforms();
         projectile.Launch(player.transform, Vector3.forward, 100, 100, 0.1f, 10, ~0, origin);
         Call(projectile, "Step", 1f);
@@ -1171,7 +1167,7 @@ public static class MechFoundationChecks
         player.AddComponent<BoxCollider>();
         projectile = new GameObject("Blast Test").AddComponent<MechProjectile>();
         projectile.transform.position = origin;
-        projectile.ConfigureRangeAndExplosion(10, 6, null, Color.white);
+        projectile.ConfigureRangeAndExplosion(10, 6);
         Physics.SyncTransforms();
         projectile.Launch(player.transform, Vector3.forward, 100, 30, 0.1f, 15, ~0, origin);
         Call(projectile, "Step", 1f);
@@ -1193,7 +1189,7 @@ public static class MechFoundationChecks
         player.SetActive(false);
         player.transform.position = new Vector3(7000, 2, 0);
         var movement = player.AddComponent<MechMovementController>();
-        var combat = player.AddComponent<MechCombatController>();
+        var combat = player.AddComponent<MechCombat>();
         Set(movement, "inputActions", source);
         Set(combat, "inputActions", source);
         var cameraRoot = new GameObject("Input Lifecycle Camera");

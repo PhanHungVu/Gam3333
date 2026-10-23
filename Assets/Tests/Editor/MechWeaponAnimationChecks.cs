@@ -11,7 +11,7 @@ public static class MechWeaponAnimationChecks
         var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(MechAnimatedLegsSetup.PlayerPath),
             new Vector3(46000, 1.6f, 0), Quaternion.identity);
         var equipment = player.GetComponent<EquipManager>();
-        var combat = player.GetComponent<MechCombatController>();
+        var combat = player.GetComponent<MechCombat>();
         var source = AssetDatabase.LoadAssetAtPath<GameObject>(MechWeaponAnimationSetup.Source);
         var sets = AssetDatabase.LoadAssetAtPath<MechWeaponAnimationImportSettings>(MechWeaponAnimationImport.SettingsPath);
         var detached = new System.Collections.Generic.List<GameObject>();
@@ -19,7 +19,7 @@ public static class MechWeaponAnimationChecks
         try
         {
             player.GetComponent<MechMovementController>().ReadPlayerInput = false;
-            var bridge = player.GetComponent<MechEquipmentCombat>();
+            var bridge = player.GetComponent<MechWeaponIdle>();
             var drivers = player.GetComponentsInChildren<MechWeaponAnimator>();
             bridge.ResetWeaponIdle();
             bridge.TickWeaponIdle(2.99f, true);
@@ -48,9 +48,9 @@ public static class MechWeaponAnimationChecks
                     check(AnimationUtility.GetCurveBindings(clip).All(b => b.path.StartsWith(entry.rigPath + "/", StringComparison.Ordinal)),
                         clip.name + " affects only its weapon rig");
             }
-            foreach (var slot in new[] { MechWeaponType.Cannon, MechWeaponType.Crossbow, MechWeaponType.ThrowingAxe })
+            foreach (var slot in new[] { PartCategory.ShoulderL, PartCategory.ShoulderR, PartCategory.ArmR })
             {
-                var part = player.GetComponent<MechEquipmentCombat>().GetPart(slot);
+                var part = player.GetComponent<MechCombat>().GetPart(slot);
                 var driver = part.GetComponent<MechWeaponAnimator>();
                 check(driver != null && !driver.Animator.applyRootMotion, slot + " has an independent visual animator without root motion");
                 var root = player.transform.position;
@@ -59,7 +59,7 @@ public static class MechWeaponAnimationChecks
                     + sets.weapons.Single(e => e.part == part.data).bodyBone);
                 var rest = body.position; var rotation = body.rotation;
                 int ammo = combat.AmmoRemaining(slot);
-                var projectile = combat.TryFire(TestMounts.For(slot));
+                var projectile = combat.TryAttack(slot).Projectile;
                 check(bridge.IdleWeapon == null, slot + " attack cancels the shared idle selection");
                 check(projectile != null && combat.AmmoRemaining(slot) == ammo - 1 && driver.CurrentPose == MechWeaponAnimator.PoseState.Fire,
                     slot + " starts Fire only after gameplay admits a real shot");
@@ -69,7 +69,7 @@ public static class MechWeaponAnimationChecks
                     slot + " authored Fire curves visibly move its bone");
                 check(player.transform.position == root && part.transform.localPosition == partPosition,
                     slot + " firing never moves the player or equipment root");
-                check(combat.TryFire(TestMounts.For(slot)) == null && driver.CurrentPose == MechWeaponAnimator.PoseState.Fire,
+                check(combat.TryAttack(slot).Projectile == null && driver.CurrentPose == MechWeaponAnimator.PoseState.Fire,
                     slot + " rejected cooldown input does not restart presentation");
                 if (driver.Animations.reload != null)
                 {
@@ -91,7 +91,7 @@ public static class MechWeaponAnimationChecks
                 .Single(m => m.sharedMesh.name == "ThrowingAxeMesh").transform.IsChildOf(barrel),
                 "Visible axe stays attached and follows the animated arm through its placement bone");
             var sword = equipment.GetEquipped(PartCategory.ArmL).GetComponent<MechWeaponAnimator>();
-            check(combat.TryMelee() && sword.CurrentPose == MechWeaponAnimator.PoseState.Fire,
+            check(combat.TryAttack(PartCategory.ArmL).Started && sword.CurrentPose == MechWeaponAnimator.PoseState.Fire,
                 "Existing melee starts Sword Fire on admission rather than on delayed damage");
             sword.Tick(0.2f);
             CheckPose(sword, sets.weapons.Single(e => e.target == sword.Animations), reference, 0.2f, check);
@@ -118,8 +118,8 @@ public static class MechWeaponAnimationChecks
                 int projectiles = 0;
                 Action<MechProjectile> onShot = shot => { projectiles++; Object.DestroyImmediate(shot.gameObject); };
                 combat.ShotFired += onShot;
-                if (name == "arm_mace") check(combat.TryMelee(), "Mace button admits its damaging melee swing");
-                else combat.TryFire();
+                if (name == "arm_mace") check(combat.TryAttack(PartCategory.ArmL).Started, "Mace button admits its damaging melee swing");
+                else combat.TryAttack(PartCategory.ArmR);
                 combat.ShotFired -= onShot;
                 check(driver.CurrentPose == MechWeaponAnimator.PoseState.Fire && projectiles == (name == "arm_crossbow" ? 1 : 0),
                     name + " plays Fire with its configured projectile or melee behavior");

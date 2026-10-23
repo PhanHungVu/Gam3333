@@ -10,7 +10,7 @@ public static class SpiralBarrageSceneChecks
 {
     const string Key = "SpiralBarrageSceneChecks.Pending";
     const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
-    static MechCombatController combat;
+    static MechCombat combat;
     static CombatFeedback feedback;
     static MechTargetable[] enemies;
     static MechProjectile shot;
@@ -84,11 +84,14 @@ public static class SpiralBarrageSceneChecks
             if (phase == 0)
             {
                 Time.captureDeltaTime = 1f / 60f;
-                combat = Object.FindAnyObjectByType<MechCombatController>();
+                combat = Object.FindAnyObjectByType<MechCombat>();
                 feedback = combat.GetComponent<CombatFeedback>();
                 initialPool = feedback.PoolSize;
                 settings = CannonSpiralBarrage.Settings.Default;
-                Set(combat, "spiralBarrage", true);
+                // Switch the spiral on through a copy of the cannon's data, never the real asset.
+                var cannon = combat.GetPart(PartCategory.ShoulderL);
+                cannon.data = UnityEngine.Object.Instantiate(cannon.data);
+                TestMech.SetStat(cannon.data, StatType.SpiralBarrage, 1f);
                 Set(combat, "spiralSettings", settings);
                 enemies = Object.FindObjectsByType<MechTargetable>();
                 Check(enemies.Length >= 3, "Actual scene supplies the barrage test enemies");
@@ -107,7 +110,7 @@ public static class SpiralBarrageSceneChecks
             }
             else if (phase == 1)
             {
-                shot = combat.TryFire(PartCategory.ShoulderL);
+                shot = combat.TryAttack(PartCategory.ShoulderL).Projectile;
                 Check(shot != null && shot.IsLive, "Actual cannon launches its normal projectile with optional pattern enabled");
                 phase = 2;
             }
@@ -132,7 +135,7 @@ public static class SpiralBarrageSceneChecks
             {
                 var runner = combat.GetComponent<CannonSpiralBarrage>();
                 Check(runner.ActiveCount == 0 && runner.PoolSize == 1 && feedback.ActiveEffects == 0
-                    && feedback.PoolSize == initialPool && combat.AmmoRemaining(MechWeaponType.Cannon) == 19,
+                    && feedback.PoolSize == initialPool && combat.AmmoRemaining(PartCategory.ShoulderL) == 19,
                     "Live sequence and effects clean up without growing the prewarmed pool or consuming extra ammo");
                 Debug.Log("SPIRAL SCENE CHECKS COMPLETE");
                 SessionState.SetBool(Key, false);

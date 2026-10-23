@@ -21,7 +21,7 @@ public static class MechDashMeleeChecks
         var cleanup = new List<GameObject>();
         try
         {
-            var combat = player.GetComponent<MechCombatController>(); combat.ReadPlayerInput = false;
+            var combat = player.GetComponent<MechCombat>(); combat.ReadPlayerInput = false;
             var equipment = player.GetComponent<EquipManager>();
             var settings = new SerializedObject(combat);
             check(settings.FindProperty("meleeSize").vector3Value == new Vector3(5f, 3.5f, 5.5f), "Scene player uses the enlarged 5 x 3.5 x 5.5 melee volume");
@@ -37,9 +37,9 @@ public static class MechDashMeleeChecks
                 var health = target.AddComponent<CombatHealth>();
                 var second = new GameObject("Second Hurt Collider"); second.transform.SetParent(target.transform, false); second.AddComponent<BoxCollider>();
                 Physics.SyncTransforms();
-                check(combat.TryMelee() && health.CurrentHealth == (family == "sword" ? 0f : 50f),
+                check(combat.TryAttack(PartCategory.ArmL).Started && health.CurrentHealth == (family == "sword" ? 0f : 50f),
                     family + " enlarged hitbox reaches a wider/farther target and damages compound colliders only once");
-                check(!combat.TryMelee(), family + " retains its configured melee cooldown");
+                check(!combat.TryAttack(PartCategory.ArmL).Started, family + " retains its configured melee cooldown");
                 check(part.GetComponent<MechWeaponAnimator>().CurrentPose == MechWeaponAnimator.PoseState.Fire,
                     family + " damage still starts the authored attack animation");
                 Object.DestroyImmediate(target);
@@ -56,11 +56,11 @@ public static class MechDashMeleeChecks
             wall.transform.position = player.transform.position + Vector3.forward * 1.5f;
             wall.transform.localScale = new Vector3(8f, 8f, 0.2f); Physics.SyncTransforms();
             int admissions = 0; combat.WeaponAttackStarted += p => { if (p == rightMace) admissions++; };
-            combat.TryFire();
+            combat.TryAttack(PartCategory.ArmR);
             check(admissions == 1 && blockedHealth.CurrentHealth == 100f, "RMB admits right-arm mace while walls still block its damage");
-            check(!combat.TryMelee(), "An empty left arm never attacks using the right-arm melee weapon");
+            check(!combat.TryAttack(PartCategory.ArmL).Started, "An empty left arm never attacks using the right-arm melee weapon");
             var drop = equipment.Unequip(PartCategory.ArmR); cleanup.Add(drop.gameObject);
-            combat.TryFire(); check(admissions == 1, "Dropped mace cannot admit another attack");
+            combat.TryAttack(PartCategory.ArmR); check(admissions == 1, "Dropped mace cannot admit another attack");
         }
         finally
         {

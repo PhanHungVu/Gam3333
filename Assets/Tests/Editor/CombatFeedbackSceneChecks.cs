@@ -11,7 +11,7 @@ using Object = UnityEngine.Object;
 public static class CombatFeedbackSceneChecks
 {
     const string Key = "CombatFeedbackSceneChecks.Pending";
-    static MechCombatController combat;
+    static MechCombat combat;
     static CombatFeedback feedback;
     static MechTargetLockController targeting;
     static MechTargetable[] enemies;
@@ -44,7 +44,7 @@ public static class CombatFeedbackSceneChecks
             {
                 // Screenshots must not advance an effect's entire lifetime in one batch frame.
                 Time.captureDeltaTime = 1f / 60f;
-                combat = Object.FindAnyObjectByType<MechCombatController>();
+                combat = Object.FindAnyObjectByType<MechCombat>();
                 feedback = combat.GetComponent<CombatFeedback>();
                 targeting = combat.GetComponent<MechTargetLockController>();
                 Check(feedback != null && feedback.isActiveAndEnabled, "Actual mech prefab has enabled feedback");
@@ -73,7 +73,7 @@ public static class CombatFeedbackSceneChecks
             else if (phase == 1)
             {
                 Capture("before");
-                Check(combat.TryFire(PartCategory.ShoulderL) != null && feedback.ActiveEffects == 1, "Firing activates the muzzle effect in the real scene");
+                Check(combat.TryAttack(PartCategory.ShoulderL).Projectile != null && feedback.ActiveEffects == 1, "Firing activates the muzzle effect in the real scene");
                 Capture("fire");
                 phase = 2;
             }
@@ -97,7 +97,7 @@ public static class CombatFeedbackSceneChecks
             {
                 Check(feedback.ActiveEffects == 0 && feedback.PoolSize == initialPoolSize,
                     "Scene effects finish and reuse the prewarmed pool without growth");
-                Check(combat.AmmoRemaining(MechWeaponType.Cannon) == 19, "Presentation consumes only the original single cannon round");
+                Check(combat.AmmoRemaining(PartCategory.ShoulderL) == 19, "Presentation consumes only the original single cannon round");
                 Capture("settled");
                 Debug.Log("COMBAT FEEL SCENE CHECKS COMPLETE");
                 SessionState.SetBool(Key, false);

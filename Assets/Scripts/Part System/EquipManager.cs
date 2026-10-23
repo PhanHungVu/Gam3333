@@ -59,7 +59,7 @@ public class EquipManager : MonoBehaviour
     public void SetSelectedPart(Part part) { if (part != null && !part.isEquipped) selectedPart = part; }
     public Part GetSelectedPart() => selectedPart != null && !selectedPart.isEquipped && selectedPart.gameObject.activeInHierarchy ? selectedPart : null;
     public void ClearSelectedPart(Part part) { if (selectedPart == part) selectedPart = null; }
-    // Hold the interact key (F) while a floor part is selected: MechCombatController then
+    // Hold the interact key (F) while a floor part is selected: MechCombat then
     // routes the next attack button to TrySwapSelectedInto for that button's socket.
     public bool IsSwapHeld => Time.timeScale > 0 && Keyboard.current != null && inputKey != Key.None
         && Keyboard.current[inputKey].isPressed && GetSelectedPart() != null;

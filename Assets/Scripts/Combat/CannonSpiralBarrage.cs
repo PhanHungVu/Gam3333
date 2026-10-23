@@ -48,6 +48,7 @@ public sealed class CannonSpiralBarrage : MonoBehaviour
         public bool Active;
         public Settings Settings;
         public Transform Owner;
+        public Part Source;
         public Vector3 Origin, Heading;
         public LayerMask Layers;
         public float Damage, NextTime;
@@ -58,12 +59,12 @@ public sealed class CannonSpiralBarrage : MonoBehaviour
     const int Capacity = 8;
     readonly Sequence[] sequences = new Sequence[Capacity];
     readonly CombatBlast blast = new CombatBlast();
-    MechCombatController combat;
+    MechCombat combat;
     public event Action<MechProjectileImpact> ImpactResolved;
     public int ActiveCount { get; private set; }
     public int PoolSize { get; private set; }
 
-    void Awake() => combat = GetComponent<MechCombatController>();
+    void Awake() => combat = GetComponent<MechCombat>();
 
     public static Vector3 NodePosition(Vector3 origin, Vector3 heading, Settings settings, int index)
     {
@@ -88,6 +89,7 @@ public sealed class CannonSpiralBarrage : MonoBehaviour
         if (sequence == null) return false;
         sequence.Settings = settings.Validated();
         sequence.Owner = owner;
+        sequence.Source = initial.Source;
         sequence.Origin = initial.Position;
         sequence.Heading = heading;
         sequence.Layers = layers;
@@ -122,7 +124,7 @@ public sealed class CannonSpiralBarrage : MonoBehaviour
             sequence.Kills += result.Kills;
             try
             {
-                ImpactResolved?.Invoke(new MechProjectileImpact(MechWeaponType.Cannon, position, sequence.Settings.blastRadius,
+                ImpactResolved?.Invoke(new MechProjectileImpact(sequence.Source, PartSubtype.Explosive, position, sequence.Settings.blastRadius,
                     result.Hits, result.Kills, deferConfirmation: true, secondary: true));
             }
             finally
@@ -135,10 +137,11 @@ public sealed class CannonSpiralBarrage : MonoBehaviour
 
     void Complete(Sequence sequence)
     {
-        var result = new MechProjectileImpact(MechWeaponType.Cannon, sequence.Origin, 0,
+        var result = new MechProjectileImpact(sequence.Source, PartSubtype.Explosive, sequence.Origin, 0,
             sequence.Hits, sequence.Kills, confirmationOnly: true);
         sequence.Active = false;
         sequence.Owner = null;
+        sequence.Source = null;
         sequence.Budget.Targets.Clear();
         ActiveCount--;
         ImpactResolved?.Invoke(result);

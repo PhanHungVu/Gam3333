@@ -40,7 +40,7 @@ public static class MechEnemyCombatSceneChecks
                     foreach (var spawner in Object.FindObjectsByType<EnemySpawnerManager>()) spawner.enabled = false;
                     foreach (var agent in Object.FindObjectsByType<EnemyAgent>()) agent.gameObject.SetActive(false);
                     player = Object.FindAnyObjectByType<MechMovementController>(); player.ReadPlayerInput = false;
-                    player.GetComponent<MechCombatController>().ReadPlayerInput = false;
+                    player.GetComponent<MechCombat>().ReadPlayerInput = false;
                     health = player.GetComponent<CombatHealth>();
                     Check(health != null && health.CurrentHealth == player.GetComponent<MechStats>().MaxHealth,
                         "Merge Test player starts with equipped health capacity");

@@ -35,7 +35,7 @@ public sealed class MechPlayerRig : MonoBehaviour
             Destroy(staging);
         }
         if (control != null) control.BindTarget(transform);
-        GetComponent<MechCombatController>().BindCamera(GameplayCamera);
+        GetComponent<MechCombat>().BindCamera(GameplayCamera);
         GetComponent<MechMovementController>().BindCamera(GameplayCamera);
         GetComponent<MechTargetLockController>().BindCamera(GameplayCamera);
     }
