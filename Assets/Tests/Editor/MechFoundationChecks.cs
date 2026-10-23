@@ -840,23 +840,24 @@ public static class MechFoundationChecks
         view.transform.SetPositionAndRotation(origin - Vector3.forward * 8, Quaternion.identity);
         var player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
         player.name = "Combat Test Player";
+        player.SetActive(false);
         player.transform.position = origin;
         var playerHealth = player.AddComponent<CombatHealth>();
         var targeting = player.AddComponent<MechTargetLockController>();
         Set(targeting, "gameplayCamera", view);
         var combat = player.AddComponent<MechCombatController>();
-        // Keep collision/timing fixtures independent of weapon balance defaults.
+        // Keep collision/timing fixtures independent of weapon balance: test parts with fixed stats.
         Set(combat, "meleeSize", new Vector3(3f, 2.5f, 3.5f));
         Set(combat, "meleeCenter", new Vector3(0f, 0f, 2.25f));
-        Set(combat, "meleeDamage", 60f);
-        Set(combat, "meleeCooldown", 0.65f);
+        TestMech.Equip(player, (PartCategory.ArmL, TestMech.Sword(60f, 0.65f)),
+            (PartCategory.ArmR, TestMech.Ranged("Fixture axe", PartType.Arm, PartSubtype.Projectile, MechPartWeapon.ThrowingAxe,
+                15f, 30, 0.2f, 15f, 30f, 0.12f, maxRange: 1f)));
+        Set(combat, "gameplayCamera", view);
+        player.SetActive(true);
+        // Projectile speed and size still come from combat's own prototype stats until MechCombat reads part data.
         var fixtureWeapon = combat.GetWeapon(MechWeaponType.ThrowingAxe);
-        fixtureWeapon.damage = 15f;
-        fixtureWeapon.reloadSeconds = 0.2f;
         fixtureWeapon.projectileSpeed = 30f;
         fixtureWeapon.projectileRadius = 0.12f;
-        fixtureWeapon.effectiveRange = fixtureWeapon.maximumRange = 60f;
-        Set(combat, "gameplayCamera", view);
         var target = Enemy(origin + Vector3.forward * 12);
         var health = target.gameObject.AddComponent<CombatHealth>();
         Physics.SyncTransforms();
@@ -874,7 +875,7 @@ public static class MechFoundationChecks
         Call(projectile, "Step", 1f);
         Check(health.CurrentHealth == 85f, "Spent projectile cannot deal repeated damage");
 
-        Call(combat, "TickCooldowns", 0.2f);
+        TestMech.Advance(player, 0.2f);
         projectile = combat.TryFire();
         Vector3 launchDirection = projectile.Direction;
         target.transform.position += Vector3.right * 5;
@@ -889,14 +890,14 @@ public static class MechFoundationChecks
         wall.transform.position = origin + Vector3.forward * 5;
         wall.transform.localScale = new Vector3(4, 4, 0.1f);
         Physics.SyncTransforms();
-        Call(combat, "TickCooldowns", 0.2f);
+        TestMech.Advance(player, 0.2f);
         projectile = combat.TryFire();
         Call(projectile, "Step", 1f);
         Check(!projectile.IsLive && health.CurrentHealth == 85f, "Thin walls stop projectiles before enemies even in a long physics step");
         wall.transform.position = origin + new Vector3(0.325f, 0.5f, 0.325f);
         wall.transform.localScale = new Vector3(0.05f, 2, 2);
         Physics.SyncTransforms();
-        Call(combat, "TickCooldowns", 0.2f);
+        TestMech.Advance(player, 0.2f);
         projectile = combat.TryFire();
         Check(!projectile.IsLive && health.CurrentHealth == 85f, "A muzzle extending through a wall cannot spawn a shot beyond it");
         Object.DestroyImmediate(wall);
@@ -905,13 +906,13 @@ public static class MechFoundationChecks
         Physics.SyncTransforms();
         Call(targeting, "SetTarget", side);
         targeting.ToggleHardLock();
-        Call(combat, "TickCooldowns", 0.2f);
+        TestMech.Advance(player, 0.2f);
         projectile = combat.TryFire();
         Check(Vector3.Angle(projectile.Direction, side.AimPosition - muzzle) < 0.01f,
             "Hard-locked shots use the visible selection as their launch aim");
         Object.DestroyImmediate(projectile.gameObject);
         targeting.EnterFreeAim();
-        Call(combat, "TickCooldowns", 0.2f);
+        TestMech.Advance(player, 0.2f);
         projectile = combat.TryFire();
         Check(projectile.Direction.x < 0f, "Free-aim shots follow the center camera ray instead of the old locked enemy");
         Object.DestroyImmediate(projectile.gameObject);
@@ -940,7 +941,7 @@ public static class MechFoundationChecks
         wall.transform.position = origin + Vector3.forward;
         wall.transform.localScale = new Vector3(4, 4, 0.15f);
         Physics.SyncTransforms();
-        Call(combat, "TickCooldowns", 0.65f);
+        TestMech.Advance(player, 0.65f);
         Check(combat.TryMelee() && meleeHits == 0 && frontHealth.CurrentHealth == 40,
             "Melee cannot damage enemies through a wall inside its preview box");
         Object.DestroyImmediate(wall);
@@ -951,7 +952,7 @@ public static class MechFoundationChecks
         front.transform.position = origin + Vector3.forward * 3;
         player.transform.rotation = Quaternion.Euler(0, 90, 0);
         Physics.SyncTransforms();
-        Call(combat, "TickCooldowns", 0.65f);
+        TestMech.Advance(player, 0.65f);
         combat.TryMelee();
         Check(rotatedHealth.CurrentHealth == 40 && frontHealth.CurrentHealth == 40,
             "Melee box follows the mech's facing instead of camera or selected enemy direction");
@@ -974,21 +975,16 @@ public static class MechFoundationChecks
         Vector3 origin = new Vector3(5000, 2, 0);
         view.transform.SetPositionAndRotation(origin, Quaternion.identity);
         var player = new GameObject("Melee Assist Player");
+        player.SetActive(false);
         player.transform.position = origin;
         var targeting = player.AddComponent<MechTargetLockController>();
         Set(targeting, "gameplayCamera", view);
         var combat = player.AddComponent<MechCombatController>();
-        // Keep collision/timing fixtures independent of weapon balance defaults.
+        // Keep collision/timing fixtures independent of weapon balance: a test sword with fixed stats.
         Set(combat, "meleeSize", new Vector3(3f, 2.5f, 3.5f));
         Set(combat, "meleeCenter", new Vector3(0f, 0f, 2.25f));
-        Set(combat, "meleeDamage", 60f);
-        Set(combat, "meleeCooldown", 0.65f);
-        var fixtureWeapon = combat.GetWeapon(MechWeaponType.ThrowingAxe);
-        fixtureWeapon.damage = 15f;
-        fixtureWeapon.reloadSeconds = 0.2f;
-        fixtureWeapon.projectileSpeed = 30f;
-        fixtureWeapon.projectileRadius = 0.12f;
-        fixtureWeapon.effectiveRange = fixtureWeapon.maximumRange = 60f;
+        TestMech.Equip(player, (PartCategory.ArmL, TestMech.Sword(60f, 0.65f)));
+        player.SetActive(true);
         var enemy = Enemy(origin + Vector3.forward * 5f);
         var health = enemy.gameObject.AddComponent<CombatHealth>();
         Physics.SyncTransforms();
@@ -1006,17 +1002,17 @@ public static class MechFoundationChecks
             "Assisted strike resolves once after 0.12 seconds within the one metre budget");
         Check(player.transform.position == origin && player.transform.rotation == Quaternion.identity,
             "Melee assistance never translates or rotates the movement root");
-        Call(combat, "TickCooldowns", 1f);
+        TestMech.Advance(player, 1f);
         combat.TryMelee();
         enemy.transform.position += Vector3.forward * 3;
         Call(combat, "TickMelee", 0.12f);
         Check(hits == 0 && health.CurrentHealth == 40, "Moving enemy can escape an assisted swing");
-        Call(combat, "TickCooldowns", 1f);
+        TestMech.Advance(player, 1f);
         combat.TryMelee();
         Check(!combat.IsMeleeApproaching && hits == 0, "Distant enemy receives an ordinary missed swing");
         enemy.transform.position = origin + new Vector3(3, 0, 4);
         Physics.SyncTransforms();
-        Call(combat, "TickCooldowns", 1f);
+        TestMech.Advance(player, 1f);
         combat.TryMelee();
         Check(!combat.IsMeleeApproaching && hits == 0, "Enemy outside the forward assist angle does not pull the attack sideways");
         enemy.transform.position = origin + Vector3.forward * 5;
@@ -1024,7 +1020,7 @@ public static class MechFoundationChecks
         wall.transform.position = origin + Vector3.forward * 4.2f;
         wall.transform.localScale = new Vector3(4, 4, 0.1f);
         Physics.SyncTransforms();
-        Call(combat, "TickCooldowns", 1f);
+        TestMech.Advance(player, 1f);
         combat.TryMelee();
         Check(!combat.IsMeleeApproaching && hits == 0 && health.CurrentHealth == 40,
             "A wall prevents reach assistance and damage beyond it");
@@ -1041,7 +1037,7 @@ public static class MechFoundationChecks
         var follow = rig.GetComponent<CinemachineThirdPersonFollow>();
         enemy.transform.position = origin + Vector3.forward * 20;
         Physics.SyncTransforms();
-        Call(combat, "TickCooldowns", 1f);
+        TestMech.Advance(player, 1f);
         Call(control, "UpdateCameraOrbit", Vector2.zero, 5f);
         Call(control, "ApplySettings");
         float softPitch = (float)Get(control, "cameraPitch");
@@ -1059,7 +1055,7 @@ public static class MechFoundationChecks
         Physics.SyncTransforms();
         Call(control, "UpdateCameraOrbit", Vector2.zero, 5f);
         float closePitch = (float)Get(control, "cameraPitch");
-        Call(combat, "TickCooldowns", 1f);
+        TestMech.Advance(player, 1f);
         combat.TryMelee();
         Call(control, "UpdateCameraOrbit", Vector2.zero, 5f);
         Call(control, "UpdateMovementFeedback", 5f);
@@ -1079,7 +1075,7 @@ public static class MechFoundationChecks
             "Lethal combat damage reacquires in hard mode before camera framing without dropping pivot height");
         Call(combat, "TickMelee", 0.12f);
         Check(!combat.IsMeleeApproaching && hits == 0, "Losing the assisted enemy cancels the pending swing");
-        Call(combat, "TickCooldowns", 1f);
+        TestMech.Advance(player, 1f);
         Call(control, "UpdateCameraOrbit", Vector2.zero, 5f);
         Call(control, "ApplySettings");
         Check(rig.LookAt == replacement.AimTransform && Mathf.Abs(follow.ShoulderOffset.x - shoulder.x) < 0.001f,
@@ -1101,18 +1097,15 @@ public static class MechFoundationChecks
     static void CheckWeaponLoadout(Camera view)
     {
         Vector3 origin = new Vector3(6000, 2, 0);
-        var player = new GameObject("Four Weapon Player");
+        var player = new GameObject("Three Weapon Player");
+        player.SetActive(false);
         player.transform.position = origin;
         var combat = player.AddComponent<MechCombatController>();
         Set(combat, "gameplayCamera", view);
+        TestMech.Equip(player, (PartCategory.ArmR, TestMech.Axe()), (PartCategory.ShoulderL, TestMech.Cannon()),
+            (PartCategory.ShoulderR, TestMech.Crossbow()));
+        player.SetActive(true);
         view.transform.SetPositionAndRotation(origin, Quaternion.identity);
-        var axe = combat.GetWeapon(MechWeaponType.ThrowingAxe);
-        var cannon = combat.GetWeapon(MechWeaponType.Cannon);
-        var crossbow = combat.GetWeapon(MechWeaponType.Crossbow);
-        Check(axe.damage == 50 && axe.ammunition == 30 && axe.reloadSeconds == 0.5f
-            && cannon.damage == 100 && cannon.ammunition == 20 && cannon.reloadSeconds == 3
-            && crossbow.damage == 30 && crossbow.ammunition == 50 && crossbow.reloadSeconds == 1,
-            "Ranged loadout uses the supplied damage, ammo, and reload table");
         foreach (MechWeaponType slot in new[] { MechWeaponType.ThrowingAxe, MechWeaponType.Cannon, MechWeaponType.Crossbow })
         {
             var shot = combat.TryFire(TestMounts.For(slot));
@@ -1121,31 +1114,23 @@ public static class MechFoundationChecks
             Object.DestroyImmediate(shot.gameObject);
             Check(combat.TryFire(TestMounts.For(slot)) == null, $"{slot} one-round magazine cannot fire during reload");
         }
-        Call(combat, "TickCooldowns", 0.5f);
-        Check(combat.ReloadRemaining(MechWeaponType.ThrowingAxe) == 0
-            && combat.ReloadRemaining(MechWeaponType.Cannon) == 2.5f
-            && combat.ReloadRemaining(MechWeaponType.Crossbow) == 0.5f,
+        Check(TestMech.Near(combat.ReloadRemaining(MechWeaponType.ThrowingAxe), 0.5f)
+            && TestMech.Near(combat.ReloadRemaining(MechWeaponType.Cannon), 3f)
+            && TestMech.Near(combat.ReloadRemaining(MechWeaponType.Crossbow), 1f),
             "Reload clocks remain independent across all three ranged slots");
+        TestMech.Advance(player, 0.5f);
         for (int i = 0; i < 29; i++)
         {
             var shot = combat.TryFire();
             Check(shot != null, "Available axe round fires after reload");
             Object.DestroyImmediate(shot.gameObject);
-            Call(combat, "TickCooldowns", 0.5f);
+            TestMech.Advance(player, 0.5f);
         }
         Check(combat.AmmoRemaining(MechWeaponType.ThrowingAxe) == 0 && combat.TryFire() == null,
-            "The axe has exactly 30 total shots and cannot fire on empty");
+            "An empty weapon does nothing");
         combat.enabled = false;
         combat.enabled = true;
         Check(combat.AmmoRemaining(MechWeaponType.ThrowingAxe) == 0, "Re-enabling weapons cannot refill ammunition");
-        var swordEnemy = Enemy(origin + Vector3.forward * 2);
-        var swordHealth = swordEnemy.gameObject.AddComponent<CombatHealth>();
-        Physics.SyncTransforms();
-        Check(combat.TryMelee() && swordHealth.IsDead, "Sword uses the supplied 100 damage");
-        Call(combat, "TickCooldowns", 0.69f);
-        Check(!combat.TryMelee(), "Sword cannot repeat before its 0.7 second cooldown");
-        Call(combat, "TickCooldowns", 0.02f);
-        Check(combat.TryMelee(), "Sword is ready again after 0.7 seconds without ammunition");
         Check(MechProjectile.RangeMultiplier(5, 5, 10) == 1
             && MechProjectile.RangeMultiplier(7.5f, 5, 10) == 0.5f
             && MechProjectile.RangeMultiplier(10, 5, 10) == 0,

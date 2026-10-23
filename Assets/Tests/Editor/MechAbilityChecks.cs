@@ -44,6 +44,7 @@ public static class MechAbilityChecks
         var player = new GameObject("Ability Owner");
         player.SetActive(false); player.transform.position = origin;
         var combat = player.AddComponent<MechCombatController>();
+        TestMech.Equip(player, (PartCategory.ShoulderL, TestMech.Cannon()), (PartCategory.ShoulderR, TestMech.Crossbow()));
         var movement = player.AddComponent<MechMovementController>();
         var ownerHealth = player.AddComponent<CombatHealth>();
         var feedback = player.AddComponent<CombatFeedback>();

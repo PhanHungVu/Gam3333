@@ -48,6 +48,8 @@ public static class SpiralBarrageChecks
         player.SetActive(false);
         player.transform.position = origin;
         var combat = player.AddComponent<MechCombatController>();
+        TestMech.Equip(player, (PartCategory.ShoulderL, TestMech.Cannon()), (PartCategory.ArmR, TestMech.Axe()),
+            (PartCategory.ShoulderR, TestMech.Crossbow()));
         var feedback = player.AddComponent<CombatFeedback>();
         Set(feedback, "effectMaterial", AssetDatabase.LoadAssetAtPath<Material>("Assets/Combat/Prototype Combat.mat"));
         Set(feedback, "prewarmEffects", 4);
@@ -104,7 +106,7 @@ public static class SpiralBarrageChecks
         check(deaths == 3 && events.Count == 5 && events[4].ConfirmationOnly && events[4].Kills == 3
             && feedback.KillConfirmationCount == 1 && feedback.LastConfirmedKills == 3 && runner.ActiveCount == 0,
             "Initial and secondary kills produce one complete-barrage triple-kill confirmation");
-        check(combat.AmmoRemaining(MechWeaponType.Cannon) == 19 && combat.ReloadRemaining(MechWeaponType.Cannon) == 3,
+        check(combat.AmmoRemaining(MechWeaponType.Cannon) == 19 && TestMech.Near(combat.ReloadRemaining(MechWeaponType.Cannon), 3f),
             "Secondary detonations consume no extra ammo and do not change the cannon cooldown");
         Call(feedback, "Tick", 1f);
         check(feedback.ActiveEffects == 0, "Secondary visuals expire back into the existing pool");
@@ -112,7 +114,7 @@ public static class SpiralBarrageChecks
         // Normal cannon still uses precisely its single impact after a barrage has been used.
         var normalEnemy = Enemy(origin + Vector3.forward * 5);
         Physics.SyncTransforms();
-        Call(combat, "TickCooldowns", 3f);
+        TestMech.Advance(player, 3f);
         int before = events.Count;
         shot = combat.TryFire(PartCategory.ShoulderL);
         Call(shot, "Step", 0.2f);
