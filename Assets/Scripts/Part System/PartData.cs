@@ -9,13 +9,12 @@ public enum StatType
     Health, MoveSpeed,
     Damage, MagSize, Ammo, CooldownReload, Range, SingleShot, AutoAim,
     // Appended so stats already saved in part assets keep their meaning.
-    MaxRangeMultiplier, ProjectileSpeed, ProjectileSize, SplashRadius, SpiralBarrage
+    MaxRangeMultiplier, ProjectileSpeed, ProjectileSize, SplashRadius
 }
 
-// How a part attacks. None for parts that don't attack (head, legs, torso, ability parts).
+// How a part attacks. None for parts that don't attack (head, legs, torso).
 public enum PartSubtype { None, Projectile, Explosive, Melee }
 
-public enum MechPartAbilityKind { None, ResonancePulse, ZigzagBarrage, BloomMissile }
 
 [System.Serializable]
 public struct StatEntry
@@ -36,7 +35,6 @@ public class PartData : ScriptableObject
     public PartSubtype subtype;
     public List<StatEntry> stats;
     [Header("Combat (Range stat is in golem lengths; metres per golem is in MechRulesConfig)")]
-    public MechPartAbilityKind ability;
     [Tooltip("Optional projectile prefab. Contains visual meshes and MechProjectile, with no physics colliders.")]
     public GameObject projectilePrefab;
     [Tooltip("Projectile colour (the plain sphere used when no projectile prefab is set, and its trail).")]

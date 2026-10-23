@@ -11,12 +11,10 @@ public readonly struct MechProjectileImpact
     public readonly Vector3 Direction;
     public readonly float Radius;
     public readonly int Hits, Kills;
-    public readonly bool DeferConfirmation, Secondary, ConfirmationOnly;
     public MechProjectileImpact(Part source, PartSubtype subtype, Vector3 position, float radius, int hits, int kills,
-        bool deferConfirmation = false, bool secondary = false, bool confirmationOnly = false, Vector3 direction = default)
+        Vector3 direction = default)
     {
         Source = source; Subtype = subtype; Position = position; Radius = radius; Hits = hits; Kills = kills;
-        DeferConfirmation = deferConfirmation; Secondary = secondary; ConfirmationOnly = confirmationOnly;
         Direction = direction;
     }
 }
@@ -35,8 +33,6 @@ public class MechProjectile : MonoBehaviour
     RaycastHit[] hits = new RaycastHit[16];
     Collider[] overlaps = new Collider[16];
     readonly CombatBlast blast = new CombatBlast();
-    CannonSpiralBarrage spiralBarrage;
-    CannonSpiralBarrage.Settings spiralSettings;
     public Vector3 Direction => direction;
     public bool IsLive => live;
     // The part that fired this shot (null for enemy shots) and how it attacks.
@@ -69,8 +65,6 @@ public class MechProjectile : MonoBehaviour
         return shot.AddComponent<MechProjectile>();
     }
 
-    public void ConfigureSpiralBarrage(CannonSpiralBarrage barrage, CannonSpiralBarrage.Settings settings)
-    { spiralBarrage = barrage; spiralSettings = settings; }
 
     public void ConfigureRangeAndExplosion(float effective, float blastRadius)
     {
@@ -171,11 +165,8 @@ public class MechProjectile : MonoBehaviour
         var result = !targetOnly || damageTarget != null && collider.GetComponentInParent<CombatHealth>() == damageTarget
             ? blast.Resolve(impactPoint, explosionRadius, impactDamage, owner, collisionLayers, collider)
             : default;
-        var impact = new MechProjectileImpact(Source, Subtype, impactPoint, explosionRadius, result.Hits, result.Kills);
-        bool barrageStarted = spiralBarrage != null
-            && spiralBarrage.TryBegin(impact, impactDamage, direction, owner, collisionLayers, spiralSettings);
         ImpactResolved?.Invoke(new MechProjectileImpact(Source, Subtype, impactPoint, explosionRadius,
-            result.Hits, result.Kills, deferConfirmation: barrageStarted, direction: direction));
+            result.Hits, result.Kills, direction: direction));
         ImpactResolved = null;
     }
 

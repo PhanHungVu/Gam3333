@@ -16075,17 +16075,6 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   muzzleOffset: {x: 0.65, y: 0.5, z: 0.65}
-  spiralSettings:
-    nodeCount: 8
-    angularIncrement: 137.5
-    startRadius: 6
-    spacing: 0.8
-    initialDelay: 0.25
-    nodeDelay: 0.18
-    blastRadius: 2
-    damageMultiplier: 0.35
-    maximumSecondaryDamage: 200
-    maximumSecondaryTargets: 5
   meleeCenter: {x: 0, y: 0, z: 2.75}
   meleeSize: {x: 5, y: 3.5, z: 5.5}
   maximumMeleeApproach: 1

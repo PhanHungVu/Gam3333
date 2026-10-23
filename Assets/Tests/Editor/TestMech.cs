@@ -74,13 +74,6 @@ public static class TestMech
     // Reload times are measured against Time.time, so compare them with a small tolerance.
     public static bool Near(float value, float expected) => Mathf.Abs(value - expected) < 0.001f;
 
-    // Changes (or adds) one stat on a test part, e.g. to switch a cannon's spiral on.
-    public static void SetStat(PartData data, StatType type, float value)
-    {
-        data.stats.RemoveAll(s => s.type == type);
-        Stat(data, type, value);
-    }
-
     static PartData Data(string name, PartType type, PartSubtype subtype)
     {
         var data = ScriptableObject.CreateInstance<PartData>();

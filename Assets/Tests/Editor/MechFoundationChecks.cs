@@ -78,8 +78,6 @@ public static class MechFoundationChecks
             CheckWeaponLoadout(view);
             CheckInputIsolation();
             CombatFeedbackChecks.Run(Check);
-            SpiralBarrageChecks.Run(Check);
-            MechAbilityChecks.Run(Check);
             MechPartsChecks.Run(Check);
             DamageChecks.Run(Check);
             MechStatsChecks.Run(Check);

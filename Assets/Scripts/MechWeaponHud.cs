@@ -46,14 +46,12 @@ public class MechWeaponHud : MonoBehaviour
     void OnEnable() { if (canvas != null) canvas.enabled = true; }
     void OnDisable() { if (canvas != null) canvas.enabled = false; }
 
-    // What a socket's button does: its ability, its weapon (by subtype), an animation-only attack, or nothing.
+    // What a socket's button does: its weapon (by subtype), an animation-only attack, or nothing.
     string SocketLine(PartCategory socket, string key)
     {
         var part = combat.GetPart(socket);
         if (part == null) return key + "  NO PART EQUIPPED";
         string name = part.Stats.partName.ToUpperInvariant();
-        var ability = combat.GetAbility(socket);
-        if (ability != null) return key + "  " + ability.name.ToUpperInvariant() + (ability.CooldownRemaining > 0 ? $"  {ability.CooldownRemaining:0.0}s" : "  READY");
         float wait = combat.ReloadRemaining(socket);
         switch (part.Stats.subtype)
         {

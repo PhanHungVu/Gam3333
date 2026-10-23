@@ -4,7 +4,7 @@ using UnityEngine;
 [CustomPropertyDrawer(typeof(StatEntry))]
 public class StatEntryDrawer : PropertyDrawer
 {
-    static readonly StatType[] BoolStats = { StatType.SingleShot, StatType.SpiralBarrage };
+    static readonly StatType[] BoolStats = { StatType.SingleShot };
 
     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
     {

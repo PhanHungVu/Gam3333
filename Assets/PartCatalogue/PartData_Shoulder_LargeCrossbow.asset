@@ -36,6 +36,5 @@ MonoBehaviour:
     value: 160
   - type: 11
     value: 0.07
-  ability: 0
   projectilePrefab: {fileID: 1465189720993408064, guid: ed7887b3b88626a4089da49f33479a2a, type: 3}
   projectileColor: {r: 1, g: 0.9, b: 0.3, a: 1}

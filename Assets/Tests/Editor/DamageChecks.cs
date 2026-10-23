@@ -63,19 +63,6 @@ public static class DamageChecks
             check(owner.CurrentHealth == 100f, "Area damage never hurts its owner");
             check(hidden.CurrentHealth == 100f, "Walls block area damage");
 
-            // Damage cap (used by abilities and the cannon spiral)
-            var capOrigin = origin + Vector3.right * 20f;
-            var first = Target(capOrigin + Vector3.right * 1.5f, 100f);
-            var second = Target(capOrigin + Vector3.left * 1.5f, 100f);
-            Physics.SyncTransforms();
-            var budget = new CombatBlast.Budget();
-            budget.Reset(40f, 1);
-            var capOne = blast.Resolve(capOrigin, 3f, 30f, null, ~0, budget: budget);
-            var capTwo = blast.Resolve(capOrigin, 3f, 30f, null, ~0, budget: budget);
-            float lost = 200f - first.CurrentHealth - second.CurrentHealth;
-            check(capOne.Hits == 1 && capTwo.Hits == 1 && (first.CurrentHealth == 100f || second.CurrentHealth == 100f) && lost == 40f,
-                "A damage cap limits both the number of targets and the total damage");
-
             // Melee box
             var boxOrigin = origin + Vector3.right * 40f;
             var attacker = new GameObject("Melee Owner");

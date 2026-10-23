@@ -108,7 +108,6 @@ public class EquipManager : MonoBehaviour
         if (category == PartCategory.Torso && notify)
             foreach (var pair in equipped)
                 if (pair.Key != PartCategory.Torso && pair.Value != null) pair.Value.transform.SetParent(part.transform.parent, true);
-        foreach (var driver in part.GetComponentsInChildren<MechAbilityDriver>(true)) driver.BindOwner(null);
         part.transform.SetParent(null, true);
         part.isEquipped = false; part.EquippedBy = null; part.Slot = null;
         part.SetEquippedPhysics(false);
@@ -124,7 +123,6 @@ public class EquipManager : MonoBehaviour
         part.SetEquippedPhysics(true);
         equipped[socket.socketType] = part;
         part.Slot = socket.socketType;
-        foreach (var driver in part.GetComponentsInChildren<MechAbilityDriver>(true)) driver.BindOwner(transform);
     }
     void Place(Socket socket, Part part)
     {

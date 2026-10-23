@@ -47,27 +47,6 @@ public static class MechPartsChecks
             && combat.AmmoRemaining(PartCategory.ShoulderL)==19,"Torso replacement transfers socket occupants without losing weapon state");
         Object.DestroyImmediate(oldTorso.gameObject);
         bool targetMode=player.GetComponent<MechTargetLockController>().IsFreeAim;
-        foreach(string name in new[]{"ResonancePulse","ZigzagBarrage","BloomMissile"})
-        {
-            var module=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Abilities/"+name+" Part.prefab"));
-            var part=module.GetComponent<Part>(); var ability=module.GetComponent<MechPartAbility>();
-            check(equipment.TryEquip(part) && bridge.GetAbility(PartCategory.ShoulderL)!=null,"Equip independent "+name+" module through the existing shoulder socket");
-            cannon.transform.position+=Vector3.right*20;
-            combat.TryAttack(PartCategory.ShoulderL);
-            check(ability.IsActive && combat.SubtypeOf(PartCategory.ShoulderL)==PartSubtype.None,"Socket activation runs "+name+" instead of a hidden duplicate cannon");
-            Physics.SyncTransforms();
-            var motor=player.GetComponent<MechMovementController>();
-            var step=typeof(MechFoundationChecks).GetMethod("Step",BindingFlags.Static|BindingFlags.NonPublic);
-            for(int settle=0;settle<40;settle++) step.Invoke(null,new object[]{motor,rig.GameplayCamera,Vector2.zero,false,false,false,0.02f,false});
-            step.Invoke(null,new object[]{motor,rig.GameplayCamera,Vector2.right,false,false,true,0.02f,false});
-            ability.Tick(0.02f);
-            check(ability.IsActive && motor.IsQuickBoosting,"Equipped "+name+" remains active during actual movement boost");
-            player.SetActive(false);check(!ability.IsActive,"Player disable cancels equipped ability damage and releases its projectiles");player.SetActive(true);
-            equipment.Unequip(PartCategory.ShoulderL);
-            check(!module.GetComponent<MechAbilityDriver>().TryActivate(),"Dropped ability cannot attack using its former owner");
-            Object.DestroyImmediate(module);
-            equipment.TryEquip(cannon);
-        }
         // Firing follows the socket: Q/E fire whatever sits in the left/right shoulder.
         const string partsPath="Assets/Prefabs/Mech/Base/Parts/";
         var crossbowPart=equipment.GetEquipped(PartCategory.ShoulderR);

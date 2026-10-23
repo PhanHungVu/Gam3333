@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 // A reusable visual only: no colliders, rigidbodies, health, or damage queries.
 public sealed class CombatFeedbackEffect : MonoBehaviour
 {
-    public enum Kind { Muzzle, Explosion, Death, Wave, Orb }
+    public enum Kind { Muzzle, Explosion, Death }
     const int RingSegments = 40;
     LineRenderer flash, ring;
     MeshRenderer core;
@@ -18,8 +18,6 @@ public sealed class CombatFeedbackEffect : MonoBehaviour
     Kind kind;
     public bool IsPlaying { get; private set; }
     public float Age => age;
-    public int Generation { get; private set; }
-    public bool IsLeased => IsPlaying && (kind == Kind.Wave || kind == Kind.Orb);
 
     public void Initialize(Material material)
     {
@@ -103,7 +101,6 @@ public sealed class CombatFeedbackEffect : MonoBehaviour
         if (material == null) return;
         Stop();
         kind = effectKind;
-        Generation++;
         duration = Mathf.Max(0.04f, lifetime);
         radius = Mathf.Max(0.05f, size);
         color = tint;
@@ -141,7 +138,6 @@ public sealed class CombatFeedbackEffect : MonoBehaviour
         if (!IsPlaying) return;
         age += Mathf.Max(0, deltaTime);
         if (age >= duration) { Stop(); return; }
-        if (IsLeased) return; // Ability updates geometry on the same tick as its damage/motion.
         float t = age / duration;
         float flashTime = Mathf.Min(duration, kind == Kind.Muzzle ? 0.1f : 0.14f);
         float flashProgress = Mathf.Clamp01(age / flashTime);
@@ -174,41 +170,5 @@ public sealed class CombatFeedbackEffect : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    public void SetWave(float frontRadius, float width)
-    {
-        flash.enabled = core.enabled = false;
-        ring.enabled = true;
-        ring.transform.localScale = Vector3.one * Mathf.Max(0.01f, frontRadius);
-        ring.widthMultiplier = Mathf.Clamp(width, 0.03f, 2);
-        Color tint = color; tint.a = 0.65f;
-        ring.startColor = ring.endColor = tint;
-    }
-
-    public void SetOrb(Vector3 position, float size)
-    {
-        transform.position = position;
-        flash.enabled = ring.enabled = false;
-        core.enabled = true;
-        core.transform.localScale = Vector3.one * size;
-        coreTint.SetColor("_Color", color);
-        core.SetPropertyBlock(coreTint);
-    }
-
-    public void HideLease() { flash.enabled = ring.enabled = core.enabled = false; }
-
     void OnDestroy() { if (coreMesh != null) Destroy(coreMesh); }
-}
-
-// Generation prevents an old ability from moving or stopping an effect that has been reused.
-public readonly struct CombatEffectLease
-{
-    readonly CombatFeedbackEffect effect;
-    readonly int generation;
-    public CombatEffectLease(CombatFeedbackEffect effect)
-    { this.effect = effect; generation = effect != null ? effect.Generation : 0; }
-    public bool IsValid => effect != null && effect.IsPlaying && effect.Generation == generation;
-    public void Wave(float radius, float width) { if (IsValid) effect.SetWave(radius, width); }
-    public void Orb(Vector3 position, float size) { if (IsValid) effect.SetOrb(position, size); }
-    public void Release() { if (IsValid) effect.Stop(); }
-    public void Hide() { if (IsValid) effect.HideLease(); }
 }

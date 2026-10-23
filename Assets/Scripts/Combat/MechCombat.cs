@@ -11,7 +11,7 @@ public readonly struct AttackResult
 
 // The mech's combat brain. TryAttack(socket) attacks with whatever part is mounted in that socket,
 // choosing the attack from the part's subtype: Projectile and Explosive parts fire (RangedAttack),
-// Melee parts swing (MeleeAttack), parts with no weapon use their ability or an animation-only attack.
+// Melee parts swing (MeleeAttack), and arm parts with no weapon play an animation-only attack.
 // Every stat comes from the part's data; ammo and reload live on the part. Presentation listens to
 // the events below and never changes gameplay.
 [DisallowMultipleComponent]
@@ -26,8 +26,6 @@ public class MechCombat : MonoBehaviour
     [SerializeField] Vector3 muzzleOffset = new Vector3(0.65f, 0.5f, 0.65f);
     [Tooltip("Material for the plain projectile sphere, used when a part has no projectile model.")]
     [SerializeField] Material combatMaterial;
-    [Header("Spiral pattern (parts whose SpiralBarrage stat is on)")]
-    [SerializeField] CannonSpiralBarrage.Settings spiralSettings = CannonSpiralBarrage.Settings.Default;
     [Header("Melee (shared hit box; damage and cooldown come from the part)")]
     [SerializeField] Vector3 meleeCenter = new Vector3(0f, 0f, 2.75f);
     [SerializeField] Vector3 meleeSize = new Vector3(5f, 3.5f, 5.5f);
@@ -41,7 +39,6 @@ public class MechCombat : MonoBehaviour
     MechTargetLockController targeting;
     MechMovementController movement;
     MeleeAttack melee;
-    CannonSpiralBarrage barrageRunner;
     Part lastAttacker;
     internal readonly CombatBlast Blast = new CombatBlast();
 
@@ -84,11 +81,6 @@ public class MechCombat : MonoBehaviour
     public PartSubtype SubtypeOf(PartCategory socket) { var part = GetPart(socket); return part != null ? part.Stats.subtype : PartSubtype.None; }
     public int AmmoRemaining(PartCategory socket) { var part = GetPart(socket); return part != null && IsRanged(part) ? part.RemainingAmmo : 0; }
     public float ReloadRemaining(PartCategory socket) { var part = GetPart(socket); return part != null ? Mathf.Max(0f, part.ReadyAt - Time.time) : 0f; }
-    public MechAbilityDriver GetAbility(PartCategory socket)
-    {
-        var part = GetPart(socket);
-        return part != null && part.Stats.ability != MechPartAbilityKind.None ? part.GetComponent<MechAbilityDriver>() : null;
-    }
     public bool HasMelee => GetMeleePart(PartCategory.ArmL) != null || GetMeleePart(PartCategory.ArmR) != null;
     internal Part GetMeleePart(PartCategory socket)
     {
@@ -105,9 +97,7 @@ public class MechCombat : MonoBehaviour
         var part = GetPart(socket);
         if (part != null && IsRanged(part)) { var shot = Fire(part); return new AttackResult(shot != null, shot); }
         if (part != null && part.Stats.subtype == PartSubtype.Melee) return new AttackResult(melee.TryStart(part, socket), null);
-        // No weapon: the part's own ability, or an arm's animation-only attack.
-        var ability = GetAbility(socket);
-        if (ability != null && ability.TryActivate()) return new AttackResult(true, null);
+        // No weapon: an arm's animation-only attack.
         bool arm = socket == PartCategory.ArmL || socket == PartCategory.ArmR;
         return new AttackResult(arm && TryAnimationOnlyAttack(part), null);
     }
@@ -123,8 +113,7 @@ public class MechCombat : MonoBehaviour
         Vector3 muzzle = MuzzleOf(part);
         Vector3 aimPoint = AimSolver.AimPoint(targeting, gameplayCamera, transform, maximumRange, hitLayers);
         var projectile = RangedAttack.Fire(part, transform, muzzle, aimPoint, gameplayCamera.transform.forward,
-            effectiveRange, maximumRange, hitLayers, combatMaterial, ForwardProjectileImpact,
-            stats.GetBool(StatType.SpiralBarrage) ? SpiralRunner() : null, spiralSettings);
+            effectiveRange, maximumRange, hitLayers, combatMaterial, ForwardProjectileImpact);
         lastAttacker = part;
         ShotFired?.Invoke(projectile);
         WeaponAttackStarted?.Invoke(part);
@@ -133,20 +122,9 @@ public class MechCombat : MonoBehaviour
 
     static bool TryAnimationOnlyAttack(Part part)
     {
-        if (part == null || part.Stats.subtype != PartSubtype.None || part.Stats.ability != MechPartAbilityKind.None) return false;
+        if (part == null || part.Stats.subtype != PartSubtype.None) return false;
         var presentation = part.GetComponent<MechWeaponAnimator>();
         return presentation != null && presentation.TryAnimationOnlyAttack();
-    }
-
-    CannonSpiralBarrage SpiralRunner()
-    {
-        if (barrageRunner == null)
-        {
-            barrageRunner = GetComponent<CannonSpiralBarrage>();
-            if (barrageRunner == null) barrageRunner = gameObject.AddComponent<CannonSpiralBarrage>();
-            barrageRunner.ImpactResolved += ForwardProjectileImpact;
-        }
-        return barrageRunner;
     }
 
     void ForwardProjectileImpact(MechProjectileImpact impact) => ProjectileImpact?.Invoke(impact);
@@ -171,7 +149,6 @@ public class MechCombat : MonoBehaviour
     void OnDisable()
     {
         if (parts != null) parts.EquipmentChanged -= PrepareEquipment;
-        if (barrageRunner != null) barrageRunner.CancelAll();
         melee.Cancel();
     }
 
@@ -183,7 +160,6 @@ public class MechCombat : MonoBehaviour
         {
             var part = parts.GetEquipped(socket);
             if (part == null || part.Stats == null) continue;
-            AbilitySetup.Ensure(part);
             if (IsRanged(part)) part.InitializeAmmo(Mathf.Max(0, Mathf.RoundToInt(part.Stats.GetStat(StatType.Ammo))));
         }
         melee.Cancel();
@@ -200,7 +176,6 @@ public class MechCombat : MonoBehaviour
 
     void OnValidate()
     {
-        spiralSettings = spiralSettings.Validated();
         meleeSize = Vector3.Max(Vector3.one * 0.01f, meleeSize);
         maximumMeleeApproach = Mathf.Max(0f, maximumMeleeApproach);
         meleeApproachDuration = Mathf.Max(0.01f, meleeApproachDuration);

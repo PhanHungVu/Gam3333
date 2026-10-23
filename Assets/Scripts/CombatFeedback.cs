@@ -183,8 +183,8 @@ public sealed class CombatFeedback : MonoBehaviour
     void OnImpact(MechProjectileImpact result)
     {
         if (!presentationEnabled || result.Subtype != PartSubtype.Explosive) return;
-        if (!result.ConfirmationOnly) PlayImpact(result);
-        if (result.DeferConfirmation || result.Kills <= 0) return;
+        PlayImpact(result);
+        if (result.Kills <= 0) return;
         ConfirmKills(result.Kills);
     }
 
@@ -192,11 +192,9 @@ public sealed class CombatFeedback : MonoBehaviour
     {
         if (explosionFlash || shockwaveRing || secondaryEmbers)
             PlayEffect(CombatFeedbackEffect.Kind.Explosion, result.Position, result.Radius,
-                result.Secondary ? Mathf.Min(explosionDuration, 0.3f) : explosionDuration,
-                explosionColor, explosionFlash, shockwaveRing, secondaryEmbers && !result.Secondary);
+                explosionDuration, explosionColor, explosionFlash, shockwaveRing, secondaryEmbers);
         if (impactAudio) PlayAudio(cannonImpactClip, result.Position, false);
-        // Secondary nodes stay quiet visually: short cores/rings, no ember cloud or camera shake.
-        if (!result.Secondary && cameraImpulse && impulseListener != null)
+        if (cameraImpulse && impulseListener != null)
         {
             float proximity = Mathf.Clamp01(1 - Vector3.Distance(transform.position, result.Position) / Mathf.Max(1, impulseRange));
             float strength = Mathf.Min(0.2f, impulseStrength * (1 + Mathf.Clamp(result.Kills - 1, 0, 3) * 0.2f));
@@ -227,38 +225,6 @@ public sealed class CombatFeedback : MonoBehaviour
             deathColor, true, false, true);
     }
 
-    // Weapon-independent presentation entry points; abilities never generate camera impulses.
-    public void PlayAbilityExplosion(Vector3 position, float radius, Color color)
-    {
-        if (!isActiveAndEnabled || !presentationEnabled) return;
-        if (explosionFlash || shockwaveRing)
-            PlayEffect(CombatFeedbackEffect.Kind.Explosion, position, radius, 0.3f, color,
-                explosionFlash, shockwaveRing, false);
-        PlayAbilityAudio(position);
-    }
-
-    public void PlayAbilityAudio(Vector3 position)
-    { if (isActiveAndEnabled && presentationEnabled && impactAudio) PlayAudio(cannonImpactClip, position, false); }
-
-    public void ConfirmAbilityKills(int kills)
-    { if (isActiveAndEnabled && presentationEnabled && kills > 0) ConfirmKills(kills); }
-
-    public CombatEffectLease LeaseAbilityEffect(CombatFeedbackEffect.Kind kind, Vector3 position, Color color)
-    {
-        if (!isActiveAndEnabled || !presentationEnabled || kind == CombatFeedbackEffect.Kind.Wave && !shockwaveRing) return default;
-        if (kind != CombatFeedbackEffect.Kind.Wave && kind != CombatFeedbackEffect.Kind.Orb) return default;
-        return new CombatEffectLease(PlayEffect(kind, position, 1, 30.5f, color, false, false, false));
-    }
-
-    public bool CanReserveAbilityEffects(int count)
-    {
-        // Intentionally muted/missing presentation never changes gameplay admission.
-        if (!isActiveAndEnabled || !presentationEnabled || effectMaterial == null) return true;
-        int available = effects.Length - created;
-        for (int i = 0; i < created; i++) if (!effects[i].IsLeased) available++;
-        return available >= count;
-    }
-
     CombatFeedbackEffect PlayEffect(CombatFeedbackEffect.Kind kind, Vector3 position, float size, float duration, Color color,
         bool flash, bool ring, bool secondary)
     {
@@ -269,7 +235,7 @@ public sealed class CombatFeedback : MonoBehaviour
         if (effect == null)
         {
             for (int i = 0; i < created; i++)
-                if (!effects[i].IsLeased && (effect == null || effects[i].Age > effect.Age)) effect = effects[i];
+                if (effect == null || effects[i].Age > effect.Age) effect = effects[i];
         }
         if (effect == null) return null;
         effect.Play(kind, position, size, duration, color, flash, ring, secondary, effectMaterial);

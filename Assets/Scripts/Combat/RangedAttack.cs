@@ -7,7 +7,7 @@ public static class RangedAttack
 {
     public static MechProjectile Fire(Part part, Transform owner, Vector3 muzzle, Vector3 aimPoint, Vector3 fallbackDirection,
         float effectiveRange, float maximumRange, LayerMask layers, Material fallbackMaterial,
-        Action<MechProjectileImpact> onImpact, CannonSpiralBarrage spiral, CannonSpiralBarrage.Settings spiralSettings)
+        Action<MechProjectileImpact> onImpact)
     {
         var stats = part.Stats;
         Vector3 direction = (aimPoint - muzzle).normalized;
@@ -22,7 +22,6 @@ public static class RangedAttack
         projectile.ImpactResolved += onImpact;
         float splash = stats.subtype == PartSubtype.Explosive ? Mathf.Max(0f, stats.GetStat(StatType.SplashRadius)) : 0f;
         projectile.ConfigureRangeAndExplosion(effectiveRange, splash);
-        if (spiral != null) projectile.ConfigureSpiralBarrage(spiral, spiralSettings);
         projectile.Launch(owner, direction, stats.GetStat(StatType.ProjectileSpeed), Mathf.Max(0f, stats.GetStat(StatType.Damage)),
             size, maximumRange, layers, muzzle);
         return projectile;
