@@ -5188,9 +5188,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a83a10ed3c50e19479018b309d84c0ca, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
+  recoilAxis: {x: -1, y: 0, z: 0}
   muzzle: {fileID: 1851619264223682420}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: cc03c119946ec9043b0bfe8e39af9144, type: 2}
@@ -5206,7 +5207,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 39a10c3e992074141b45ab35cbdc9981, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechWeaponAnimator
   animator: {fileID: 8950974109808443117}
   animations: {fileID: 11400000, guid: 2d4cc11a0888ea8478d35abfebeb757e, type: 2}
@@ -5241,7 +5242,7 @@ Transform:
   m_GameObject: {fileID: 1698710703367269883}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.35, z: -0.15}
+  m_LocalPosition: {x: -0.6600006, y: 0.86, z: 2.2460012}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5370,9 +5371,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a83a10ed3c50e19479018b309d84c0ca, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
+  recoilAxis: {x: -1, y: 0, z: 0}
   muzzle: {fileID: 0}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: e53a52aa63c1e6846b870999a563975b, type: 2}
@@ -5388,7 +5390,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 565e0671c1dca71448b09a2ea96b7d57, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechPartPoseReceiver
   pivotPosition: {x: 0.5500004, y: -0.088540554, z: -0.06536007}
   pivotRotation: {x: 0.000000006697388, y: -0.7071069, z: 0.0000000064735057, w: 0.7071069}
@@ -10547,7 +10549,7 @@ Transform:
   m_GameObject: {fileID: 2579489489128006462}
   serializedVersion: 2
   m_LocalRotation: {x: 0.00000008429371, y: -0.7071068, z: 0.00000008429367, w: 0.7071068}
-  m_LocalPosition: {x: 0.8554245, y: -4.701345, z: 0.12833536}
+  m_LocalPosition: {x: 0.8554245, y: -4.701345, z: -1.8911537}
   m_LocalScale: {x: 1.0000002, y: 1.0000001, z: 1.0000005}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -10571,7 +10573,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage:
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -15553,9 +15555,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a83a10ed3c50e19479018b309d84c0ca, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
+  recoilAxis: {x: -1, y: 0, z: 0}
   muzzle: {fileID: 0}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: 95c2f3c62f08a9249bfc1432876a1e9a, type: 2}
@@ -15571,7 +15574,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 565e0671c1dca71448b09a2ea96b7d57, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechPartPoseReceiver
   pivotPosition: {x: 0.000000059604645, y: -1.1984453, z: 0.22885996}
   pivotRotation: {x: 0.000000008381904, y: 0, z: 7.4578566e-11, w: 1.0000001}
@@ -15706,10 +15709,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1d8c5232c2d18cd409ba201304eadd29, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PartPickup
   partSwapHudPopupParent: {fileID: 0}
   highlightElementPrefab: {fileID: 2660861773203468729, guid: 02564f784f7b5ce4f97c2f616cba0a62, type: 3}
+  armHighlight: {r: 0.147, g: 0.81, b: 0.819, a: 1}
+  shoulderHighlight: {r: 0.25, g: 0.9, b: 0.3, a: 1}
+  headHighlight: {r: 1, g: 0.85, b: 0.2, a: 1}
+  legsHighlight: {r: 0.65, g: 0.35, b: 1, a: 1}
+  torsoHighlight: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &2676866019859857318
 GameObject:
   m_ObjectHideFlags: 0
@@ -15753,7 +15761,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a5b8d878916e38419b9edd084199490, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 3
 --- !u!1 &2718313398010269854
@@ -15874,7 +15882,7 @@ Transform:
   m_GameObject: {fileID: 2731721472918198437}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.15, y: 0.2, z: 0}
+  m_LocalPosition: {x: -0.15, y: 0.2, z: -2.019489}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -16052,11 +16060,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3671457730a92054683f894d556551ce, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EquipManager
   rulesConfig: {fileID: 11400000, guid: ee7e37eb664fbfb4695ed0f740b434c4, type: 2}
   partScale: 0.5
-  partSwapHUDScript: {fileID: 0}
+  startingLoadout: []
 --- !u!114 &4187055195490756122
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16067,14 +16075,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9c201ada6e3e49d49292fc53f6dc0025, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechCombatController
   gameplayCamera: {fileID: 0}
-  combatMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   hitLayers:
     serializedVersion: 2
     m_Bits: 4294967295
   muzzleOffset: {x: 0.65, y: 0.5, z: 0.65}
+  combatMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   meleeCenter: {x: 0, y: 0, z: 2.75}
   meleeSize: {x: 5, y: 3.5, z: 5.5}
   maximumMeleeApproach: 1
@@ -16091,7 +16099,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df55c955fd694140bd431099851905d4, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatFeedback
   presentationEnabled: 1
   effectMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
@@ -16138,7 +16146,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ea2208996a284a4e8ca7bbcc3e6d1743, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechWeaponHud
 --- !u!143 &2151410870433537973
 CharacterController:
@@ -16175,7 +16183,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c5040003381fcac46a32521a0c86364b, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechMovementController
   gameplayCamera: {fileID: 0}
   energy: {fileID: 6057257043024523587}
@@ -16252,7 +16260,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8e01e99e2497bbd4b8d657213fa2636e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechTargetLockController
   lockRange: 60
   targetLayers:
@@ -16278,7 +16286,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 29454c7fbb814c36a4a1a5a80793819a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechEnergyController
   capacity: 100
   regenerationPerSecond: 25
@@ -16293,7 +16301,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 38e4c352eb0142b2b17e3b9c43f6ccb0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechBoostPresentation
   movement: {fileID: 897119625829190670}
   visualRoot: {fileID: 5317951554273154181}
@@ -16314,7 +16322,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7b54c3f0228f3d4bb23513f81bd9b67, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechPlayerRig
   cameraPrefab: {fileID: 3557168452864418661, guid: ee0d32885dad7e8499e06dc440d1680f, type: 3}
   cursorPrefab: {fileID: 7007896882566638223, guid: bc1440da9e190b948ae13d16af646f0c, type: 3}
@@ -16328,7 +16336,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d505173abfcb03345b76268251d66bba, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechEquipmentLocomotion
 --- !u!114 &8456050643938572305
 MonoBehaviour:
@@ -16340,7 +16348,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b96340e8833377469d87c0447da45e1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechLocomotionDebug
   modulePrefabs:
   - {fileID: 6697360079352719010, guid: 2ba5ceef0a390e04388bf714dcba3e2d, type: 3}
@@ -16359,7 +16367,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 052395a115e17b7439c35b89e0bdb6cc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechUpperBodyAnimation
   swapBlendDuration: 0.12
 --- !u!114 &2323618638901885361
@@ -16372,7 +16380,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc15aad914b342bc859e2ab8c19fce6d, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
   currentHealth: 0
@@ -16386,11 +16394,64 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a2d82b4923b447919128641029d59c27, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechMovementAudio
   movementSound: {fileID: 8300000, guid: 0d78b4bb67abde745a1ca2c3cd1e2f43, type: 3}
   volume: 0.3
   referenceSpeed: 6
+--- !u!114 &525387700647639762
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3053454427299694765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a22b2bcb94884e68a023d7d643bc5e92, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MechStats
+--- !u!114 &327758736479981224
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3053454427299694765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6d46aaaa823483587a36b4e35a57f01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MechWeaponIdle
+  weaponIdleDelay: 3
+--- !u!114 &732845130996398655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3053454427299694765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8149786338b64b96a8f3fe81f45855fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeleeBoxPreview
+  material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
+  showMeleeBox: 1
+--- !u!114 &671720309205676776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3053454427299694765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67688985eee34d21b01f72d224bce207, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MechPlayerInput
+  inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  lockCursorOnPlay: 1
 --- !u!1 &3220106313594343585
 GameObject:
   m_ObjectHideFlags: 0
@@ -16434,7 +16495,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a5b8d878916e38419b9edd084199490, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 6
 --- !u!1 &3234006286625563288
@@ -16483,9 +16544,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a83a10ed3c50e19479018b309d84c0ca, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
+  recoilAxis: {x: -1, y: 0, z: 0}
   muzzle: {fileID: 5843949362274923587}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: 55c3987ff5a5221488425f98040b8852, type: 2}
@@ -16501,7 +16563,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 39a10c3e992074141b45ab35cbdc9981, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechWeaponAnimator
   animator: {fileID: 4987122089920805672}
   animations: {fileID: 11400000, guid: d476b62987313ac46aa043ff618a1075, type: 2}
@@ -16756,9 +16818,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a83a10ed3c50e19479018b309d84c0ca, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
+  recoilAxis: {x: -1, y: 0, z: 0}
   muzzle: {fileID: 6702522311810970798}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: 691dc3f793865b842b733326fc23f6e5, type: 2}
@@ -16774,7 +16837,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 39a10c3e992074141b45ab35cbdc9981, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechWeaponAnimator
   animator: {fileID: 4897281132937902447}
   animations: {fileID: 11400000, guid: cc7b93ef62d1e1e499a8a8e4709b19d2, type: 2}
@@ -21804,7 +21867,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a5b8d878916e38419b9edd084199490, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 0
 --- !u!1 &4761405555608754928
@@ -31648,7 +31711,7 @@ Transform:
   m_GameObject: {fileID: 5512547899087114701}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.66000015, y: -1.21, z: 2.1100006}
+  m_LocalPosition: {x: -0.00000011920929, y: 0, z: -0.00000047683716}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -31669,7 +31732,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3105f3c8c57a47acbbdc5bdfdbbe5e38, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GolemJointGlow
   boostBrightness: 6
   dodgeBrightness: 1.8
@@ -31755,9 +31818,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a83a10ed3c50e19479018b309d84c0ca, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
+  recoilAxis: {x: -1, y: 0, z: 0}
   muzzle: {fileID: 7399297681643914510}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: 31a4ba2367672dd46aa2de4b0e857de9, type: 2}
@@ -31773,7 +31837,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 39a10c3e992074141b45ab35cbdc9981, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechWeaponAnimator
   animator: {fileID: 2914326849059060933}
   animations: {fileID: 11400000, guid: 4ac8fc18ee6733f44a5e69e79d7f153d, type: 2}
@@ -31805,7 +31869,7 @@ Transform:
   m_GameObject: {fileID: 5796573215984104452}
   serializedVersion: 2
   m_LocalRotation: {x: 0.000000015804426, y: -0.7071068, z: 0.000000015804426, w: 0.7071068}
-  m_LocalPosition: {x: 0.90743554, y: -4.6056705, z: -0.1866206}
+  m_LocalPosition: {x: 0.90743554, y: -4.6056705, z: 1.0151339}
   m_LocalScale: {x: 1.0000002, y: 1, z: 1.0000002}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -31829,7 +31893,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage:
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -31860,7 +31924,7 @@ Transform:
   m_GameObject: {fileID: 5818467219980408433}
   serializedVersion: 2
   m_LocalRotation: {x: -0.000000011936654, y: -0.7071068, z: -0.0000000039788848, w: 0.7071068}
-  m_LocalPosition: {x: 0.7679998, y: -4.7650857, z: 0.37874046}
+  m_LocalPosition: {x: 0.107999206, y: -3.5550857, z: 2.774742}
   m_LocalScale: {x: 1.0000001, y: 0.9999999, z: 1.0000001}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -31884,7 +31948,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage:
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -31947,7 +32011,7 @@ Transform:
   m_GameObject: {fileID: 6085944343660559858}
   serializedVersion: 2
   m_LocalRotation: {x: 0.000000043134662, y: -0.7071068, z: 0.000000043134662, w: 0.7071068}
-  m_LocalPosition: {x: 0.7999998, y: -4.797718, z: -0.45257163}
+  m_LocalPosition: {x: 0.13999951, y: -3.587718, z: -2.5625727}
   m_LocalScale: {x: 1.0000002, y: 1.0000001, z: 1.0000004}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -31971,7 +32035,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage:
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -32114,7 +32178,7 @@ Transform:
   m_GameObject: {fileID: 6115948743148018973}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 4, y: 1.5400001, z: 0.93}
+  m_LocalPosition: {x: 2.798194, y: 1.5400002, z: 0.93000007}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -32131,7 +32195,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a5b8d878916e38419b9edd084199490, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 4
 --- !u!1 &6363078117181635450
@@ -32160,7 +32224,7 @@ Transform:
   m_GameObject: {fileID: 6363078117181635450}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 0.45736033, y: 1.3799999, z: 0.7788604}
+  m_LocalPosition: {x: 2.567403, y: 0.16999984, z: 0.1188598}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -32177,7 +32241,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a5b8d878916e38419b9edd084199490, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 1
 --- !u!1 &6407086164359288158
@@ -37137,7 +37201,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3105f3c8c57a47acbbdc5bdfdbbe5e38, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GolemJointGlow
   boostBrightness: 6
   dodgeBrightness: 1.8
@@ -37203,7 +37267,7 @@ Transform:
   m_GameObject: {fileID: 6802964711097456205}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: -0.32663992, y: 1.3799999, z: 0.77886045}
+  m_LocalPosition: {x: -2.722597, y: 0.16999984, z: 0.11885992}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -37220,7 +37284,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a5b8d878916e38419b9edd084199490, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 2
 --- !u!1 &6874004260536614325
@@ -42085,7 +42149,7 @@ Transform:
   m_GameObject: {fileID: 7003594941480324238}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.66000044, y: -1.21, z: -2.3960009}
+  m_LocalPosition: {x: -0.00000017881393, y: 0, z: 0.00000047683716}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -42106,7 +42170,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3105f3c8c57a47acbbdc5bdfdbbe5e38, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GolemJointGlow
   boostBrightness: 6
   dodgeBrightness: 1.8
@@ -47099,7 +47163,7 @@ Transform:
   m_GameObject: {fileID: 7482400752270669790}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.35, z: 0.15}
+  m_LocalPosition: {x: -0.66000026, y: 0.86, z: -1.9600011}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -57217,7 +57281,7 @@ Transform:
   m_GameObject: {fileID: 8141332584937738993}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: -4, y: 1.5400001, z: 0.93}
+  m_LocalPosition: {x: -1.980506, y: 1.5400002, z: 0.9299998}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -57234,7 +57298,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a5b8d878916e38419b9edd084199490, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 5
 --- !u!1 &8274268179175301366
@@ -71812,7 +71876,7 @@ Transform:
   m_GameObject: {fileID: 8978292484961210194}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.15, y: 0.2, z: 0}
+  m_LocalPosition: {x: -0.15, y: 0.2, z: 1.2017545}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -76742,56 +76806,3 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4186232574764014925, guid: 2ba5ceef0a390e04388bf714dcba3e2d, type: 3}
   m_PrefabInstance: {fileID: 5711687755352506188}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &525387700647639762
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3053454427299694765}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a22b2bcb94884e68a023d7d643bc5e92, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MechStats
---- !u!114 &327758736479981224
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3053454427299694765}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d6d46aaaa823483587a36b4e35a57f01, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MechWeaponIdle
-  weaponIdleDelay: 3
---- !u!114 &732845130996398655
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3053454427299694765}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8149786338b64b96a8f3fe81f45855fc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MeleeBoxPreview
-  material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  showMeleeBox: 1
---- !u!114 &671720309205676776
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3053454427299694765}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 67688985eee34d21b01f72d224bce207, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MechPlayerInput
-  inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  lockCursorOnPlay: 1

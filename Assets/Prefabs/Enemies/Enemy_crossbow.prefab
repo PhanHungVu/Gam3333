@@ -20076,6 +20076,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
+  recoilAxis: {x: -1, y: 0, z: 0}
   muzzle: {fileID: 0}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 0}
@@ -45066,6 +45067,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
+  recoilAxis: {x: -1, y: 0, z: 0}
   muzzle: {fileID: 0}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 0}
@@ -50464,6 +50466,20 @@ MonoBehaviour:
   dropChancePercent: 25
   spawnHeight: 1
   popVelocity: 3
+--- !u!114 &388974039334746544
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7062185459325199375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1c7981b53be487eafcb9b3cb2fbc8c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HealthBarDisplay
+  material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
+  height: 1.4
 --- !u!1 &7252553595477060627
 GameObject:
   m_ObjectHideFlags: 0
@@ -55535,6 +55551,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
+  recoilAxis: {x: -1, y: 0, z: 0}
   muzzle: {fileID: 0}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 0}
@@ -75353,15 +75370,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0
+      value: 0.6600006
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -1.21
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 4.75
+      value: 2.3540013
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalRotation.w
@@ -75499,15 +75516,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: 0.6599993
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -1.21
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -2.3959992
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalRotation.w
@@ -75567,17 +75584,3 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2883663974681439843, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
   m_PrefabInstance: {fileID: 4840287741179453413}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &388974039334746544
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7062185459325199375}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f1c7981b53be487eafcb9b3cb2fbc8c9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HealthBarDisplay
-  material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  height: 1.4
