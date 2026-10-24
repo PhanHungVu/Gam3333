@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34fed0c915d94a368f41fa2e1ab931e3, type: 3}
+  m_Name: PrototypeQuest_1
+  m_EditorClassIdentifier: Assembly-CSharp::QuestDefinition
+  questId: prototype-quest-1
+  title: The Silent Foundry
+  description: 'A notice calls for a golem to answer this request. Inspect the briefing,
+    accept the quest, and choose a starting torso.
+
+
+    Prototype offer: mission
+    gameplay, enemy settings and reward payment are not connected.'
+  category: 1
+  missionType: 0
+  estimatedMinutes: 8
+  gniReward: 100
+  available: 1
+  availableParts:
+  - {fileID: 11400000, guid: 95c2f3c62f08a9249bfc1432876a1e9a, type: 2}
+  availableEnemies: []
+  missionSettings: {fileID: 0}

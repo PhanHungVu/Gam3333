@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eed691f1cc534a73af181d3c156f3bbf, type: 3}
+  m_Name: PrototypeBoardCatalogue
+  m_EditorClassIdentifier: Assembly-CSharp::QuestBoardCatalogue
+  minimumOffers: 4
+  maximumOffers: 6
+  includeMainQuestWhenAvailable: 1
+  quests:
+  - {fileID: 11400000, guid: 3f7f67a34abe655459c14cd1fef5d764, type: 2}
+  - {fileID: 11400000, guid: e45bbb61cd9941a4eb53c808d0cd9362, type: 2}
+  - {fileID: 11400000, guid: 1c0676b96ed2269488a7eefb898efe82, type: 2}
+  - {fileID: 11400000, guid: d6b22eff4cedd6645bf074fc1d6ed190, type: 2}
+  - {fileID: 11400000, guid: 5c90e310c8d11cd46a897e9dc64a5c57, type: 2}
+  - {fileID: 11400000, guid: 4897ace0e8044f04f89373692fc74646, type: 2}
+  starterTorsos:
+  - {fileID: 11400000, guid: 95c2f3c62f08a9249bfc1432876a1e9a, type: 2}
+  starterTorsoVisuals:
+  - torso: {fileID: 11400000, guid: 95c2f3c62f08a9249bfc1432876a1e9a, type: 2}
+    model: {fileID: 7538273134166194572, guid: 873eb8762e919424195d109a92d414a6, type: 3}
+    rotation: {x: 0, y: 0, z: 0}
