@@ -42,7 +42,7 @@ public sealed class PreMissionReliabilityChecks
         if (type != LogType.Error && type != LogType.Exception && type != LogType.Assert) return;
         if (expectFailure && message.Contains(ExpectedFailure)) { expectFailure = false; observedFailure = true; return; }
         // Existing Editor Search startup issue, independent of the runtime UI.
-        if (stack.Contains("UnityEditor.Search.SearchDatabase.EnumerateAll")) return;
+        if (stack.Contains("UnityEditor.Search.SearchDatabase.EnumerateAll") || stack.Contains("UnityEditor.Search.SearchDatabase+<EnumerateAll>")) return;
         unexpectedErrors.Add(message);
     }
     public static void AssertNoUnexpectedErrors()
@@ -191,8 +191,8 @@ public sealed class PreMissionReliabilityChecks
             check(cloneFlow.Session == null && !Field<CanvasGroup>(clonePresentation, "board").interactable,
                 "Initially disabled " + (disablePresenter ? "presenter" : "controller") + " defers board creation and locks controls");
             if (disablePresenter) clonePresentation.enabled = true; else cloneFlow.enabled = true;
-            check(cloneFlow.Session != null && cloneFlow.IsPosting && cloneFlow.Notices.Count > 0,
-                "Enabling the initially disabled component creates its first valid board");
+            check(cloneFlow.Session != null && cloneFlow.Session.Progression == QuestProgressionRuntime.Current && cloneFlow.Notices.Count > 0,
+                "Enabling the initially disabled component restores the persistent board");
             Object.Destroy(host); yield return null;
             while (host != null) yield return null;
             check(Object.FindObjectsByType<PreMissionFlowController>().Length == 1, "Destroyed startup fixture leaves no extra UI controller");

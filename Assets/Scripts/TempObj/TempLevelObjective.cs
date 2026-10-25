@@ -31,6 +31,8 @@ public sealed class TempLevelObjective : MonoBehaviour
     enum State { NotCollected, Collected, Won }
     State state = State.NotCollected;
     Transform player;
+    public bool IsComplete => state == State.Won;
+    public event Action Completed;
 
     void Start()
     {
@@ -70,6 +72,7 @@ public sealed class TempLevelObjective : MonoBehaviour
             if (pauseOnWin) Time.timeScale = 0f;
             //Debug.Log("Level complete!");
             SetTooltip("Level complete! Press " + interactKey + " to go back to the main menu");
+            Completed?.Invoke();
         }
     }
 

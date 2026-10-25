@@ -102,9 +102,12 @@ public sealed class StarterTorsoChecks
             case 5:
                 check(flow.Session.SelectedTorso == alternate && Field<TMP_Text>("torsoName").text == alternate.partName
                     && Field<TMP_Text>("torsoDescription").text.Contains("140") && Preview.Torso == alternate, "Browse updates the selected data, name, description, health and preview together");
-                check(Stages().Length == 1 && Stages()[0].GetComponentsInChildren<MonoBehaviour>(true).Length == 0
+                check(Stages().Length == 1 && Stages()[0].GetComponentsInChildren<MonoBehaviour>(true)
+                    .All(b => b.GetType().FullName == "UnityEngine.Rendering.Universal.UniversalAdditionalCameraData"
+                        || b.GetType().FullName == "UnityEngine.Rendering.Universal.UniversalAdditionalLightData")
                     && Stages()[0].GetComponentsInChildren<Collider>(true).Length == 0 && Stages()[0].GetComponentsInChildren<Rigidbody>(true).Length == 0,
-                    "Preview copies only geometry: no Part behaviours, physics, gameplay camera rig or duplicate stage");
+                    "Preview retains only geometry and rendering metadata, without gameplay behaviours, physics or duplicate stages; found "
+                        + Stages().Length + " stages, behaviours: " + string.Join(", ", Stages().SelectMany(s => s.GetComponentsInChildren<MonoBehaviour>(true)).Select(b => b.GetType().FullName)));
                 rotation = Preview.Rotation;
                 ExecuteEvents.Execute(Preview.gameObject, new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left, delta = new Vector2(80, 0) }, ExecuteEvents.dragHandler);
                 break;

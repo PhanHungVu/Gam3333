@@ -32,6 +32,8 @@ public sealed class QuestNoticeView : MonoBehaviour, IPointerEnterHandler, IPoin
     bool moving;
     readonly List<RaycastResult> pointerHits = new List<RaycastResult>();
     public QuestDefinition Quest { get; private set; }
+    public string OfferId { get; private set; }
+    public int OfferSlot { get; private set; } = -1;
     public Button Button => button;
     public RectTransform Rect => (RectTransform)transform;
     public RectTransform VisualRect => paperVisual;
@@ -52,9 +54,10 @@ public sealed class QuestNoticeView : MonoBehaviour, IPointerEnterHandler, IPoin
     public QuestPostingStyle PostingStyle { get; private set; }
     public float RevealProgress { get; private set; } = 1f;
 
-    public void Bind(QuestDefinition quest, Action<QuestDefinition> onSelected)
+    public void Bind(QuestDefinition quest, Action<QuestDefinition> onSelected, string offerId = null, int offerSlot = -1)
     {
         Quest = quest;
+        OfferId = offerId; OfferSlot = offerSlot;
         selected = onSelected;
         label.enableAutoSizing = true;
         button.onClick.RemoveListener(Select);

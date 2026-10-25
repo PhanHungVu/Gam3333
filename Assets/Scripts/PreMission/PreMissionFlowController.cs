@@ -27,6 +27,8 @@ public sealed class PreMissionFlowController : MonoBehaviour
     [SerializeField] Button skipPostingButton;
     [SerializeField] TMP_Text boardHint;
     [SerializeField] PreMissionPaperPresentation presentation;
+    [Tooltip("Scene-owned 3D board. Unassigned prefabs retain the legacy paper preview.")]
+    [SerializeField] PreMissionStoneBoard stoneBoard;
     [Header("Details")]
     [SerializeField] TMP_Text detailsTitle;
     [SerializeField] TMP_Text detailsBody;
@@ -48,15 +50,18 @@ public sealed class PreMissionFlowController : MonoBehaviour
     [SerializeField] StarterTorsoPreview torsoPreview;
 
     readonly List<QuestNoticeView> notices = new List<QuestNoticeView>();
+    int displayedVersion = -1;
     public QuestSelectionSession Session { get; private set; }
     public IReadOnlyList<QuestNoticeView> Notices => notices.AsReadOnly();
-    public bool IsPosting => presentation.IsPosting;
-    public bool IsTransitioning => presentation.IsTransitioning;
+    public bool IsPosting => presentation.IsPosting || (stoneBoard != null && stoneBoard.IsPosting);
+    public bool IsTransitioning => presentation.IsTransitioning || (stoneBoard != null && stoneBoard.IsTransitioning);
+    public PreMissionStoneBoard StoneBoard => stoneBoard;
+    public bool CanSelectBoard => CanInteract && Session != null && Session.View == PreMissionView.Board && !IsTransitioning;
     bool exitRequested;
     bool confirmationPending;
     bool initialized;
     int skippedPostingFrame = -1;
-    bool CanInteract => isActiveAndEnabled && presentation != null && presentation.isActiveAndEnabled;
+    bool CanInteract => isActiveAndEnabled && presentation != null && presentation.isActiveAndEnabled && (stoneBoard == null || stoneBoard.IsOperational);
 
     void Awake()
     {
@@ -69,7 +74,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
         confirmTorsoButton.onClick.AddListener(ConfirmTorso);
         if (skipPostingButton != null) skipPostingButton.onClick.AddListener(SkipPosting);
         initialized = true;
-        CreateFreshBoard();
+        OpenBoard(false);
         if (!CanInteract && presentation != null) presentation.LockInput();
     }
 
@@ -77,7 +82,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        if (initialized && Session == null && CanInteract) { CreateFreshBoard(); return; }
+        if (initialized && Session == null && CanInteract) { OpenBoard(false); return; }
         // Re-enabling refreshes the current view, it never generates offers.
         if (Session != null && !IsPosting && !IsTransitioning) RefreshView();
         if (!CanInteract && presentation != null) presentation.LockInput();
@@ -88,8 +93,9 @@ public sealed class PreMissionFlowController : MonoBehaviour
     // Used by this controller and its presenter when either component is disabled.
     public void RecoverPresentation()
     {
-        if (initialized && Session == null && CanInteract) { CreateFreshBoard(); return; }
+        if (initialized && Session == null && CanInteract) { OpenBoard(false); return; }
         if (Session != null && presentation != null) presentation.Settle(Session.View, Session.SelectedQuest);
+        if (Session != null && stoneBoard != null) stoneBoard.RecoverView(Session.View, Session.SelectedOfferId);
         if (confirmationPending)
         {
             confirmationPending = false; Session.CancelLaunchRequest(); launchStatus.text = string.Empty;
@@ -102,6 +108,11 @@ public sealed class PreMissionFlowController : MonoBehaviour
     void Update()
     {
         if (!CanInteract) return;
+        if (Session == null || Session.Progression != QuestProgressionRuntime.Current) { OpenBoard(false); return; }
+        RememberPostedOffers();
+        if (displayedVersion != Session.Progression.Version && !IsTransitioning && !IsPosting
+            && (Session.View == PreMissionView.Board || (Session.SelectedOfferId != null && Session.Progression.FindOffer(Session.SelectedOfferId) == null)))
+            SynchronizeBoard();
         if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame && IsPosting) SkipPosting();
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) Back();
     }
@@ -113,6 +124,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
         // finishing the intro into an accidental quest selection.
         skippedPostingFrame = Time.frameCount;
         presentation.FinishPosting();
+        if (stoneBoard != null) stoneBoard.FinishArrivals();
     }
 
     void RefreshPostingControls()
@@ -129,36 +141,137 @@ public sealed class PreMissionFlowController : MonoBehaviour
 
     public void CreateFreshBoard()
     {
+        OpenBoard(true);
+    }
+
+    [ContextMenu("Development/Start New Quest Progression")]
+    public void StartNewProgression()
+    {
+        if (!Application.isPlaying || !CanInteract) return;
+        QuestProgressionRuntime.StartNewProgression(catalogue, Environment.TickCount);
+        OpenBoard(false);
+    }
+
+    void OpenBoard(bool replayPosting)
+    {
         if (!CanInteract) return;
         presentation.Cancel();
+        presentation.ConfigureTabletopBriefing(stoneBoard!=null && stoneBoard.Motion!=null && stoneBoard.Motion.Miniature!=null,acceptButton,declineButton,detailsTitle);
         confirmationPending = false;
         skippedPostingFrame = -1;
         foreach (var notice in notices)
             if (notice != null) { notice.gameObject.SetActive(false); Destroy(notice.gameObject); }
         notices.Clear();
-        int seed = Environment.TickCount;
-        Session = new QuestSelectionSession(catalogue, seed);
+        var run = QuestProgressionRuntime.GetOrCreate(catalogue, Environment.TickCount);
+        Session = new QuestSelectionSession(catalogue, run.Seed, run);
         exitRequested = false;
-        foreach (var quest in Session.Offers)
+        noticeParent.gameObject.SetActive(stoneBoard == null);
+        if (stoneBoard != null) stoneBoard.Bind(this, run);
+        else foreach (var offer in run.Offers)
         {
             var notice = Instantiate(noticePrefab, noticeParent);
-            notice.Bind(quest, SelectQuest);
+            notice.Bind(offer.Quest, SelectQuest, offer.Id, offer.Slot);
             notices.Add(notice);
         }
-        boardMessage.text = Session.Offers.Count == 0 ? "No available quests. Check the Board Catalogue."
-            : "Choose any quest. Main quests and side quests are equally available.";
+        displayedVersion = run.Version;
+        RefreshProgress();
         launchStatus.text = string.Empty;
         RefreshView();
         Canvas.ForceUpdateCanvases();
-        presentation.BeginBoard(notices, seed, RefreshView);
+        if (stoneBoard != null) presentation.BeginStoneBoard(() =>
+        {
+            stoneBoard.StartArrivals(BoardReady); RefreshPostingControls();
+        }, replayPosting || !QuestProgressionRuntime.HasPresentedOffers);
+        else
+        {
+            var pending = notices.FindAll(n => replayPosting || !QuestProgressionRuntime.WasPresented(n.OfferId));
+            presentation.BeginBoard(notices, run.Seed, BoardReady, true, run.SmallOfferCount, pending,
+                replayPosting || !QuestProgressionRuntime.HasPresentedOffers);
+        }
+        RefreshPostingControls();
+    }
+
+    void RememberPostedOffers()
+    {
+        if (Session == null) return;
+        if (stoneBoard != null)
+        {
+            if(Session.View==PreMissionView.Board && !IsPosting && !IsTransitioning) stoneBoard.Motion?.ProgressTrack?.RememberResting();
+            foreach (var stone in stoneBoard.Stones)
+                if (stone.IsReady && !stone.IsMoving) QuestProgressionRuntime.MarkPresented(Session.Progression, stone.Offer.Id);
+            return;
+        }
+        foreach (var notice in notices)
+            if (notice != null && notice.IsPosted) QuestProgressionRuntime.MarkPresented(Session.Progression, notice.OfferId);
+    }
+    void BoardReady() { RememberPostedOffers(); RefreshView(); }
+    void RefreshProgress()
+    {
+        var run = Session.Progression;
+        boardMessage.text = "Main Quest Progress: " + Math.Min(run.SuccessfulSmallCompletions, run.RequiredSmallCompletions) + " / " + run.RequiredSmallCompletions
+            + (run.BigQuest != null ? "  |  Big Quest Unlocked — choose any quest."
+                : run.BigQuestUnlocked ? "  |  Big quest unlocked; no eligible main quest configured." : string.Empty)
+            + (Session.Offers.Count == 0 ? "  |  No eligible small quests. Check the Board Catalogue." : string.Empty);
+    }
+    void SynchronizeBoard()
+    {
+        var run = Session.Progression;
+        bool removedSelection = Session.SelectedOfferId != null && run.FindOffer(Session.SelectedOfferId) == null;
+        if (removedSelection)
+        {
+            presentation.Settle(PreMissionView.Board, null); stoneBoard?.RecoverView(PreMissionView.Board, null); confirmationPending = false;
+        }
+        Session.SynchronizeOffers();
+        if (stoneBoard != null)
+        {
+            stoneBoard.Synchronize(); displayedVersion = run.Version;
+            RefreshProgress(); RefreshView(removedSelection); RememberPostedOffers();
+            stoneBoard.StartArrivals(BoardReady); RefreshPostingControls();
+            return;
+        }
+        var old = new List<QuestNoticeView>(notices);
+        notices.Clear();
+        var added = new List<QuestNoticeView>();
+        foreach (var offer in run.Offers)
+        {
+            var notice = old.Find(n => n != null && n.OfferId == offer.Id);
+            if (notice != null) old.Remove(notice);
+            else
+            {
+                notice = Instantiate(noticePrefab, noticeParent);
+                notice.Bind(offer.Quest, SelectQuest, offer.Id, offer.Slot);
+                if (!QuestProgressionRuntime.WasPresented(offer.Id)) added.Add(notice);
+            }
+            notices.Add(notice);
+        }
+        foreach (var notice in old)
+            if (notice != null) { notice.gameObject.SetActive(false); Destroy(notice.gameObject); }
+        displayedVersion = run.Version;
+        RefreshProgress();
+        RefreshView(removedSelection);
+        if (added.Count > 0 || old.Count > 0)
+            presentation.BeginBoard(notices, run.Seed, BoardReady, true, run.SmallOfferCount, added, false);
         RefreshPostingControls();
     }
 
     public void SelectQuest(QuestDefinition quest)
     {
         if (!CanInteract || IsTransitioning || Session.View != PreMissionView.Board || Time.frameCount == skippedPostingFrame) return;
+        if (stoneBoard != null)
+        {
+            var offer = Session.Progression.FindOffer(quest);
+            if (!stoneBoard.InputEnabled || offer == null || stoneBoard.FindStone(offer.Id) == null || !Session.SelectQuest(quest)) return;
+            stoneBoard.ClearHighlights();
+            launchStatus.text = string.Empty;
+            RefreshView(false, false);
+            presentation.PrepareStoneInspection();
+            stoneBoard.Inspect(offer.Id, presentation.SetStoneInspectionProgress,
+                () => presentation.PresentStoneDetails(quest.category == QuestCategory.Main, RefreshView));
+            ResetBriefingScroll();
+            return;
+        }
         var notice = notices.Find(n => n.Quest == quest);
-        if (notice == null || !notice.IsPosted) return;
+        if (notice == null || !notice.IsPosted || Session.Progression.FindOffer(notice.OfferId) == null) return;
         presentation.FinishPosting();
         if (!Session.SelectQuest(quest)) return;
         launchStatus.text = string.Empty;
@@ -166,6 +279,10 @@ public sealed class PreMissionFlowController : MonoBehaviour
         // the visible hovered paper before handing it to the foreground proxy.
         RefreshView(false, false);
         presentation.PresentDetails(notice, RefreshView);
+        ResetBriefingScroll();
+    }
+    void ResetBriefingScroll()
+    {
         var scroll = detailsBody.GetComponentInParent<ScrollRect>(true);
         if (scroll != null) { Canvas.ForceUpdateCanvases(); scroll.StopMovement(); scroll.verticalNormalizedPosition = 1f; }
     }
@@ -191,11 +308,15 @@ public sealed class PreMissionFlowController : MonoBehaviour
     {
         if (!CanInteract || IsTransitioning) return;
         var previous = Session.View;
+        string returningOffer = Session.SelectedOfferId;
         var notice = notices.Find(n => n.Quest == Session.SelectedQuest);
         if (Session.Back())
         {
             launchStatus.text = string.Empty;
-            if (previous == PreMissionView.Details)
+            if (previous == PreMissionView.Details && stoneBoard != null)
+                presentation.ReturnFromStoneDetails(() => stoneBoard.ReturnInspection(presentation.SetStoneInspectionProgress,
+                    () => { RefreshView(); stoneBoard.FocusOffer(returningOffer); }));
+            else if (previous == PreMissionView.Details)
                 presentation.ReturnToBoard(notice, () => { RefreshView(); if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(notice.Button.gameObject); });
             else presentation.SwitchView(previous, Session.View, RefreshView);
         }
@@ -219,6 +340,8 @@ public sealed class PreMissionFlowController : MonoBehaviour
     void CompleteConfirmation(QuestDefinition quest, PartData torso)
     {
         if (!confirmationPending) return;
+        if (Session.Progression != QuestProgressionRuntime.Current || Session.Progression.FindOffer(Session.SelectedOfferId) == null)
+        { confirmationPending = false; OpenBoard(false); return; }
         confirmationPending = false;
         // No scene loading, equipping, rewards or gameplay are implemented here.
         launchStatus.text = "Selection submitted. Mission launch is not connected yet.\nBack returns to quest details.";
@@ -276,6 +399,10 @@ public sealed class PreMissionFlowController : MonoBehaviour
         // Clear stale selection before focusing a control on the newly active screen.
         if (resetFocus && EventSystem.current != null)
         {
+            if (Session.View == PreMissionView.Board && stoneBoard != null)
+            {
+                EventSystem.current.SetSelectedGameObject(null); stoneBoard.FocusFirst(); return;
+            }
             var target = Session.View == PreMissionView.Board ? (notices.Count > 0 ? notices[0].Button : exitButton)
                 : Session.View == PreMissionView.Details ? acceptButton : confirmTorsoButton.interactable ? confirmTorsoButton : torsoBackButton;
             EventSystem.current.SetSelectedGameObject(null);
@@ -285,6 +412,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
 
     void OnDestroy()
     {
+        if (stoneBoard != null) stoneBoard.DetachOwner(this);
         Unbind(exitButton, Back); Unbind(declineButton, Back); Unbind(torsoBackButton, Back);
         Unbind(acceptButton, AcceptQuest); Unbind(previousTorsoButton, PreviousTorso); Unbind(nextTorsoButton, NextTorso);
         Unbind(confirmTorsoButton, ConfirmTorso); Unbind(skipPostingButton, SkipPosting);

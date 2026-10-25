@@ -12,9 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eed691f1cc534a73af181d3c156f3bbf, type: 3}
   m_Name: PrototypeBoardCatalogue
   m_EditorClassIdentifier: Assembly-CSharp::QuestBoardCatalogue
-  minimumOffers: 4
-  maximumOffers: 6
-  includeMainQuestWhenAvailable: 1
+  smallOfferCount: 3
+  smallCompletionsToUnlockBig: 3
   quests:
   - {fileID: 11400000, guid: 3f7f67a34abe655459c14cd1fef5d764, type: 2}
   - {fileID: 11400000, guid: e45bbb61cd9941a4eb53c808d0cd9362, type: 2}

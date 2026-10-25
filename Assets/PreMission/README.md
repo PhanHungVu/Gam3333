@@ -1,22 +1,253 @@
-# Pre-mission flow — Q1–Q5 complete
+# Pre-mission redesign — physical board and cinematic briefing
 
-The standalone Unity UI scene has data-driven offers and three separate views. Q2 adds physical paper placement and sequential posting; Q3 adds the pull-forward briefing and return transitions; Q4 adds starting-torso model preview and selection. Q5.1 varies posting entrances, Q5.2 refines paper handling, Q5.3 adds briefing reveals, torso/screen transitions and a removable second test torso, and Q5.4 adds intro skipping and lifecycle/reliability checks. Main and side quests are always equally selectable. A main quest's larger paper and final posting animation give it visual importance, with no progression lock or prerequisite behavior.
+The pre-mission scene now uses a **horizontal 3D board viewed by a dedicated overhead camera**. Three small quest rocks surround a reserved central location. Three successful tracked small missions unlock one larger main-quest rock in the middle. Players remain free to select any available small or main rock. M1's progression data, the existing briefing/torso screens and the empty gameplay handoff are reused.
+
+## Physical board and controls
+
+Open `Assets/Scenes/PreMissionScene.unity`, or enter through **Main Menu → Quest Board**. Hover highlights a rock and its selection ring; click selects it through a camera raycast against its physical collider. **Arrow keys** move focus between rocks and **Enter** opens the focused quest. The existing briefing reveals, Accept/Decline, torso browsing and confirmation continue to work. Back/Escape returns through those views and then to the Main Menu.
+
+The main rock's central footprint is reserved from the start. Three authored compositions (**Surround**, **Wide**, **Crown**) place small rocks around it, selected once from the progression seed. Fixed offer slots preserve unrelated rocks, their identities and their positions on completion or scene return. The current scene starts with three offers; the authored layouts include six surrounding positions for a larger eligible pool. The shipped pool still contains five small prototype definitions, so it cannot offer six unique small missions without adding another definition.
+
+The overhead camera frames fixed bounds that include the future main rock, keeping it from reframing existing offers when the main appears. Framing adapts to aspect ratio. Hover changes only the visual child and material property block; the collider/root stay fixed. UI controls consume pointer input before world selection, and selection is guarded during transitions or disabled components. The existing paper notice objects are not spawned for the 3D board. The UI prefab retains its paper preview as a fallback when no scene-owned stone board is assigned.
+
+New owned prototype assets live under `Assets/PreMission/StoneBoard/`: the board prefab, small/main stone prefabs, a simple faceted placeholder mesh, a ring mesh and URP materials. The slab/frame use Unity cubes. No art-team assets, combat, gameplay scene, equipment logic or existing torso models are modified. The active board camera renders layer 26; the separate torso-preview stage remains isolated. Stone placement is scripted and stable, with no Rigidbody simulation.
+
+### M3 — arrival and impact
+
+After the 0.60-second board HUD entrance, new small rocks drop sequentially from a short height. Newly unlocked main rocks arrive last, from much higher up, with accelerating descent, a heavier landing, longer settling, deeper impact sound, more dust, stronger camera shake and slight recoil in the decorative central inlays. Other stones and their layout roots remain fixed. Only a stone's visual child moves; its collider is disabled until settling finishes. No Rigidbody simulation is used.
+
+Arrival state belongs to the offer occurrence, not the scene object. A natural arrival is remembered at **contact**: leaving before the main touches down lets its first heavy arrival play next time; leaving after contact does not replay it. Replacements arrive only in their vacated slot. New offers wait while a briefing/torso view is open. **Skip Arrival (Space)** immediately settles pending arrivals without fabricating impacts, and cannot also select a quest in that same frame.
+
+Dust and impact clips are owned placeholders under `PreMission/StoneBoard/`: two reusable particle systems share a soft radial texture and URP particle material; two generated WAV clips provide a short light knock and a longer low impact. Replace these references with final effects/audio on `QuestBoardImpactFeedback`. Existing game audio and art assets are untouched.
+
+### M4 — inspection and return
+
+Hover eases the stone upward and warms its surface without moving its hit area. Selecting performs a small press, lifts the stone and approaches it with the overhead camera while the board HUD fades. The existing briefing and its one-second information reveal open **after** this approach finishes. Accept opens the existing torso view; Back retains the chosen torso and focused camera. Decline fades the briefing first, then lowers the stone, restores the board framing and settles it with a small compression. Stationary-pointer hover works again after returning.
+
+Input is guarded during arrivals and transitions. Motion, particles and UI use unscaled time; drop steps are capped to preserve the first animation across loading hitches. Disabling/re-enabling the controller, presenter, board or motion component settles the session's target view and clears effects/callbacks. Destroying the UI detaches the world board. Camera home framing is recalculated for the current aspect ratio, without accumulating shake/zoom offsets.
+
+The temporary **Complete Small Quest (Test)** Inspector button was removed at M4, then restored at the user's request for the additional P1–P4 polish review. It remains Editor-only; no in-game button, completion context action or simulation menu is added. See the temporary testing instructions below. Remove the Inspector control after P4 review.
+
+### Setup and tuning
+
+The shipped scene is already configured. **Tools → Mech → Pre-Mission → Upgrade M3 and M4 Stone Presentation** runs the M2 setup, creates missing owned effect assets and connects motion/feedback explicitly. It never runs on import. Repeating it preserves existing motion tuning, particle systems and clips. The M2-only command remains for the base board; it does not remove M3/M4 components.
+
+Tune `PreMissionStoneMotion` and `QuestBoardImpactFeedback` on `QuestStoneBoard`; edit camera framing/compositions on `PreMissionStoneBoard`, and mesh/label/collider/hover on the small/main stone prefabs. Extend all composition slot arrays before configuring more than six small offers.
+
+| Setting | Small | Main |
+| --- | --- | --- |
+| Drop duration / height | 0.32 s / 0.85 units | 0.78 s / 5.5 units |
+| Settle duration | 0.20 s | 0.66 s |
+| Dust particles per impact | 14 | 64 |
+| Impact volume | 0.22 | 0.55 |
+| Camera shake strength / duration | 0.018 / 0.16 s | 0.13 / 0.24 s (P1) |
+
+The arrival gap is 0.08 s. Inspection uses a 0.08 s press, 0.72 s approach and 0.22-unit lift; return takes 0.64 s plus 0.12 s settling. Hover eases over 0.12 s. Camera minimum focus sizes are 1.9 for small rocks and 2.7 for main rocks, with aspect-ratio fitting. Motion timings/heights and volumes are serialized; shake/focus defaults are in the corresponding feedback/motion methods.
+
+## M3/M4 verification and changed files
+
+Verified on 2026-10-25 in isolated Unity **6000.5.8f1 with URP 17.5**, the project's PC pipeline assets and Linear color space:
+
+- **42 M3/M4 checks** (`QuestStonePolishChecks.RunBatch`): first drop after a simulated startup hitch, timeScale zero, stable roots/disabled moving colliders, accelerated high main drop, distinct actual dust emission/audio assignments/shake, camera approach before briefing, reverse return, retained torso/exact handoff, skipping, interrupted motion, UI destruction, scene exit before/after main contact and removal of temporary completion controls.
+- **107 physical-board checks** (`QuestStoneBoardChecks.RunBatch`): repeatable upgrades, one board camera/listener, actual Input System pointer/keyboard and Physics raycasts, hover, UI input blocking, central main unlock, freely selectable small/main rocks, stable other slots, torso selection, exact one-time handoff to a recording hook, recovery and progression persistence. All three six-small-plus-main compositions use an extra in-memory definition that is not shipped.
+- **518 retained data/UI checks** (`PreMissionChecks.RunSixOffersBatch`): progression/result-token rules, legacy paper interactions, information reveal, torso preview, navigation, confirmation and recovery. This suite deliberately restores the legacy paper view in its disposable scene; that scene must not replace the shipped physical scene.
+
+Run these batch entry points **only in a disposable project**: they prepare fixtures and save scenes/catalogue data. Captures include world and existing UI layers. Drop/contact/approach/briefing/torso/return captures and settled boards at **1280×720, 1600×900, 1920×1080 and 1024×768** were reviewed. Bounds/non-overlap/raycast/shader checks cover those sizes. The known independent Editor Search startup exception is filtered only by its existing narrow call stack; no unexpected runtime errors were reported. No full player build, live-project human Play Mode session or listening review was performed; final device feel and audio/art tuning remain review items.
+
+M3/M4 add `PreMissionStoneMotion.cs`, `QuestBoardImpactFeedback.cs`, `Editor/PreMissionStonePolishSetup.cs` and `Tests/Editor/QuestStonePolishChecks.cs`, with metadata. They update the stone board/view, flow controller, shared presenter, physical regression fixture, board prefab and the scene's Skip label override. New owned assets are the dust texture/material and two impact WAVs. The temporary custom Inspector and completion simulation actions are retired. The live catalogue stays **3 small offers / 3 successes** with both existing torsos. The gameplay hook, gameplay scenes, art models, UI prefab and project packages/settings are unchanged by M3/M4.
 
 **Scope: Main Menu → Quest Board → Quest Details → Starting Torso → exposed empty `MissionStartHook.StartMission(quest, torso)`.** Our work ends at this UI handoff. The gameplay developer owns all mission integration and gameplay scene loading; those tasks are excluded from every remaining phase and its completion criteria.
+
+## Additional tabletop polish — P1–P4
+
+This extends the completed M1–M4 foundation. The main rock remains central, surrounding small quests remain freely selectable, and the result contract alone controls progression. The new prompt's `JhMapScene` launch requirements are excluded: confirmation still submits the exact quest/torso arguments once to the empty hook. The existing art direction and art-team assets are preserved.
+
+| Phase | Adjusted scope | Status |
+| --- | --- | --- |
+| P1 — Stone Physicality and Board Reactions | Varied small arrivals, main anticipation, weight, secondary stone motion and visual board recoil | Complete |
+| P2 — Physical Map and Progression | Primitive progression track and marker, data-driven advancement and connected main reveal | Complete |
+| P3 — Cinematic Interactions | Size-sensitive hover/tilt, split physical briefing and symbolic mission miniatures; preserve existing torso UI | Complete |
+| P4 — Feedback and Reliability | Reduced motion/shake, audio variation, combined effect tuning and integration checks | Next |
+
+P2 reads the configured completion requirement (currently three), handles successful outcomes received while the board is absent and reserves clear space in every authored composition. It adds no branching routes or second gameplay counter. The optional miniatures deferred from P2 are implemented with P3's split briefing, where the information panel leaves the physical preview visible. Miniatures reflect existing `QuestMissionType` values; the current main is Retrieval, not a new Boss type. Persistence remains within a play session; application save/load is separate work.
+
+### P1 behavior and tuning
+
+`PreMissionStoneMotion` distributes **LightDrop**, **Tumble** and **TiltAndSettle** across the small slots. Each occurrence gets stable seeded height/timing/rotation variation. Light drops have the most bounce; tumbling stones rotate only a few degrees; off-balance arrivals emphasize rotational settling. No diagonal flight is introduced. Total default fall-plus-settle times remain approximately **0.43–0.51 s**, and all styles restore the exact authored pose. Returning from a briefing does not replay arrivals.
+
+Before a new main rock falls, a **0.32 s** anticipation gently directs the existing overhead camera toward its landing point with **4.5%** zoom. The existing high accelerating fall follows. At contact, the same frame starts sound, dust, mesh-chip particles, the camera impulse, visual board recoil and nearby-stone reactions. The main seats slightly downward with a very small compression and rotational recovery; it has no upward bounce. Camera focus relaxes during settling and reaches the current aspect-dependent board framing again.
+
+Nearby small rocks react only on their visual children. Radial tilt/travel decay with distance inside a **9-unit** radius and with time through the main's settling sequence. Defaults are **2.6°** maximum tilt and **0.018 units** maximum travel before distance falloff. Their logical roots, readiness and colliders remain unchanged. The separate `Board Surface` group recoils by up to **0.018 units / 0.12°** over **0.52 s**; camera and quest roots are outside that group. The existing decorative inlays retain their small vibration. All poses restore exactly.
+
+The heavy camera impulse now decays over **0.24 s**, shorter than the visual recovery. Shake strengths/durations and surface recoil are serialized on `QuestBoardImpactFeedback`. Small variation, bounce, tilt, anticipation, focus zoom and reaction distance/amount are serialized on `PreMissionStoneMotion`. Existing base drop and inspection settings remain available. Twelve short-lived mesh chips reuse the owned prototype mesh/material in one additional particle system, with no collision simulation or new downloaded content. Existing sounds/materials/textures remain replaceable.
+
+The scene's board prefab is configured through **Tools → Mech → Pre-Mission → Upgrade P1 Stone Physicality**. This explicit command runs the existing M3/M4 setup, groups only the owned board mesh children, adds the reusable chips and binds the feedback references. Repeating it preserves existing effect/timing tuning and creates no duplicates. No automatic import-time upgrade runs.
+
+Skip during anticipation or descent settles all pending rocks, clears camera focus/recoil/reactions/particles and remembers the completed presentation without fabricating contact effects. Disabling or leaving uses the existing recovery path. Natural first arrival remains recorded at contact; a main left unseen can still arrive next time. No new completion button or simulation menu is shipped.
+
+P1 verification on **2026-10-26**: compilation and **58 extended motion/interaction checks** passed (`QuestStonePolishChecks.RunPhysicalityBatch`), followed by **107 physical-board regression checks** (`QuestStoneBoardChecks.RunBatch`), in isolated Unity 6000.5.8f1 / URP 17.5 with the project's PC pipeline and Linear color space. The extended suite checks varied actual arrivals, anticipation before the stone is visible, simultaneous contact reactions, distance falloff, no upward heavy bounce, actual mesh-chip emission, exact surface/stone restoration, skip during anticipation and disabling during secondary recoil. Retained checks cover scene persistence before/after main contact, timeScale zero, startup hitches, navigation, exact quest/torso handoff and the empty launch boundary. Physical regressions exercise real pointer/keyboard input, raycasts, hover, UI blocking, all authored layouts through six surrounding offers plus main, recovery and resolution-dependent framing. Only the known independent Editor Search startup exception is filtered by the existing audit; no unexpected runtime errors were reported.
+
+Drop, anticipation, contact, settling and 4:3 return captures were visually reviewed. These were automated Play Mode checks in an isolated project; no full player build, live-project human playthrough or listening review was performed. Final motion/audio feel remains a review item. The earlier 518 shared progression/legacy UI checks remain the M3/M4 baseline and were not rerun for P1, which does not change those systems.
+
+P1 updates `PreMissionStoneMotion.cs`, `QuestStoneView.cs`, `QuestBoardImpactFeedback.cs`, `QuestStonePolishChecks.cs`, the board prefab and this README. It adds `Editor/PreMissionStonePhysicalitySetup.cs` and metadata. The shipped board prefab matches the tested copy; the existing scene already matches the verified setup apart from whitespace and needs no P1 edit. Quest/torso data, layout presets, UI prefab, mission hook, gameplay scenes, art assets, package manifest and project settings are unchanged by P1.
+
+### P2 — physical progress track
+
+A narrow primitive track sits along the board's left inner edge, clear of the central main footprint and all six surrounding slots in every authored composition. It has a start point plus one point per required small success. The shipped requirement of three creates **four points: 0, 1, 2, 3**. A small faceted marker rests on the current point, completed points use the existing selection material, and a physical counter complements the larger board HUD. No track object has a collider or Rigidbody. Geometry, font, mesh and materials reuse owned prototypes and remain replaceable by the art team.
+
+On first entry, the existing HUD entrance is followed by the track rising/settling onto the table with its points appearing in sequence, then small-stone arrivals. A successful result replaces its small stone, advances the marker with a short lift and settling, and acknowledges the reached point. On the final step, camera attention follows the marker and blends directly into P1's main-rock anticipation, fall and impact. The same `PreMissionStoneMotion` coroutine coordinates the entire sequence; no parallel camera/quest controller is introduced.
+
+The physical view reads `SuccessfulSmallCompletions` and `RequiredSmallCompletions` from the existing run. Only actual successful tracked outcomes move the target. Selection, acceptance, the empty launch hook, failure and abandonment do not advance it. The marker stops at the unlock threshold even when cumulative successes continue. It neither unlocks quests itself nor restricts selecting small/main offers.
+
+`QuestProgressionRuntime` retains two presentation watermarks: whether the track reveal finished and the last step shown. These are animation bookkeeping, not another progression counter. Each completed marker step is remembered after it settles. Returning from the menu restores shown steps; results earned off-board animate any missing steps in order. A result received during a briefing/torso view waits until returning to the board. Pending marker movement also runs when there are no pending stone arrivals. New progression resets the watermarks; application restart/Play exit still resets the entire in-memory run.
+
+Skip Arrival/Space settles the map and pending stones together, remembers the final presentation and never fabricates an impact. Leaving mid-step preserves the last fully shown step so the remaining movement can resume on return. Disabling/re-enabling the flow, motion, board or track restores a valid target view, clears camera focus and keeps hit areas stable. Destroying the UI uses the existing world-owner detach path. Animation is unscaled and caps loading-frame steps, matching the stone system.
+
+Tune `PreMissionProgressTrack` on **QuestStoneBoard → Board Surface → Physical Progress Track**:
+
+| Setting | Default |
+| --- | --- |
+| Track length | 5 world units |
+| First reveal duration / lift | 0.55 s / 0.24 units |
+| Marker step duration / lift | 0.38 s / 0.10 units |
+| Step settling | 0.10 s |
+| Final-step acknowledgement | 0.18 s |
+| Camera attention | 0.16 (bounded blend toward marker) |
+
+Track placement is the parent transform; its default board-local position is `(-7.95, 0.10, 0)`. The track is a child of the P1 visual board surface and responds to its recoil. The configurable completion requirement remains on `PrototypeBoardCatalogue`; start a new run after changing it. Point count/spacing are generated from that requirement at binding, rather than hardcoded to three. Point labels are reduced to endpoints when requirements exceed six to avoid dense typography. The `StepPresented(int)` event is available for future presentation/audio feedback and does not report gameplay results.
+
+**Tools → Mech → Pre-Mission → Upgrade P2 Physical Progress Track** explicitly runs the existing P1 setup and creates/binds the missing track in the owned board prefab. Repeating it preserves track tuning and does not duplicate objects. No import-time scene rewrite or extra completion button is introduced. The shipped scene already uses the board prefab.
+
+P2 verification on **2026-10-26**: **43 focused checks passed** (`QuestProgressTrackChecks.RunBatch`), followed by **140 physical-board/layout checks** (`QuestStoneBoardChecks.RunBatch`) and **58 retained motion/interaction checks** (`QuestStonePolishChecks.RunPhysicalityBatch`): **241 checks total**, in isolated Unity 6000.5.8f1 / URP 17.5 with the PC pipeline and Linear color space. Focused checks cover first reveal, visible marker movement, successful/failed/abandoned/duplicate outcomes, empty confirmation, off-board catch-up, final-step-before-main ordering, clamping after unlock, scene/menu returns, queued torso-view outcomes, leaving during movement, skip/recovery, and requirements of one, three and five. Layout checks verify track visibility, non-overlap and absence of collider blockers in all three compositions, including six surrounding quests plus main. P1/interaction regressions verify weight, reactions, camera restoration, torso selection, exact one-time empty handoff and interruption behavior with the track enabled. The known independent Editor Search startup exception remains narrowly filtered; no unexpected runtime errors were reported.
+
+Captures at 1280×720, 1600×900, 1920×1080 and 1024×768 include the world and existing UI. Initial, moving, completed, configurable-requirement and six-slot track captures were visually reviewed. These are automated Play Mode runs in an isolated project; no full player build or live-project human playthrough/listening review was performed. The earlier 518 shared progression/legacy UI checks remain the M3/M4 baseline and were not rerun for P2. Run the batch entry points only in a disposable project; they prepare scene/catalogue fixtures.
+
+P2 adds `PreMissionProgressTrack.cs`, `Editor/PreMissionProgressTrackSetup.cs` and `Tests/Editor/QuestProgressTrackChecks.cs`, with metadata. It extends the runtime presentation store, stone motion/board, flow's settled-presentation bookkeeping and the physical-layout regression fixture. The shipped board prefab and source files match the tested copies. The existing scene reference needs no edit. Quest offers, layout presets, torso data, UI prefab, gameplay hook/scenes, art assets and project settings remain unchanged. Gameplay launch remains the exposed empty hook.
+
+### P3 — cinematic interaction and symbolic miniatures
+
+Inspection keeps the selected rock and a small physical objective preview visible on the left while the existing briefing occupies the right half of its view. The camera remains overhead and shifts the inspected object's center to approximately **25% screen width / 50% height**, fitting both rock and miniature to the current aspect ratio. The briefing still reveals its real title/type, description, information, rewards and controls through the existing one-second sequence. Its paper panel slides/fades from the right; title/button text fits the narrower layout and the existing scrollable body remains available. The full briefing layout is restored automatically when the controller uses the legacy paper view.
+
+Small stones hover with a **0.06-unit lift / 2.2° tilt over 0.12 s**. Main stones hover more slowly and less: **0.025 units / 0.7° over 0.18 s**, with a smaller scale response. Only visual children move; colliders and logical layout roots stay fixed. Click compression immediately acknowledges selection. The pickup interpolates from the actual hovered pose using short signed angles, avoiding full rotations when a negative tilt crosses Euler zero. Main handling is slower and its inspection lift is lower than the small rock's.
+
+The miniature grows from a shallow plinth on the selected rock during the latter part of the camera approach, so no extra unskippable preview delay is added. The printed rock inscription fades as the pieces emerge and returns as they retract. The selected mission's existing `missionType` selects one of five reusable primitive compositions:
+
+| Type | Symbolic objective |
+| --- | --- |
+| Retrieval | Traveller, route and recoverable object at a destination |
+| Elimination | One abstract target symbol |
+| King of the Hill | Capture area and flag |
+| Escort | Escort token, route and destination |
+| Defense | Protected core and short guard walls |
+
+These are briefing symbols, not a procedural map, enemy count, gameplay actors or a promise of additional mission mechanics. They read existing quest data without changing it. No Boss type is added; the current main displays Retrieval. `PreMissionMissionMiniature` caches its five compositions and reuses them between inspections. Preview geometry has no collider/Rigidbody and uses owned prototype mesh/materials on the existing world layer, with no downloaded art or new palette.
+
+Decline first retracts the information panel, then the miniature and stone, restoring the inscription, exact board pose, camera framing and hover. Accept gives a short press before the existing transition to the separate torso screen. The inspected world camera/miniature remains held through torso browsing and Back. Existing 100/150-health torso data, shared model mapping, directional browse animation, drag rotation and one-time confirmation pulse are retained. Confirmation still calls the exact empty hook once; no gameplay scene or equipment setup is added. Free rock dragging/idle camera parallax remain optional and are not introduced; stable framing keeps the preview and text readable.
+
+P3 tuning is on `QuestStoneView` (hover) and `PreMissionStoneMotion` (inspection/camera). Default P3 pickup/return times are **0.52 / 0.44 s**, with **1.15×** main handling, **0.22 / 0.12 units** small/main inspection lift, and minimum camera sizes **3.0 / 3.85**, expanded to fit within **34% screen width**. The explicit upgrade retunes only the previous untouched 0.72/0.64-second defaults on first creation; custom values are retained. Miniature emergence depth and piece stagger are serialized on `PreMissionMissionMiniature`. Torso timing and briefing fade/stagger remain on the shared presenter.
+
+**Tools → Mech → Pre-Mission → Upgrade P3 Cinematic Briefing** runs P2 setup, creates/binds the missing miniature compositions and saves the owned board prefab. Repeating it preserves later tuning and creates no duplicate preview system. The shared presenter applies/reverses the split layout at runtime only when a P3 board is assigned, so the UI prefab and scene references need no replacement.
+
+P3 verification on **2026-10-26**: **83 cinematic checks**, **58 motion/interaction checks**, **43 progression-track checks**, **140 physical-board/layout checks** and **518 retained data/legacy UI checks** passed: **842 checks total**, in isolated Unity 6000.5.8f1 / URP 17.5 with the project's PC pipeline and Linear color space. Entry points are `QuestCinematicChecks.RunBatch`, `QuestStonePolishChecks.RunPhysicalityBatch`, `QuestProgressTrackChecks.RunBatch`, `QuestStoneBoardChecks.RunBatch` and `PreMissionChecks.RunSixOffersBatch`. The custom Editor coroutine runners now process nested waits and use unscaled play time for timing checks, rather than stepping past a yielded wait helper; the affected motion/progression suites were rerun with this fix. P3's virtual pointer is supplied consistently through Input System updates.
+
+The cinematic suite covers restrained heavy hover, stable hit bounds, short signed-angle pickup, miniature emergence during approach, input guards, actual quest/type data for all five compositions, viewport separation and usable controls at 1280×720, 1600×900, 1920×1080 and 1024×768, torso browsing, exact one-time handoff, return/inscription/hover restoration, component interruption and UI destruction. Captures of all five objectives, small/main inspection, approach, return and the actual torso preview were visually reviewed. The final prototype contrast pass assigns lit stone materials to the recoverable object/core and a contrasting flag material; no shared material assets were changed. The known independent Editor Search startup exception and deliberate hook-failure fixture remain narrowly handled by the existing error audit; no unexpected runtime errors were reported.
+
+Run these batch entry points only in a disposable project: they save fixture scenes and temporarily alter catalogue settings. The legacy suite explicitly restores the paper layout in that disposable scene; it must not replace the game's physical scene. No full player build, live-project human playthrough or listening review was performed. Final aesthetic/audio feel remains a review item.
+
+P3 adds `PreMissionMissionMiniature.cs`, `Editor/PreMissionCinematicSetup.cs` and `Tests/Editor/QuestCinematicChecks.cs`, with metadata. It updates the stone view/motion, shared presenter, controller configuration, two test coroutine runners, the owned board prefab and this README. Runtime source files and the shipped board match the tested copies. The UI prefab, current scene, quest/torso data, existing art assets, mission hook, gameplay scenes and project settings remain unchanged by P3. Camera shake/motion options and broader audio/feedback tuning remain P4; the gameplay handoff stays empty.
+
+## M1 progression and testing
+
+### Temporary Inspector completion button
+
+1. Enter Play Mode in `PreMissionScene`, or enter through Main Menu → Quest Board.
+2. Select **PreMissionUI** (the object with `PreMissionFlowController`) in the Hierarchy.
+3. Under **Temporary Quest Testing** at the top of its Inspector, click **Complete Small Quest (Test)**.
+4. Wait for the replacement rock and progress-marker animations to finish before clicking again. After three successes, the main rock appears. All available quests remain selectable.
+
+This explicitly simulates a tracked successful outcome for the first offered small quest using the currently preferred starter torso. It neither calls `MissionStartHook` nor starts gameplay. The button is disabled outside Play Mode, away from the board, during posting/transitions, when the controller/presentation is disabled, without a valid torso/offer, or while a real mission attempt is active. A same-frame double click is rejected. Runtime quest data remains the authority; no shared quest/torso asset is edited, and stopping Play resets the run as before.
+
+The control lives in `Scripts/PreMission/Editor/PreMissionFlowControllerEditor.cs`, with its guarded action in `Editor/QuestProgressionTools.cs`. Both are excluded from player builds. When P4 review ends, remove the custom Inspector and its metadata, retire the two completion helper methods/debounce fields, and update the associated Editor checks. Keep the progression reset if it remains useful. `QuestInspectorChecks.RunBatch` passed **23 checks** in isolated Unity 6000.5.8f1 on **2026-10-26**, covering Inspector selection, Edit/Play eligibility, disabled/inspection/active-attempt rejection, same-frame debounce, three actual tracked completions, marker movement, stable unrelated rocks, main reveal and no launch/UI-button side effects. No live-project human Inspector session was performed.
+
+`QuestProgressionSession` owns offer occurrences, fixed slot numbers, completion progress, the unlocked main and one active mission attempt. `QuestProgressionRuntime.Current` retains that data across scene loads and main-menu returns within the current play session. It also retains the last browsed torso ID. This is memory-only persistence: stopping Play, restarting the application or explicitly starting a new progression resets it. There was no existing general mission-result or save system to extend.
+
+- The catalogue exposes **Small Offer Count = 3** and **Small Completions To Unlock Big = 3**. Counts are read at run creation; reset progression after changing them. Existing quest IDs, eligibility and `Side`/`Main` categories are reused; no new mission content or category system is added.
+- Only `ReportMissionResult(attempt.Id, QuestMissionOutcome.Succeeded)` for the current tracked small attempt awards one completion. Selection, acceptance, confirmation, scene entry and returning to the menu do not count. Unknown, duplicate, closed or old-run attempt IDs are rejected. Failure/abandonment closes the attempt and preserves its offer.
+- Success replaces that offer occurrence in the same slot. Other offer identities and active inspection/torso selections remain intact. Another eligible definition is preferred; with a scarce pool, a completed definition may be drawn again with a new occurrence ID. Simultaneous duplicate definitions are excluded. Existing definitions are repeatable test briefings, not distinct finished gameplay mechanics.
+- At the threshold, one eligible main offer is added and retained. `BigQuestUnlocked` stays true. No main-first requirement is introduced. If no main is eligible, feedback explains this; `RefreshAvailability()` can add it later. Completing a main currently leaves it offered and does not increase small progress; future story/removal rules are outside M1.
+- `Changed` reports the removed offer, its replacement and `AddedBigQuest`. The stone board consumes this availability data and animates only unseen offer occurrences. The legacy paper view similarly reposts only unseen offers. New offers wait while an unrelated briefing/torso is open, then arrive on return to the board.
+- M1 reserved the main region in the temporary paper UI. The physical board uses the central 3D footprint instead. Both presentations keep existing small slots stable. The board's **Main Quest Progress** meter is clamped at the unlock threshold; cumulative completion data remains intact.
+
+Enter Play in `PreMissionScene` (or enter through the Main Menu) to preview arrivals and the briefing/torso flow. The board starts at **Main Quest Progress: 0 / 3**. Without gameplay integration, confirming a torso does not complete a mission or unlock the main. Use the temporary Inspector button above for manual review, or the isolated automated suites to verify tracked outcomes. No completion shortcut is included in a player build.
+
+Use **Tools → Mech → Pre-Mission → Development → Reset Quest Progression**, or the controller's **Development/Start New Quest Progression** context menu, to start a new run. `StartNewProgression(catalogue, seed)` remains available for a future new-game owner. `CreateFreshBoard()` rebuilds the current board presentation without resetting progression; it does not force previously contacted stones to replay impacts.
+
+## Gameplay result contract — launch remains empty
+
+The default `MissionStartHook.StartMission(QuestDefinition, PartData)` body remains empty and no gameplay scene has been wired or edited. A receiving gameplay implementation can begin a tracked attempt using the exact arguments it receives:
+
+```csharp
+// Inside the gameplay developer's future launch implementation:
+if (!QuestProgressionRuntime.TryBeginMission(selectedQuest, startingTorso, out var attempt))
+    return; // Another attempt is active, or the offered quest/torso is invalid.
+// Retain attempt.Id with this mission; then perform your own setup/loading.
+
+// From the actual outcome owner, once the mission has succeeded:
+QuestProgressionRuntime.ReportMissionResult(attempt.Id, QuestMissionOutcome.Succeeded);
+// On failure, cancellation or abandoning an unfinished mission instead:
+// ...ReportMissionResult(attempt.Id, QuestMissionOutcome.Failed/Abandoned);
+```
+
+The attempt retains its offer and starting torso references across scenes. Do not fetch a new current attempt ID when reporting an old mission's outcome; retain the token that belongs to that mission. Scene entry/exit itself is not a success signal. A launch error after beginning an attempt must close it with a failed or abandoned outcome so a retry can begin.
+
+The existing `TempLevelObjective` now exposes `IsComplete` and `Completed` at its actual collect-item-and-return win transition. The optional **PreMissionObjectiveResultBridge** subscribes to that event and captures the active attempt ID on enable (or through `TryBindAttempt(attempt)`). It reports success once, offers explicit `ReportFailure()`/`ReportAbandoned()`, and abandons an unfinished bound attempt when destroyed. A stale bridge cannot finish a later mission. Attach/bind it on the gameplay side before the objective can finish; no gameplay scene has had this adapter added automatically. Other outcome systems can call the same runtime API directly and need no dependency on this prototype adapter.
+
+**Missing integration:** the gameplay owner still needs to override/implement the empty launch hook, begin the attempt, perform their own mission loading/setup, and bind the actual outcome owner. The existing objective's return-to-menu path and combat/equipment behavior are unchanged. The automated fixture exercises the real objective in isolation; the shipped UI alone does not launch a playable mission.
+
+## Revised roadmap
+
+| Milestone | Scope | Status |
+| --- | --- | --- |
+| M1 — Quest Progression | Three small offers, actual result contract, replenishment, single main unlock, play-session persistence | Complete |
+| M2 — Physical 3D Board | Horizontal primitive board, overhead camera, large main stone in the center with small quest stones surrounding it, collider/raycast selection; reuse current details/torso screens | Complete |
+| M3 — Animation and Impact | Scripted light/heavy stone drops, impact audio, dust, camera feedback; stable resting positions | Complete |
+| M4 — Cinematic Interaction | Inspection camera/stone motion, return transitions, torso flow, reliability and removal of temporary test controls | Complete |
+
+All four original presentation/progression milestones are complete. Additional tabletop polish now follows P1–P4 above. Gameplay integration remains with its owner and is excluded from these phases. Final stone/board art and replacement audio remain art-team review items. The previous Q1–Q5 implementation and historical checks below describe the shared briefing/torso UI and retained legacy paper preview; physical motion is configured separately as documented above.
+
+### M2 composition — PM sketch clarification
+
+The original direction recommended reserving a central or slightly upper-center location for the big stone, with small stones arranged around it. The PM's latest sketch now makes that composition the explicit M2 target:
+
+- Place the large main-quest **rock in the middle** of the horizontal board. Arrange the smaller quest **rocks around its perimeter**, following a few authored compositions with clear spacing and readable selection feedback. The sketch defines placement; quests continue to be represented by 3D rocks.
+- Reserve the central footprint before the main quest unlocks. When it arrives, existing small rocks keep their positions and remain visible, unobstructed and individually selectable. Check projected screen-space overlap and raycast access from the overhead camera, including the height of the large rock.
+- Unlock the main after the configured number of successful small missions. Once available, players may choose **either the main or any available small quest**. The central rock's size and arrival communicate importance; there is no forced main-first step or board-wide input blocker after its arrival settles.
+- Keep the number of small offers configurable. The sketch shows six peripheral small quests; M1's current default remains three. Treat the sketch as the composition reference while retaining that default until the offer count is explicitly changed. Use only eligible unique definitions; leave unused peripheral positions clear instead of duplicating offers to fill the drawing.
+- M3 supplies the heavy central-rock arrival and lighter small-rock drops without moving surrounding resting positions. M4 supplies inspection and return transitions while keeping the other rocks accessible whenever the board is interactive.
+
+M2 implements this central composition in the physical board. The legacy paper preview retains its earlier featured region and neighboring cells. The empty gameplay-launch hook and M1 progression rules are retained.
+
+## M1 verification and changed files
+
+Verified on 2026-10-25 in an isolated Unity **6000.5.8f1** project: compilation succeeded and **518 data/editor and automated Play Mode checks passed** (`PreMissionChecks.RunSixOffersBatch`). The older Q5 regressions run against five small offers plus a legitimately unlocked main; M1 checks use the shipped three-offer/three-success configuration. Checks cover real `TempLevelObjective` pickup/return wins, failure and abandonment through the adapter, duplicate/stale/foreign tokens, configurable/scarce pools, single-slot replenishment, one main-arrival event, preservation of unrelated inspection and torso selection, completed-selection recovery, explicit new-run reset, repeated Main Menu/PreMission scene loads and results arriving while the board is absent. The existing exact-data empty-hook, posting, hover, reveal, interruption and resolution regressions also pass. No unexpected runtime errors were reported; the known independent Editor Search startup exception remains filtered by the existing audit.
+
+The fresh three-small board and 3/3 unlocked board were visually inspected at 1600×900. Existing regression captures/checks cover 1280×720, 1600×900, 1920×1080 and 1024×768. The old painted-wipe pixel assertion was corrected to sample normalized Canvas coordinates after render-target refits; its masking assertion still checks visible top versus invisible bottom. All 15 changed/new source files match the tested isolated copy. The live catalogue retains **3 small offers / 3 successes**, both existing torso choices and the original quest references. No full player build or manual gameplay launch was performed; gameplay wiring remains explicitly unimplemented as described above.
+
+New sources: `QuestProgressionSession.cs`, `QuestProgressionRuntime.cs`, `PreMissionObjectiveResultBridge.cs`, `Editor/QuestProgressionTools.cs` and `Tests/Editor/QuestProgressionChecks.cs` (with Unity metadata). Updated sources: the selection session, flow controller, catalogue definition, notice view/layout, paper presenter, the prototype objective's completion event and three existing test helpers. Updated data/docs: `PrototypeBoardCatalogue.asset` and this README. Existing gameplay scenes, scene loader, mission hook body, combat, models, art, torso assets and UI prefabs are unchanged.
 
 ## Open and test
 
 1. Open `Assets/Scenes/MainMenuScene.unity` and enter Play mode.
 2. Click **Quest Board**. The existing **Gym**, **Zoo**, and **Exit** entries remain available.
-3. Side notices post one at a time, then the larger main notice posts last. **Skip Posting (Space)** or the **Space** key finishes the entry/posting intro immediately. Select any settled notice to pull it forward into a dedicated briefing. **Decline** or **Escape** returns it to its saved board position and rotation.
+3. Watch the physical track rise into view, then the three small rocks drop around the reserved center, or use **Skip Arrival / Space** to settle both. Hover/click one, or use arrow keys and Enter. The stone lifts and the camera approaches before the briefing reveals. **Decline** or **Escape** reverses the motion and restores board hover. Use the temporary Inspector button to simulate the successful outcomes needed for marker advancement and main unlock.
 4. After the briefing reveals, **Accept Quest** opens the separate starting-torso view. Drag the existing torso model to rotate it. Browse **Golem Torso (100 health)** and **Heavy Torso (Test) (150 health)** with the left/right controls; the counter, name, description, health contribution and preview update together.
 5. **Back to Details** or **Escape** retains the selected quest and torso.
 6. **Confirm Torso** gives brief feedback, then calls the exposed gameplay function below once with the exact selected data. The UI stays on this view because gameplay is intentionally not connected.
 7. Back/Escape from the board returns to the main menu.
 
-You can also open `Assets/Scenes/PreMissionScene.unity` directly and enter Play mode. This scene has no gameplay player or physical board interaction. Mouse selection and keyboard UI navigation/Submit are supported; Escape steps back one view.
+You can also open `Assets/Scenes/PreMissionScene.unity` directly and enter Play mode. The board uses actual world objects, with no walking player. Its overhead camera performs stone selection; the existing Unity UI handles briefing/torso controls. Escape steps back one view.
 
-## Paper layout and transitions
+## Legacy paper layout and transitions
 
 - The first offered main quest occupies its own larger reserved region; ordinary notices fill separate cells beside it. On narrow layouts the featured region moves above the others. Paper colors, borders, and category labels distinguish main and side quests. No notice intentionally overlaps another.
 - Each new board chooses one of three authored designs: **Aligned**, **Framed**, or **Rows**. Spacing and row alignment stay consistent, incomplete rows are centered, and tilts follow a restrained preset rather than independent random jitter. Rows places the main paper on the right. Returning from details preserves the chosen design, offers, and paper positions; resizing refits the same composition.
@@ -144,11 +375,11 @@ public virtual void StartMission(QuestDefinition selectedQuest, PartData startin
 
 The flow controller calls this function after a quest is selected/accepted, a valid starter torso is selected, and confirmation feedback completes. It passes the actual quest asset and selected torso `PartData` asset, not UI GameObjects. The quest contains its ID, title, description, category, mission type, estimated minutes, Gni reward, available parts/enemy prefab references, and optional `missionSettings` data.
 
-Current data path: `QuestSelectionSession.SelectedQuest / SelectedTorso` → `TryRequestLaunch(out quest, out torso)` → confirmation feedback → `MissionStartHook.StartMission(quest, torso)`. `PreMissionFlowController.ConfirmTorso()` reserves the validated references and passes those exact assets to the hook after feedback completes. The session checks the current view, both choices and the submission guard. Gameplay code can receive the arguments by overriding the hook. The UI session is transient and provides no cross-scene storage; the receiving implementation owns retaining the data for whatever gameplay entry point it chooses.
+Current data path: `QuestSelectionSession.SelectedQuest / SelectedTorso` → `TryRequestLaunch(out quest, out torso)` → confirmation feedback → `MissionStartHook.StartMission(quest, torso)`. `PreMissionFlowController.ConfirmTorso()` reserves the validated references and passes those exact assets to the hook after feedback completes. The session checks the view, live offer occurrence, both choices and the submission guard. Gameplay code can receive the arguments by overriding the hook and call the M1 attempt API above to retain both references across scenes.
 
 To connect gameplay, either implement this method or create a `MissionStartHook` subclass and override it. If using a subclass, replace the default hook component and assign your component to **PreMissionFlowController → Mission Start Hook** on `Assets/Prefabs/UI/PreMission/PreMissionUI.prefab`.
 
-The gameplay implementation owns validation against actual mission capabilities, persistence of the chosen data before loading, loading/starting the appropriate mission, installing the starting torso, applying enemy/part settings, and eventual completion/rewards. There is no automatic gameplay scene load, hidden singleton, default mission filename, equipment change, currency payment, or quest-completion behavior in this UI flow. Q4 keeps this public empty function and its signature unchanged.
+The gameplay implementation owns validation against actual mission capabilities, loading/starting the appropriate mission, installing the starting torso, applying enemy/part settings, and reporting the actual outcome/rewards. There is no automatic gameplay scene load, default mission filename, equipment change or currency payment. M1 adds the explicit play-session progression store and outcome API described above, while keeping this public empty function and its signature unchanged.
 
 Repeated confirmation on the current torso view is ignored. Back to Details clears that submission guard so the player can deliberately return and confirm again. If the hook throws, the UI reports failure, logs the exception, and permits retry. An asynchronous gameplay implementation should handle its own loading/failure UI.
 
@@ -156,19 +387,20 @@ Repeated confirmation on the current torso view is ignored. Back to Details clea
 
 ## Data and scene assets
 
-- `Assets/PreMission/PrototypeBoardCatalogue.asset`: configurable minimum/maximum offer count (defaults 4–6), quest pool, optional main-offer inclusion, starter-torso list, and optional torso visual mappings.
+- `Assets/PreMission/PrototypeBoardCatalogue.asset`: configurable small offer count and successful-completion threshold (both default 3), quest pool, starter-torso list, and optional torso visual mappings. These fields replace the old minimum/maximum count and immediate-main-inclusion settings.
 - `Assets/PreMission/Quests/PrototypeQuest_*.asset`: six clearly identified prototype briefings. They demonstrate data/UI only; none implements a mission type or reward payout.
 - `Assets/Prefabs/UI/PreMission/PreMissionUI.prefab`: editable uGUI layout, controller, empty gameplay hook, and return-to-menu callback.
 - `Assets/Prefabs/UI/PreMission/QuestNotice.prefab`: reusable paper, category accent, border, shadow, button, and text. A single nested instance is reused as the travelling paper.
-- `Assets/Scenes/PreMissionScene.unity`: UI prefab instance, UI camera, and Input System EventSystem.
+- `Assets/Scenes/PreMissionScene.unity`: existing UI prefab instance, the new stone-board prefab with its overhead camera/lights, and the Input System EventSystem. The old UI camera is disabled.
+- `Assets/PreMission/StoneBoard/`: board/stone prefabs, faceted placeholder mesh, ring mesh, URP materials, dust texture/material and small/heavy impact WAVs; the scene assigns this board to the controller through a prefab-instance override.
 
-Create more definitions through **Assets → Create → Mech → Pre-Mission → Quest** and add them to the catalogue. Use unique, nonblank quest IDs. Unavailable definitions, nulls, and duplicate IDs are excluded from generation. Offer count is clamped to the number of eligible definitions. Main inclusion affects generation only and never disables other offers.
+Create more definitions through **Assets → Create → Mech → Pre-Mission → Quest** and add them to the catalogue. Use unique, nonblank quest IDs across both categories. Unavailable definitions, nulls, and duplicate IDs are excluded from generation. A scarce pool shows as many unique small definitions as possible. One main is offered only after the successful-completion threshold, without restricting small offers.
 
 Starter entries reuse `PartData`; only unique, nonblank IDs with `Part Type = Torso` are accepted. The original **Golem Torso** and removable **Heavy Torso (Test)** are the two shipped choices. Extra no-model and alternate-model verification options exist only as temporary test fixtures.
 
-`QuestSelectionSession` owns offer references, selected quest, torso index, view, and the confirmation guard independently of UI objects. Opening/closing views or disabling/re-enabling the UI preserves the session. `PreMissionFlowController.CreateFreshBoard()` explicitly creates a new session; it is not called by ordinary navigation. Leaving and reopening the scene starts a fresh board. Sessions are not saved between game runs.
+`QuestSelectionSession` owns the current UI navigation and confirmation guard over `QuestProgressionSession` data. Opening/closing views or disabling/re-enabling the UI preserves navigation. Leaving/reopening the scene creates a new navigation wrapper over the same progression run and restores the preferred torso. The run's offer occurrences, slots, seed, progress and main availability persist; only explicit new progression or a new Play/application session resets them. `CreateFreshBoard()` replays presentation using the same data.
 
-## Milestone boundaries
+## Historical Q1–Q5 milestones
 
 - **Q1 complete:** quest data, randomized stable offers, always-available main/side selection, responsive views, navigation, torso data placeholder, and empty public gameplay handoff.
 - **Q2 complete:** larger dramatic main notice without obscuring side quests, reserved paper positions/rotation, hover/focus feedback, and side-first/main-last posting animations.

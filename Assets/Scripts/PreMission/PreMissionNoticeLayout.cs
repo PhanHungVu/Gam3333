@@ -24,12 +24,15 @@ public sealed class PreMissionNoticeLayout : MonoBehaviour
     };
     readonly List<QuestNoticeView> notices = new List<QuestNoticeView>();
     LayoutDesign selectedDesign;
+    bool reserveMainRegion;
+    int smallSlotCount;
     public int SelectedDesignIndex { get; private set; }
     public int DesignCount => designs != null ? designs.Length : 0;
     public string SelectedDesignName => selectedDesign != null ? selectedDesign.name : "Aligned";
 
-    public void Configure(IReadOnlyList<QuestNoticeView> offers, int seed)
+    public void Configure(IReadOnlyList<QuestNoticeView> offers, int seed, bool reserveMain = false, int smallSlots = 0)
     {
+        reserveMainRegion = reserveMain; smallSlotCount = smallSlots;
         notices.Clear(); notices.AddRange(offers);
         SelectedDesignIndex = DesignCount > 0 ? new System.Random(seed).Next(DesignCount) : 0;
         selectedDesign = DesignCount > 0 ? designs[SelectedDesignIndex] : null;
@@ -43,7 +46,8 @@ public sealed class PreMissionNoticeLayout : MonoBehaviour
         if (area.width <= 0 || area.height <= 0 || notices.Count == 0) return;
         int featured = notices.FindIndex(n => n != null && n.Quest.category == QuestCategory.Main);
         Rect ordinaryArea = area;
-        if (featured >= 0 && notices.Count > 1)
+        bool reserve = reserveMainRegion || (featured >= 0 && notices.Count > 1);
+        if (reserve)
         {
             Rect main;
             if (area.width / area.height >= 1.45f)
@@ -59,10 +63,10 @@ public sealed class PreMissionNoticeLayout : MonoBehaviour
                 main = new Rect(area.xMin, area.yMax - height, area.width, height);
                 ordinaryArea = new Rect(area.xMin, area.yMin, area.width, area.height - height - spacing);
             }
-            Fit(featured, main, true, selectedDesign != null ? selectedDesign.mainAngle : 0f);
+            if (featured >= 0) Fit(featured, main, true, selectedDesign != null ? selectedDesign.mainAngle : 0f);
         }
-        int count = notices.Count - (featured >= 0 && notices.Count > 1 ? 1 : 0);
-        int columns = Mathf.Min(count, featured >= 0 || count <= 4 ? 2 : 3);
+        int count = smallSlotCount > 0 ? smallSlotCount : notices.Count - (featured >= 0 && reserve ? 1 : 0);
+        int columns = Mathf.Min(count, reserve || count <= 4 ? 2 : 3);
         if (ordinaryArea.width < 450f) columns = 1;
         columns = Mathf.Max(1, columns);
         int rows = Mathf.CeilToInt((float)count / columns);
@@ -71,14 +75,15 @@ public sealed class PreMissionNoticeLayout : MonoBehaviour
         int slot = 0;
         for (int i = 0; i < notices.Count; i++)
         {
-            if (i == featured && notices.Count > 1) continue;
-            int column = slot % columns, row = slot / columns;
+            if (i == featured && reserve) continue;
+            int currentSlot = smallSlotCount > 0 && notices[i].OfferSlot >= 0 ? notices[i].OfferSlot : slot;
+            int column = currentSlot % columns, row = currentSlot / columns;
             int rowCount = Mathf.Min(columns, count - row * columns);
             float rowWidth = rowCount * cellWidth + (rowCount - 1) * spacing;
             float x = ordinaryArea.center.x - rowWidth * 0.5f + column * (cellWidth + spacing);
             float angle = 0f;
             if (selectedDesign != null && selectedDesign.sideAngles != null && selectedDesign.sideAngles.Length > 0 && rowCount > 1)
-                angle = selectedDesign.sideAngles[slot % selectedDesign.sideAngles.Length];
+                angle = selectedDesign.sideAngles[currentSlot % selectedDesign.sideAngles.Length];
             if (i == featured && selectedDesign != null) angle = selectedDesign.mainAngle;
             Fit(i, new Rect(x, ordinaryArea.yMax - (row + 1) * cellHeight - row * spacing, cellWidth, cellHeight), i == featured, angle);
             slot++;

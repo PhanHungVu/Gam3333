@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 // Only presentation lives here. The selection session remains the navigation authority.
 [DisallowMultipleComponent]
@@ -64,8 +65,53 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
     bool wasDisabled;
     Vector2 detailsPosition, torsoPosition, choicePosition;
     Vector3 choiceScale, confirmScale;
+    bool tabletopBriefing, tabletopLayoutKnown;
+    Vector2 briefingPosition;
+    RectTransform[] tabletopRects;
+    Vector2[] savedMin,savedMax,savedOffsetMin,savedOffsetMax;
+    TMP_Text[] tabletopLabels;
+    bool[] savedAutoSizing;
+    float[] savedFontSize,savedFontMin,savedFontMax;
+    RectTransform tabletopAccept,tabletopDecline;
+    Vector3 acceptScale,declineScale;
+    public bool TabletopBriefing => tabletopBriefing;
     public bool IsPosting { get; private set; }
     public bool IsTransitioning { get; private set; }
+
+    public void ConfigureTabletopBriefing(bool enabled,Button accept,Button decline,TMP_Text title)
+    {
+        if(!enabled && !tabletopLayoutKnown) return;
+        if(!tabletopLayoutKnown)
+        {
+            tabletopAccept=(RectTransform)accept.transform; tabletopDecline=(RectTransform)decline.transform;
+            acceptScale=tabletopAccept.localScale; declineScale=tabletopDecline.localScale;
+            tabletopRects=new[]{briefingPaper,tabletopAccept,tabletopDecline};
+            savedMin=tabletopRects.Select(r=>r.anchorMin).ToArray(); savedMax=tabletopRects.Select(r=>r.anchorMax).ToArray();
+            savedOffsetMin=tabletopRects.Select(r=>r.offsetMin).ToArray(); savedOffsetMax=tabletopRects.Select(r=>r.offsetMax).ToArray();
+            tabletopLabels=new[]{title,accept.GetComponentInChildren<TMP_Text>(true),decline.GetComponentInChildren<TMP_Text>(true)};
+            savedAutoSizing=tabletopLabels.Select(t=>t.enableAutoSizing).ToArray(); savedFontSize=tabletopLabels.Select(t=>t.fontSize).ToArray();
+            savedFontMin=tabletopLabels.Select(t=>t.fontSizeMin).ToArray(); savedFontMax=tabletopLabels.Select(t=>t.fontSizeMax).ToArray();
+            tabletopLayoutKnown=true;
+        }
+        tabletopBriefing=enabled;
+        for(int i=0;i<tabletopRects.Length;i++)
+        {
+            tabletopRects[i].anchorMin=savedMin[i]; tabletopRects[i].anchorMax=savedMax[i];
+            tabletopRects[i].offsetMin=savedOffsetMin[i]; tabletopRects[i].offsetMax=savedOffsetMax[i];
+            tabletopLabels[i].enableAutoSizing=savedAutoSizing[i]; tabletopLabels[i].fontSize=savedFontSize[i];
+            tabletopLabels[i].fontSizeMin=savedFontMin[i]; tabletopLabels[i].fontSizeMax=savedFontMax[i];
+        }
+        if(!enabled) return;
+        PlaceTabletop(briefingPaper,new Vector2(0.50f,0.025f),new Vector2(1f,0.975f));
+        PlaceTabletop(tabletopAccept,new Vector2(0.52f,0),new Vector2(0.94f,1));
+        PlaceTabletop(tabletopDecline,new Vector2(0.06f,0),new Vector2(0.48f,1));
+        for(int i=0;i<tabletopLabels.Length;i++)
+        {
+            tabletopLabels[i].enableAutoSizing=true; tabletopLabels[i].fontSizeMin=i==0?22:18; tabletopLabels[i].fontSizeMax=i==0?36:26;
+        }
+    }
+    static void PlaceTabletop(RectTransform rect,Vector2 min,Vector2 max)
+    { rect.anchorMin=min; rect.anchorMax=max; rect.offsetMin=rect.offsetMax=Vector2.zero; }
 
     void OnDisable()
     {
@@ -97,18 +143,21 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
         IsPosting = IsTransitioning = false;
         HideTravel();
     }
-    public void BeginBoard(IReadOnlyList<QuestNoticeView> papers, int seed, Action ready)
+    public void BeginBoard(IReadOnlyList<QuestNoticeView> papers, int seed, Action ready,
+        bool reserveMain = false, int smallSlots = 0, IReadOnlyCollection<QuestNoticeView> pending = null, bool fadeEntry = true)
     {
         Cancel(); notices.Clear(); notices.AddRange(papers);
-        layout.Configure(papers, seed);
+        layout.Configure(papers, seed, reserveMain, smallSlots);
         AssignPostingStyles(seed);
-        foreach (var notice in notices) { notice.IsMoving = false; notice.SnapToBoard(); notice.SetPosted(false); notice.SetPaperVisible(true); }
+        var toPost = pending == null ? notices.ToArray() : notices.Where(n => pending.Contains(n)).ToArray();
+        foreach (var notice in notices) { notice.IsMoving = false; notice.SnapToBoard(); notice.SetPosted(!toPost.Contains(notice)); notice.SetPaperVisible(true); }
         posted = ready;
         // Back and Skip remain available during the entry fade. Every notice is
         // individually disabled until it has finished posting.
-        board.alpha = 0f; board.interactable = board.blocksRaycasts = true;
+        board.alpha = fadeEntry && toPost.Length > 0 ? 0f : 1f; board.interactable = board.blocksRaycasts = true;
+        if (toPost.Length == 0) { var completed = posted; posted = null; completed?.Invoke(); return; }
         IsPosting = true;
-        posting = StartCoroutine(PostNotices());
+        posting = StartCoroutine(PostNotices(toPost, fadeEntry));
     }
     void AssignPostingStyles(int seed)
     {
@@ -133,17 +182,61 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
             notice.SetPostingStyle(bag[index++]); previous = notice.PostingStyle;
         }
     }
+    // World presentation owns stone arrivals; this is the first-entry HUD fade.
+    public void BeginStoneBoard(Action ready, bool fadeEntry)
+    {
+        Cancel(); notices.Clear(); SetViews(PreMissionView.Board, null);
+        if (!fadeEntry) { ready?.Invoke(); return; }
+        board.alpha = 0f; posted = ready; IsPosting = true;
+        posting = StartCoroutine(EnterStoneBoard());
+    }
+    IEnumerator EnterStoneBoard()
+    {
+        yield return null; yield return null;
+        yield return Animate(boardEntryDuration, t => board.alpha = Smooth(t));
+        posting = null; IsPosting = false;
+        var ready = posted; posted = null; ready?.Invoke();
+    }
+    public void PresentStoneDetails(bool main, Action ready)
+    {
+        if (IsTransitioning) return;
+        briefingPaper.GetComponent<Image>().color = main ? new Color(0.91f, 0.81f, 0.57f) : new Color(0.84f, 0.79f, 0.66f);
+        IsTransitioning = true; StartCoroutine(StoneBriefing(true, ready));
+    }
+    public void PrepareStoneInspection() { SetGroup(board, true, false); HideTravel(); }
+    public void SetStoneInspectionProgress(float progress) { board.alpha = 1f - Mathf.Clamp01(progress); }
+    public void ReturnFromStoneDetails(Action ready)
+    {
+        if (IsTransitioning) return;
+        IsTransitioning = true; StartCoroutine(StoneBriefing(false, ready));
+    }
+    IEnumerator StoneBriefing(bool entering, Action ready)
+    {
+        HideTravel(); RememberPoses();
+        float boardStart = board.alpha;
+        SetGroup(board, true, false); SetGroup(details, true, false); board.alpha = boardStart;
+        if (entering) SetBriefingReveal(0f);
+        yield return Animate(viewFadeDuration, t =>
+        {
+            float alpha = Smooth(t);
+            board.alpha = entering ? boardStart*(1f-alpha) : 0f;
+            details.alpha = entering ? alpha : 1f - alpha;
+            if(tabletopBriefing) briefingPaper.anchoredPosition=briefingPosition+Vector2.right*(viewTravel*(entering?1-alpha:alpha));
+        });
+        if (entering) yield return RevealBriefing();
+        IsTransitioning = false; ready();
+    }
     IEnumerable<QuestNoticeView> PostingOrder() => notices.OrderBy(n => n.Quest.category == QuestCategory.Main ? 1 : 0);
-    IEnumerator PostNotices()
+    IEnumerator PostNotices(IReadOnlyCollection<QuestNoticeView> toPost, bool fadeEntry)
     {
         // Awake can run in a long scene-loading frame. Let the canvas paint before
         // starting the first paper, then animate it with the same steps as the rest.
         yield return null;
         yield return null;
-        yield return Animate(boardEntryDuration, t => board.alpha = Smooth(t));
+        if (fadeEntry) yield return Animate(boardEntryDuration, t => board.alpha = Smooth(t));
         board.interactable = board.blocksRaycasts = true;
         // Stable ordering: every side notice settles before a main notice is posted.
-        foreach (var notice in PostingOrder())
+        foreach (var notice in PostingOrder().Where(n => toPost.Contains(n)))
         {
             notice.IsMoving = true;
             notice.ResetHighlight();
@@ -316,6 +409,8 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
         RememberPoses();
         var old = Group(from); var next = Group(to);
         SetGroup(old, true, false); SetGroup(next, true, false); next.alpha = 0f;
+        if(tabletopBriefing && to==PreMissionView.Torso)
+            yield return Animate(clickFeedbackDuration,t=>tabletopAccept.localScale=acceptScale*(1f-0.025f*Mathf.Sin(t*Mathf.PI)));
         float direction = to == PreMissionView.Torso ? 1f : -1f;
         var oldRect = (RectTransform)old.transform; var nextRect = (RectTransform)next.transform;
         var oldHome = from == PreMissionView.Details ? detailsPosition : torsoPosition;
@@ -333,6 +428,7 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
     {
         if (rememberedPoses) return;
         detailsPosition = ((RectTransform)details.transform).anchoredPosition;
+        briefingPosition=briefingPaper.anchoredPosition;
         torsoPosition = ((RectTransform)torso.transform).anchoredPosition;
         if (torsoChoice != null) { choicePosition = ((RectTransform)torsoChoice.transform).anchoredPosition; choiceScale = torsoChoice.transform.localScale; }
         if (confirmButton != null) confirmScale = confirmButton.localScale;
@@ -342,6 +438,9 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
     {
         RememberPoses();
         ((RectTransform)details.transform).anchoredPosition = detailsPosition;
+        briefingPaper.anchoredPosition=briefingPosition;
+        if(tabletopAccept!=null) tabletopAccept.localScale=acceptScale;
+        if(tabletopDecline!=null) tabletopDecline.localScale=declineScale;
         ((RectTransform)torso.transform).anchoredPosition = torsoPosition;
         if (torsoChoice != null) { ((RectTransform)torsoChoice.transform).anchoredPosition = choicePosition; torsoChoice.transform.localScale = choiceScale; torsoChoice.alpha = 1f; }
         if (confirmButton != null) confirmButton.localScale = confirmScale;

@@ -46,12 +46,14 @@ public static class PreMissionChecks
     static bool confirmationStarted;
     static PreMissionTransitionChecks transitionChecks;
     static PreMissionReliabilityChecks reliabilityChecks;
+    static QuestProgressionChecks progressionChecks;
     [InitializeOnLoadMethod] static void Register() => EditorApplication.update += Update;
 
     public static void RunBatch()
     {
         if (!Application.isBatchMode) throw new InvalidOperationException("Disposable project only.");
         CheckData();
+        QuestProgressionChecks.CheckData(Check);
         PreMissionPrototypeSetup.CreatePrototype();
         PreMissionPresentationSetup.UpgradeAssets();
         StarterTorsoSetup.UpgradeAssets();
@@ -59,6 +61,7 @@ public static class PreMissionChecks
         PreMissionTransitionSetup.UpgradeAssets();
         PreMissionReliabilitySetup.UpgradeAssets();
         EditorSceneManager.OpenScene(PreMissionPrototypeSetup.ScenePath);
+        PrepareLegacyPaperFixture();
         var serialized = new SerializedObject(Object.FindAnyObjectByType<PreMissionFlowController>());
         Check(serialized.FindProperty("catalogue").objectReferenceValue != null && serialized.FindProperty("noticePrefab").objectReferenceValue != null,
             "Saved scene retains its external catalogue and notice prefab references");
@@ -67,12 +70,30 @@ public static class PreMissionChecks
         EditorApplication.EnterPlaymode();
     }
 
+    // M2 ships the world board. This historical suite deliberately exercises the
+    // retained paper-prefab path in its disposable scene, including scene reloads.
+    static void PrepareLegacyPaperFixture()
+    {
+        var flow = Object.FindAnyObjectByType<PreMissionFlowController>();
+        if (flow.StoneBoard == null) return;
+        flow.StoneBoard.gameObject.SetActive(false);
+        var fields = new SerializedObject(flow);
+        fields.FindProperty("stoneBoard").objectReferenceValue = null; fields.ApplyModifiedPropertiesWithoutUndo();
+        var board = (GameObject)fields.FindProperty("boardView").objectReferenceValue;
+        board.GetComponent<Image>().color = new Color(0.19f, 0.18f, 0.15f); board.GetComponent<Image>().raycastTarget = true;
+        ((Transform)fields.FindProperty("noticeParent").objectReferenceValue).gameObject.SetActive(true);
+        ((TMP_Text)fields.FindProperty("boardHint").objectReferenceValue).text = "Select a notice to read its briefing.";
+        var camera = GameObject.Find("UI Camera").GetComponent<Camera>(); camera.enabled = true; camera.tag = "MainCamera";
+        var listener = camera.GetComponent<AudioListener>(); if (listener != null) listener.enabled = true;
+        EditorSceneManager.SaveScene(flow.gameObject.scene);
+    }
+
     public static void RunSixOffersBatch()
     {
         if (!Application.isBatchMode) throw new InvalidOperationException("Disposable project only.");
         PreMissionPrototypeSetup.CreatePrototype();
         var catalogue = AssetDatabase.LoadAssetAtPath<QuestBoardCatalogue>(PreMissionPrototypeSetup.CataloguePath);
-        catalogue.minimumOffers = catalogue.maximumOffers = 6;
+        catalogue.smallOfferCount = 5;
         EditorUtility.SetDirty(catalogue); AssetDatabase.SaveAssets();
         RunBatch();
     }
@@ -106,8 +127,8 @@ public static class PreMissionChecks
         for (int seed = 0; seed < 30; seed++)
         {
             var model = new QuestSelectionSession(catalogue, seed);
-            Check(model.Offers.Count >= 4 && model.Offers.Count <= 6 && model.Offers.Select(q => q.questId).Distinct().Count() == model.Offers.Count
-                && model.Offers.Contains(quests[0]) && !model.Offers.Contains(unavailable) && !model.Offers.Contains(blank), "Eligible unique offers and main inclusion, seed " + seed);
+            Check(model.Offers.Count == 3 && model.Offers.Select(q => q.questId).Distinct().Count() == model.Offers.Count
+                && !model.Offers.Contains(quests[0]) && !model.Offers.Contains(unavailable) && !model.Offers.Contains(blank), "Three eligible unique small offers, no initial main, seed " + seed);
         }
         var state = new QuestSelectionSession(catalogue, 12);
         var original = state.Offers.ToArray();
@@ -126,9 +147,9 @@ public static class PreMissionChecks
         catalogue.quests.Clear(); catalogue.starterTorsos.Clear();
         var empty = new QuestSelectionSession(catalogue, 0);
         Check(empty.Offers.Count == 0 && empty.SelectedTorso == null && !empty.TryRequestLaunch(out _, out _), "Empty catalogues cannot launch");
-        catalogue.quests.Add(quests[1]); catalogue.minimumOffers = 6; catalogue.maximumOffers = 2;
+        catalogue.quests.Add(quests[1]); catalogue.smallOfferCount = -2;
         var small = new QuestSelectionSession(catalogue, 0);
-        Check(small.Offers.Count == 1 && small.SelectQuest(quests[1]) && small.AcceptQuest() && !small.TryRequestLaunch(out _, out _), "Small catalogues and inverted counts are safe; missing torso blocks confirmation");
+        Check(small.Offers.Count == 1 && small.SelectQuest(quests[1]) && small.AcceptQuest() && !small.TryRequestLaunch(out _, out _), "Small catalogues and invalid counts are safe; missing torso blocks confirmation");
         foreach (var asset in quests.Cast<Object>().Concat(new Object[] { duplicate, unavailable, blank, torsoA, torsoB, arm, catalogue })) Object.DestroyImmediate(asset);
     }
 
@@ -367,6 +388,16 @@ public static class PreMissionChecks
                     captureDirectory = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "PreMissionCaptures");
                     Directory.CreateDirectory(captureDirectory);
                     flow = Object.FindAnyObjectByType<PreMissionFlowController>();
+                    // Exercise the earlier Q5 suite at its original maximum density:
+                    // five small offers plus a legitimately unlocked main offer.
+                    var regressionRun = flow.Session.Progression;
+                    for (int i = 0; i < regressionRun.RequiredSmallCompletions; i++)
+                    {
+                        Check(regressionRun.TryBeginMission(regressionRun.Offers.First(o => o.Quest.category == QuestCategory.Side).Quest,
+                            flow.Session.Torsos[0], out var attempt) && regressionRun.ReportMissionResult(attempt.Id, QuestMissionOutcome.Succeeded),
+                            "Prime unlocked maximum-density Q5 regression fixture " + i);
+                    }
+                    flow.CreateFreshBoard();
                     CheckView(PreMissionView.Board);
                     Check(Cursor.lockState == CursorLockMode.None && Cursor.visible, "UI has a free visible cursor");
                     break;
@@ -514,7 +545,8 @@ public static class PreMissionChecks
                     if (torsoChecks == null)
                     {
                         if (flow == null || flow.IsPosting) return;
-                        Check(SceneManager.GetActiveScene().path == PreMissionPrototypeSetup.ScenePath && flow.Session != session, "Reopening the UI starts a fresh independent board session");
+                        Check(SceneManager.GetActiveScene().path == PreMissionPrototypeSetup.ScenePath && flow.Session != session
+                            && flow.Session.Progression == session.Progression, "Reopening creates a new UI wrapper over the same persistent progression run");
                         CheckView(PreMissionView.Board);
                         torsoChecks = new StarterTorsoChecks(flow, keyboard, Check, label => Capture(label));
                         deadline = EditorApplication.timeSinceStartup + 45;
@@ -559,6 +591,15 @@ public static class PreMissionChecks
                         deadline = EditorApplication.timeSinceStartup + 120;
                     }
                     if (!reliabilityChecks.Step()) return;
+                    break;
+                case 20:
+                    if (progressionChecks == null)
+                    {
+                        progressionChecks = new QuestProgressionChecks(Check, label =>
+                        { flow = Object.FindAnyObjectByType<PreMissionFlowController>(); Capture(label); });
+                        deadline = EditorApplication.timeSinceStartup + 90;
+                    }
+                    if (!progressionChecks.Step()) return;
                     PreMissionReliabilityChecks.EndLogAudit();
                     InputSystem.RemoveDevice(keyboard); SessionState.SetBool(Pending, false);
                     InputSystem.RemoveDevice(mouse);

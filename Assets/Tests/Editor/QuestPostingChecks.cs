@@ -111,11 +111,17 @@ public sealed class QuestPostingChecks
             {
                 var point = notice.Rect.TransformPoint(new Vector2(notice.Rect.rect.xMin + notice.BoardSize.x * 0.12f,
                     notice.Rect.rect.yMin + notice.BoardSize.y * height));
-                var screen = RectTransformUtility.WorldToScreenPoint(null, point);
-                return image.GetPixel(Mathf.RoundToInt(screen.x), Mathf.RoundToInt(screen.y));
+                // Capture refits a root Canvas into its render target, then restores
+                // the Game view. Sample normalized Canvas coordinates so a small
+                // notice does not accidentally sample a different paper/background.
+                var canvas = (RectTransform)notice.GetComponentInParent<Canvas>().rootCanvas.transform;
+                var local = canvas.InverseTransformPoint(point);
+                return image.GetPixel(Mathf.RoundToInt((local.x - canvas.rect.xMin) / canvas.rect.width * image.width),
+                    Mathf.RoundToInt((local.y - canvas.rect.yMin) / canvas.rect.height * image.height));
             }
             var top = Sample(0.8f); var bottom = Sample(0.2f);
-            check(top.grayscale > bottom.grayscale + 0.25f, "Painted reveal renders the top paper while the lower section remains invisible");
+            check(top.grayscale > bottom.grayscale + 0.25f, "Painted reveal renders the top paper while the lower section remains invisible (top "
+                + top.grayscale + ", bottom " + bottom.grayscale + ")");
         }
         finally { Object.Destroy(image); notice.IsMoving = false; notice.SnapToBoard(); }
     }

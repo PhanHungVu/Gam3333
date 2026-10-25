@@ -13,10 +13,8 @@ public sealed class StarterTorsoVisual
 [CreateAssetMenu(fileName = "QuestBoardCatalogue", menuName = "Mech/Pre-Mission/Board Catalogue")]
 public sealed class QuestBoardCatalogue : ScriptableObject
 {
-    [Min(1)] public int minimumOffers = 4;
-    [Min(1)] public int maximumOffers = 6;
-    [Tooltip("Include a main quest when one is available. This never locks side quests.")]
-    public bool includeMainQuestWhenAvailable = true;
+    [Min(1)] public int smallOfferCount = 3;
+    [Min(1)] public int smallCompletionsToUnlockBig = 3;
     public List<QuestDefinition> quests = new List<QuestDefinition>();
     [Tooltip("Available starting torsos, using the existing gameplay PartData assets.")]
     public List<PartData> starterTorsos = new List<PartData>();

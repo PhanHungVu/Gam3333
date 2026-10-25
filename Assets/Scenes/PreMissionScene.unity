@@ -20,13 +20,13 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
+  m_AmbientSkyColor: {r: 0.2, g: 0.23, b: 0.25, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
-  m_AmbientMode: 0
+  m_AmbientMode: 3
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 0}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -131,7 +131,7 @@ GameObject:
   - component: {fileID: 58068874}
   m_Layer: 0
   m_Name: UI Camera
-  m_TagString: MainCamera
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -143,7 +143,7 @@ Camera:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 58068873}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_ClearFlags: 2
   m_BackGroundColor: {r: 0.065, g: 0.075, b: 0.075, a: 1}
@@ -258,7 +258,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 01614664b831546d2ae94a42149d80ac, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.UI.InputSystemUIInputModule
   m_SendPointerHoverToParent: 1
   m_MoveRepeatDelay: 0.5
@@ -289,7 +289,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventSystem
   m_FirstSelected: {fileID: 0}
   m_sendNavigationEvents: 1
@@ -317,6 +317,38 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2978967773261789201, guid: e42e7f9d757cd444a817b9da255b1cf9, type: 3}
+      propertyPath: m_Color.a
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2978967773261789201, guid: e42e7f9d757cd444a817b9da255b1cf9, type: 3}
+      propertyPath: m_Color.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2978967773261789201, guid: e42e7f9d757cd444a817b9da255b1cf9, type: 3}
+      propertyPath: m_Color.g
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2978967773261789201, guid: e42e7f9d757cd444a817b9da255b1cf9, type: 3}
+      propertyPath: m_Color.r
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2978967773261789201, guid: e42e7f9d757cd444a817b9da255b1cf9, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3491011285539150172, guid: e42e7f9d757cd444a817b9da255b1cf9, type: 3}
+      propertyPath: stoneBoard
+      value:
+      objectReference: {fileID: 1585285868}
+    - target: {fileID: 3529705971370282316, guid: e42e7f9d757cd444a817b9da255b1cf9, type: 3}
+      propertyPath: m_text
+      value: Choose a stone.  Arrow keys to browse, Enter to inspect.
+      objectReference: {fileID: 0}
+    - target: {fileID: 4677835893182536262, guid: e42e7f9d757cd444a817b9da255b1cf9, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4935329679329786573, guid: e42e7f9d757cd444a817b9da255b1cf9, type: 3}
       propertyPath: m_Pivot.x
       value: 0
@@ -401,6 +433,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: PreMissionUI
       objectReference: {fileID: 0}
+    - target: {fileID: 6649817319141064962, guid: e42e7f9d757cd444a817b9da255b1cf9, type: 3}
+      propertyPath: m_text
+      value: Skip Arrival (Space)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7268647745373355655, guid: e42e7f9d757cd444a817b9da255b1cf9, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9054485361372894294, guid: e42e7f9d757cd444a817b9da255b1cf9, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -448,6 +492,74 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.InputActionReference
   m_Asset: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_ActionId: 9caa3d8a-6b2f-4e8e-8bad-6ede561bd9be
+--- !u!1001 &1585285867
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 509928368955314532, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 509928368955314532, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 509928368955314532, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 509928368955314532, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 509928368955314532, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 509928368955314532, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 509928368955314532, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 509928368955314532, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 509928368955314532, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 509928368955314532, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7799457129903654710, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+      propertyPath: m_Name
+      value: QuestStoneBoard
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+--- !u!114 &1585285868 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6459925760160074357, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+  m_PrefabInstance: {fileID: 1585285867}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0ce486294594dc58aa577f88eb030d6, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PreMissionStoneBoard
 --- !u!114 &1690196945
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -525,3 +637,4 @@ SceneRoots:
   - {fileID: 58068875}
   - {fileID: 773917583}
   - {fileID: 1201561615}
+  - {fileID: 1585285867}
