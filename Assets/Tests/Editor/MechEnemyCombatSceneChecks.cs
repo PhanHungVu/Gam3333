@@ -58,7 +58,7 @@ public static class MechEnemyCombatSceneChecks
                     Capture("enemy-mace-fire"); break;
                 case 3:
                     if (health.CurrentHealth >= before) { next = Time.time + 0.05f; return; }
-                    Check(health.CurrentHealth == before - 20f, "Live enemy swing damages player at its release frame");
+                    Check(health.CurrentHealth == before - enemy.DamageOf(enemy.Weapon), "Live enemy swing damages player at its release frame");
                     enemy.GetComponent<CombatHealth>().ApplyDamage(1000f);
                     Spawn("crossbow", 8f); break;
                 case 4:
@@ -68,7 +68,7 @@ public static class MechEnemyCombatSceneChecks
                     Capture("enemy-crossbow-fire"); break;
                 case 5:
                     if (health.CurrentHealth >= before) { next = Time.time + 0.05f; return; }
-                    Check(health.CurrentHealth == before - 12f, "Live enemy bolt travels to and damages the player");
+                    Check(health.CurrentHealth == before - enemy.DamageOf(enemy.Weapon), "Live enemy bolt travels to and damages the player");
                     Check(enemy.Weapon.CurrentPose == MechWeaponAnimator.PoseState.Reload,
                         "Enemy crossbow plays its own Reload after release");
                     Capture("enemy-crossbow-reload");
@@ -86,7 +86,7 @@ public static class MechEnemyCombatSceneChecks
     static void Spawn(string family, float distance)
     {
         var position = player.transform.position - Vector3.forward * distance;
-        var root = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemies/Enemy_" + family + ".prefab"), position, Quaternion.identity);
+        var root = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemies/Small Enemies/Enemy_" + family + ".prefab"), position, Quaternion.identity);
         enemy = root.GetComponent<EnemyAttack>(); start = root.transform.position; before = health.CurrentHealth;
     }
     static void Capture(string name)

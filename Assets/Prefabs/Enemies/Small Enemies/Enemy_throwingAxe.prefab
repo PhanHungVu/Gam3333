@@ -55108,20 +55108,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 07b1503935ce51e46bc983f1fcca5169, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAttack
-  kind: 1
   weapons:
   - {fileID: 837807586368485531}
   - {fileID: 3067291191276112108}
   muzzle: {fileID: 0}
-  damage: 17
-  cooldown: 1.5
+  damageMultiplier: 0.34
+  cooldownMultiplier: 3
+  projectileSpeedMultiplier: 0.18
+  rulesConfig: {fileID: 11400000, guid: ee7e37eb664fbfb4695ed0f740b434c4, type: 2}
   fireDuration: 0.7
   releaseFrame: 0.6
   facingAngle: 70
   verticalReach: 2.5
-  projectileSpeed: 18
   projectileMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  projectilePrefab: {fileID: 1465189720993408064, guid: ed7887b3b88626a4089da49f33479a2a, type: 3}
   hitLayers:
     serializedVersion: 2
     m_Bits: 4294967295

@@ -84,7 +84,7 @@ public static class MechSfxChecks
             check(!walking.isPlaying, "Airborne player has no walking audio");
             audio.enabled = false; check(!walking.isPlaying, "Disabling movement audio stops its loop");
             foreach (string family in new[] { "mace", "crossbow" })
-                check(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemies/Enemy_" + family + ".prefab").GetComponent<MechMovementAudio>() != null,
+                check(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemies/Small Enemies/Enemy_" + family + ".prefab").GetComponent<MechMovementAudio>() != null,
                     family + " enemy also has spatial movement audio");
         }
         finally

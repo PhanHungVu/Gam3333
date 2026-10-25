@@ -141,10 +141,17 @@ public sealed class MeleeAttack
     // Reach scales with the swinging part's Range (golem lengths); between swings, the first melee arm.
     Vector3 AbsScale()
     {
-        var scale = owner.lossyScale;
         var part = activePart != null && (cooldownTimer > 0f || Pending || flashTimer > 0f) ? activePart
             : combat.GetMeleePart(PartCategory.ArmL) ?? combat.GetMeleePart(PartCategory.ArmR);
-        float reachScale = part != null ? Mathf.Max(0.01f, part.Stats.GetStat(StatType.Range) * combat.MetresPerGolem / 4f) : 1f;
-        return new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z) * reachScale);
+        return BoxScale(owner.lossyScale, part, combat.MetresPerGolem);
+    }
+
+    // Shared by the player and enemies: the melee box follows the body's scale, and its depth
+    // follows the part's Range (golem lengths), so a longer weapon reaches further for everyone.
+    public static Vector3 BoxScale(Vector3 lossyScale, Part part, float metresPerGolem)
+    {
+        float reachScale = part != null && part.Stats != null
+            ? Mathf.Max(0.01f, part.Stats.GetStat(StatType.Range) * metresPerGolem / 4f) : 1f;
+        return new Vector3(Mathf.Abs(lossyScale.x), Mathf.Abs(lossyScale.y), Mathf.Abs(lossyScale.z) * reachScale);
     }
 }

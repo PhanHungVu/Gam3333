@@ -1,29 +1,47 @@
 using UnityEngine;
 
 // AI chooses when to attack; the animation clock determines its hit/release window.
+// What each attack does comes from the weapon part's PartData, the same data the player uses:
+// its subtype (Melee / Projectile / Explosive), damage, reload, projectile and splash. The three
+// tuning multipliers scale those numbers for this enemy type. Enemies never run out of ammo.
 [RequireComponent(typeof(EnemyAgent), typeof(CombatHealth))]
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(110)]
 public sealed class EnemyAttack : MonoBehaviour
 {
-    public enum AttackKind { Melee, Crossbow }
-    [SerializeField] AttackKind kind;
     [SerializeField] MechWeaponAnimator[] weapons = new MechWeaponAnimator[0];
     MechWeaponAnimator activeWeapon;
     int nextWeapon;
+    [Tooltip("Fallback shot origin when a weapon part has no muzzle marker.")]
     [SerializeField] Transform muzzle;
-    [SerializeField, Min(0f)] float damage = 20f;
-    [SerializeField, Min(0.01f)] float cooldown = 1.8f;
+    [Header("Enemy tuning (scales the weapon's PartData)")]
+    [Tooltip("Multiplies the weapon's Damage.")]
+    [SerializeField, Min(0f)] float damageMultiplier = 1f;
+    [Tooltip("Multiplies the weapon's Cooldown/Reload - higher means slower attacks.")]
+    [SerializeField, Min(0.01f)] float cooldownMultiplier = 1f;
+    [Tooltip("Multiplies the weapon's Projectile Speed, so shots can be dodged.")]
+    [SerializeField, Min(0.01f)] float projectileSpeedMultiplier = 1f;
+    [Tooltip("Gives metres per golem for weapon Range. Left empty, 4 metres per golem is used, as in MechCombat.")]
+    [SerializeField] MechRulesConfig rulesConfig;
+    [Header("Attack timing")]
     [SerializeField, Min(0.01f)] float fireDuration = 0.7f;
     [SerializeField, Range(0f, 1f)] float releaseFrame = 0.6f;
     [SerializeField, Range(0f, 180f)] float facingAngle = 70f;
     [SerializeField, Min(0f)] float verticalReach = 2.5f;
-    [SerializeField, Min(0.1f)] float projectileSpeed = 18f;
+    [Header("Melee box")]
+    [Tooltip("Same shape as the player's melee box; its depth scales with the weapon's Range.")]
+    [SerializeField] Vector3 meleeCenter = new Vector3(0f, 0f, 2.75f);
+    [SerializeField] Vector3 meleeSize = new Vector3(5f, 3.5f, 5.5f);
+    [Tooltip("Height above the enemy's root that walls are checked from.")]
+    [SerializeField, Min(0f)] float meleeWallHeight = 0.5f;
+    [Header("Shots")]
+    [Tooltip("Used only for weapon parts without their own projectile model.")]
     [SerializeField] Material projectileMaterial;
-    [SerializeField] GameObject projectilePrefab;
     [SerializeField] LayerMask hitLayers = ~0;
     EnemyAgent agent;
     CombatHealth self, attackTarget;
+    readonly CombatBlast blast = new CombatBlast();
+    Quaternion strikeRotation;
     float age, remaining, stationaryAge;
     bool attacking, released;
     Vector3 aim;
@@ -33,6 +51,21 @@ public sealed class EnemyAttack : MonoBehaviour
     public bool IsAttacking => attacking;
     public float CooldownRemaining => remaining;
     public int Releases { get; private set; }
+    float MetresPerGolem => rulesConfig != null ? rulesConfig.metresPerGolem : 4f;
+
+    static Part PartOf(MechWeaponAnimator weapon) => weapon != null ? weapon.GetComponent<Part>() : null;
+    // This enemy's damage and time between attacks with a given weapon: its PartData scaled by the multipliers.
+    public float DamageOf(MechWeaponAnimator weapon)
+    {
+        var part = PartOf(weapon);
+        return part != null && part.Stats != null ? Mathf.Max(0f, part.Stats.GetStat(StatType.Damage)) * damageMultiplier : 0f;
+    }
+    public float CooldownOf(MechWeaponAnimator weapon)
+    {
+        var part = PartOf(weapon);
+        float reload = part != null && part.Stats != null ? part.Stats.GetStat(StatType.CooldownReload) : 0f;
+        return Mathf.Max(0.01f, reload * cooldownMultiplier);
+    }
 
     void Awake() { agent = GetComponent<EnemyAgent>(); self = GetComponent<CombatHealth>(); }
     void OnEnable()
@@ -62,12 +95,10 @@ public sealed class EnemyAttack : MonoBehaviour
             {
                 released = true;
                 Releases++;
-                if (kind == AttackKind.Melee)
-                {
-                    if (CanReach(attackTarget.transform) && ClearPath(attackTarget, AimPoint(attackTarget)))
-                        attackTarget.ApplyDamage(damage);
-                }
-                else LaunchBolt();
+                var part = PartOf(activeWeapon);
+                var subtype = part != null && part.Stats != null ? part.Stats.subtype : PartSubtype.None;
+                if (subtype == PartSubtype.Melee) StrikeMelee(part);
+                else if (subtype == PartSubtype.Projectile || subtype == PartSubtype.Explosive) FireRanged(part);
             }
             if (age >= fireDuration) { attacking = false; attackTarget = null; }
             return;
@@ -82,11 +113,15 @@ public sealed class EnemyAttack : MonoBehaviour
         if (target == null || target == self || target.IsDead || !target.isActiveAndEnabled
             || !CanReach(target.transform) || !ClearPath(target, AimPoint(target))) return false;
         var selected = weapons.Length > 0 ? weapons[nextWeapon % weapons.Length] : null;
-        if (selected != null && !selected.PlayAttack(cooldown, fireDuration)) return false;
+        var selectedPart = PartOf(selected);
+        if (selectedPart == null || selectedPart.Stats == null) return false;
+        float cooldown = CooldownOf(selected);
+        if (!selected.PlayAttack(cooldown, fireDuration)) return false;
         activeWeapon = selected;
         nextWeapon++;
         attackTarget = target;
-        aim = AimPoint(target); // Crossbow aims once; the projectile never homes.
+        aim = AimPoint(target); // Ranged shots aim once; projectiles never home.
+        strikeRotation = transform.rotation; // Melee strikes where the swing began, so side-steps dodge it.
         age = stationaryAge = 0f;
         remaining = cooldown;
         attacking = true; released = false;
@@ -115,15 +150,26 @@ public sealed class EnemyAttack : MonoBehaviour
             if (!hit.transform.IsChildOf(transform) && !hit.transform.IsChildOf(target.transform)) return false;
         return true;
     }
-    void LaunchBolt()
+    // Same hit as the player's melee: a box in front, depth scaled by the part's Range, resolved by
+    // CombatBlast. Walls block it; other bodies don't, and teams stop it hurting other enemies.
+    void StrikeMelee(Part part)
     {
-        var marker = activeWeapon != null ? activeWeapon.GetComponent<Part>().muzzle : muzzle;
+        Vector3 scale = MeleeAttack.BoxScale(transform.lossyScale, part, MetresPerGolem);
+        Vector3 center = transform.position + strikeRotation * Vector3.Scale(meleeCenter, scale);
+        blast.ResolveBox(center, Vector3.Scale(meleeSize, scale) * 0.5f, strikeRotation, DamageOf(activeWeapon),
+            transform, hitLayers, transform.position + Vector3.up * meleeWallHeight);
+    }
+
+    // Same shot as the player's: the part's projectile, size, colour and splash, through RangedAttack.
+    void FireRanged(Part part)
+    {
+        var marker = part.muzzle != null ? part.muzzle : muzzle;
         var position = marker != null ? marker.position : transform.position + Vector3.up * 0.5f + transform.forward;
-        var direction = (aim - position).normalized;
-        if (direction.sqrMagnitude < 0.001f) direction = transform.forward;
-        var projectile = MechProjectile.Create(projectilePrefab, "Enemy Crossbow Bolt",
-            new Vector3(transform.position.x, position.y, transform.position.z), 0.12f, projectileMaterial, new Color(1f, 0.3f, 0.15f));
-        projectile.Subtype = PartSubtype.Projectile;
-        projectile.Launch(transform, direction, projectileSpeed, damage, 0.12f, Mathf.Max(25f, agent.AttackRange * 2f), hitLayers, position);
+        var stats = part.Stats;
+        float effectiveRange = Mathf.Max(0.01f, stats.GetStat(StatType.Range) * MetresPerGolem);
+        float maximumRange = Mathf.Max(effectiveRange * Mathf.Max(1f, stats.GetStat(StatType.MaxRangeMultiplier)),
+            agent.AttackRange * 2f);
+        RangedAttack.Fire(part, transform, position, aim, transform.forward, effectiveRange, maximumRange,
+            hitLayers, projectileMaterial, null, damageMultiplier, projectileSpeedMultiplier);
     }
 }
