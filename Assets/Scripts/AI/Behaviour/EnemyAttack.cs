@@ -97,7 +97,10 @@ public sealed class EnemyAttack : MonoBehaviour
                 Releases++;
                 var part = PartOf(activeWeapon);
                 var subtype = part != null && part.Stats != null ? part.Stats.subtype : PartSubtype.None;
-                if (subtype == PartSubtype.Melee) StrikeMelee(part);
+                if (subtype == PartSubtype.Melee)
+                {
+                    if (ClearPath(attackTarget, AimPoint(attackTarget), true)) StrikeMelee(part);
+                }
                 else if (subtype == PartSubtype.Projectile || subtype == PartSubtype.Explosive) FireRanged(part);
             }
             if (age >= fireDuration) { attacking = false; attackTarget = null; }
@@ -111,10 +114,13 @@ public sealed class EnemyAttack : MonoBehaviour
         if (!isActiveAndEnabled || self.IsDead || attacking || remaining > 0f || agent.Target == null) return false;
         var target = agent.Target.GetComponentInParent<CombatHealth>();
         if (target == null || target == self || target.IsDead || !target.isActiveAndEnabled
-            || !CanReach(target.transform) || !ClearPath(target, AimPoint(target))) return false;
+            || !CanReach(target.transform)) return false;
         var selected = weapons.Length > 0 ? weapons[nextWeapon % weapons.Length] : null;
         var selectedPart = PartOf(selected);
         if (selectedPart == null || selectedPart.Stats == null) return false;
+        // Melee only cares about walls; ranged also won't shoot into the back of another body.
+        bool melee = selectedPart.Stats.subtype == PartSubtype.Melee;
+        if (!ClearPath(target, AimPoint(target), melee)) return false;
         float cooldown = CooldownOf(selected);
         if (!selected.PlayAttack(cooldown, fireDuration)) return false;
         activeWeapon = selected;
@@ -142,16 +148,23 @@ public sealed class EnemyAttack : MonoBehaviour
         var collider = health.GetComponent<Collider>();
         return collider != null ? collider.bounds.center : health.transform.position + Vector3.up * 0.5f;
     }
-    bool ClearPath(CombatHealth target, Vector3 point)
+    // Line from this enemy to the target's centre. With wallsOnly, bodies with health (other enemies)
+    // don't count as blocking - only walls and props do. Checked to the centre, not the target's
+    // nearest collider, so a part poking through a thin wall can't be hit through it.
+    bool ClearPath(CombatHealth target, Vector3 point, bool wallsOnly)
     {
-        var origin = transform.position + Vector3.up * 0.5f;
+        var origin = transform.position + Vector3.up * meleeWallHeight;
         var offset = point - origin;
         foreach (var hit in Physics.RaycastAll(origin, offset.normalized, offset.magnitude, hitLayers, QueryTriggerInteraction.Ignore))
-            if (!hit.transform.IsChildOf(transform) && !hit.transform.IsChildOf(target.transform)) return false;
+        {
+            if (hit.transform.IsChildOf(transform) || hit.transform.IsChildOf(target.transform)) continue;
+            if (wallsOnly && hit.collider.GetComponentInParent<CombatHealth>() != null) continue;
+            return false;
+        }
         return true;
     }
     // Same hit as the player's melee: a box in front, depth scaled by the part's Range, resolved by
-    // CombatBlast. Walls block it; other bodies don't, and teams stop it hurting other enemies.
+    // CombatBlast. Walls block it (see ClearPath); other bodies don't, and teams stop it hurting other enemies.
     void StrikeMelee(Part part)
     {
         Vector3 scale = MeleeAttack.BoxScale(transform.lossyScale, part, MetresPerGolem);
