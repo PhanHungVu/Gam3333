@@ -28,6 +28,7 @@ public static class StarterTorsoSetup
             var name = Get<TMP_Text>(fields, "torsoName");
             var description = Get<TMP_Text>(fields, "torsoDescription");
             var panel = torso.Find("Torso Model Preview") as RectTransform;
+            if (panel == null) panel = torso.Find("Torso Choice/Torso Model Preview") as RectTransform;
             if (panel == null) { panel = torso.Find("Torso Preview Placeholder") as RectTransform; panel.name = "Torso Model Preview"; }
             Place(panel, 0.11f, 0.29f, 0.53f, 0.75f);
             var modelRect = panel.Find("Model") as RectTransform;
@@ -46,7 +47,8 @@ public static class StarterTorsoSetup
             description.alignment = TextAlignmentOptions.TopLeft; description.fontSizeMax = 22; description.fontSizeMin = 17;
             Place((RectTransform)Get<Button>(fields, "previousTorsoButton").transform, 0.035f, 0.46f, 0.095f, 0.58f);
             Place((RectTransform)Get<Button>(fields, "nextTorsoButton").transform, 0.545f, 0.46f, 0.605f, 0.58f);
-            var counter = torso.Find("Torso Counter")?.GetComponent<TMP_Text>();
+            var counter = Get<TMP_Text>(fields, "torsoCounter");
+            if (counter == null) counter = torso.Find("Torso Counter")?.GetComponent<TMP_Text>();
             if (counter == null) counter = Text("Torso Counter", torso, name.font, "", 23);
             Place(counter.rectTransform, 0.22f, 0.18f, 0.42f, 0.25f);
             var hint = torso.Find("Preview Hint");

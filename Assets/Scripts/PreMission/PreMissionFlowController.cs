@@ -24,10 +24,15 @@ public sealed class PreMissionFlowController : MonoBehaviour
     [SerializeField] QuestNoticeView noticePrefab;
     [SerializeField] TMP_Text boardMessage;
     [SerializeField] Button exitButton;
+    [SerializeField] Button skipPostingButton;
+    [SerializeField] TMP_Text boardHint;
     [SerializeField] PreMissionPaperPresentation presentation;
     [Header("Details")]
     [SerializeField] TMP_Text detailsTitle;
     [SerializeField] TMP_Text detailsBody;
+    [SerializeField] TMP_Text detailsType;
+    [SerializeField] TMP_Text detailsInfo;
+    [SerializeField] TMP_Text detailsReward;
     [SerializeField] Button acceptButton;
     [SerializeField] Button declineButton;
     [Header("Starting torso")]
@@ -48,6 +53,10 @@ public sealed class PreMissionFlowController : MonoBehaviour
     public bool IsPosting => presentation.IsPosting;
     public bool IsTransitioning => presentation.IsTransitioning;
     bool exitRequested;
+    bool confirmationPending;
+    bool initialized;
+    int skippedPostingFrame = -1;
+    bool CanInteract => isActiveAndEnabled && presentation != null && presentation.isActiveAndEnabled;
 
     void Awake()
     {
@@ -58,27 +67,72 @@ public sealed class PreMissionFlowController : MonoBehaviour
         previousTorsoButton.onClick.AddListener(PreviousTorso);
         nextTorsoButton.onClick.AddListener(NextTorso);
         confirmTorsoButton.onClick.AddListener(ConfirmTorso);
+        if (skipPostingButton != null) skipPostingButton.onClick.AddListener(SkipPosting);
+        initialized = true;
         CreateFreshBoard();
+        if (!CanInteract && presentation != null) presentation.LockInput();
     }
 
     void OnEnable()
     {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+        if (initialized && Session == null && CanInteract) { CreateFreshBoard(); return; }
         // Re-enabling refreshes the current view, it never generates offers.
         if (Session != null && !IsPosting && !IsTransitioning) RefreshView();
+        if (!CanInteract && presentation != null) presentation.LockInput();
     }
 
-    void OnDisable() { if (Session != null && presentation != null) presentation.Settle(Session.View, Session.SelectedQuest); }
+    void OnDisable() => RecoverPresentation();
+
+    // Used by this controller and its presenter when either component is disabled.
+    public void RecoverPresentation()
+    {
+        if (initialized && Session == null && CanInteract) { CreateFreshBoard(); return; }
+        if (Session != null && presentation != null) presentation.Settle(Session.View, Session.SelectedQuest);
+        if (confirmationPending)
+        {
+            confirmationPending = false; Session.CancelLaunchRequest(); launchStatus.text = string.Empty;
+        }
+        if (Session == null || presentation == null) return;
+        if (CanInteract) RefreshView(); else presentation.LockInput();
+        RefreshPostingControls();
+    }
 
     void Update()
     {
+        if (!CanInteract) return;
+        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame && IsPosting) SkipPosting();
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) Back();
+    }
+
+    public void SkipPosting()
+    {
+        if (!CanInteract || Session.View != PreMissionView.Board || !IsPosting || IsTransitioning) return;
+        // A Submit binding or second pointer event in this frame must not turn
+        // finishing the intro into an accidental quest selection.
+        skippedPostingFrame = Time.frameCount;
+        presentation.FinishPosting();
+    }
+
+    void RefreshPostingControls()
+    {
+        bool posting = Session != null && Session.View == PreMissionView.Board && IsPosting;
+        if (skipPostingButton != null)
+        {
+            bool appeared = posting && !skipPostingButton.gameObject.activeSelf;
+            skipPostingButton.gameObject.SetActive(posting);
+            if (appeared && EventSystem.current != null) EventSystem.current.SetSelectedGameObject(skipPostingButton.gameObject);
+        }
+        if (boardHint != null) boardHint.gameObject.SetActive(!posting);
     }
 
     public void CreateFreshBoard()
     {
+        if (!CanInteract) return;
         presentation.Cancel();
+        confirmationPending = false;
+        skippedPostingFrame = -1;
         foreach (var notice in notices)
             if (notice != null) { notice.gameObject.SetActive(false); Destroy(notice.gameObject); }
         notices.Clear();
@@ -97,25 +151,28 @@ public sealed class PreMissionFlowController : MonoBehaviour
         RefreshView();
         Canvas.ForceUpdateCanvases();
         presentation.BeginBoard(notices, seed, RefreshView);
+        RefreshPostingControls();
     }
 
     public void SelectQuest(QuestDefinition quest)
     {
-        if (IsTransitioning) return;
+        if (!CanInteract || IsTransitioning || Session.View != PreMissionView.Board || Time.frameCount == skippedPostingFrame) return;
         var notice = notices.Find(n => n.Quest == quest);
         if (notice == null || !notice.IsPosted) return;
         presentation.FinishPosting();
         if (!Session.SelectQuest(quest)) return;
         launchStatus.text = string.Empty;
-        RefreshView();
-        var scroll = detailsBody.GetComponentInParent<ScrollRect>();
-        if (scroll != null) { Canvas.ForceUpdateCanvases(); scroll.StopMovement(); scroll.verticalNormalizedPosition = 1f; }
+        // Populate the briefing without disabling the board. Presentation captures
+        // the visible hovered paper before handing it to the foreground proxy.
+        RefreshView(false, false);
         presentation.PresentDetails(notice, RefreshView);
+        var scroll = detailsBody.GetComponentInParent<ScrollRect>(true);
+        if (scroll != null) { Canvas.ForceUpdateCanvases(); scroll.StopMovement(); scroll.verticalNormalizedPosition = 1f; }
     }
 
     public void AcceptQuest()
     {
-        if (IsTransitioning) return;
+        if (!CanInteract || IsTransitioning) return;
         if (Session.AcceptQuest()) presentation.SwitchView(PreMissionView.Details, PreMissionView.Torso, RefreshView);
     }
 
@@ -123,12 +180,16 @@ public sealed class PreMissionFlowController : MonoBehaviour
     public void NextTorso() => BrowseTorso(1);
     void BrowseTorso(int direction)
     {
-        if (!IsTransitioning && Session.BrowseTorso(direction)) { launchStatus.text = string.Empty; RefreshView(false); }
+        if (!CanInteract || IsTransitioning || Session.View != PreMissionView.Torso || Session.LaunchRequested || Session.Torsos.Count < 2) return;
+        presentation.BrowseTorso(direction, () =>
+        {
+            Session.BrowseTorso(direction); launchStatus.text = string.Empty; RefreshView(false, false);
+        }, () => RefreshView(false));
     }
 
     public void Back()
     {
-        if (IsTransitioning) return;
+        if (!CanInteract || IsTransitioning) return;
         var previous = Session.View;
         var notice = notices.Find(n => n.Quest == Session.SelectedQuest);
         if (Session.Back())
@@ -143,13 +204,22 @@ public sealed class PreMissionFlowController : MonoBehaviour
 
     public void ConfirmTorso()
     {
-        if (IsTransitioning) return;
+        if (!CanInteract || IsTransitioning) return;
         if (missionStartHook == null)
         {
             launchStatus.text = "Assign a Mission Start Hook before confirming.";
             return;
         }
         if (!Session.TryRequestLaunch(out var quest, out var torso)) return;
+        confirmationPending = true;
+        RefreshView(false, false);
+        presentation.ConfirmTorso(() => CompleteConfirmation(quest, torso));
+    }
+
+    void CompleteConfirmation(QuestDefinition quest, PartData torso)
+    {
+        if (!confirmationPending) return;
+        confirmationPending = false;
         // No scene loading, equipping, rewards or gameplay are implemented here.
         launchStatus.text = "Selection submitted. Mission launch is not connected yet.\nBack returns to quest details.";
         RefreshView();
@@ -168,19 +238,19 @@ public sealed class PreMissionFlowController : MonoBehaviour
         RefreshView(true);
     }
 
-    void RefreshView(bool resetFocus)
+    void RefreshView(bool resetFocus, bool updateViews = true)
     {
-        presentation.SetViews(Session.View, Session.SelectedQuest);
+        if (updateViews) presentation.SetViews(Session.View, Session.SelectedQuest);
+        RefreshPostingControls();
         var quest = Session.SelectedQuest;
         if (quest != null)
         {
             detailsTitle.text = quest.title;
+            detailsType.text = (quest.category == QuestCategory.Main ? "MAIN QUEST" : "SIDE QUEST") + "  /  " + MissionTypeName(quest.missionType);
+            detailsBody.text = quest.description;
+            detailsReward.text = "Reward: " + quest.gniReward + " Gni";
             var body = new StringBuilder();
-            body.Append(quest.category == QuestCategory.Main ? "MAIN QUEST" : "SIDE QUEST")
-                .Append("  /  ").Append(MissionTypeName(quest.missionType))
-                .Append("\nEstimated duration: ~").Append(quest.estimatedMinutes).Append(" minutes")
-                .Append("\nReward: ").Append(quest.gniReward).Append(" Gni\n\n")
-                .Append(quest.description).Append("\n\nAvailable parts: ");
+            body.Append("Estimated duration: ~").Append(quest.estimatedMinutes).Append(" minutes\n\nAvailable parts: ");
             var partNames = new List<string>();
             if (quest.availableParts != null)
                 foreach (var part in quest.availableParts) if (part != null) partNames.Add(part.partName);
@@ -189,7 +259,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
             if (quest.availableEnemies != null)
                 foreach (var enemy in quest.availableEnemies) if (enemy != null) enemies.Add(enemy.name);
             body.Append("\nAvailable enemies: ").Append(enemies.Count > 0 ? string.Join(", ", enemies) : "Not specified");
-            detailsBody.text = body.ToString();
+            detailsInfo.text = body.ToString();
             torsoQuestTitle.text = "Selected quest: " + quest.title;
         }
         var torso = Session.SelectedTorso;
@@ -212,6 +282,14 @@ public sealed class PreMissionFlowController : MonoBehaviour
             EventSystem.current.SetSelectedGameObject(target.gameObject);
         }
     }
+
+    void OnDestroy()
+    {
+        Unbind(exitButton, Back); Unbind(declineButton, Back); Unbind(torsoBackButton, Back);
+        Unbind(acceptButton, AcceptQuest); Unbind(previousTorsoButton, PreviousTorso); Unbind(nextTorsoButton, NextTorso);
+        Unbind(confirmTorsoButton, ConfirmTorso); Unbind(skipPostingButton, SkipPosting);
+    }
+    static void Unbind(Button button, UnityAction action) { if (button != null) button.onClick.RemoveListener(action); }
 
     public static string MissionTypeName(QuestMissionType type) => type == QuestMissionType.KingOfTheHill ? "King of the Hill" : type.ToString();
 }

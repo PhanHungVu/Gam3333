@@ -113,6 +113,9 @@ public static class PreMissionPrototypeSetup
         AssetDatabase.SaveAssets();
         PreMissionPresentationSetup.UpgradeAssets();
         StarterTorsoSetup.UpgradeAssets();
+        PreMissionPostingSetup.UpgradeAssets();
+        PreMissionTransitionSetup.UpgradeAssets();
+        PreMissionReliabilitySetup.UpgradeAssets();
         EditorSceneManager.OpenScene(ScenePath);
         Debug.Log("Q1 PRE-MISSION PROTOTYPE CREATED: " + ScenePath);
     }

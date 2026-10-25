@@ -36,7 +36,7 @@ public sealed class StarterTorsoPreview : MonoBehaviour, IDragHandler, IBeginDra
     {
         var nextModel = visual != null ? visual.model : null;
         var nextRotation = visual != null ? visual.rotation : Vector3.zero;
-        bool changed = torso != data || sourceModel != nextModel || authoredRotation != nextRotation;
+        bool changed = sourceModel != nextModel || authoredRotation != nextRotation;
         torso = data; sourceModel = nextModel; authoredRotation = nextRotation;
         if (changed) { yaw = 0f; Release(); }
         if (isActiveAndEnabled && stage == null) Build();
@@ -49,8 +49,18 @@ public sealed class StarterTorsoPreview : MonoBehaviour, IDragHandler, IBeginDra
     public void OnBeginDrag(PointerEventData data) { if (HasPreview && data.button == PointerEventData.InputButton.Left) data.useDragThreshold = false; }
     public void OnDrag(PointerEventData data)
     {
-        if (!HasPreview || data.button != PointerEventData.InputButton.Left) return;
+        if (!HasPreview || data.button != PointerEventData.InputButton.Left || !CanInteract()) return;
         yaw = Mathf.Repeat(yaw + data.delta.x * dragSensitivity, 360f); dirty = true;
+    }
+    bool CanInteract()
+    {
+        foreach (var group in GetComponentsInParent<CanvasGroup>())
+        {
+            if (!group.isActiveAndEnabled) continue;
+            if (!group.interactable) return false;
+            if (group.ignoreParentGroups) break;
+        }
+        return true;
     }
     void Build()
     {

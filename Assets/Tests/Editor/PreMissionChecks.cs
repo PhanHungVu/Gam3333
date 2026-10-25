@@ -41,6 +41,11 @@ public static class PreMissionChecks
     static bool firstHitchInjected, firstCapture;
     static readonly HashSet<int> firstMotionFrames = new HashSet<int>();
     static StarterTorsoChecks torsoChecks;
+    static QuestPostingChecks postingChecks;
+    static QuestInteractionChecks interactionChecks;
+    static bool confirmationStarted;
+    static PreMissionTransitionChecks transitionChecks;
+    static PreMissionReliabilityChecks reliabilityChecks;
     [InitializeOnLoadMethod] static void Register() => EditorApplication.update += Update;
 
     public static void RunBatch()
@@ -50,6 +55,9 @@ public static class PreMissionChecks
         PreMissionPrototypeSetup.CreatePrototype();
         PreMissionPresentationSetup.UpgradeAssets();
         StarterTorsoSetup.UpgradeAssets();
+        PreMissionPostingSetup.UpgradeAssets();
+        PreMissionTransitionSetup.UpgradeAssets();
+        PreMissionReliabilitySetup.UpgradeAssets();
         EditorSceneManager.OpenScene(PreMissionPrototypeSetup.ScenePath);
         var serialized = new SerializedObject(Object.FindAnyObjectByType<PreMissionFlowController>());
         Check(serialized.FindProperty("catalogue").objectReferenceValue != null && serialized.FindProperty("noticePrefab").objectReferenceValue != null,
@@ -148,6 +156,19 @@ public static class PreMissionChecks
             camera.targetTexture = target;
             foreach (var canvas in canvases) { canvas.renderMode = RenderMode.ScreenSpaceCamera; canvas.worldCamera = camera; canvas.planeDistance = 1f; }
             Canvas.ForceUpdateCanvases();
+            foreach (var paper in Object.FindObjectsByType<PreMissionPaperPresentation>()) paper.RefreshPaperPose();
+            Canvas.ForceUpdateCanvases();
+            if (flow != null && flow.IsTransitioning)
+            {
+                var fields = new SerializedObject(Field<PreMissionPaperPresentation>("presentation"));
+                var travel = (QuestNoticeView)fields.FindProperty("travellingPaper").objectReferenceValue;
+                if (travel.gameObject.activeSelf && travel.Opacity > 0.1f)
+                {
+                    var text = travel.GetComponentInChildren<TMP_Text>(); text.ForceMeshUpdate(true);
+                    Check(text.textBounds.min.y >= text.rectTransform.rect.yMin - 2f && text.textBounds.max.y <= text.rectTransform.rect.yMax + 2f,
+                        "Travelling paper text fits vertically after the Canvas refit: " + name);
+                }
+            }
             foreach (var preview in Object.FindObjectsByType<StarterTorsoPreview>()) preview.RenderNow();
             if (GraphicsSettings.currentRenderPipeline != null)
                 RenderPipeline.SubmitRenderRequest(camera, new RenderPipeline.StandardRequest { destination = target });
@@ -155,7 +176,8 @@ public static class PreMissionChecks
             RenderTexture.active = target;
             image.ReadPixels(new Rect(0, 0, width, height), 0, 0); image.Apply();
             File.WriteAllBytes(Path.Combine(captureDirectory, name + ".png"), image.EncodeToPNG());
-            if (flow != null && flow.Session.View == PreMissionView.Board && !flow.IsTransitioning && !flow.IsPosting)
+            if (flow != null && flow.Session.View == PreMissionView.Board && !flow.IsTransitioning && !flow.IsPosting
+                && !flow.Notices.Any(n => n.IsMoving))
             {
                 var parent = (RectTransform)Field<Transform>("noticeParent");
                 Check(flow.Notices.All(n =>
@@ -169,12 +191,24 @@ public static class PreMissionChecks
                     a.min.x < b.max.x && a.max.x > b.min.x && a.min.y < b.max.y && a.max.y > b.min.y)).Any(),
                     "Rotated paper bounds do not overlap at " + width + "x" + height);
             }
+            if (flow != null && !flow.IsTransitioning && !flow.IsPosting)
+            {
+                var canvasRect = (RectTransform)flow.transform;
+                Check(flow.GetComponentsInChildren<Button>().All(button =>
+                {
+                    var bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(canvasRect, button.transform);
+                    return bounds.min.x >= canvasRect.rect.xMin - 1 && bounds.max.x <= canvasRect.rect.xMax + 1
+                        && bounds.min.y >= canvasRect.rect.yMin - 1 && bounds.max.y <= canvasRect.rect.yMax + 1;
+                }), "All visible settled controls stay inside the Canvas at " + width + "x" + height);
+            }
         }
         finally
         {
             RenderTexture.active = oldActive; camera.targetTexture = oldTarget;
             for (int i = 0; i < canvases.Length; i++) { canvases[i].renderMode = modes[i]; canvases[i].worldCamera = cameras[i]; canvases[i].planeDistance = distances[i]; }
             target.Release(); Object.Destroy(target); Object.Destroy(image);
+            Canvas.ForceUpdateCanvases();
+            foreach (var paper in Object.FindObjectsByType<PreMissionPaperPresentation>()) paper.RefreshPaperPose();
             Canvas.ForceUpdateCanvases();
         }
     }
@@ -212,7 +246,7 @@ public static class PreMissionChecks
             hoverStage = 1; hoverAt = EditorApplication.timeSinceStartup + 0.2; return false;
         }
         if (EditorApplication.timeSinceStartup < hoverAt) return false;
-        var visual = paper.transform.Find("Paper Visual");
+        var visual = paper.transform.Find("Posting Reveal/Paper Visual");
         if (hoverStage == 1)
         {
             Check(!paper.IsHighlighted && visual.localScale.x < 1.005f, context + ": automatic keyboard focus does not leave the paper permanently raised");
@@ -282,14 +316,16 @@ public static class PreMissionChecks
         if (flow.Notices.Any(n => n.Quest.category == QuestCategory.Main && (n.IsPosted || n.IsMoving))
             && flow.Notices.Any(n => n.Quest.category == QuestCategory.Side && !n.IsPosted))
             throw new Exception("Main notice posts before all side notices settle");
-        if (trackedFirst != null && trackedFirst.IsMoving && !firstHitchInjected && trackedFirst.Opacity < 0.01f)
+        if (trackedFirst != null && trackedFirst.IsMoving && !firstHitchInjected)
         {
             firstHitchInjected = true;
-            // Reproduce the long loading frame that previously swallowed the first slide.
+            // Reproduce the long loading frame that previously swallowed the first entrance.
             System.Threading.Thread.Sleep(320);
         }
         if (trackedFirst != null && trackedFirst.IsMoving && trackedFirst.Opacity > 0.05f
-            && Vector2.Distance(trackedFirst.Rect.anchoredPosition, trackedFirst.BoardPosition) > 0.5f)
+            && (trackedFirst.RevealProgress < 0.95f
+                || trackedFirst.transform.Find("Posting Reveal/Paper Visual").localScale != Vector3.one
+                || trackedFirst.transform.Find("Posting Reveal/Paper Visual").localPosition.sqrMagnitude > 0.25f))
         {
             firstMotionFrames.Add(Time.frameCount);
             if (!firstCapture) { Capture("fix-first-post"); firstCapture = true; }
@@ -313,12 +349,14 @@ public static class PreMissionChecks
         if (next == 0) { next = EditorApplication.timeSinceStartup + 0.05; deadline = next + 10; }
         try
         {
+            PreMissionReliabilityChecks.AssertNoUnexpectedErrors();
             ObservePosting();
             if (EditorApplication.timeSinceStartup > deadline) throw new Exception("Pre-mission phase timed out: " + phase);
             if (EditorApplication.timeSinceStartup < next) return;
             switch (phase)
             {
                 case 0:
+                    PreMissionReliabilityChecks.BeginLogAudit();
                     checks = SessionState.GetInt(Pending + ".Count", 0);
                     Application.runInBackground = true;
                     InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
@@ -369,7 +407,7 @@ public static class PreMissionChecks
                     }
                     Check(capturedPull, "The paper zoom exposes visibly enlarged text before revealing the briefing");
                     CheckView(PreMissionView.Details);
-                    Check(Field<TMP_Text>("detailsTitle").text == selected.title && Field<TMP_Text>("detailsBody").text.Contains(selected.gniReward + " Gni"), "Briefing displays the selected side quest data");
+                    Check(Field<TMP_Text>("detailsTitle").text == selected.title && Field<TMP_Text>("detailsReward").text.Contains(selected.gniReward + " Gni"), "Briefing displays the selected side quest data");
                     Check(!notices.Single(n => n.Quest == selected).IsPaperVisible, "Selected notice is taken off the board while inspecting details");
                     Capture("q23-details"); Capture("q23-details-4x3", 1024, 768);
                     ClickControl(Field<Button>("declineButton")); flow.Back();
@@ -395,8 +433,8 @@ public static class PreMissionChecks
                 case 5:
                     if (Waiting()) return;
                     CheckView(PreMissionView.Torso); selectedTorso = session.SelectedTorso;
-                    Check(selectedTorso != null && !Field<Button>("previousTorsoButton").interactable && !Field<Button>("nextTorsoButton").interactable,
-                        "Existing single torso remains valid with disabled browsing");
+                    Check(selectedTorso != null && session.Torsos.Count == 2 && Field<Button>("previousTorsoButton").interactable && Field<Button>("nextTorsoButton").interactable,
+                        "Original and Heavy test torso populate the shipped two-option selection");
                     Check(Field<StarterTorsoPreview>("torsoPreview").HasPreview && StarterTorsoChecks.HasRenderedModel(Field<StarterTorsoPreview>("torsoPreview")),
                         "The shipped single torso has a real rendered model preview");
                     Capture("q23-torso"); Capture("q4-torso-4x3", 1024, 768); Escape();
@@ -409,7 +447,11 @@ public static class PreMissionChecks
                     break;
                 case 7:
                     if (Waiting()) return;
-                    Field<Button>("confirmTorsoButton").onClick.Invoke(); Field<Button>("confirmTorsoButton").onClick.Invoke();
+                    if (!confirmationStarted)
+                    {
+                        Field<Button>("confirmTorsoButton").onClick.Invoke(); Field<Button>("confirmTorsoButton").onClick.Invoke();
+                        confirmationStarted = true; return;
+                    }
                     Check(session.LaunchRequested && !Field<Button>("confirmTorsoButton").interactable && session.SelectedQuest == selected
                         && session.SelectedTorso == selectedTorso && SceneManager.GetActiveScene().path == PreMissionPrototypeSetup.ScenePath,
                         "Empty mission-start handoff still receives one validated selection and loads no gameplay scene");
@@ -446,7 +488,7 @@ public static class PreMissionChecks
                     var postedSide = flow.Notices.FirstOrDefault(n => n.IsPosted && n.Quest.category == QuestCategory.Side);
                     if (postedSide == null) return;
                     Check(firstHitchInjected && firstMotionFrames.Count >= 3,
-                        "The first notice slides through multiple visible frames even after a simulated loading hitch");
+                        "The first notice animates through multiple visible frames even after a simulated loading hitch");
                     Check(flow.IsPosting, "A settled side paper can be selected before the posting sequence finishes");
                     flow.SelectQuest(postedSide.Quest);
                     Check(!flow.IsPosting && flow.Notices.All(n => n.IsPosted), "Early selection settles unfinished posting without regenerating offers");
@@ -478,6 +520,46 @@ public static class PreMissionChecks
                         deadline = EditorApplication.timeSinceStartup + 45;
                     }
                     if (!torsoChecks.Step()) return;
+                    break;
+                case 16:
+                    if (postingChecks == null)
+                    {
+                        MoveMouse(new Vector2(-100, -100));
+                        EventSystem.current.SetSelectedGameObject(null);
+                        postingChecks = new QuestPostingChecks(flow, Check, label => Capture(label));
+                        deadline = EditorApplication.timeSinceStartup + 60;
+                    }
+                    if (!postingChecks.Step()) return;
+                    Capture("q51-board-720p", 1280, 720);
+                    Capture("q51-board-900p");
+                    Capture("q51-board-1080p", 1920, 1080);
+                    break;
+                case 17:
+                    if (interactionChecks == null)
+                    {
+                        interactionChecks = new QuestInteractionChecks(flow, Check, label => Capture(label), MoveMouse, Escape);
+                        deadline = EditorApplication.timeSinceStartup + 60;
+                    }
+                    if (!interactionChecks.Step()) return;
+                    break;
+                case 18:
+                    if (transitionChecks == null)
+                    {
+                        MoveMouse(new Vector2(-100, -100));
+                        transitionChecks = new PreMissionTransitionChecks(flow, Check, label => Capture(label));
+                        deadline = EditorApplication.timeSinceStartup + 60;
+                    }
+                    if (!transitionChecks.Step()) return;
+                    break;
+                case 19:
+                    if (reliabilityChecks == null)
+                    {
+                        MoveMouse(new Vector2(-100, -100));
+                        reliabilityChecks = new PreMissionReliabilityChecks(flow, keyboard, Check, Capture);
+                        deadline = EditorApplication.timeSinceStartup + 120;
+                    }
+                    if (!reliabilityChecks.Step()) return;
+                    PreMissionReliabilityChecks.EndLogAudit();
                     InputSystem.RemoveDevice(keyboard); SessionState.SetBool(Pending, false);
                     InputSystem.RemoveDevice(mouse);
                     Debug.Log("PRE-MISSION CHECKS COMPLETE: " + checks + " checks; captures: " + captureDirectory);
@@ -487,6 +569,7 @@ public static class PreMissionChecks
         }
         catch (Exception exception)
         {
+            PreMissionReliabilityChecks.EndLogAudit();
             Time.timeScale = 1f;
             SessionState.SetBool(Pending, false); Debug.LogException(exception); EditorApplication.Exit(1);
         }

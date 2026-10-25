@@ -90,7 +90,8 @@ public static class PreMissionPresentationSetup
             var label = Get<TMP_Text>(fields, "label");
             var button = Get<Button>(fields, "button");
             var colors = button.colors; colors.disabledColor = Color.white; button.colors = colors;
-            var paper = root.transform.Find("Paper Visual") as RectTransform;
+            var paper = Get<RectTransform>(fields, "paperVisual");
+            if (paper == null) paper = root.transform.Find("Paper Visual") as RectTransform;
             if (paper == null)
             {
                 var oldImage = root.GetComponent<Image>();

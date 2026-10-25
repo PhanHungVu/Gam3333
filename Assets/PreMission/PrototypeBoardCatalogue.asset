@@ -24,7 +24,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 4897ace0e8044f04f89373692fc74646, type: 2}
   starterTorsos:
   - {fileID: 11400000, guid: 95c2f3c62f08a9249bfc1432876a1e9a, type: 2}
+  - {fileID: 11400000, guid: 52965c849ad50c84aaa7d48e7eb84b9f, type: 2}
   starterTorsoVisuals:
   - torso: {fileID: 11400000, guid: 95c2f3c62f08a9249bfc1432876a1e9a, type: 2}
+    model: {fileID: 7538273134166194572, guid: 873eb8762e919424195d109a92d414a6, type: 3}
+    rotation: {x: 0, y: 0, z: 0}
+  - torso: {fileID: 11400000, guid: 52965c849ad50c84aaa7d48e7eb84b9f, type: 2}
     model: {fileID: 7538273134166194572, guid: 873eb8762e919424195d109a92d414a6, type: 3}
     rotation: {x: 0, y: 0, z: 0}

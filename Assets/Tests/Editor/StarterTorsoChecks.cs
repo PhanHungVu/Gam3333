@@ -119,25 +119,32 @@ public sealed class StarterTorsoChecks
             case 7:
                 check(flow.Session.SelectedTorso == withoutModel && EventSystem.current.currentSelectedGameObject == Field<Button>("nextTorsoButton").gameObject,
                     "Keyboard Submit browses and retains arrow focus instead of jumping to Confirm");
-                Click("nextTorsoButton"); Click("nextTorsoButton"); Click("torsoBackButton"); break;
+                Click("nextTorsoButton"); break;
             case 8:
+                Click("nextTorsoButton"); break;
+            case 9:
+                Click("torsoBackButton"); break;
+            case 10:
                 check(flow.Session.View == PreMissionView.Details && flow.Session.SelectedQuest == quest && flow.Session.SelectedTorso == alternate,
                     "Torso Back retains the selected quest and non-default torso");
                 check(!Preview.HasPreview && Preview.Texture == null && Stages().Length == 0, "Leaving torso selection releases its render texture and preview stage");
                 flow.AcceptQuest(); break;
-            case 9:
+            case 11:
                 check(Preview.HasPreview && Preview.Torso == alternate && flow.Session.SelectedTorso == alternate, "Reopening torso selection restores the chosen model without resetting its selection");
                 originalHook = Field<MissionStartHook>("missionStartHook"); recording = flow.gameObject.AddComponent<PreMissionRecordingHook>();
                 var fields = new SerializedObject(flow); fields.FindProperty("missionStartHook").objectReferenceValue = recording; fields.ApplyModifiedPropertiesWithoutUndo();
                 Click("confirmTorsoButton"); flow.ConfirmTorso(); flow.NextTorso();
+                check(recording.Calls == 0 && flow.Session.LaunchRequested && flow.IsTransitioning, "Confirmation reserves the choice before its single delayed handoff");
+                break;
+            case 12:
                 check(recording.Calls == 1 && recording.Quest == quest && recording.Torso == alternate && flow.Session.SelectedTorso == alternate,
                     "The public handoff receives the exact non-default torso and quest once; selection locks after submission");
                 capture("q4-submitted");
                 catalogue.starterTorsos = new List<PartData>();
                 flow.CreateFreshBoard(); Field<PreMissionPaperPresentation>("presentation").FinishPosting(); flow.SelectQuest(flow.Session.Offers.First()); break;
-            case 10:
+            case 13:
                 flow.AcceptQuest(); break;
-            case 11:
+            case 14:
                 check(flow.Session.SelectedTorso == null && Field<TMP_Text>("torsoCounter").text == "0 / 0" && !Field<Button>("confirmTorsoButton").interactable
                     && !Field<Button>("nextTorsoButton").interactable && !Field<Button>("previousTorsoButton").interactable && !Preview.HasPreview,
                     "An empty torso catalogue shows a clear empty state and cannot confirm or browse");
