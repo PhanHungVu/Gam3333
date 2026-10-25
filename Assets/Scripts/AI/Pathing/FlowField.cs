@@ -26,6 +26,12 @@ public sealed class FlowField : MonoBehaviour
     [Header("Rebuild trigger")]
     [Tooltip("Rebuild only once the goal has moved this far from where the field was last built - not every frame.")]
     [SerializeField] float rebuildDistance = 3f;
+    [Tooltip("Never rebuild more often than this many seconds, even when the goal moves fast. 0 = no cap.")]
+    [SerializeField, Min(0f)] float minRebuildInterval = 0f;
+
+    [Header("Flood")]
+    [Tooltip("Only work out directions within this many metres of the goal; enemies further out chase directly (ChaseState's fallback). Keeps each rebuild the same cost however big the map is. 0 = the whole grid.")]
+    [SerializeField, Min(0f)] float floodRadius = 0f;
 
     [Header("Cost field")]
     [Tooltip("Extra cost for a cell directly touching a blocked cell - this is the 'mud near walls' effect, it gives obstacles some clearance instead of hugging them.")]
@@ -42,7 +48,12 @@ public sealed class FlowField : MonoBehaviour
     float[] integration;
     sbyte[] dirX, dirZ; // -1/0/1 per cell - which neighbour to step toward
     Vector3 lastGoalPos;
+    float lastBuildTime;
     bool built;
+    bool costBuilt;
+    // The cells the previous build touched - cleared before the next build, so a
+    // limited flood never has to reset the whole grid.
+    int boxMinC, boxMinR, boxMaxC, boxMaxR;
 
     // One shared field for the whole horde - same idea as the fish project, where
     // every fish read the same flow_field singleton rather than each holding a
@@ -82,14 +93,16 @@ public sealed class FlowField : MonoBehaviour
         if (goal == null) return;
 
         if (!force && built && Vector3.Distance(goal.position, lastGoalPos) < rebuildDistance) return;
+        if (!force && built && Time.time - lastBuildTime < minRebuildInterval) return;
 
-        Build(goal.position);
+        Build(goal.position, force);
         lastGoalPos = goal.position;
+        lastBuildTime = Time.time;
         built = true;
         Debug.Log($"[FlowField] Built from goal at {goal.position}. Grid is {grid.Cols}x{grid.Rows}.");
     }
 
-    void Build(Vector3 goalWorldPos)
+    void Build(Vector3 goalWorldPos, bool force)
     {
         int cols = grid.Cols, rows = grid.Rows;
         int count = cols * rows;
@@ -100,11 +113,53 @@ public sealed class FlowField : MonoBehaviour
             integration = new float[count];
             dirX = new sbyte[count];
             dirZ = new sbyte[count];
+            for (int i = 0; i < count; i++) integration[i] = float.PositiveInfinity;
+            boxMinC = 0; boxMinR = 0; boxMaxC = cols - 1; boxMaxR = rows - 1;
+            costBuilt = false;
         }
 
-        BuildCostField(cols, rows);
-        BuildIntegrationField(cols, rows, goalWorldPos);
+        // The cost field only depends on NavGrid's blocked cells, which don't move,
+        // so it's worked out once (and again on a forced build, e.g. at Start).
+        if (!costBuilt || force)
+        {
+            BuildCostField(cols, rows);
+            costBuilt = true;
+        }
+
+        ClearBox(cols);
+
+        grid.WorldToCell(goalWorldPos, out int gc, out int gr);
+        gc = Mathf.Clamp(gc, 0, cols - 1);
+        gr = Mathf.Clamp(gr, 0, rows - 1);
+
+        int radiusCells = floodRadius > 0f ? Mathf.CeilToInt(floodRadius / grid.CellSize) : int.MaxValue;
+        if (radiusCells == int.MaxValue)
+        {
+            boxMinC = 0; boxMinR = 0; boxMaxC = cols - 1; boxMaxR = rows - 1;
+        }
+        else
+        {
+            boxMinC = Mathf.Max(0, gc - radiusCells); boxMaxC = Mathf.Min(cols - 1, gc + radiusCells);
+            boxMinR = Mathf.Max(0, gr - radiusCells); boxMaxR = Mathf.Min(rows - 1, gr + radiusCells);
+        }
+
+        BuildIntegrationField(cols, gc, gr, radiusCells);
         BuildDirectionField(cols, rows);
+    }
+
+    // Resets every cell the previous build touched back to "unreached, no direction".
+    void ClearBox(int cols)
+    {
+        for (int r = boxMinR; r <= boxMaxR; r++)
+        {
+            for (int c = boxMinC; c <= boxMaxC; c++)
+            {
+                int i = r * cols + c;
+                integration[i] = float.PositiveInfinity;
+                dirX[i] = 0;
+                dirZ[i] = 0;
+            }
+        }
     }
 
     // 1 for a plain open cell; higher right next to a blocked cell, so the flood
@@ -131,19 +186,17 @@ public sealed class FlowField : MonoBehaviour
 
     // Dijkstra flood outward from the goal's cell - not a plain unweighted BFS,
     // since the cost field means some neighbours are cheaper to enter than others.
-    void BuildIntegrationField(int cols, int rows, Vector3 goalWorldPos)
+    // Stops at radiusCells (straight-line, in cells) from the goal; int.MaxValue floods everything.
+    void BuildIntegrationField(int cols, int gc, int gr, int radiusCells)
     {
-        for (int i = 0; i < integration.Length; i++) integration[i] = float.PositiveInfinity;
-
-        grid.WorldToCell(goalWorldPos, out int gc, out int gr);
-        gc = Mathf.Clamp(gc, 0, cols - 1);
-        gr = Mathf.Clamp(gr, 0, rows - 1);
+        int rows = grid.Rows;
         if (grid.IsBlocked(gc, gr)) return; // goal standing on a blocked cell - nothing to flood from
 
         int start = gr * cols + gc;
         integration[start] = 0f;
 
-        var frontier = new PriorityQueue(cols * rows);
+        long radiusSq = radiusCells == int.MaxValue ? long.MaxValue : (long)radiusCells * radiusCells;
+        var frontier = new PriorityQueue((boxMaxC - boxMinC + 1) * (boxMaxR - boxMinR + 1));
         frontier.Push(start, 0f);
 
         while (frontier.Count > 0)
@@ -157,6 +210,8 @@ public sealed class FlowField : MonoBehaviour
                 int nc = c + Nx[n], nr = r + Nz[n];
                 if (nc < 0 || nc >= cols || nr < 0 || nr >= rows) continue;
                 if (grid.IsBlocked(nc, nr)) continue;
+                long dc = nc - gc, dr = nr - gr;
+                if (dc * dc + dr * dr > radiusSq) continue; // outside the flood radius
 
                 int ni = nr * cols + nc;
                 float nd = d + NCost[n] * cost[ni];
@@ -169,13 +224,13 @@ public sealed class FlowField : MonoBehaviour
         }
     }
 
-    // For every reachable cell, point toward whichever neighbour has the lowest
-    // integration value - the actual "signpost" every enemy will read from.
+    // For every reachable cell in this build's box, point toward whichever neighbour
+    // has the lowest integration value - the actual "signpost" every enemy will read from.
     void BuildDirectionField(int cols, int rows)
     {
-        for (int r = 0; r < rows; r++)
+        for (int r = boxMinR; r <= boxMaxR; r++)
         {
-            for (int c = 0; c < cols; c++)
+            for (int c = boxMinC; c <= boxMaxC; c++)
             {
                 int i = r * cols + c;
                 if (float.IsPositiveInfinity(integration[i])) { dirX[i] = 0; dirZ[i] = 0; continue; }

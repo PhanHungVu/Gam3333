@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // New for the horde - nothing in the fish project spawned fish over time, they
@@ -10,6 +11,9 @@ using UnityEngine;
 // doesn't care how long the previous wave took to finish spawning - not "wait
 // until the wave is cleared". Within a wave, enemies trickle in one at a time,
 // Spawn Stagger seconds apart, rather than all appearing on top of each other.
+//
+// Runs on its own from scene start by default. Untick Start Automatically and
+// another script (e.g. a level objective) starts and stops it with Begin() / Stop().
 public sealed class EnemySpawnerManager : MonoBehaviour
 {
     [Header("Enemy")]
@@ -27,6 +31,8 @@ public sealed class EnemySpawnerManager : MonoBehaviour
     [Tooltip("Delay between each enemy within a wave, so 10 don't appear in the same instant.")]
     [SerializeField] float spawnStagger = 0.5f;
     [SerializeField] bool spawnFirstWaveImmediately = true;
+    [Tooltip("Run from scene start. Untick when another script (e.g. a level objective) calls Begin() and Stop().")]
+    [SerializeField] bool startAutomatically = true;
 
     [Header("Debug (read-only)")]
     [SerializeField] int currentWave;
@@ -37,17 +43,48 @@ public sealed class EnemySpawnerManager : MonoBehaviour
     float nextWaveTime;
     float nextSpawnTime;
     bool waveInProgress;
+    bool running;
+    readonly List<GameObject> spawned = new List<GameObject>();
+
+    public bool IsRunning => running;
 
     void Start()
     {
         if (enemyPrefab == null)
             Debug.LogWarning("[EnemySpawnerManager] No Enemy Prefab assigned - nothing will spawn.", this);
 
+        if (startAutomatically) Begin();
+    }
+
+    // Starts (or restarts) the wave clock from wave 1. Spawn First Wave Immediately still applies.
+    public void Begin()
+    {
+        running = true;
+        waveInProgress = false;
+        currentWave = 0;
+        spawnedThisWave = 0;
         nextWaveTime = spawnFirstWaveImmediately ? Time.time : Time.time + waveInterval;
+    }
+
+    // Stops spawning, including the rest of a wave in progress. Enemies already spawned stay.
+    public void Stop()
+    {
+        running = false;
+        waveInProgress = false;
+    }
+
+    // Removes every enemy this spawner created that is still in the scene.
+    public void ClearSpawned()
+    {
+        foreach (var enemy in spawned)
+            if (enemy != null) Destroy(enemy);
+        spawned.Clear();
     }
 
     void Update()
     {
+        if (!running) return;
+
         if (!waveInProgress && Time.time >= nextWaveTime)
             BeginWave();
 
@@ -89,7 +126,8 @@ public sealed class EnemySpawnerManager : MonoBehaviour
         Transform point = PickRandomAssignedPoint();
         if (point == null) point = transform;
 
-        Instantiate(enemyPrefab, point.position, point.rotation);
+        spawned.RemoveAll(enemy => enemy == null);
+        spawned.Add(Instantiate(enemyPrefab, point.position, point.rotation));
         totalSpawned++;
     }
 
