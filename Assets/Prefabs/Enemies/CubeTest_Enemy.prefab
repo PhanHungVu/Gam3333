@@ -101,6 +101,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
+  team: 2
 --- !u!33 &4995853971059958302
 MeshFilter:
   m_ObjectHideFlags: 0

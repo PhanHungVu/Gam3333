@@ -3,11 +3,15 @@ using UnityEngine;
 
 // Shared by the player and enemies: one health pool for the whole body. Takes damage,
 // reports it, and handles death. Maximum health can be set from outside (MechStats on the player).
+// Team decides who can damage it (see CombatTeam).
 [DisallowMultipleComponent]
 public class CombatHealth : MonoBehaviour
 {
     [SerializeField, Min(1f)] float maximumHealth = 100f;
     [SerializeField] float currentHealth;
+    [Tooltip("Attacks never damage their own team. Player on the player, Enemy on enemies, Neutral for dummies and props.")]
+    [SerializeField] CombatTeam team;
+    public CombatTeam Team { get => team; set => team = value; }
     public float CurrentHealth { get => currentHealth; private set => currentHealth = value; }
     public float MaximumHealth => maximumHealth;
     public bool IsDead => CurrentHealth <= 0f;

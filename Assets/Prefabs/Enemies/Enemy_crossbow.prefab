@@ -50326,6 +50326,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
   currentHealth: 0
+  team: 2
 --- !u!114 &2097355057362920606
 MonoBehaviour:
   m_ObjectHideFlags: 0

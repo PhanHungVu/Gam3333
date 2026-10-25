@@ -102,7 +102,7 @@ public static class MechEnemyCombatChecks
             var friendly = GameObject.CreatePrimitive(PrimitiveType.Cube);
             friendly.transform.position = player.transform.position - Vector3.forward * 4f;
             friendly.transform.localScale = new Vector3(4f, 4f, 1f);
-            var friendlyHealth = friendly.AddComponent<CombatHealth>(); Physics.SyncTransforms();
+            var friendlyHealth = friendly.AddComponent<CombatHealth>(); friendlyHealth.Team = CombatTeam.Enemy; Physics.SyncTransforms();
             Fly(bolt, 1f);
             check(health.CurrentHealth == before && friendlyHealth.CurrentHealth == 100f && !bolt.IsLive,
                 "Other enemies block bolts without receiving friendly damage");
