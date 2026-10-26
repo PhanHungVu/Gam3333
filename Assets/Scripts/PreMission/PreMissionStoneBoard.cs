@@ -164,6 +164,29 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
         return Rect.MinMaxRect(min.x,min.y,max.x,max.y);
     }
     static Rect Padded(Rect area,float margin) => Rect.MinMaxRect(area.xMin-margin,area.yMin-margin,area.xMax+margin,area.yMax+margin);
+    // Terrain reserves every possible slot, including the locked main and unused
+    // side slots. Camera-plane bounds protect labels as well as physical roots.
+    public List<Rect> TerrainExclusions(float clearance)
+    {
+        var result=new List<Rect> { Padded(ProjectedHitArea(mainStonePrefab,Vector2.zero,0),clearance) };
+        for(int i=0;i<slotPositions.Length;i++)
+            result.Add(Padded(ProjectedHitArea(smallStonePrefab,slotPositions[i],slotAngles[i]),clearance));
+        return result;
+    }
+    public Rect ProjectTerrainBounds(Bounds localBounds)
+    {
+        var world=QuestStoneView.TransformBounds(localBounds,transform.localToWorldMatrix);
+        var rotation=transform.rotation*cameraHomeRotation;
+        var right=rotation*Vector3.right; var up=rotation*Vector3.up;
+        Vector2 min=Vector2.one*float.MaxValue,max=Vector2.one*float.MinValue;
+        for(int x=-1;x<=1;x+=2) for(int y=-1;y<=1;y+=2) for(int z=-1;z<=1;z+=2)
+        {
+            var point=world.center+Vector3.Scale(world.extents,new Vector3(x,y,z));
+            var projected=new Vector2(Vector3.Dot(point,right),Vector3.Dot(point,up));
+            min=Vector2.Min(min,projected); max=Vector2.Max(max,projected);
+        }
+        return Rect.MinMaxRect(min.x,min.y,max.x,max.y);
+    }
     static float Signed(System.Random random) => (float)random.NextDouble()*2f-1f;
     static void Shuffle(int[] order,int start,int count,System.Random random)
     {

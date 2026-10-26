@@ -740,6 +740,59 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &1584694276743002594
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8078401767967419824}
+  - component: {fileID: 3326530344519752439}
+  m_Layer: 26
+  m_Name: Board Terrain
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8078401767967419824
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1584694276743002594}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1035957255361144989}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3326530344519752439
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1584694276743002594}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aeb2f6b7512d9c04b93d752738817eaf, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PreMissionBoardTerrain
+  rockMaterial: {fileID: 2100000, guid: de18ade7c93f50a4a995de051e19df29, type: 2}
+  ridgeCount: 24
+  ridgeLength: {x: 0.9, y: 1.8}
+  ridgeWidth: {x: 0.45, y: 0.85}
+  ridgeHeight: {x: 0.7, y: 1.9}
+  questClearance: 0.18
+  riseDuration: 0.9
+  revealStagger: 0.38
+  settlePause: 0.1
 --- !u!1 &1613620503757203880
 GameObject:
   m_ObjectHideFlags: 0
@@ -18281,6 +18334,7 @@ MonoBehaviour:
   feedback: {fileID: 6122998821435740188}
   progressTrack: {fileID: 9194653402231530185}
   missionMiniature: {fileID: 4901771724959896567}
+  terrain: {fileID: 3326530344519752439}
   smallDropDuration: 0.32
   mainDropDuration: 0.78
   smallSettleDuration: 0.2
@@ -18725,6 +18779,7 @@ Transform:
   - {fileID: 8051027683832513848}
   - {fileID: 7601489384294068519}
   - {fileID: 7176952631575593318}
+  - {fileID: 8078401767967419824}
   m_Father: {fileID: 509928368955314532}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &9052173069342261582

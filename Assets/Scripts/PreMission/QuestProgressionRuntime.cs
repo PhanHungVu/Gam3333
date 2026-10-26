@@ -10,11 +10,12 @@ public static class QuestProgressionRuntime
     // Presentation watermarks only; availability/results still belong to Current.
     static bool progressTrackRevealed;
     static int lastShownProgressStep;
+    static bool terrainRevealed;
     public static QuestProgressionSession Current { get; private set; }
     public static event Action CurrentChanged;
     public static bool HasPresentedOffers => presentedOffers.Count > 0;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void ResetPlaySession() { Current = null; presentedOffers.Clear(); progressTrackRevealed=false; lastShownProgressStep=0; CurrentChanged = null; }
+    static void ResetPlaySession() { Current = null; presentedOffers.Clear(); progressTrackRevealed=false; lastShownProgressStep=0; terrainRevealed=false; CurrentChanged = null; }
     public static QuestProgressionSession GetOrCreate(QuestBoardCatalogue catalogue, int seed)
     {
         if (Current == null || Current.Catalogue != catalogue) StartNewProgression(catalogue, seed);
@@ -22,10 +23,12 @@ public static class QuestProgressionRuntime
     }
     public static QuestProgressionSession StartNewProgression(QuestBoardCatalogue catalogue, int seed)
     {
-        Current = new QuestProgressionSession(catalogue, seed); presentedOffers.Clear(); progressTrackRevealed=false; lastShownProgressStep=0;
+        Current = new QuestProgressionSession(catalogue, seed); presentedOffers.Clear(); progressTrackRevealed=false; lastShownProgressStep=0; terrainRevealed=false;
         CurrentChanged?.Invoke(); return Current;
     }
     public static bool WasPresented(string offerId) => presentedOffers.Contains(offerId);
+    public static bool WasTerrainRevealed(QuestProgressionSession run) => Current==run && run!=null && terrainRevealed;
+    public static void RememberTerrain(QuestProgressionSession run) { if(Current==run && run!=null) terrainRevealed=true; }
     public static void MarkPresented(QuestProgressionSession run, string offerId)
     { if (Current == run && run.FindOffer(offerId) != null) presentedOffers.Add(offerId); }
     public static bool WasProgressTrackRevealed(QuestProgressionSession run) => Current==run && progressTrackRevealed;

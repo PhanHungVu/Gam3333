@@ -19,6 +19,7 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
     [SerializeField] QuestBoardImpactFeedback feedback;
     [SerializeField] PreMissionProgressTrack progressTrack;
     [SerializeField] PreMissionMissionMiniature missionMiniature;
+    [SerializeField] PreMissionBoardTerrain terrain;
     [Header("Arrival (unscaled seconds)")]
     [SerializeField, Min(0.01f)] float smallDropDuration = 0.32f;
     [SerializeField, Min(0.01f)] float mainDropDuration = 0.78f;
@@ -68,7 +69,8 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
     public QuestBoardImpactFeedback Feedback => feedback;
     public PreMissionProgressTrack ProgressTrack => progressTrack;
     public PreMissionMissionMiniature Miniature => missionMiniature;
-    public bool IsOperational => isActiveAndEnabled && (progressTrack==null || progressTrack.isActiveAndEnabled) && (missionMiniature==null || missionMiniature.isActiveAndEnabled);
+    public PreMissionBoardTerrain Terrain => terrain;
+    public bool IsOperational => isActiveAndEnabled && (progressTrack==null || progressTrack.isActiveAndEnabled) && (missionMiniature==null || missionMiniature.isActiveAndEnabled) && (terrain==null || terrain.isActiveAndEnabled);
     public bool IsAnticipatingMain { get; private set; }
     public float ArrivalFocus => arrivalFocus;
     public float BriefingRevealAt => briefingRevealAt;
@@ -80,6 +82,7 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
     {
         if(progressTrack!=null) progressTrack.Bind(board);
         if(missionMiniature!=null) missionMiniature.Initialize(board);
+        if(terrain!=null) terrain.Bind(board);
     }
     public ArrivalProfile GetArrivalProfile(QuestStoneView stone)
     {
@@ -109,12 +112,13 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
     {
         if (IsPosting || !isActiveAndEnabled) return;
         var pending = board.Stones.Where(s => !s.IsReady).OrderBy(s => s.IsMain ? 1 : 0).ToArray();
-        if (pending.Length == 0 && (progressTrack==null || !progressTrack.HasPending)) { ready?.Invoke(); return; }
+        if (pending.Length == 0 && (progressTrack==null || !progressTrack.HasPending) && (terrain==null || !terrain.HasPending)) { ready?.Invoke(); return; }
         IsPosting = true; arrivalsReady = ready; StartCoroutine(Arrivals(pending));
     }
     IEnumerator Arrivals(IReadOnlyList<QuestStoneView> pending)
     {
         yield return null; yield return null;
+        if(terrain!=null) yield return terrain.Reveal();
         if(progressTrack!=null) yield return progressTrack.Reveal();
         bool progressShown=false;
         foreach (var stone in pending)
@@ -201,6 +205,7 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
         if (!IsPosting) return;
         StopAllCoroutines(); IsPosting = false; IsAnticipatingMain=false; arrivalFocus=0; ClearSecondaryMotion(); feedback?.Cancel();
         progressTrack?.Settle(PreMissionView.Board,true);
+        terrain?.Settle(true);
         foreach (var stone in board.Stones)
         { stone.RestoreRest(); QuestProgressionRuntime.MarkPresented(board.Progression,stone.Offer.Id); }
         var ready = arrivalsReady; arrivalsReady = null; ready?.Invoke();
@@ -274,6 +279,7 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
         StopAllCoroutines(); IsPosting=IsTransitioning=IsAnticipatingMain=false; arrivalFocus=0; ClearSecondaryMotion(); arrivalsReady=null; feedback?.Cancel();
         if (board == null) return;
         progressTrack?.Settle(view);
+        terrain?.Settle();
         missionMiniature?.Clear();
         foreach(var stone in board.Stones) stone.RestoreRest();
         inspected = view==PreMissionView.Board ? null : board.FindStone(offerId);
