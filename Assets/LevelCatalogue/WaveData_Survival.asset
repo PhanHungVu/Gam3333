@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e07b17f81fc473d40bf95e4ef8c4c8b9, type: 3}
+  m_Name: WaveData_Survival
+  m_EditorClassIdentifier: Assembly-CSharp::WaveData
+  type: 1
+  spawnInterval: 0.2
+  timerReset: 30
+  resourceTotal: 100
+  enemies:
+  - prefab: {fileID: 4106689103570048712, guid: 58e83d5641124dd45bfe6189e1c44df9, type: 3}
+    weight: 15
+  - prefab: {fileID: 8412420698314761476, guid: fe9720ade9ad98b439f4112216ccb09a, type: 3}
+    weight: 15
+  - prefab: {fileID: 7062185459325199375, guid: 01499eb7afac19d479cb6df1d4aae7e9, type: 3}
+    weight: 17.5
+  - prefab: {fileID: 1767564731750688855, guid: b2ba31f62aee1e74fa6054eeb77dbc51, type: 3}
+    weight: 17.5
+  - prefab: {fileID: 7844480342519530753, guid: 0eb4de5951752aa42ad7d74223260186, type: 3}
+    weight: 17.5
+  - prefab: {fileID: 6047991143849022785, guid: 19e462b5c15722c4d994bfc5f8a37548, type: 3}
+    weight: 17.5

@@ -87,6 +87,7 @@ public static class MechFoundationChecks
             MechAnimationV2Checks.Run(Check);
             MechWeaponAnimationChecks.Run(Check);
             MechEnemyCombatChecks.Run(Check);
+            SpawnDirectorChecks.Run(Check);
             MechProjectileModelChecks.Run(Check);
             MechSfxChecks.Run(Check);
             MechDashMeleeChecks.Run(Check);
