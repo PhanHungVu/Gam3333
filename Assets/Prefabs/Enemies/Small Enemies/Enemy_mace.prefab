@@ -24607,14 +24607,17 @@ MonoBehaviour:
   - {fileID: 2901997483434555311}
   - {fileID: 474273004463784925}
   muzzle: {fileID: 0}
-  damageMultiplier: 0.4
-  cooldownMultiplier: 2.5714285
+  damageMultiplier: 0.2
+  cooldownMultiplier: 2
   projectileSpeedMultiplier: 1
   rulesConfig: {fileID: 11400000, guid: ee7e37eb664fbfb4695ed0f740b434c4, type: 2}
   fireDuration: 0.7
   releaseFrame: 0.6
   facingAngle: 70
   verticalReach: 2.5
+  meleeCenter: {x: 0, y: 0, z: 2.75}
+  meleeSize: {x: 5, y: 3.5, z: 5.5}
+  meleeWallHeight: 0.5
   projectileMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   hitLayers:
     serializedVersion: 2
@@ -24663,7 +24666,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 457c8943d88cc1549a43809314e6d2c3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyPartDrop
-  partPrefab: {fileID: 3288396653387323531, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
+  partPrefabs:
+  - {fileID: 3288396653387323531, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
   dropChancePercent: 25
   spawnHeight: 1
   popVelocity: 3

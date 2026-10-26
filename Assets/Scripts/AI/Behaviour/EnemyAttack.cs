@@ -47,6 +47,7 @@ public sealed class EnemyAttack : MonoBehaviour
     Vector3 aim;
     public MechWeaponAnimator Weapon => activeWeapon != null ? activeWeapon : weapons.Length > 0 ? weapons[0] : null;
     public bool OwnsWeapon(MechWeaponAnimator driver) => System.Array.IndexOf(weapons, driver) >= 0;
+    public System.Collections.Generic.IReadOnlyList<MechWeaponAnimator> Weapons => weapons;
     public bool NeutralReady => stationaryAge >= 3f && !attacking;
     public bool IsAttacking => attacking;
     public float CooldownRemaining => remaining;
