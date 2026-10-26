@@ -38,7 +38,7 @@ public static class MechEnemyCombatChecks
     {
         var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.PlayerPath),
             new Vector3(52000f, 2f, 0f), Quaternion.identity);
-        EnemyAttack mace = null, crossbow = null;
+        EnemyAttack mace = null, crossbow = null, dual = null, far = null;
         GameObject wall = null;
         try
         {
@@ -132,13 +132,38 @@ public static class MechEnemyCombatChecks
             crossbow.enabled = false;
             check(crossbow.GetComponentsInChildren<MechWeaponAnimator>().All(w => !w.Animator.enabled),
                 "Disabling enemy attack stops its weapon playback");
+            dual = Enemy("mace", player, 2f);
+            var tuning = new SerializedObject(dual);
+            tuning.FindProperty("independentWeapons").boolValue = true;
+            var second = tuning.FindProperty("weapons").GetArrayElementAtIndex(1).FindPropertyRelative("damageMultiplier");
+            second.floatValue *= 2f;
+            tuning.ApplyModifiedPropertiesWithoutUndo();
+            var arms = dual.Weapons;
+            float firstHit = dual.DamageOf(arms[0]), secondHit = dual.DamageOf(arms[1]);
+            check(firstHit > 0f && secondHit == 2f * firstHit, "Each weapon entry has its own damage multiplier");
+            before = health.CurrentHealth;
+            check(dual.TryAttack() && arms.All(w => w.CurrentPose == MechWeaponAnimator.PoseState.Fire),
+                "Independent weapons start every ready weapon at once");
+            Step(dual, 0.45f);
+            check(health.CurrentHealth == before - firstHit - secondHit && dual.Releases == 2,
+                "Each independent weapon lands its own hit with its own damage");
+            check(!dual.TryAttack(), "Independent weapons each wait out their own cooldown");
+            Object.DestroyImmediate(dual.gameObject); dual = null;
+            far = Enemy("crossbow", player, 200f);
+            var farTuning = new SerializedObject(far);
+            farTuning.FindProperty("independentWeapons").boolValue = true;
+            farTuning.ApplyModifiedPropertiesWithoutUndo();
+            check(!far.TryAttack(), "Weapons never attack beyond their own reach");
+            Object.DestroyImmediate(far.gameObject); far = null;
             health.ApplyDamage(10000f);
             check(health.IsDead && !player.activeSelf && !player.GetComponent<MechMovementController>().isActiveAndEnabled,
                 "Zero player health disables movement/combat through the existing death lifecycle");
         }
         finally
         {
-            foreach (var bolt in Object.FindObjectsByType<MechProjectile>().Where(p => p.name == "Enemy Crossbow Bolt")) Object.DestroyImmediate(bolt.gameObject);
+            foreach (var bolt in Object.FindObjectsByType<MechProjectile>().Where(FromEnemy)) Object.DestroyImmediate(bolt.gameObject);
+            if (dual != null) Object.DestroyImmediate(dual.gameObject);
+            if (far != null) Object.DestroyImmediate(far.gameObject);
             if (wall != null) Object.DestroyImmediate(wall);
             if (mace != null) Object.DestroyImmediate(mace.gameObject);
             if (crossbow != null) Object.DestroyImmediate(crossbow.gameObject);

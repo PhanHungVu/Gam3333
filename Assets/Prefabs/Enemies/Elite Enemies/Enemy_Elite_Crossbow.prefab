@@ -60613,12 +60613,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAttack
   weapons:
-  - {fileID: 7508888232129397708}
-  - {fileID: 7551524468581405611}
+  - weapon: {fileID: 7508888232129397708}
+    damageMultiplier: 0.4
+    cooldownMultiplier: 1
+    projectileSpeedMultiplier: 0.7
+  - weapon: {fileID: 7551524468581405611}
+    damageMultiplier: 0.4
+    cooldownMultiplier: 1
+    projectileSpeedMultiplier: 0.7
+  independentWeapons: 0
   muzzle: {fileID: 0}
-  damageMultiplier: 0.4
-  cooldownMultiplier: 1
-  projectileSpeedMultiplier: 0.7
   rulesConfig: {fileID: 11400000, guid: ee7e37eb664fbfb4695ed0f740b434c4, type: 2}
   fireDuration: 0.7
   releaseFrame: 0.6

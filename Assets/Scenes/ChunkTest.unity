@@ -369,6 +369,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6380721828187788046, guid: 58e83d5641124dd45bfe6189e1c44df9, type: 3}
+      propertyPath: independentWeapons
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -924,7 +928,11 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 230923823903054012, guid: fe9720ade9ad98b439f4112216ccb09a, type: 3}
-      propertyPath: damageMultiplier
+      propertyPath: weapons.Array.data[0].damageMultiplier
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 230923823903054012, guid: fe9720ade9ad98b439f4112216ccb09a, type: 3}
+      propertyPath: weapons.Array.data[1].damageMultiplier
       value: 0.4
       objectReference: {fileID: 0}
     - target: {fileID: 3326802730429014564, guid: fe9720ade9ad98b439f4112216ccb09a, type: 3}
