@@ -220,14 +220,17 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
         float boardStart = board.alpha;
         SetGroup(board, true, false); SetGroup(details, true, false); board.alpha = boardStart;
         if (entering) SetBriefingReveal(0f);
-        yield return Animate(viewFadeDuration, t =>
+        float revealDuration=entering ? BriefingRevealDuration() : 0f;
+        float duration=Mathf.Max(viewFadeDuration,revealDuration);
+        yield return Animate(duration, t =>
         {
-            float alpha = Smooth(t);
-            board.alpha = entering ? boardStart*(1f-alpha) : 0f;
+            float elapsed=t*duration;
+            float alpha = Smooth(Mathf.Clamp01(elapsed/Mathf.Max(0.01f,viewFadeDuration)));
+            // Stone motion alone owns the board HUD opacity during inspection/return.
             details.alpha = entering ? alpha : 1f - alpha;
             if(tabletopBriefing) briefingPaper.anchoredPosition=briefingPosition+Vector2.right*(viewTravel*(entering?1-alpha:alpha)*MotionScale);
+            if(entering) SetBriefingRevealTime(elapsed);
         });
-        if (entering) yield return RevealBriefing();
         IsTransitioning = false; ready();
     }
     IEnumerable<QuestNoticeView> PostingOrder() => notices.OrderBy(n => n.Quest.category == QuestCategory.Main ? 1 : 0);
@@ -456,15 +459,18 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
     }
     IEnumerator RevealBriefing()
     {
-        int count = briefingGroups != null ? briefingGroups.Length : 0;
-        if (count == 0) yield break;
-        float fade = Mathf.Max(0.01f, briefingFadeDuration), stagger = Mathf.Max(0f, briefingStagger);
-        float duration = fade + stagger * (count - 1);
-        yield return Animate(duration, t =>
-        {
-            for (int i = 0; i < count; i++)
-                if (briefingGroups[i] != null) briefingGroups[i].alpha = Smooth(Mathf.Clamp01((t * duration - i * stagger) / fade));
-        });
+        if(briefingGroups==null || briefingGroups.Length==0) yield break;
+        float duration=BriefingRevealDuration();
+        yield return Animate(duration,t=>SetBriefingRevealTime(t*duration));
+    }
+    float BriefingRevealDuration() => briefingGroups!=null && briefingGroups.Length>0
+        ? Mathf.Max(0.01f,briefingFadeDuration)+Mathf.Max(0f,briefingStagger)*(briefingGroups.Length-1) : 0f;
+    void SetBriefingRevealTime(float elapsed)
+    {
+        if(briefingGroups==null) return;
+        float fade=Mathf.Max(0.01f,briefingFadeDuration), stagger=Mathf.Max(0f,briefingStagger);
+        for(int i=0;i<briefingGroups.Length;i++)
+            if(briefingGroups[i]!=null) briefingGroups[i].alpha=Smooth(Mathf.Clamp01((elapsed-i*stagger)/fade));
     }
     public void BrowseTorso(int direction, Action change, Action ready)
     {

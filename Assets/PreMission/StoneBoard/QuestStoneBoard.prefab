@@ -18302,6 +18302,7 @@ MonoBehaviour:
   returnDuration: 0.44
   returnSettleDuration: 0.12
   inspectLift: 0.22
+  briefingRevealAt: 0.7
   mainInspectLift: 0.12
   mainHandlingTimeMultiplier: 1.15
   inspectionViewport: {x: 0.25, y: 0.5}

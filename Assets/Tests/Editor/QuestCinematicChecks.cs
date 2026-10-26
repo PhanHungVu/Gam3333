@@ -159,8 +159,9 @@ public static class QuestCinematicChecks
             yield return null;
         }
         Check(shortRotation,"Inspection takes the short rotation path from negative hover angles");
-        Check(Flow.IsTransitioning&&!Board.InputEnabled&&Mini.IsVisible&&Mini.Progress>0&&!Field<GameObject>(Flow,"detailsView").activeSelf,
-            "The miniature emerges on the selected rock during camera approach, before the briefing opens");
+        Check(Flow.IsTransitioning&&!Board.InputEnabled&&Mini.IsVisible&&Mini.Progress>0
+            &&(Field<GameObject>(Flow,"detailsView").activeSelf==(Motion.InspectionProgress>=Motion.BriefingRevealAt)),
+            "Miniature emergence and the overlapping briefing follow their coordinated approach thresholds");
         Capture("p3-approach",1600,900,false);
         Flow.SelectQuest(main.Offer.Quest); Flow.AcceptQuest(); Flow.Back();
         Check(Flow.Session.SelectedQuest==small.Offer.Quest,"Competing clicks and navigation cannot replace the active inspection");

@@ -265,9 +265,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
             stoneBoard.ClearHighlights();
             launchStatus.text = string.Empty;
             RefreshView(false, false);
-            presentation.PrepareStoneInspection();
-            stoneBoard.Inspect(offer.Id, presentation.SetStoneInspectionProgress,
-                () => presentation.PresentStoneDetails(quest.category == QuestCategory.Main, RefreshView));
+            PresentStoneInspection(offer);
             ResetBriefingScroll();
             return;
         }
@@ -286,6 +284,40 @@ public sealed class PreMissionFlowController : MonoBehaviour
     {
         var scroll = detailsBody.GetComponentInParent<ScrollRect>(true);
         if (scroll != null) { Canvas.ForceUpdateCanvases(); scroll.StopMovement(); scroll.verticalNormalizedPosition = 1f; }
+    }
+    void PresentStoneInspection(QuestOffer offer)
+    {
+        var transitionSession=Session;
+        bool stoneReady=false, briefingReady=false, briefingStarted=false, finished=false;
+        void Finish()
+        {
+            if(finished || !stoneReady || !briefingReady || Session!=transitionSession || Session.View!=PreMissionView.Details) return;
+            finished=true; RefreshView();
+        }
+        void BeginBriefing()
+        {
+            if(briefingStarted || Session!=transitionSession) return;
+            briefingStarted=true;
+            presentation.PresentStoneDetails(offer.Quest.category==QuestCategory.Main,()=>{ briefingReady=true; Finish(); });
+        }
+        presentation.PrepareStoneInspection();
+        stoneBoard.Inspect(offer.Id,progress=>
+        {
+            presentation.SetStoneInspectionProgress(progress);
+            if(progress>=(stoneBoard.Motion!=null ? stoneBoard.Motion.BriefingRevealAt : 1f)) BeginBriefing();
+        },()=>{ stoneReady=true; BeginBriefing(); Finish(); });
+    }
+    void ReturnStoneInspection(string offerId)
+    {
+        var transitionSession=Session;
+        bool stoneReady=false, briefingReady=false, finished=false;
+        void Finish()
+        {
+            if(finished || !stoneReady || !briefingReady || Session!=transitionSession || Session.View!=PreMissionView.Board) return;
+            finished=true; RefreshView(); stoneBoard.FocusOffer(offerId);
+        }
+        presentation.ReturnFromStoneDetails(()=>{ briefingReady=true; Finish(); });
+        stoneBoard.ReturnInspection(presentation.SetStoneInspectionProgress,()=>{ stoneReady=true; Finish(); });
     }
 
     public void AcceptQuest()
@@ -320,8 +352,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
         {
             launchStatus.text = string.Empty;
             if (previous == PreMissionView.Details && stoneBoard != null)
-                presentation.ReturnFromStoneDetails(() => stoneBoard.ReturnInspection(presentation.SetStoneInspectionProgress,
-                    () => { RefreshView(); stoneBoard.FocusOffer(returningOffer); }));
+                ReturnStoneInspection(returningOffer);
             else if (previous == PreMissionView.Details)
                 presentation.ReturnToBoard(notice, () => { RefreshView(); if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(notice.Button.gameObject); });
             else presentation.SwitchView(previous, Session.View, RefreshView);

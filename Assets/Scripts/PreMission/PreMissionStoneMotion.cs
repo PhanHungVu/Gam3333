@@ -44,6 +44,8 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
     [SerializeField, Min(0.01f)] float returnDuration = 0.64f;
     [SerializeField, Min(0.01f)] float returnSettleDuration = 0.12f;
     [SerializeField, Min(0f)] float inspectLift = 0.22f;
+    [Tooltip("Start the briefing during the camera approach, once the selected rock is near its reading position.")]
+    [SerializeField, Range(0.5f,1f)] float briefingRevealAt=0.7f;
     [Header("Tabletop inspection")]
     [SerializeField, Min(0f)] float mainInspectLift=0.12f;
     [SerializeField, Min(1f)] float mainHandlingTimeMultiplier=1.15f;
@@ -57,6 +59,7 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
     bool wasDisabled;
     float arrivalFocus;
     Vector3 landingPoint;
+    Bounds inspectionBounds, reducedInspectionBounds;
     readonly List<QuestStoneView> reactingStones = new List<QuestStoneView>();
     public bool IsPosting { get; private set; }
     public bool IsTransitioning { get; private set; }
@@ -68,6 +71,7 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
     public bool IsOperational => isActiveAndEnabled && (progressTrack==null || progressTrack.isActiveAndEnabled) && (missionMiniature==null || missionMiniature.isActiveAndEnabled);
     public bool IsAnticipatingMain { get; private set; }
     public float ArrivalFocus => arrivalFocus;
+    public float BriefingRevealAt => briefingRevealAt;
     public event Action<QuestStoneView> Impacted;
     bool ReducedMotion => feedback!=null && feedback.ReducedMotion;
 
@@ -206,6 +210,7 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
         if (IsPosting || IsTransitioning || stone == null) return;
         inspected = stone; IsTransitioning = true;
         if(missionMiniature!=null) missionMiniature.Bind(stone);
+        PrepareInspectionBounds();
         StartCoroutine(InspectRoutine(frame, ready));
     }
     IEnumerator InspectRoutine(Action<float> frame, Action ready)
@@ -256,6 +261,14 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
     Vector3 InspectionOffset() => Vector3.up*(missionMiniature!=null && inspected.IsMain ? mainInspectLift : inspectLift);
     Vector3 InspectionAngles() => missionMiniature!=null ? new Vector3(inspected.IsMain?-2:-5,0,inspected.IsMain?0.5f:1.5f) : Vector3.zero;
     Vector3 InspectionScale() => Vector3.one*(missionMiniature!=null && inspected.IsMain ? 1.015f : 1.045f);
+    void PrepareInspectionBounds()
+    {
+        inspectionBounds=inspected.MotionBounds(InspectionOffset(),InspectionAngles(),InspectionScale(),1);
+        reducedInspectionBounds=inspected.MotionBounds(InspectionOffset(),InspectionAngles(),InspectionScale(),0);
+        if(missionMiniature==null) return;
+        inspectionBounds.Encapsulate(missionMiniature.InspectionBounds(inspected,inspectionBounds));
+        reducedInspectionBounds.Encapsulate(missionMiniature.InspectionBounds(inspected,reducedInspectionBounds));
+    }
     public void Settle(PreMissionView view, string offerId)
     {
         StopAllCoroutines(); IsPosting=IsTransitioning=IsAnticipatingMain=false; arrivalFocus=0; ClearSecondaryMotion(); arrivalsReady=null; feedback?.Cancel();
@@ -267,6 +280,7 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
         InspectionProgress=inspected!=null ? 1 : 0;
         if(inspected!=null)
         {
+            PrepareInspectionBounds();
             inspected.SetMotionFrame(InspectionOffset(),InspectionAngles(),InspectionScale());
             if(missionMiniature!=null) { missionMiniature.Bind(inspected); missionMiniature.SetProgress(1); }
         }
@@ -283,8 +297,8 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
         }
         if (inspected != null && InspectionProgress>0)
         {
-            var bounds=inspected.RockBounds;
-            if(missionMiniature!=null && missionMiniature.IsVisible) bounds.Encapsulate(missionMiniature.WorldBounds);
+            // The miniature's animated emergence/retraction must not move the camera target.
+            var bounds=ReducedMotion ? reducedInspectionBounds : inspectionBounds;
             bool tabletop=missionMiniature!=null;
             float fit=Mathf.Max(tabletop ? (inspected.IsMain?mainInspectionSize:smallInspectionSize) : (inspected.IsMain?2.7f:1.9f),
                 bounds.size.x/(2*aspect*(tabletop?inspectionWidth:0.68f)));

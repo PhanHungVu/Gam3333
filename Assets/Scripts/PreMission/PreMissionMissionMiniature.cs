@@ -11,6 +11,7 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
         public Transform root;
         [NonSerialized] public Transform[] pieces;
         [NonSerialized] public Vector3[] positions, scales;
+        [NonSerialized] public Bounds fullBounds;
     }
     [SerializeField] Transform display;
     [SerializeField] Variant[] variants;
@@ -20,6 +21,7 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
     QuestStoneView stone;
     Variant active;
     bool initialized, wasDisabled;
+    Renderer[] renderers;
     public QuestDefinition Quest => stone!=null ? stone.Offer.Quest : null;
     public float Progress { get; private set; }
     public bool IsVisible => display.gameObject.activeInHierarchy;
@@ -29,6 +31,7 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
     {
         board=owner;
         if(initialized) return;
+        renderers=display.GetComponentsInChildren<Renderer>(true);
         foreach(var variant in variants)
         {
             int count=variant.root.childCount;
@@ -36,6 +39,15 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
             for(int i=0;i<count;i++)
             {
                 var piece=variant.root.GetChild(i); variant.pieces[i]=piece; variant.positions[i]=piece.localPosition; variant.scales[i]=piece.localScale;
+            }
+            bool hasBounds=false;
+            foreach(var renderer in renderers)
+            {
+                bool belongs=renderer.transform.IsChildOf(variant.root), shared=true;
+                foreach(var other in variants) if(renderer.transform.IsChildOf(other.root)) { shared=false; break; }
+                if(!belongs && !shared) continue;
+                var bounds=QuestStoneView.TransformBounds(renderer.localBounds,transform.worldToLocalMatrix*renderer.localToWorldMatrix);
+                if(hasBounds) variant.fullBounds.Encapsulate(bounds); else { variant.fullBounds=bounds; hasBounds=true; }
             }
         }
         initialized=true; Clear();
@@ -78,12 +90,24 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
         stone=null; active=null; Progress=0;
         if(display!=null) display.gameObject.SetActive(false);
     }
+    public Bounds InspectionBounds(QuestStoneView selected,Bounds rockBounds)
+    {
+        foreach(var variant in variants)
+        {
+            if(variant.missionType!=selected.Offer.Quest.missionType) continue;
+            var matrix=Matrix4x4.TRS(new Vector3(rockBounds.center.x,rockBounds.max.y+0.015f,rockBounds.center.z),
+                Quaternion.Euler(0,selected.transform.eulerAngles.y,0),Vector3.one*(selected.IsMain?1.18f:1f));
+            return QuestStoneView.TransformBounds(variant.fullBounds,matrix);
+        }
+        return rockBounds;
+    }
     public Bounds WorldBounds
     {
         get
         {
             var bounds=new Bounds(transform.position,Vector3.zero);
-            foreach(var renderer in display.GetComponentsInChildren<Renderer>()) bounds.Encapsulate(renderer.bounds);
+            if(renderers!=null) foreach(var renderer in renderers)
+                if(renderer!=null && renderer.gameObject.activeInHierarchy) bounds.Encapsulate(renderer.bounds);
             return bounds;
         }
     }

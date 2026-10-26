@@ -17,6 +17,8 @@ public sealed class QuestStoneView : MonoBehaviour
     [SerializeField, Min(0f)] float mainHoverTilt = 0.7f;
     MaterialPropertyBlock properties;
     Vector3 visualPosition, visualScale;
+    Matrix4x4 rockFromVisual;
+    Bounds rockLocalBounds;
     Quaternion visualRotation;
     Color baseColor;
     QuestBoardImpactFeedback feedback;
@@ -52,6 +54,8 @@ public sealed class QuestStoneView : MonoBehaviour
         name = (offer.Quest.category == QuestCategory.Main ? "Main Stone - " : "Small Stone - ") + offer.Quest.title;
         visualPosition = visual.localPosition; visualScale = visual.localScale;
         visualRotation = visual.localRotation;
+        rockFromVisual=visual.worldToLocalMatrix*rock.localToWorldMatrix;
+        rockLocalBounds=rock.localBounds;
         restCenter = transform.InverseTransformPoint(rock.bounds.center);
         baseColor = rock.sharedMaterial.color;
         label.text = "<size=65%>" + (offer.Quest.category == QuestCategory.Main ? "MAIN QUEST" : "SMALL QUEST") + "</size>\n" + offer.Quest.title;
@@ -112,5 +116,21 @@ public sealed class QuestStoneView : MonoBehaviour
     public void SetInscriptionVisibility(float value) => label.alpha=Mathf.Clamp01(value);
     public Vector3 CurrentOffset => visual.localPosition - visualPosition;
     public Vector3 CurrentScale => new Vector3(visual.localScale.x / visualScale.x, visual.localScale.y / visualScale.y, visual.localScale.z / visualScale.z);
+    // Predict the final inspection bounds without temporarily moving visible geometry.
+    public Bounds MotionBounds(Vector3 offset,Vector3 angles,Vector3 scale,float motionAmount)
+    {
+        var matrix=visual.parent.localToWorldMatrix*Matrix4x4.TRS(visualPosition+offset*motionAmount,
+            visualRotation*Quaternion.Euler(angles*motionAmount),Vector3.Scale(visualScale,Vector3.Lerp(Vector3.one,scale,motionAmount)))*rockFromVisual;
+        return TransformBounds(rockLocalBounds,matrix);
+    }
+    internal static Bounds TransformBounds(Bounds local,Matrix4x4 matrix)
+    {
+        var x=matrix.MultiplyVector(Vector3.right*local.extents.x);
+        var y=matrix.MultiplyVector(Vector3.up*local.extents.y);
+        var z=matrix.MultiplyVector(Vector3.forward*local.extents.z);
+        var extents=new Vector3(Mathf.Abs(x.x)+Mathf.Abs(y.x)+Mathf.Abs(z.x),
+            Mathf.Abs(x.y)+Mathf.Abs(y.y)+Mathf.Abs(z.y),Mathf.Abs(x.z)+Mathf.Abs(y.z)+Mathf.Abs(z.z));
+        return new Bounds(matrix.MultiplyPoint3x4(local.center),extents*2);
+    }
     void OnDisable() { if (Offer != null) RestoreRest(); }
 }
