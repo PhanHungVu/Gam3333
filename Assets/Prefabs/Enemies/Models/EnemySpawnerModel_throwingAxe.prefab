@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3696250971064929378}
   - component: {fileID: 3434541350045475576}
   - component: {fileID: 4699982814400561838}
+  - component: {fileID: 1550711720779682832}
   m_Layer: 0
   m_Name: EnemySpawnerModel_throwingAxe
   m_TagString: Untagged
@@ -113,3 +114,15 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -3793051185845572022, guid: d437d02b59fe78b45b2f90a848c335ff, type: 3}
+--- !u!114 &1550711720779682832
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2225866473285692762}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4d75af16d5ff494688bdb4930871afd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

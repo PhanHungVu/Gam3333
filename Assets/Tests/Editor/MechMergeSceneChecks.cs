@@ -8,14 +8,14 @@ using UnityEngine.InputSystem;
 using Object = UnityEngine.Object;
 
 // Verify the teammate's actual scene alongside the restored player, without
-// replacing spawners, enemies or navigation with test doubles.
+// replacing enemies or navigation with test doubles. (The scene's old enemy spawners were
+// retired with EnemySpawnerManager; the enemy checks need a Spawn Director in Merge Test.)
 public static class MechMergeSceneChecks
 {
     const string Pending = "MechMergeSceneChecks.Pending";
     static float next = -1f;
     static int phase;
     static MechMovementController motor;
-    static EnemySpawnerManager[] spawners;
     static Dictionary<EnemyAgent, Vector3> positions;
 
     [InitializeOnLoadMethod]
@@ -60,16 +60,6 @@ public static class MechMergeSceneChecks
                 Check(equipment.GetEquipped(PartCategory.Torso).GetComponent<MechPartPoseReceiver>() != null
                     && equipment.GetEquipped(PartCategory.Head).GetComponent<MechPartPoseReceiver>() != null,
                     "Body and head pose receivers are present alongside teammate weapons");
-                spawners = Object.FindObjectsByType<EnemySpawnerManager>();
-                Check(spawners.Length == 2, "Both teammate enemy spawners survive");
-                foreach (var spawner in spawners)
-                {
-                    var data = new SerializedObject(spawner);
-                    var enemy = data.FindProperty("enemyPrefab").objectReferenceValue as GameObject;
-                    Check(enemy != null && enemy.GetComponent<EnemyAgent>() != null,
-                        spawner.name + " references its mech enemy prefab");
-                    Check(data.FindProperty("totalSpawned").intValue > 0, spawner.name + " spawns in the real scene");
-                }
                 var agents = Object.FindObjectsByType<EnemyAgent>();
                 Check(agents.Any(a => a.Pathing == PathingMode.FlowField) && agents.Any(a => a.Pathing == PathingMode.Zigzag),
                     "Both teammate pathing variants spawn");
@@ -94,9 +84,6 @@ public static class MechMergeSceneChecks
                 foreach (var pair in positions)
                     Check(pair.Key != null && Vector3.Distance(pair.Key.transform.position, pair.Value) > 0.05f,
                         "Spawned mech enemy moves under teammate AI");
-                foreach (var spawner in spawners)
-                    Check(new SerializedObject(spawner).FindProperty("totalSpawned").intValue > 2,
-                        spawner.name + " continues its staggered wave");
                 var combat = motor.GetComponent<MechCombat>();
                 foreach (var slot in new[] { PartCategory.ShoulderL, PartCategory.ShoulderR, PartCategory.ArmR })
                 {

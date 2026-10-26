@@ -37,7 +37,7 @@ public static class MechEnemyCombatSceneChecks
             {
                 case 0:
                     Time.captureDeltaTime = 1f / 60f;
-                    foreach (var spawner in Object.FindObjectsByType<EnemySpawnerManager>()) spawner.enabled = false;
+                    foreach (var director in Object.FindObjectsByType<SpawnDirector>()) director.enabled = false;
                     foreach (var agent in Object.FindObjectsByType<EnemyAgent>()) agent.gameObject.SetActive(false);
                     player = Object.FindAnyObjectByType<MechMovementController>(); TestMech.StopPlayerInput(player);
                     TestMech.StopPlayerInput(player.GetComponent<MechCombat>());

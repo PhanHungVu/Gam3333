@@ -65,7 +65,7 @@ public static class MechWeaponAnimationSceneChecks
             {
                 case -2:
                     Time.captureDeltaTime = 1f / 60f;
-                    foreach (var spawner in Object.FindObjectsByType<EnemySpawnerManager>()) spawner.enabled = false;
+                    foreach (var director in Object.FindObjectsByType<SpawnDirector>()) director.enabled = false;
                     foreach (var enemy in Object.FindObjectsByType<EnemyAgent>()) enemy.gameObject.SetActive(false);
                     InputSystem.settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
                     InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;

@@ -59,8 +59,8 @@ public sealed class Survival_ZoneRules
 
 // Measures whether the player is inside the chunk's footprint (from ChunkDefinition) and feeds it to
 // the rules. Starts the chunk's own spawners when survival begins and stops them on failure or completion;
-// enemies already spawned stay until killed. Put it on a child of the chunk. The spawners inside the
-// chunk must have Start Automatically unticked. Visuals listen to State.
+// enemies already spawned stay until killed. Put it on a child of the chunk. The waves are run by
+// the scene's SpawnDirector on this chunk's spawn points, which pauses roaming meanwhile. Visuals listen to State.
 [DisallowMultipleComponent]
 public sealed class Survival_Zone : MonoBehaviour
 {
@@ -70,8 +70,10 @@ public sealed class Survival_Zone : MonoBehaviour
     [SerializeField, Min(0f)] float graceSeconds = 5f;
     [Tooltip("How long the failed state shows before the mission resets.")]
     [SerializeField, Min(0f)] float failedSeconds = 2f;
-    [Tooltip("Spawners this objective starts and stops together. Left empty, every EnemySpawnerManager inside this chunk is used.")]
-    [SerializeField] EnemySpawnerManager[] spawners;
+    [Tooltip("Wave the scene's Spawn Director runs while survival is under way (e.g. WaveData_Survival).")]
+    [SerializeField] WaveData wave;
+    [Tooltip("Where this objective's enemies appear. Left empty, every Spawn Point inside this chunk is used.")]
+    [SerializeField] SpawnPoint[] spawnPoints;
 
     [Header("Debug (read-only)")]
     [SerializeField] Survival_ZoneState state;
@@ -80,7 +82,7 @@ public sealed class Survival_Zone : MonoBehaviour
 
     Survival_ZoneRules rules;
     ChunkDefinition chunk;
-    readonly List<EnemySpawnerManager> activeSpawners = new List<EnemySpawnerManager>();
+    readonly List<SpawnPoint> points = new List<SpawnPoint>();
     Transform player;
     float nextPlayerSearch;
 
@@ -98,19 +100,19 @@ public sealed class Survival_Zone : MonoBehaviour
         rules = new Survival_ZoneRules(surviveSeconds, graceSeconds, failedSeconds);
         chunk = GetComponentInParent<ChunkDefinition>();
         if (chunk == null) Debug.LogWarning("Survival_Zone needs a ChunkDefinition on its chunk root.", this);
-        if (spawners != null)
-            foreach (var s in spawners)
-                if (s != null) activeSpawners.Add(s);
-        if (activeSpawners.Count == 0 && chunk != null)
-            activeSpawners.AddRange(chunk.GetComponentsInChildren<EnemySpawnerManager>(true));
-        if (activeSpawners.Count == 0) Debug.LogWarning("Survival_Zone found no EnemySpawnerManager in its chunk.", this);
+        if (spawnPoints != null)
+            foreach (var point in spawnPoints)
+                if (point != null) points.Add(point);
+        if (points.Count == 0 && chunk != null)
+            foreach (var point in chunk.GetComponentsInChildren<SpawnPoint>(true))
+                if (!(point is RoamingSpawner)) points.Add(point);
+        if (points.Count == 0) Debug.LogWarning("Survival_Zone found no Spawn Point in its chunk.", this);
+        if (wave == null) Debug.LogWarning("Survival_Zone has no Wave assigned, so no enemies will come.", this);
     }
 
-    void Start()
+    void OnDisable()
     {
-        foreach (var s in activeSpawners)
-            if (s.IsRunning)
-                Debug.LogWarning("A chunk spawner is already running - untick its Start Automatically.", s);
+        if (SpawnDirector.Instance != null) SpawnDirector.Instance.StopWave(this);
     }
 
     void Update()
@@ -129,10 +131,14 @@ public sealed class Survival_Zone : MonoBehaviour
 
     void OnStateChanged(Survival_ZoneState previous, Survival_ZoneState current)
     {
+        var director = SpawnDirector.Instance;
         if (previous == Survival_ZoneState.Waiting && current == Survival_ZoneState.Surviving)
-            foreach (var s in activeSpawners) s.Begin();
-        if (current == Survival_ZoneState.Failed || current == Survival_ZoneState.Complete)
-            foreach (var s in activeSpawners) s.Stop();
+        {
+            if (director == null) Debug.LogWarning("Survival_Zone: no Spawn Director in the scene, so no wave runs.", this);
+            else if (!director.RunWave(wave, points, this)) Debug.LogWarning("Survival_Zone: another wave is already running.", this);
+        }
+        if ((current == Survival_ZoneState.Failed || current == Survival_ZoneState.Complete) && director != null)
+            director.StopWave(this);
         StateChanged?.Invoke(current);
         if (current == Survival_ZoneState.Complete) Completed?.Invoke();
     }

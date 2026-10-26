@@ -45,7 +45,7 @@ public static class MechSceneFlowChecks
     }
     static void QuietEnemies()
     {
-        foreach (var spawner in Object.FindObjectsByType<EnemySpawnerManager>()) spawner.enabled = false;
+        foreach (var director in Object.FindObjectsByType<SpawnDirector>()) director.enabled = false;
         foreach (var enemy in Object.FindObjectsByType<EnemyAgent>()) enemy.gameObject.SetActive(false);
     }
     static void PressF(MonoBehaviour consumer)
