@@ -77,6 +77,10 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
     public bool TabletopBriefing => tabletopBriefing;
     public bool IsPosting { get; private set; }
     public bool IsTransitioning { get; private set; }
+    QuestBoardImpactFeedback feedback;
+    bool ReducedMotion => feedback!=null && feedback.ReducedMotion;
+    float MotionScale => ReducedMotion ? 0 : 1;
+    public void ConfigureFeedback(QuestBoardImpactFeedback value) => feedback=value;
 
     public void ConfigureTabletopBriefing(bool enabled,Button accept,Button decline,TMP_Text title)
     {
@@ -221,7 +225,7 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
             float alpha = Smooth(t);
             board.alpha = entering ? boardStart*(1f-alpha) : 0f;
             details.alpha = entering ? alpha : 1f - alpha;
-            if(tabletopBriefing) briefingPaper.anchoredPosition=briefingPosition+Vector2.right*(viewTravel*(entering?1-alpha:alpha));
+            if(tabletopBriefing) briefingPaper.anchoredPosition=briefingPosition+Vector2.right*(viewTravel*(entering?1-alpha:alpha)*MotionScale);
         });
         if (entering) yield return RevealBriefing();
         IsTransitioning = false; ready();
@@ -410,7 +414,7 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
         var old = Group(from); var next = Group(to);
         SetGroup(old, true, false); SetGroup(next, true, false); next.alpha = 0f;
         if(tabletopBriefing && to==PreMissionView.Torso)
-            yield return Animate(clickFeedbackDuration,t=>tabletopAccept.localScale=acceptScale*(1f-0.025f*Mathf.Sin(t*Mathf.PI)));
+            yield return Animate(clickFeedbackDuration,t=>tabletopAccept.localScale=acceptScale*(1f-0.025f*Mathf.Sin(t*Mathf.PI)*MotionScale));
         float direction = to == PreMissionView.Torso ? 1f : -1f;
         var oldRect = (RectTransform)old.transform; var nextRect = (RectTransform)next.transform;
         var oldHome = from == PreMissionView.Details ? detailsPosition : torsoPosition;
@@ -418,8 +422,8 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
         yield return Animate(viewFadeDuration, t =>
         {
             float eased = Smooth(t); old.alpha = 1f - eased; next.alpha = eased;
-            oldRect.anchoredPosition = oldHome + Vector2.left * (direction * viewTravel * eased);
-            nextRect.anchoredPosition = nextHome + Vector2.right * (direction * viewTravel * (1f - eased));
+            oldRect.anchoredPosition = oldHome + Vector2.left * (direction * viewTravel * eased*MotionScale);
+            nextRect.anchoredPosition = nextHome + Vector2.right * (direction * viewTravel * (1f - eased)*MotionScale);
         });
         ResetMotion();
         IsTransitioning = false; ready();
@@ -474,13 +478,13 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
         yield return Animate(torsoBrowseDuration * 0.5f, t =>
         {
             float eased = Smooth(t); torsoChoice.alpha = 1f - eased;
-            rect.anchoredPosition = choicePosition + Vector2.left * (direction * torsoBrowseTravel * eased);
+            rect.anchoredPosition = choicePosition + Vector2.left * (direction * torsoBrowseTravel * eased*MotionScale);
         });
         change();
         yield return Animate(torsoBrowseDuration * 0.5f, t =>
         {
             float eased = Smooth(t); torsoChoice.alpha = eased;
-            rect.anchoredPosition = choicePosition + Vector2.right * (direction * torsoBrowseTravel * (1f - eased));
+            rect.anchoredPosition = choicePosition + Vector2.right * (direction * torsoBrowseTravel * (1f - eased)*MotionScale);
         });
         ResetMotion(); IsTransitioning = false; ready();
     }
@@ -495,9 +499,9 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
         yield return Animate(confirmationDuration, t =>
         {
             float press = Mathf.Sin(Mathf.Clamp01(t / 0.35f) * Mathf.PI);
-            confirmButton.localScale = confirmScale * (1f - 0.03f * press);
+            confirmButton.localScale = confirmScale * (1f - 0.03f * press*MotionScale);
             float pulse = Mathf.Sin(t * Mathf.PI);
-            torsoChoice.transform.localScale = choiceScale * (1f + confirmationPulse * pulse);
+            torsoChoice.transform.localScale = choiceScale * (1f + confirmationPulse * pulse*MotionScale);
         });
         ResetMotion(); IsTransitioning = false; ready();
     }
@@ -575,8 +579,9 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
         yield return Animate(seconds, t => { progress = t; frame(t); });
         paperFrame = null;
     }
-    static IEnumerator Animate(float seconds, Action<float> frame)
+    IEnumerator Animate(float seconds, Action<float> frame)
     {
+        if(ReducedMotion) seconds=Mathf.Min(seconds,0.16f);
         float age = 0f; seconds = Mathf.Max(0.01f, seconds);
         frame(0);
         while (age < seconds)

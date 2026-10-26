@@ -171,17 +171,17 @@ public static class QuestStonePolishChecks
         mouse=InputSystem.AddDevice<Mouse>();
         captures=Path.Combine(Directory.GetParent(Application.dataPath).FullName,"M34Captures"); Directory.CreateDirectory(captures);
         while(Busy) yield return null;
-        Check(hitch&&drops.Count==3&&drops.Values.All(d=>d.frames>=3&&d.maxY>0.65f),"All three initial stones visibly drop despite a startup hitch and timeScale zero");
-        Check(Fx.SmallImpacts==3&&Fx.HeavyImpacts==0&&Board.Stones.All(s=>s.IsReady&&!s.IsMoving&&s.CurrentOffset==Vector3.zero),"Initial light impacts settle once with stable selectable roots");
+        Check(hitch&&drops.Count==Flow.Session.Progression.SmallOfferCount&&drops.Values.All(d=>d.frames>=3&&d.maxY>0.65f),"All configured initial stones visibly drop despite a startup hitch and timeScale zero");
+        Check(Fx.SmallImpacts==Flow.Session.Progression.SmallOfferCount&&Fx.HeavyImpacts==0&&Board.Stones.All(s=>s.IsReady&&!s.IsMoving&&s.CurrentOffset==Vector3.zero),"Initial light impacts settle once with stable selectable roots");
         Check(Fx.SmallDust.main.useUnscaledTime&&Fx.HeavyDust.main.useUnscaledTime&&smallParticles>0,"Dust is actually emitted and uses unscaled time");
         var smallClip=Field<AudioClip>(Fx,"smallImpact"); var heavyClip=Field<AudioClip>(Fx,"heavyImpact");
-        Check(smallClip!=null&&heavyClip!=null&&heavyClip.length>smallClip.length*2,"Distinct imported short/light and longer/deeper impact clips are assigned");
+        Check(smallClip==null&&heavyClip==null,"Impact audio hooks remain empty for the audio owner to connect");
         Capture("m3-small-settled");
         if(Physicality)
         {
             var profiles=Board.Stones.Select(Motion.GetArrivalProfile).ToArray();
             Check(profiles.Select(p=>p.Style).Distinct().Count()==3&&drops.Values.Select(d=>Mathf.RoundToInt(d.maxY*100)).Distinct().Count()>1,
-                "P1: the first three real arrivals distribute light drop, tumble and tilt/settle with varied heights");
+                "P1: initial arrivals distribute light drop, tumble and tilt/settle with varied heights");
             Check(profiles.All(p=>p.FallDuration+p.SettleDuration>=0.3f&&p.FallDuration+p.SettleDuration<=0.55f),"P1: small arrival variations remain within the short repeatable timing range");
             Check(Fx.BoardSurface!=null&&Fx.ImpactChips!=null&&Fx.BoardSurface.GetComponentsInChildren<Collider>().Length==0
                 &&Board.GetComponentsInChildren<ParticleSystem>(true).Length==3,"P1: repeated upgrade owns one visual surface and three reusable effect systems, with no board physics");
@@ -212,7 +212,7 @@ public static class QuestStonePolishChecks
         var speeds=mainDrop.trajectory.Zip(mainDrop.trajectory.Skip(1),(a,b)=>(a.y-b.y)/Mathf.Max(0.001f,b.x-a.x)).ToArray();
         Check(speeds.Length>=5&&speeds.Skip(speeds.Length/2).Average()>speeds.Take(speeds.Length/2).Average()*1.2f,"Main rock visibly accelerates toward contact");
         Check(heavyShake>smallShake*3&&Fx.CameraOffset==Vector3.zero&&!Fx.IsShaking,"Heavy contact jolts the camera more than light contact, then restores the base pose");
-        Check(run.SuccessfulSmallCompletions==3&&Board.Stones.Count==4&&Board.Stones.All(s=>Board.StoneAt(Board.BoardCamera.WorldToScreenPoint(s.HitCollider.bounds.center))==s),"Main and small quests remain selectable after impact");
+        Check(run.SuccessfulSmallCompletions==3&&Board.Stones.Count==run.SmallOfferCount+1&&Board.Stones.All(s=>Board.StoneAt(Board.BoardCamera.WorldToScreenPoint(s.HitCollider.bounds.center))==s),"Main and small quests remain selectable after impact");
         if(Physicality)
         {
             Check(anticipationFrames>=3&&anticipationFocus>0.9f&&Motion.ArrivalFocus==0,"P1: a visible anticipation cue precedes the main fall, then returns fully to board framing");
@@ -292,7 +292,7 @@ public static class QuestStonePolishChecks
         Check(Fx.HeavyImpacts==1&&QuestProgressionRuntime.WasPresented(mainId),"Returning plays the first heavy impact and records presentation at contact");
         Flow.Back(); yield return null; yield return null;
         SceneManager.LoadScene("PreMissionScene"); yield return null; yield return null; while(Busy) yield return null;
-        Check(Fx.HeavyImpacts==0&&Flow.Session.Progression==persisted&&Board.Stones.Count==4,"A main already seen at contact never replays its heavy unlock on later scene returns");
+        Check(Fx.HeavyImpacts==0&&Flow.Session.Progression==persisted&&Board.Stones.Count==persisted.SmallOfferCount+1,"A main already seen at contact never replays its heavy unlock on later scene returns");
         Check(typeof(PreMissionFlowControllerEditor).IsSubclassOf(typeof(Editor))
             &&typeof(QuestProgressionTools).Assembly!=typeof(PreMissionFlowController).Assembly
             &&!typeof(PreMissionFlowController).GetMethods(BindingFlags.Instance|BindingFlags.Public|BindingFlags.DeclaredOnly).Any(m=>m.Name=="CompleteSmallQuest"),

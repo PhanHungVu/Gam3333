@@ -82,7 +82,7 @@ public static class QuestInspectorChecks
             Check(Flow.StoneBoard.Motion.ProgressTrack.ShownStep==win&&unchanged.All(p=>Flow.StoneBoard.FindStone(p.Key).transform.localPosition==p.Value),
                 "Real board presentation advances while unrelated rocks remain fixed, success "+win);
         }
-        Check(run.BigQuest!=null&&Flow.StoneBoard.Stones.Count==4&&Flow.StoneBoard.Motion.Feedback.HeavyImpacts==1,
+        Check(run.BigQuest!=null&&Flow.StoneBoard.Stones.Count==run.SmallOfferCount+1&&Flow.StoneBoard.Motion.Feedback.HeavyImpacts==1,
             "Three Inspector completions trigger one central main-rock reveal");
         Check(Flow.StoneBoard.Stones.All(s=>Flow.StoneBoard.StoneAt(Flow.StoneBoard.BoardCamera.WorldToScreenPoint(s.HitCollider.bounds.center))==s),
             "Main and small quests remain freely selectable");

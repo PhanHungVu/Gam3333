@@ -156,6 +156,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
     {
         if (!CanInteract) return;
         presentation.Cancel();
+        presentation.ConfigureFeedback(stoneBoard!=null ? stoneBoard.GetComponent<QuestBoardImpactFeedback>() : null);
         presentation.ConfigureTabletopBriefing(stoneBoard!=null && stoneBoard.Motion!=null && stoneBoard.Motion.Miniature!=null,acceptButton,declineButton,detailsTitle);
         confirmationPending = false;
         skippedPostingFrame = -1;
@@ -290,7 +291,11 @@ public sealed class PreMissionFlowController : MonoBehaviour
     public void AcceptQuest()
     {
         if (!CanInteract || IsTransitioning) return;
-        if (Session.AcceptQuest()) presentation.SwitchView(PreMissionView.Details, PreMissionView.Torso, RefreshView);
+        if (Session.AcceptQuest())
+        {
+            stoneBoard?.Motion?.Feedback?.PlayCue(QuestBoardImpactFeedback.Cue.Accept);
+            presentation.SwitchView(PreMissionView.Details, PreMissionView.Torso, RefreshView);
+        }
     }
 
     public void PreviousTorso() => BrowseTorso(-1);
@@ -301,6 +306,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
         presentation.BrowseTorso(direction, () =>
         {
             Session.BrowseTorso(direction); launchStatus.text = string.Empty; RefreshView(false, false);
+            stoneBoard?.Motion?.Feedback?.PlayCue(QuestBoardImpactFeedback.Cue.Torso);
         }, () => RefreshView(false));
     }
 
@@ -333,6 +339,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
         }
         if (!Session.TryRequestLaunch(out var quest, out var torso)) return;
         confirmationPending = true;
+        stoneBoard?.Motion?.Feedback?.PlayCue(QuestBoardImpactFeedback.Cue.Confirm);
         RefreshView(false, false);
         presentation.ConfirmTorso(() => CompleteConfirmation(quest, torso));
     }

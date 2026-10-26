@@ -24,7 +24,8 @@ public sealed class PreMissionProgressTrack : MonoBehaviour
     [SerializeField, Min(0f)] float stepLift=0.10f;
     [SerializeField, Min(0.01f)] float settleDuration=0.10f;
     [SerializeField, Min(0.01f)] float unlockAcknowledgement=0.18f;
-    [SerializeField, Range(0f,0.25f)] float cameraAttention=0.16f;
+    [Tooltip("Optional camera tracking of the progress marker. Keep at zero for a stationary board during entry and quest completion.")]
+    [SerializeField, Range(0f,0.25f)] float cameraAttention=0f;
     readonly List<MeshRenderer> nodes=new List<MeshRenderer>();
     PreMissionStoneBoard board;
     QuestProgressionSession run;
@@ -43,6 +44,8 @@ public sealed class PreMissionProgressTrack : MonoBehaviour
     public Transform Marker => marker;
     public Transform Visual => visual;
     public event Action<int> StepPresented;
+    bool ReducedMotion => board!=null && board.Motion!=null && board.Motion.Feedback!=null && board.Motion.Feedback.ReducedMotion;
+    float MotionScale => ReducedMotion ? 0 : 1;
 
     public void Bind(PreMissionStoneBoard owner)
     {
@@ -103,9 +106,9 @@ public sealed class PreMissionProgressTrack : MonoBehaviour
         yield return Animate(revealDuration,t=>
         {
             float eased=Ease(t);
-            visual.localPosition=visualPosition-Vector3.up*(revealLift*(1-eased));
-            visual.localRotation=visualRotation*Quaternion.Euler(-6f*(1-eased),0,0);
-            CameraFocus=Mathf.Sin(t*Mathf.PI)*0.35f;
+            visual.localPosition=visualPosition-Vector3.up*(revealLift*(1-eased)*MotionScale);
+            visual.localRotation=visualRotation*Quaternion.Euler(-6f*(1-eased)*MotionScale,0,0);
+            CameraFocus=Mathf.Sin(t*Mathf.PI)*0.35f*MotionScale;
             for(int i=0;i<nodes.Count;i++) nodes[i].gameObject.SetActive(t>=(float)i/nodes.Count*0.65f);
             marker.gameObject.SetActive(t>0.65f);
         });
@@ -121,13 +124,14 @@ public sealed class PreMissionProgressTrack : MonoBehaviour
             int next=ShownStep+1; var start=NodePosition(ShownStep); var end=NodePosition(next);
             yield return Animate(stepDuration,t=>
             {
-                marker.localPosition=Vector3.Lerp(start,end,Ease(t))+Vector3.up*(Mathf.Sin(t*Mathf.PI)*stepLift);
-                marker.localRotation=markerRotation*Quaternion.Euler(Mathf.Sin(t*Mathf.PI)*-7,0,Mathf.Sin(t*Mathf.PI)*3);
-                CameraFocus=Ease(Mathf.Clamp01(t*3));
+                marker.localPosition=Vector3.Lerp(start,end,Ease(t))+Vector3.up*(Mathf.Sin(t*Mathf.PI)*stepLift*MotionScale);
+                marker.localRotation=markerRotation*Quaternion.Euler(Mathf.Sin(t*Mathf.PI)*-7*MotionScale,0,Mathf.Sin(t*Mathf.PI)*3*MotionScale);
+                CameraFocus=Ease(Mathf.Clamp01(t*3))*MotionScale;
             });
+            board.Motion.Feedback?.PlayCue(QuestBoardImpactFeedback.Cue.Progress);
             yield return Animate(settleDuration,t=>
             {
-                float pulse=Mathf.Sin(t*Mathf.PI)*0.07f;
+                float pulse=Mathf.Sin(t*Mathf.PI)*0.07f*MotionScale;
                 marker.localScale=Vector3.Scale(markerScale,new Vector3(1+pulse,1-pulse,1+pulse));
                 marker.localRotation=Quaternion.Slerp(marker.localRotation,markerRotation,Ease(t));
             });
@@ -135,14 +139,14 @@ public sealed class PreMissionProgressTrack : MonoBehaviour
             QuestProgressionRuntime.RememberProgressPresentation(run,ShownStep); StepPresented?.Invoke(ShownStep);
         }
         if(ShownStep==RequiredSteps)
-            yield return Animate(unlockAcknowledgement,t=>marker.localScale=markerScale*(1f+Mathf.Sin(t*Mathf.PI)*0.08f));
+            yield return Animate(unlockAcknowledgement,t=>marker.localScale=markerScale*(1f+Mathf.Sin(t*Mathf.PI)*0.08f*MotionScale));
         marker.localScale=markerScale; IsAdvancing=false;
-        if(!focusMainNext) yield return Animate(0.16f,t=>CameraFocus=1f-Ease(t));
+        if(!focusMainNext) yield return Animate(0.16f,t=>CameraFocus=(1f-Ease(t))*MotionScale);
     }
-    public void ReleaseFocus(float progress) => CameraFocus=1f-Mathf.Clamp01(progress);
+    public void ReleaseFocus(float progress) => CameraFocus=(1f-Mathf.Clamp01(progress))*MotionScale;
     public void ApplyCamera(ref Vector3 position, Quaternion rotation)
     {
-        if(CameraFocus<=0) return;
+        if(CameraFocus<=0 || cameraAttention<=0 || ReducedMotion) return;
         var target=marker.position-rotation*Vector3.forward*24;
         position=Vector3.Lerp(position,target,CameraFocus*cameraAttention);
     }
@@ -170,8 +174,9 @@ public sealed class PreMissionProgressTrack : MonoBehaviour
     void OnDisable() { wasDisabled=true; board?.RecoverOwner(); }
     void OnEnable() { if(wasDisabled) { wasDisabled=false; board?.RecoverOwner(); } }
     static float Ease(float t) => t*t*t*(t*(t*6-15)+10);
-    static IEnumerator Animate(float duration,Action<float> frame)
+    IEnumerator Animate(float duration,Action<float> frame)
     {
+        if(ReducedMotion) duration=Mathf.Min(duration,0.12f);
         float age=0; duration=Mathf.Max(0.01f,duration); frame(0);
         while(age<duration) { yield return null; age+=Mathf.Min(Time.unscaledDeltaTime,0.05f); frame(Mathf.Clamp01(age/duration)); }
     }

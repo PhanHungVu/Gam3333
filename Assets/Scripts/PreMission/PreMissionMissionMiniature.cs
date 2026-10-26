@@ -64,7 +64,8 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
         if(active==null) return;
         for(int i=0;i<active.pieces.Length;i++)
         {
-            float part=Mathf.Clamp01(Progress*(1+pieceStagger*(active.pieces.Length-1))-pieceStagger*i);
+            bool reduced=board!=null && board.Motion!=null && board.Motion.Feedback!=null && board.Motion.Feedback.ReducedMotion;
+            float part=reduced ? 1 : Mathf.Clamp01(Progress*(1+pieceStagger*(active.pieces.Length-1))-pieceStagger*i);
             float eased=part*part*(3-2*part);
             active.pieces[i].gameObject.SetActive(part>0);
             active.pieces[i].localPosition=active.positions[i]-Vector3.up*(emergenceDepth*(1-eased));

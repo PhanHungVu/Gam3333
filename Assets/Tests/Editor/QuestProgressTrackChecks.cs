@@ -19,6 +19,11 @@ public static class QuestProgressTrackChecks
     static double deadline;
     static int checks;
     static string captures;
+    static bool watchCamera, cameraStayedHome;
+    static int watchedCameraFrames;
+    static Vector3 cameraHome;
+    static Quaternion cameraRotationHome;
+    static float cameraSizeHome;
     static PreMissionFlowController Flow=>Object.FindAnyObjectByType<PreMissionFlowController>();
     static PreMissionStoneBoard Board=>Flow.StoneBoard;
     static PreMissionStoneMotion Motion=>Board.Motion;
@@ -40,6 +45,7 @@ public static class QuestProgressTrackChecks
         {
             if(routine==null) { deadline=EditorApplication.timeSinceStartup+300; routine=Run(); frames.Push(routine); }
             PreMissionReliabilityChecks.AssertNoUnexpectedErrors();
+            ObserveCamera();
             if(EditorApplication.timeSinceStartup>deadline) throw new Exception("P2 checks timed out");
             if(Advance()) return;
             PreMissionReliabilityChecks.EndLogAudit(); SessionState.SetBool(Pending,false);
@@ -61,6 +67,28 @@ public static class QuestProgressTrackChecks
     static void Check(bool value,string message) { if(!value) throw new Exception(message); checks++; Debug.Log("PROGRESS TRACK PASS: "+message); }
     static T Field<T>(Object target,string name) where T:Object=>(T)new SerializedObject(target).FindProperty(name).objectReferenceValue;
     static IEnumerator Wait(float seconds) { float until=Time.unscaledTime+seconds; while(Time.unscaledTime<until) yield return null; }
+    static void WatchStationaryBoard()
+    {
+        // Isolate camera framing from the tiny contact impulse; the separate
+        // physicality suite verifies that heavy shake/recoil remain enabled.
+        Motion.Feedback.SetCameraShakeScale(0); Board.RefreshCameraFrame();
+        cameraHome=Board.BoardCamera.transform.position; cameraRotationHome=Board.BoardCamera.transform.rotation;
+        cameraSizeHome=Board.BoardCamera.orthographicSize;
+        cameraStayedHome=true; watchedCameraFrames=0; watchCamera=true;
+    }
+    static void ObserveCamera()
+    {
+        if(!watchCamera || Board==null) return;
+        Board.RefreshCameraFrame(); watchedCameraFrames++;
+        cameraStayedHome&=Vector3.Distance(Board.BoardCamera.transform.position,cameraHome)<0.0001f
+            &&Quaternion.Angle(Board.BoardCamera.transform.rotation,cameraRotationHome)<0.001f
+            &&Mathf.Abs(Board.BoardCamera.orthographicSize-cameraSizeHome)<0.0001f;
+    }
+    static void CheckStationaryBoard(string message)
+    {
+        ObserveCamera(); Check(cameraStayedHome&&watchedCameraFrames>3,message);
+        watchCamera=false; Motion.Feedback.SetCameraShakeScale(1);
+    }
     static QuestMissionAttempt Complete(QuestProgressionSession run,PartData torso)
     {
         if(!run.TryBeginMission(run.Offers.First(o=>o.Quest.category==QuestCategory.Side).Quest,torso,out var attempt)
@@ -94,10 +122,13 @@ public static class QuestProgressTrackChecks
     {
         PreMissionReliabilityChecks.BeginLogAudit(); Time.timeScale=0; Application.runInBackground=true;
         captures=Path.Combine(Directory.GetParent(Application.dataPath).FullName,"P2Captures"); Directory.CreateDirectory(captures);
+        Check(new SerializedObject(Track).FindProperty("cameraAttention").floatValue==0,"Shipped track and repeated setup leave routine camera tracking disabled");
+        WatchStationaryBoard();
         while(!Track.IsRevealing) yield return null;
         Check(!QuestProgressionRuntime.WasProgressTrackRevealed(Flow.Session.Progression)&&Track.ShownStep==0,"First physical reveal starts without awarding progress or prematurely recording presentation");
         Capture("p2-first-map-reveal");
         while(Busy) yield return null;
+        CheckStationaryBoard("Board entry and progress-track reveal preserve camera position, rotation and zoom on every sampled frame");
         var run=Flow.Session.Progression; var torso=Flow.Session.SelectedTorso;
         Check(Track.IsRevealed&&Track.NodeCount==4&&Track.ShownStep==0&&Track.Marker.localPosition==Track.NodePosition(0),"Fresh three-success track has a start plus three steps and a correctly seated marker");
         Check(Track.GetComponentsInChildren<Collider>(true).Length==0&&Track.GetComponentsInChildren<Rigidbody>(true).Length==0,"Map and marker have no physics or raycast blockers");
@@ -116,12 +147,14 @@ public static class QuestProgressTrackChecks
         }
         var unchanged=Board.Stones.Skip(1).ToDictionary(s=>s.Offer.Id,s=>s.transform.localPosition);
         var sequence=new List<string>(); Track.StepPresented+=step=>sequence.Add("step"+step);
+        WatchStationaryBoard();
         var completed=Complete(run,torso); yield return null; yield return null;
         while(!Track.IsAdvancing) yield return null;
         yield return Wait(0.12f);
-        Check(Track.ShownStep==0&&Track.TargetStep==1&&Track.Marker.localPosition!=Track.NodePosition(0)&&Track.CameraFocus>0,
-            "A real successful result visibly moves the marker and directs camera attention before committing the shown step");
+        Check(Track.ShownStep==0&&Track.TargetStep==1&&Track.Marker.localPosition!=Track.NodePosition(0),
+            "A real successful result visibly moves the marker before committing the shown step");
         Capture("p2-marker-moving"); while(Busy) yield return null;
+        CheckStationaryBoard("Quest completion, replacement arrival and marker advancement do not pan or zoom the board");
         Check(Track.ShownStep==1&&sequence.SequenceEqual(new[]{"step1"})&&QuestProgressionRuntime.LastShownProgressStep(run)==1,
             "Success presents and remembers exactly one marker step");
         Check(!run.ReportMissionResult(completed.Id,QuestMissionOutcome.Succeeded)&&Track.ShownStep==1&&run.SuccessfulSmallCompletions==1,"Duplicate mission result cannot advance progress twice");
@@ -136,9 +169,9 @@ public static class QuestProgressTrackChecks
         sequence.Clear(); Track.StepPresented+=step=>sequence.Add("step"+step); Motion.Impacted+=stone=>{ if(stone.IsMain) sequence.Add("main"); };
         Check(Track.ShownStep==1&&Track.IsRevealed&&!Track.IsRevealing,"Scene return restores the last presented step without replaying the map reveal");
         while(!Motion.IsAnticipatingMain) yield return null;
-        Check(Track.ShownStep==3&&sequence.SequenceEqual(new[]{"step2","step3"})&&Track.CameraFocus>0,"Missed steps catch up in order and hand camera attention directly to the main reveal");
+        Check(Track.ShownStep==3&&sequence.SequenceEqual(new[]{"step2","step3"}),"Missed steps catch up in order before the main reveal without camera tracking of the marker");
         Capture("p2-final-step-before-main"); while(Busy) yield return null;
-        Check(sequence.SequenceEqual(new[]{"step2","step3","main"})&&Track.ShownStep==3&&Track.CameraFocus==0&&Board.Stones.Count==4,"Final marker acknowledgement precedes one main impact and restores the board camera");
+        Check(sequence.SequenceEqual(new[]{"step2","step3","main"})&&Track.ShownStep==3&&Track.CameraFocus==0&&Board.Stones.Count==run.SmallOfferCount+1,"Final marker acknowledgement precedes one main impact and restores the board camera");
         Check(Board.Stones.All(s=>Board.StoneAt(Board.BoardCamera.WorldToScreenPoint(s.HitCollider.bounds.center))==s),"The progress track imposes no main-first or route restriction on selection");
         foreach(var size in new[]{new Vector2Int(1280,720),new Vector2Int(1600,900),new Vector2Int(1920,1080),new Vector2Int(1024,768)}) Capture("p2-unlocked-"+size.x,size.x,size.y);
         Complete(run,torso); yield return null; yield return null; while(Busy) yield return null;

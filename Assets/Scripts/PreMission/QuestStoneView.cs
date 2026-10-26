@@ -19,6 +19,9 @@ public sealed class QuestStoneView : MonoBehaviour
     Vector3 visualPosition, visualScale;
     Quaternion visualRotation;
     Color baseColor;
+    QuestBoardImpactFeedback feedback;
+    float MotionScale => feedback!=null ? feedback.MotionScale : 1;
+    public void ConfigureFeedback(QuestBoardImpactFeedback value) => feedback=value;
     float hoverAmount, hoverFrom, hoverTarget, hoverAge;
     Vector3 restCenter;
     Vector3 reactionOffset, reactionAngles;
@@ -72,9 +75,9 @@ public sealed class QuestStoneView : MonoBehaviour
     void ApplyHover()
     {
         if (visual == null) return;
-        visual.localPosition = visualPosition + Vector3.up * ((IsMain ? mainHoverLift : hoverLift) * hoverAmount) + reactionOffset;
-        visual.localRotation = visualRotation * Quaternion.Euler(reactionAngles+new Vector3(-1,0,0.35f)*((IsMain ? mainHoverTilt : hoverTilt)*hoverAmount));
-        visual.localScale = visualScale * (1f + (IsMain ? 0.01f : 0.025f) * hoverAmount);
+        visual.localPosition = visualPosition + (Vector3.up * ((IsMain ? mainHoverLift : hoverLift) * hoverAmount) + reactionOffset)*MotionScale;
+        visual.localRotation = visualRotation * Quaternion.Euler((reactionAngles+new Vector3(-1,0,0.35f)*((IsMain ? mainHoverTilt : hoverTilt)*hoverAmount))*MotionScale);
+        visual.localScale = visualScale * (1f + (IsMain ? 0.01f : 0.025f) * hoverAmount*MotionScale);
         var color = Color.Lerp(baseColor, new Color(0.83f, 0.76f, 0.54f), 0.22f * hoverAmount);
         properties.SetColor("_BaseColor", color); properties.SetColor("_Color", color);
         rock.SetPropertyBlock(properties);
@@ -88,8 +91,8 @@ public sealed class QuestStoneView : MonoBehaviour
         reactionOffset = reactionAngles = Vector3.zero;
         IsMoving = true; IsHighlighted = false; selectionRing.SetActive(false); HitCollider.enabled = false;
         visual.gameObject.SetActive(true);
-        visual.localPosition = visualPosition + offset; visual.localRotation = visualRotation * Quaternion.Euler(angles);
-        visual.localScale = Vector3.Scale(visualScale, scale);
+        visual.localPosition = visualPosition + offset*MotionScale; visual.localRotation = visualRotation * Quaternion.Euler(angles*MotionScale);
+        visual.localScale = Vector3.Scale(visualScale, Vector3.Lerp(Vector3.one,scale,MotionScale));
     }
     // Secondary impact motion never changes readiness, the layout root or its collider.
     public void SetImpactReaction(Vector3 offset, Vector3 angles)

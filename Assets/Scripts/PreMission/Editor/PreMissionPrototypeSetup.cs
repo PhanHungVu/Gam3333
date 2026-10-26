@@ -132,8 +132,10 @@ public static class PreMissionPrototypeSetup
         if (existing != null) return existing;
         var torso = AssetDatabase.LoadAssetAtPath<PartData>("Assets/PartCatalogue/PartData_Torso.asset");
         var catalogue = ScriptableObject.CreateInstance<QuestBoardCatalogue>();
-        string[] titles = { "The Silent Foundry", "Recover the Lost Core", "Clear the Old Road", "Hold the Crossing", "Escort the Stonekeeper", "Guard the Workshop" };
-        QuestMissionType[] types = { QuestMissionType.Retrieval, QuestMissionType.Retrieval, QuestMissionType.Elimination, QuestMissionType.KingOfTheHill, QuestMissionType.Escort, QuestMissionType.Defense };
+        catalogue.smallOfferCount = 6;
+        catalogue.smallCompletionsToUnlockBig = 3;
+        string[] titles = { "The Silent Foundry", "Recover the Lost Core", "Clear the Old Road", "Hold the Crossing", "Escort the Stonekeeper", "Guard the Workshop", "Recover the Quarry Relic" };
+        QuestMissionType[] types = { QuestMissionType.Retrieval, QuestMissionType.Retrieval, QuestMissionType.Elimination, QuestMissionType.KingOfTheHill, QuestMissionType.Escort, QuestMissionType.Defense, QuestMissionType.Retrieval };
         for (int i = 0; i < titles.Length; i++)
         {
             string path = "Assets/PreMission/Quests/PrototypeQuest_" + (i + 1) + ".asset";

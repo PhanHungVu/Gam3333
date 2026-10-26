@@ -20,6 +20,13 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
     [SerializeField] QuestStoneView smallStonePrefab;
     [SerializeField] QuestStoneView mainStonePrefab;
     [SerializeField] Composition[] compositions;
+    [Header("Randomized surround placement (stable per run)")]
+    [SerializeField] bool randomizePlacement = true;
+    [SerializeField] Vector2 positionVariation = new Vector2(0.45f, 0.28f);
+    [SerializeField, Range(0f, 0.15f)] float endPositionVariation = 0.08f;
+    [SerializeField, Range(0f, 6f)] float rotationVariation = 2f;
+    [Tooltip("Allowed small-stone centers in board-local X/Z. Leaves space for the left progress track and board frame.")]
+    [SerializeField] Rect placementBounds = new Rect(-5.75f, -3.22f, 12.05f, 6.44f);
     [SerializeField] Vector3 framingCenter = new Vector3(0f, 1f, 0f);
     [SerializeField] Vector3 framingSize = new Vector3(19.4f, 3f, 9f);
     [SerializeField] Rect screenArea = new Rect(0.035f, 0.19f, 0.93f, 0.59f);
@@ -33,6 +40,8 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
     Quaternion cameraHomeRotation;
     PreMissionStoneMotion motion;
     Vector2 lastPointer;
+    Vector2[] slotPositions;
+    float[] slotAngles;
     public IReadOnlyList<QuestStoneView> Stones => stones.AsReadOnly();
     public Camera BoardCamera => boardCamera;
     public QuestProgressionSession Progression => run;
@@ -63,6 +72,7 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
             stones.Clear(); focused = null; keyboardFocus = false;
             run = progression;
             CompositionIndex = new System.Random(run.Seed).Next(compositions.Length);
+            PreparePlacements();
         }
         Synchronize();
         if(motion!=null) motion.PrepareProgressTrack();
@@ -79,22 +89,88 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
             stones.RemoveAt(i);
             if (stone != null) { stone.gameObject.SetActive(false); Destroy(stone.gameObject); }
         }
-        var composition = compositions[CompositionIndex];
         foreach (var offer in run.Offers)
         {
             if (FindStone(offer.Id) != null) continue;
             bool main = offer.Quest.category == QuestCategory.Main;
             var stone = Instantiate(main ? mainStonePrefab : smallStonePrefab, stoneParent);
-            Vector2 slot = main ? Vector2.zero : composition.smallSlots[offer.Slot];
+            Vector2 slot = main ? Vector2.zero : slotPositions[offer.Slot];
             stone.transform.localPosition = new Vector3(slot.x, 0.03f, slot.y);
-            float angle = main ? 0f : composition.angles[offer.Slot % composition.angles.Length];
+            float angle = main ? 0f : slotAngles[offer.Slot];
             stone.transform.localRotation = Quaternion.Euler(0, angle, 0);
             stone.Bind(offer);
+            stone.ConfigureFeedback(motion!=null ? motion.Feedback : null);
             if (motion != null && !QuestProgressionRuntime.WasPresented(offer.Id)) stone.PrepareArrival();
             stones.Add(stone);
         }
         stones.Sort((a, b) => a.Offer.Slot.CompareTo(b.Offer.Slot));
         Physics.SyncTransforms();
+    }
+    void PreparePlacements()
+    {
+        var composition=compositions[CompositionIndex];
+        int count=composition.smallSlots.Length;
+        slotPositions=new Vector2[count]; slotAngles=new float[count];
+        var order=new int[count]; for(int i=0;i<count;i++) order[i]=i;
+        var occupied=new List<Rect> { Padded(ProjectedHitArea(mainStonePrefab,Vector2.zero,0),0.04f) };
+        // A separate seeded stream never consumes gameplay Random or changes the composition seed.
+        var random=new System.Random(unchecked(run.Seed ^ 0x53a1847));
+        if(randomizePlacement && count==6)
+        {
+            // Each authored half is a balanced triangle around the center. Swap the
+            // triangles, then vary which quest occupies each point within that half.
+            if(random.Next(2)==1) for(int i=0;i<3;i++) { order[i]=i+3; order[i+3]=i; }
+            Shuffle(order,0,3,random); Shuffle(order,3,3,random);
+        }
+        for(int i=0;i<count;i++)
+        {
+            int source=order[i]; var position=composition.smallSlots[source];
+            float angle=composition.angles[source%composition.angles.Length];
+            if(randomizePlacement)
+            {
+                var anchor=position; float authoredAngle=angle;
+                for(int attempt=0;attempt<24;attempt++)
+                {
+                    // End stones have less depth variation to stay clear of the board's
+                    // narrow top/bottom edges and the larger future main collider.
+                    float depth=Mathf.Abs(anchor.x)<2f ? endPositionVariation : Mathf.Abs(positionVariation.y);
+                    var candidate=anchor+new Vector2(Signed(random)*Mathf.Abs(positionVariation.x),Signed(random)*depth);
+                    candidate.x=Mathf.Clamp(candidate.x,placementBounds.xMin,placementBounds.xMax);
+                    candidate.y=Mathf.Clamp(candidate.y,placementBounds.yMin,placementBounds.yMax);
+                    float candidateAngle=authoredAngle+Signed(random)*rotationVariation;
+                    var area=ProjectedHitArea(smallStonePrefab,candidate,candidateAngle);
+                    bool clear=true; foreach(var other in occupied) if(area.Overlaps(other)) { clear=false; break; }
+                    if(!clear) continue;
+                    position=candidate; angle=candidateAngle; break;
+                }
+            }
+            slotPositions[i]=position; slotAngles[i]=angle;
+            occupied.Add(Padded(ProjectedHitArea(smallStonePrefab,position,angle),0.04f));
+        }
+    }
+    Rect ProjectedHitArea(QuestStoneView prefab,Vector2 position,float angle)
+    {
+        var hit=(BoxCollider)prefab.HitCollider;
+        var matrix=stoneParent.localToWorldMatrix*Matrix4x4.TRS(new Vector3(position.x,0.03f,position.y),Quaternion.Euler(0,angle,0),prefab.transform.localScale);
+        var rotation=transform.rotation*cameraHomeRotation;
+        var right=rotation*Vector3.right; var up=rotation*Vector3.up;
+        Vector2 min=Vector2.one*float.MaxValue,max=Vector2.one*float.MinValue;
+        for(int x=-1;x<=1;x+=2) for(int y=-1;y<=1;y+=2) for(int z=-1;z<=1;z+=2)
+        {
+            var point=matrix.MultiplyPoint3x4(hit.center+Vector3.Scale(hit.size*0.5f,new Vector3(x,y,z)));
+            var projected=new Vector2(Vector3.Dot(point,right),Vector3.Dot(point,up));
+            min=Vector2.Min(min,projected); max=Vector2.Max(max,projected);
+        }
+        return Rect.MinMaxRect(min.x,min.y,max.x,max.y);
+    }
+    static Rect Padded(Rect area,float margin) => Rect.MinMaxRect(area.xMin-margin,area.yMin-margin,area.xMax+margin,area.yMax+margin);
+    static float Signed(System.Random random) => (float)random.NextDouble()*2f-1f;
+    static void Shuffle(int[] order,int start,int count,System.Random random)
+    {
+        for(int i=start+count-1;i>start;i--)
+        {
+            int other=random.Next(start,i+1); int value=order[i]; order[i]=order[other]; order[other]=value;
+        }
     }
     public QuestStoneView FindStone(string offerId) => stones.Find(s => s != null && s.Offer.Id == offerId);
     public void FocusFirst() { focused = stones.Count > 0 ? stones[0] : null; keyboardFocus = false; ClearHighlights(); }

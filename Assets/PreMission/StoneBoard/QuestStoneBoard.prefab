@@ -6985,6 +6985,135 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &4951593376507871892
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9094732928149815753}
+  - component: {fileID: 9014815036618214102}
+  m_Layer: 0
+  m_Name: Stone Interaction Audio
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9094732928149815753
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951593376507871892}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 509928368955314532}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!82 &9014815036618214102
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4951593376507871892}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &5062866812416330716
 GameObject:
   m_ObjectHideFlags: 0
@@ -7044,7 +7173,7 @@ MonoBehaviour:
   stepLift: 0.1
   settleDuration: 0.1
   unlockAcknowledgement: 0.18
-  cameraAttention: 0.16
+  cameraAttention: 0
 --- !u!1 &5582746079594965079
 GameObject:
   m_ObjectHideFlags: 0
@@ -18054,6 +18183,7 @@ Transform:
   - {fileID: 1035957255361144989}
   - {fileID: 3577806794957333563}
   - {fileID: 2417459805938924855}
+  - {fileID: 9094732928149815753}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &6459925760160074357
@@ -18118,6 +18248,16 @@ MonoBehaviour:
     - 4
     - -4
     - 4
+  randomizePlacement: 1
+  positionVariation: {x: 0.45, y: 0.28}
+  endPositionVariation: 0.08
+  rotationVariation: 2
+  placementBounds:
+    serializedVersion: 2
+    x: -5.75
+    y: -3.22
+    width: 12.05
+    height: 6.44
   framingCenter: {x: 0, y: 1, z: 0}
   framingSize: {x: 19.4, y: 3, z: 9}
   screenArea:
@@ -18184,12 +18324,23 @@ MonoBehaviour:
   heavyDust: {fileID: 9051359904684696877}
   impactChips: {fileID: 4457427217968497881}
   impactAudio: {fileID: 2531064335505178002}
-  smallImpact: {fileID: 8300000, guid: 400358697bc0ca24bb65f73acc5e1f73, type: 3}
-  heavyImpact: {fileID: 8300000, guid: 94e63b8dc3bffe94b868db227b593c5f, type: 3}
+  smallImpact: {fileID: 0}
+  heavyImpact: {fileID: 0}
   inlays: {fileID: 2998620510472013992}
   boardSurface: {fileID: 1035957255361144989}
   smallVolume: 0.22
   heavyVolume: 0.55
+  interactionAudio: {fileID: 9014815036618214102}
+  handlingClip: {fileID: 0}
+  progressClip: {fileID: 0}
+  selectionClip: {fileID: 0}
+  confirmationClip: {fileID: 0}
+  interactionVolume: 0.14
+  pitchVariation: 0.055
+  reducedMotion: 0
+  cameraShakeScale: 1
+  effectsVolume: 1
+  particleScale: 1
   smallShakeStrength: 0.018
   heavyShakeStrength: 0.13
   smallShakeDuration: 0.16

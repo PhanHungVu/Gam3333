@@ -200,11 +200,12 @@ public static class QuestCinematicChecks
         Capture("p3-main-1600"); Capture("p3-main-1024",1024,768);
         Flow.Back(); while(Busy) yield return null;
 
-        var catalogue=Field<QuestBoardCatalogue>(Flow,"catalogue"); catalogue.smallOfferCount=5; Flow.StartNewProgression(); Flow.SkipPosting(); yield return null;
+        var catalogue=Field<QuestBoardCatalogue>(Flow,"catalogue"); int authoredOfferCount=catalogue.smallOfferCount;
+        catalogue.smallOfferCount=6; Flow.StartNewProgression(); Flow.SkipPosting(); yield return null;
         var run=Flow.Session.Progression; var ids=string.Join(";",run.Offers.Select(o=>o.Id));
         foreach(var type in (QuestMissionType[])Enum.GetValues(typeof(QuestMissionType)))
         {
-            var offer=run.Offers.Single(o=>o.Quest.missionType==type); string authored=EditorJsonUtility.ToJson(offer.Quest);
+            var offer=run.Offers.First(o=>o.Quest.missionType==type); string authored=EditorJsonUtility.ToJson(offer.Quest);
             Flow.SelectQuest(offer.Quest); while(Busy) yield return null;
             Check(Mini.IsVisible&&Mini.Quest==offer.Quest&&Mini.ActiveType==type&&Mini.PieceCount>0,"Mission miniature matches existing type "+type);
             Check(Field<TMP_Text>(Flow,"detailsTitle").text==offer.Quest.title&&Field<TMP_Text>(Flow,"detailsType").text.Contains(PreMissionFlowController.MissionTypeName(type)),
@@ -214,7 +215,7 @@ public static class QuestCinematicChecks
             Check(!Mini.IsVisible&&EditorJsonUtility.ToJson(offer.Quest)==authored&&run.SuccessfulSmallCompletions==0&&string.Join(";",run.Offers.Select(o=>o.Id))==ids,
                 "Inspecting/returning "+type+" changes neither authored quest data, offers nor progression");
         }
-        catalogue.smallOfferCount=3; Flow.StartNewProgression(); Flow.SkipPosting(); yield return null;
+        catalogue.smallOfferCount=authoredOfferCount; Flow.StartNewProgression(); Flow.SkipPosting(); yield return null;
         small=Board.Stones[0]; Flow.SelectQuest(small.Offer.Quest); while(Motion.InspectionProgress<0.6f) yield return null;
         Flow.enabled=false; Flow.enabled=true;
         Check(!Busy&&Flow.Session.View==PreMissionView.Details&&Mini.Quest==small.Offer.Quest&&Mini.Progress==1,"Disabling during approach settles the correct split briefing and full miniature");

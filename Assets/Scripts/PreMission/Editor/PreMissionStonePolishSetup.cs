@@ -1,6 +1,4 @@
 using System;
-using System.IO;
-using System.Text;
 using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -19,7 +17,6 @@ public static class PreMissionStonePolishSetup
         if (Application.isPlaying) throw new InvalidOperationException("Stop Play mode before upgrading the board.");
         PreMissionStoneBoardSetup.UpgradeAssets();
         var material = DustMaterial();
-        var smallClip = ImpactClip(false); var heavyClip = ImpactClip(true);
         var root = PrefabUtility.LoadPrefabContents(PreMissionStoneBoardSetup.BoardPath);
         try
         {
@@ -43,7 +40,6 @@ public static class PreMissionStonePolishSetup
             var fields = new SerializedObject(feedback);
             fields.FindProperty("smallDust").objectReferenceValue=small; fields.FindProperty("heavyDust").objectReferenceValue=heavy;
             fields.FindProperty("impactAudio").objectReferenceValue=source;
-            fields.FindProperty("smallImpact").objectReferenceValue=smallClip; fields.FindProperty("heavyImpact").objectReferenceValue=heavyClip;
             fields.FindProperty("inlays").objectReferenceValue=inlays; fields.ApplyModifiedPropertiesWithoutUndo();
             var motionFields=new SerializedObject(motion); motionFields.FindProperty("feedback").objectReferenceValue=feedback; motionFields.ApplyModifiedPropertiesWithoutUndo();
             PrefabUtility.SaveAsPrefabAsset(root,PreMissionStoneBoardSetup.BoardPath);
@@ -93,28 +89,5 @@ public static class PreMissionStonePolishSetup
         result.SetFloat("_SrcBlend",(float)BlendMode.SrcAlpha); result.SetFloat("_DstBlend",(float)BlendMode.OneMinusSrcAlpha); result.SetFloat("_ZWrite",0);
         result.EnableKeyword("_SURFACE_TYPE_TRANSPARENT"); result.SetShaderPassEnabled("ShadowCaster",false);
         AssetDatabase.CreateAsset(result,path); return result;
-    }
-    static AudioClip ImpactClip(bool heavy)
-    {
-        string path=Folder+(heavy?"/Heavy Stone Impact.wav":"/Small Stone Impact.wav");
-        if(!File.Exists(path))
-        {
-            const int rate=22050; int count=Mathf.RoundToInt(rate*(heavy?0.62f:0.20f));
-            using(var writer=new BinaryWriter(File.Create(path)))
-            {
-                writer.Write(Encoding.ASCII.GetBytes("RIFF")); writer.Write(36+count*2); writer.Write(Encoding.ASCII.GetBytes("WAVEfmt "));
-                writer.Write(16); writer.Write((short)1); writer.Write((short)1); writer.Write(rate); writer.Write(rate*2); writer.Write((short)2); writer.Write((short)16);
-                writer.Write(Encoding.ASCII.GetBytes("data")); writer.Write(count*2); var random=new System.Random(heavy?531:281); float noise=0;
-                for(int i=0;i<count;i++)
-                {
-                    float t=(float)i/rate; noise=noise*0.72f+((float)random.NextDouble()*2-1)*0.28f;
-                    float phase=2*Mathf.PI*((heavy?62f:155f)*t-(heavy?22f:45f)*t*t);
-                    float value=(Mathf.Sin(phase)*0.7f*Mathf.Exp(-t*(heavy?8f:24f))+noise*0.65f*Mathf.Exp(-t*40)+Mathf.Sin(t*2*Mathf.PI*230)*0.12f*Mathf.Exp(-t*60))*Mathf.Min(1,t/0.003f);
-                    value *= Mathf.Min(1,(count-1-i)/(rate*0.012f));
-                    writer.Write((short)(Mathf.Clamp(value,-0.95f,0.95f)*short.MaxValue));
-                }
-            }
-        }
-        AssetDatabase.ImportAsset(path,ImportAssetOptions.ForceSynchronousImport); return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
     }
 }

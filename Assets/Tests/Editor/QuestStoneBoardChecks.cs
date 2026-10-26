@@ -59,7 +59,7 @@ public static class QuestStoneBoardChecks
         if (!SessionState.GetBool(Pending, false) || !EditorApplication.isPlaying || EditorApplication.isCompiling) return;
         try
         {
-            if (routine == null) { deadline = EditorApplication.timeSinceStartup + 180; routine = Run(); }
+            if (routine == null) { deadline = EditorApplication.timeSinceStartup + 240; routine = Run(); }
             if (EditorApplication.timeSinceStartup > deadline) throw new Exception("M2 checks timed out");
             PreMissionReliabilityChecks.AssertNoUnexpectedErrors();
             if (routine.MoveNext()) return;
@@ -152,7 +152,9 @@ public static class QuestStoneBoardChecks
         captures=Path.Combine(Directory.GetParent(Application.dataPath).FullName,"M2Captures"); Directory.CreateDirectory(captures);
         while(Busy) yield return null;
         var run=Flow.Session.Progression;
-        Check(Board!=null && Board.Stones.Count==3 && Flow.Notices.Count==0 && !Field<Transform>("noticeParent").gameObject.activeSelf,"Fresh scene uses three real rocks without spawning hidden paper offers");
+        int smallCount=run.SmallOfferCount;
+        Check(smallCount==6&&run.RequiredSmallCompletions==3&&Board!=null && Board.Stones.Count==smallCount && Flow.Notices.Count==0 && !Field<Transform>("noticeParent").gameObject.activeSelf,"Shipped scene starts with six small rocks and still requires only three successes");
+        Check(run.Offers.Select(o=>o.Quest.questId).Distinct().Count()==6,"All six surrounding offers use distinct quest data");
         Check(Camera.main==Board.BoardCamera && Camera.allCameras.Count(c=>c.enabled)==1 && Object.FindObjectsByType<AudioListener>().Count(a=>a.enabled)==1,"One dedicated overhead camera and audio listener are active");
         Check(Board.Stones.All(s=>s.GetComponent<Rigidbody>()==null && s.Offer.Quest.category==QuestCategory.Side),"M2 starts with small offers and stable collider objects without physics simulation");
         Check(Board.StoneAt(Board.BoardCamera.WorldToScreenPoint(Vector3.zero))==null,"Reserved main location is empty and unselectable before unlock");
@@ -181,7 +183,7 @@ public static class QuestStoneBoardChecks
             Check(CompleteSmallForTest(Flow),"Test fixture reports one actual small mission success "+win);
             yield return null; yield return null; while(Busy) yield return null;
             Check(run.SuccessfulSmallCompletions==win && unchanged.All(pair=>Board.Stones.Contains(pair.Key) && pair.Key.transform.position==pair.Value),"Completion preserves unrelated rocks and positions "+win);
-            Check(Board.Stones.Count==3+(win==3?1:0),"3D offers reflect replenishment and the unlock threshold "+win);
+            Check(Board.Stones.Count==smallCount+(win==3?1:0)&&((run.BigQuest!=null)==(win==3)),"Six small offers remain while the main unlocks only on the third success "+win);
         }
         CheckLayout("unlocked"); Capture("m2-unlocked");
         var main=Board.Stones.Single(s=>s.Offer.Quest.category==QuestCategory.Main);
@@ -222,8 +224,8 @@ public static class QuestStoneBoardChecks
         SceneManager.LoadScene("PreMissionScene"); yield return null; yield return null; while(Busy) yield return null;
         Check(Flow.Session.Progression==run && string.Join(";",run.Offers.Select(o=>o.Id))==ids && Board.Stones.All(s=>s.transform.localPosition==placements[s.Offer.Id]) && Flow.Session.SelectedTorso==torso,"Scene return preserves exact offers, composition, unlocked main and preferred torso");
 
-        // Six distinct definitions are a test fixture only; the shipped pool is unchanged.
-        var catalogue=run.Catalogue; var extra=Object.Instantiate(catalogue.quests.First(q=>q.category==QuestCategory.Side)); extra.questId="m2-sixth-small-fixture"; extra.title="Sixth Slot (Test)"; catalogue.quests.Add(extra); catalogue.smallOfferCount=6;
+        // The shipped catalogue now supplies six real prototype side definitions.
+        var catalogue=run.Catalogue;
         var seen=new HashSet<int>();
         for(int seed=0;seen.Count<3 && seed<30;seed++)
         {
@@ -234,9 +236,49 @@ public static class QuestStoneBoardChecks
             Check(Board.Stones.Count==7 && Board.CompositionIndex==design,"Authored composition supports six surrounding offers plus center, design "+design);
             Capture("m2-six-small-design-"+design);
         }
-        catalogue.quests.Remove(extra); catalogue.smallOfferCount=3; Object.Destroy(extra);
+        // Exercise actual randomized board instances, including the largest supported
+        // layout, rather than checking only the three base anchor designs.
+        var layouts=new Dictionary<int,HashSet<string>>();
+        string firstLayout=null;
+        for(int seed=0;seed<64;seed++)
+        {
+            var fixture=QuestProgressionRuntime.StartNewProgression(catalogue,seed);
+            yield return null; yield return null; Flow.SkipPosting(); yield return null; while(Busy) yield return null;
+            for(int win=0;win<3;win++)
+            {
+                fixture.TryBeginMission(fixture.Offers[0].Quest,torso,out var attempt);
+                fixture.ReportMissionResult(attempt.Id,QuestMissionOutcome.Succeeded);
+            }
+            yield return null; yield return null; Flow.SkipPosting(); yield return null; while(Busy) yield return null;
+            CheckLayout("random surround seed "+seed);
+            var signature=string.Join(";",Board.Stones.Select(s=>s.transform.localPosition.ToString("F3")));
+            if(!layouts.TryGetValue(Board.CompositionIndex,out var variations)) layouts[Board.CompositionIndex]=variations=new HashSet<string>();
+            Check(variations.Add(signature),"Different seeds vary positions within the same surround design, seed "+seed);
+            if(seed==0) firstLayout=signature;
+            if(seed<3) Capture("random-surround-"+seed);
+            if(seed%21==0)
+            {
+                var poses=Board.Stones.ToDictionary(s=>s.Offer.Slot,s=>(s.transform.localPosition,s.transform.localRotation));
+                Flow.CreateFreshBoard(); yield return null; yield return null; Flow.SkipPosting(); yield return null; while(Busy) yield return null;
+                Check(Board.Stones.All(s=>s.transform.localPosition==poses[s.Offer.Slot].Item1&&s.transform.localRotation==poses[s.Offer.Slot].Item2),
+                    "Rebinding a run retains randomized slot positions and rotations, seed "+seed);
+            }
+        }
+        QuestProgressionRuntime.StartNewProgression(catalogue,0);
+        yield return null; yield return null; Flow.SkipPosting(); yield return null; while(Busy) yield return null;
+        for(int win=0;win<3;win++) CompleteSmallForTest(Flow);
+        yield return null; yield return null; Flow.SkipPosting(); yield return null; while(Busy) yield return null;
+        Check(string.Join(";",Board.Stones.Select(s=>s.transform.localPosition.ToString("F3")))==firstLayout,
+            "The same seed reconstructs the exact randomized layout in a new progression instance");
+        catalogue.smallOfferCount=5; Flow.StartNewProgression();
+        yield return null; yield return null; Flow.SkipPosting(); yield return null; while(Busy) yield return null;
+        Check(Board.Stones.Count==5&&Flow.Session.Progression.RequiredSmallCompletions==3,"Five-offer configuration also keeps the three-success requirement");
+        for(int win=0;win<3;win++) CompleteSmallForTest(Flow);
+        yield return null; yield return null; Flow.SkipPosting(); yield return null; while(Busy) yield return null;
+        Check(Board.Stones.Count==6&&Flow.Session.Progression.BigQuest!=null,"Five small offers plus main are available after three successes");
+        catalogue.smallOfferCount=smallCount;
         Flow.StartNewProgression(); while(Busy) yield return null;
-        Check(Board.Stones.Count==3 && Flow.Session.Progression.BigQuest==null,"Explicit new run resets the physical board to three small quests");
+        Check(Board.Stones.Count==6 && Flow.Session.Progression.BigQuest==null,"Explicit new run restores six small quests and locks the main again");
         InputSystem.RemoveDevice(mouse); InputSystem.RemoveDevice(keyboard);
     }
 }

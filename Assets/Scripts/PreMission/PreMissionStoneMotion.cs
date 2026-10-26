@@ -69,6 +69,7 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
     public bool IsAnticipatingMain { get; private set; }
     public float ArrivalFocus => arrivalFocus;
     public event Action<QuestStoneView> Impacted;
+    bool ReducedMotion => feedback!=null && feedback.ReducedMotion;
 
     public void Bind(PreMissionStoneBoard owner) => board = owner;
     public void PrepareProgressTrack()
@@ -209,14 +210,20 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
     }
     IEnumerator InspectRoutine(Action<float> frame, Action ready)
     {
+        feedback?.PlayCue(QuestBoardImpactFeedback.Cue.Pickup);
+        if(ReducedMotion)
+        {
+            InspectionProgress=1;
+            missionMiniature?.SetProgress(1);
+        }
         var start = inspected.CurrentOffset; var scale = inspected.CurrentScale; var angles=inspected.CurrentAngles;
         float weight=inspected.IsMain ? mainHandlingTimeMultiplier : 1f;
         yield return Animate(pressDuration*weight, t => inspected.SetMotionFrame(start,angles,scale*(1f-(inspected.IsMain?0.01f:0.025f)*Mathf.Sin(t*Mathf.PI))));
         yield return Animate(inspectDuration*weight, t =>
         {
-            float eased = Ease(t); InspectionProgress = eased;
+            float eased = Ease(t); InspectionProgress = ReducedMotion ? 1 : eased;
             inspected.SetMotionFrame(Vector3.Lerp(start,InspectionOffset(),eased),Vector3.Lerp(angles,InspectionAngles(),eased),Vector3.Lerp(scale,InspectionScale(),eased));
-            if(missionMiniature!=null) missionMiniature.SetProgress(Mathf.Clamp01((eased-0.42f)/0.58f));
+            if(missionMiniature!=null) missionMiniature.SetProgress(ReducedMotion ? 1 : Mathf.Clamp01((eased-0.42f)/0.58f));
             frame?.Invoke(eased);
         });
         IsTransitioning = false; ready?.Invoke();
@@ -237,6 +244,7 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
             if(missionMiniature!=null) missionMiniature.SetProgress(Mathf.Clamp01((1-eased)*2-1));
             frame?.Invoke(InspectionProgress);
         });
+        feedback?.PlayCue(QuestBoardImpactFeedback.Cue.Return);
         yield return Animate(returnSettleDuration,t =>
         {
             float contact=Mathf.Sin(t*Mathf.PI)*0.012f;
@@ -267,7 +275,7 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
     public void ApplyCamera(ref Vector3 position, ref Quaternion rotation, ref float size, float aspect)
     {
         if(progressTrack!=null) progressTrack.ApplyCamera(ref position,rotation);
-        if (arrivalFocus>0)
+        if (arrivalFocus>0 && !ReducedMotion)
         {
             var target=landingPoint-rotation*Vector3.forward*24;
             position=Vector3.Lerp(position,target,arrivalFocus*0.5f);
@@ -282,7 +290,8 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
                 bounds.size.x/(2*aspect*(tabletop?inspectionWidth:0.68f)));
             var target=(tabletop?bounds.center:inspected.InspectionPoint)-rotation*Vector3.forward*24;
             if(tabletop) target-=rotation*Vector3.right*((inspectionViewport.x-0.5f)*fit*2*aspect)+rotation*Vector3.up*((inspectionViewport.y-0.5f)*fit*2);
-            position=Vector3.Lerp(position,target,InspectionProgress); size=Mathf.Lerp(size,fit,InspectionProgress);
+            float progress=ReducedMotion ? 1 : InspectionProgress;
+            position=Vector3.Lerp(position,target,progress); size=Mathf.Lerp(size,fit,progress);
         }
         if (feedback != null)
         {
@@ -298,8 +307,9 @@ public sealed class PreMissionStoneMotion : MonoBehaviour
     }
     void OnEnable() { if (wasDisabled) { wasDisabled=false; board?.RecoverOwner(); } }
     static float Ease(float t) => t*t*t*(t*(t*6-15)+10);
-    static IEnumerator Animate(float duration, Action<float> frame)
+    IEnumerator Animate(float duration, Action<float> frame)
     {
+        if(ReducedMotion) duration=Mathf.Min(duration,0.12f);
         float age=0; duration=Mathf.Max(0.01f,duration); frame(0);
         while(age<duration) { yield return null; age+=Mathf.Min(Time.unscaledDeltaTime,0.05f); frame(Mathf.Clamp01(age/duration)); }
     }

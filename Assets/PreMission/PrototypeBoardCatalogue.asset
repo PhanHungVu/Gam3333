@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eed691f1cc534a73af181d3c156f3bbf, type: 3}
   m_Name: PrototypeBoardCatalogue
   m_EditorClassIdentifier: Assembly-CSharp::QuestBoardCatalogue
-  smallOfferCount: 3
+  smallOfferCount: 6
   smallCompletionsToUnlockBig: 3
   quests:
   - {fileID: 11400000, guid: 3f7f67a34abe655459c14cd1fef5d764, type: 2}
@@ -21,6 +21,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d6b22eff4cedd6645bf074fc1d6ed190, type: 2}
   - {fileID: 11400000, guid: 5c90e310c8d11cd46a897e9dc64a5c57, type: 2}
   - {fileID: 11400000, guid: 4897ace0e8044f04f89373692fc74646, type: 2}
+  - {fileID: 11400000, guid: 54a0ea428bdd4f7db3e97fc2529927cf, type: 2}
   starterTorsos:
   - {fileID: 11400000, guid: 95c2f3c62f08a9249bfc1432876a1e9a, type: 2}
   - {fileID: 11400000, guid: 52965c849ad50c84aaa7d48e7eb84b9f, type: 2}
