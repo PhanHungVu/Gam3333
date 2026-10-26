@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WaveData
   type: 0
   spawnInterval: 0.5
-  timerReset: 120
+  timerReset: 30
   resourceTotal: 50
   enemies:
   - prefab: {fileID: 6047991143849022785, guid: 19e462b5c15722c4d994bfc5f8a37548, type: 3}

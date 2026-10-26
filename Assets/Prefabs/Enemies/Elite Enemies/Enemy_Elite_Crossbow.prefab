@@ -60481,6 +60481,7 @@ GameObject:
   - component: {fileID: 2254041149997163095}
   - component: {fileID: 356095628321623394}
   - component: {fileID: 8717522136892336736}
+  - component: {fileID: -1753490650275639242}
   m_Layer: 0
   m_Name: Enemy_Elite_Crossbow
   m_TagString: Untagged
@@ -60698,6 +60699,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HealthBarDisplay
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   height: 1.4
+--- !u!114 &-1753490650275639242
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8412420698314761476}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2cc64d0180827c4da16e7047fc714bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemySpawnCost
+  cost: 10
 --- !u!1 &8637252278166939597
 GameObject:
   m_ObjectHideFlags: 0

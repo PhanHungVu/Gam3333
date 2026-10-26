@@ -17,6 +17,8 @@ public sealed class ChunkDefinition : MonoBehaviour
     [SerializeField] Transform[] pathConnectors;
     [Tooltip("Whether this chunk can serve as a sub-level's start or extraction area.")]
     [SerializeField] bool canBeStartOrEnd;
+    [Tooltip("Roaming spawns pause while the player is inside this chunk. Start/end chunks never pause roaming.")]
+    [SerializeField] bool pausesRoaming = true;
 
     [Header("Scene view only")]
     [Tooltip("Width of the lane drawn from each connector to the chunk centre - the space to keep clear of cover.")]
@@ -25,6 +27,7 @@ public sealed class ChunkDefinition : MonoBehaviour
     public Vector2 SizeInGolems => sizeInGolems;
     public Vector2 SizeMetres => sizeInGolems * MetresPerGolem;
     public bool CanBeStartOrEnd => canBeStartOrEnd;
+    public bool PausesRoaming => pausesRoaming && !canBeStartOrEnd;
     float MetresPerGolem => rulesConfig != null ? rulesConfig.metresPerGolem : 4f;
 
     public IReadOnlyList<Transform> PathConnectors
@@ -44,6 +47,17 @@ public sealed class ChunkDefinition : MonoBehaviour
     }
 
     void OnValidate() => sizeInGolems = Vector2.Max(sizeInGolems, Vector2.one);
+
+    void OnEnable() { if (PausesRoaming) RoamingBlockers.Register(this, Contains); }
+    void OnDisable() => RoamingBlockers.Unregister(this);
+
+    // Inside the footprint box, in the chunk's own orientation. Height is ignored (flat map).
+    public bool Contains(Vector3 position)
+    {
+        Vector3 local = transform.InverseTransformPoint(position);
+        Vector2 half = SizeMetres * 0.5f;
+        return Mathf.Abs(local.x) <= half.x && Mathf.Abs(local.z) <= half.y;
+    }
 
     // Footprint box, connector markers, and a lane from each connector to the centre.
     // Always drawn, so the chunk's bounds and lanes are visible while placing cover.

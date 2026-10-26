@@ -50271,6 +50271,7 @@ GameObject:
   - component: {fileID: 4002886853335233961}
   - component: {fileID: 2317099856583387135}
   - component: {fileID: 388974039334746544}
+  - component: {fileID: 8240038712278213534}
   m_Layer: 0
   m_Name: Enemy_crossbow
   m_TagString: Untagged
@@ -50488,6 +50489,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HealthBarDisplay
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   height: 1.4
+--- !u!114 &8240038712278213534
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7062185459325199375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2cc64d0180827c4da16e7047fc714bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemySpawnCost
+  cost: 5
 --- !u!1 &7252553595477060627
 GameObject:
   m_ObjectHideFlags: 0

@@ -56144,6 +56144,7 @@ GameObject:
   - component: {fileID: 4217689911721990472}
   - component: {fileID: 1326805896875033038}
   - component: {fileID: 191153894900727345}
+  - component: {fileID: -2728732762617045363}
   m_Layer: 0
   m_Name: Enemy_Boss1
   m_TagString: Untagged
@@ -56372,6 +56373,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HealthBarDisplay
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   height: 1.4
+--- !u!114 &-2728732762617045363
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8273800007824835416}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2cc64d0180827c4da16e7047fc714bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemySpawnCost
+  cost: 20
 --- !u!1 &8633727406642554292
 GameObject:
   m_ObjectHideFlags: 0

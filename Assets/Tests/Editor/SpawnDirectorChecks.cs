@@ -1,4 +1,5 @@
 using System;
+using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -31,6 +32,7 @@ public static class SpawnDirectorChecks
 
         // The director, with a stand-in enemy and two spawn points.
         GameObject template = null, directorObject = null, pointA = null, pointB = null;
+        GameObject roamDirectorObject = null, standIn = null, roamObject = null, gridObject = null;
         WaveData data = null;
         try
         {
@@ -62,6 +64,56 @@ public static class SpawnDirectorChecks
             director.StopWave(owner);
             director.Tick(20f); director.Tick(0.5f);
             check(!director.IsRunning(owner) && director.TotalSpawned == 2, "Stopping a wave stops its spawning");
+
+            // Roaming: a stand-in player on its own open NavGrid, with a roaming spawner and director.
+            var site = new Vector3(92000f, 0f, 0f);
+            standIn = new GameObject("Spawn Check Player"); standIn.transform.position = site;
+            gridObject = new GameObject("Spawn Check Grid");
+            var grid = gridObject.AddComponent<NavGrid>();
+            var gridSettings = new SerializedObject(grid);
+            gridSettings.FindProperty("origin").vector3Value = site;
+            gridSettings.FindProperty("width").floatValue = 200f;
+            gridSettings.FindProperty("depth").floatValue = 200f;
+            gridSettings.FindProperty("drawOpenCells").boolValue = false;
+            gridSettings.FindProperty("drawBlockedCells").boolValue = false;
+            gridSettings.ApplyModifiedPropertiesWithoutUndo();
+            grid.Bake();
+            roamObject = new GameObject("Spawn Check Roaming");
+            var roamer = roamObject.AddComponent<RoamingSpawner>();
+            var roamSettings = new SerializedObject(roamer);
+            roamSettings.FindProperty("radius").floatValue = 20f;
+            roamSettings.FindProperty("target").objectReferenceValue = standIn.transform;
+            roamSettings.FindProperty("grid").objectReferenceValue = grid;
+            roamSettings.ApplyModifiedPropertiesWithoutUndo();
+            roamDirectorObject = new GameObject("Spawn Check Roaming Director");
+            var roamDirector = roamDirectorObject.AddComponent<SpawnDirector>();
+            var directorSettings = new SerializedObject(roamDirector);
+            directorSettings.FindProperty("roamingWave").objectReferenceValue = data;
+            directorSettings.FindProperty("roamingSpawner").objectReferenceValue = roamer;
+            directorSettings.ApplyModifiedPropertiesWithoutUndo();
+
+            data.resourceTotal = 50; // room for several roaming spawns
+            roamDirector.Tick(0f);
+            GameObject roamed = null;
+            foreach (var clone in Object.FindObjectsByType<EnemySpawnCost>())
+                if (clone.gameObject != template && clone.transform.position.x > site.x - 100f) roamed = clone.gameObject;
+            float fromPlayer = roamed != null ? Vector3.Distance(roamed.transform.position, site) : 0f;
+            check(roamDirector.TotalSpawned == 1 && Mathf.Abs(fromPlayer - 20f) < 0.01f,
+                "Roaming spawns enemies on a circle Radius away from the player");
+            check(roamDirector.RunWave(data, new[] { points[0] }, owner), "An objective wave can start while roaming");
+            roamDirector.Tick(0f);
+            check(roamDirector.RoamingPaused && roamDirector.IsRunning(owner) && roamDirector.TotalSpawned == 2,
+                "An objective wave pauses roaming and spawns at its own points");
+            roamDirector.StopWave(owner);
+            RoamingBlockers.Register(standIn, position => true);
+            roamDirector.Tick(0.5f);
+            check(roamDirector.RoamingPaused && roamDirector.TotalSpawned == 2, "Roaming pauses while the player is inside an objective chunk");
+            RoamingBlockers.Unregister(standIn);
+            roamDirector.Tick(0.5f);
+            check(!roamDirector.RoamingPaused && roamDirector.TotalSpawned == 3, "Roaming resumes where it left off when the player leaves");
+            standIn.transform.position = site + new Vector3(150f, 0f, 0f);
+            roamDirector.Tick(0.5f); roamDirector.Tick(0.5f);
+            check(roamDirector.TotalSpawned == 3, "Roaming never spawns off the NavGrid");
         }
         finally
         {
@@ -71,6 +123,9 @@ public static class SpawnDirectorChecks
             if (pointA != null) Object.DestroyImmediate(pointA);
             if (pointB != null) Object.DestroyImmediate(pointB);
             if (data != null) Object.DestroyImmediate(data);
+            if (standIn != null) RoamingBlockers.Unregister(standIn);
+            foreach (var go in new[] { roamDirectorObject, standIn, roamObject, gridObject })
+                if (go != null) Object.DestroyImmediate(go);
         }
     }
 }
