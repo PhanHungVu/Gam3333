@@ -3,8 +3,9 @@ using UnityEngine;
 // Rolls a drop chance when this enemy dies and, on success, spawns one loose part the player can
 // pick up, chosen at random from Part Prefabs. Listens to CombatHealth.Died the same way
 // EnemyCombatFeedback does, so the combat scripts don't need any changes.
-// Right-click the component -> "Fill From Carried Weapons" to fill the list from the weapon parts
-// in EnemyAttack's Weapons (editor only - a running game can't trace a part back to its prefab).
+// Right-click the component -> "Fill From Carried Weapons" to fill the list with one entry per
+// equipped weapon part on this enemy (editor only - a running game can't trace a part back to its
+// prefab). Two of the same weapon give two entries, so drops follow what the enemy carries.
 [DisallowMultipleComponent]
 [RequireComponent(typeof(CombatHealth))]
 public sealed class EnemyPartDrop : MonoBehaviour
@@ -50,20 +51,18 @@ public sealed class EnemyPartDrop : MonoBehaviour
     }
 
 #if UNITY_EDITOR
-    // Fills Part Prefabs with the prefab of each weapon part this enemy carries, once each.
+    // Fills Part Prefabs with the prefab of every equipped weapon part on this enemy.
     [ContextMenu("Fill From Carried Weapons")]
     void FillFromCarriedWeapons()
     {
-        var attack = GetComponent<EnemyAttack>();
-        if (attack == null) { Debug.LogWarning("No EnemyAttack on this enemy.", this); return; }
         var found = new System.Collections.Generic.List<Part>();
-        foreach (var weapon in attack.Weapons)
+        foreach (var part in GetComponentsInChildren<Part>(true))
         {
-            var part = weapon != null ? weapon.GetComponent<Part>() : null;
-            var source = part != null ? UnityEditor.PrefabUtility.GetCorrespondingObjectFromOriginalSource(part) : null;
-            if (source != null && !found.Contains(source)) found.Add(source);
+            if (!part.isEquipped || part.Stats == null || part.Stats.subtype == PartSubtype.None) continue;
+            var source = UnityEditor.PrefabUtility.GetCorrespondingObjectFromOriginalSource(part);
+            if (source != null) found.Add(source);
         }
-        if (found.Count == 0) { Debug.LogWarning("No weapon part prefabs found in EnemyAttack's Weapons.", this); return; }
+        if (found.Count == 0) { Debug.LogWarning("No equipped weapon parts found on this enemy.", this); return; }
         UnityEditor.Undo.RecordObject(this, "Fill From Carried Weapons");
         partPrefabs = found.ToArray();
         UnityEditor.EditorUtility.SetDirty(this);

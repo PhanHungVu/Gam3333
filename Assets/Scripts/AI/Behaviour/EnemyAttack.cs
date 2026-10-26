@@ -175,6 +175,25 @@ public sealed class EnemyAttack : MonoBehaviour
             if (entry != null && entry.damageMultiplier == 0f && entry.cooldownMultiplier == 0f && entry.projectileSpeedMultiplier == 0f)
                 entry.damageMultiplier = entry.cooldownMultiplier = entry.projectileSpeedMultiplier = 1f;
     }
+#if UNITY_EDITOR
+    // Right-click the component -> "Fill From Equipped Parts": lists every equipped weapon part under
+    // this enemy, once each. Weapons already listed keep their dials; new ones start at 1.
+    [ContextMenu("Fill From Equipped Parts")]
+    void FillFromEquippedParts()
+    {
+        var filled = new List<EnemyWeapon>();
+        foreach (var weapon in GetComponentsInChildren<MechWeaponAnimator>(true))
+        {
+            var part = PartOf(weapon);
+            if (!HasStats(part) || !part.isEquipped || part.Stats.subtype == PartSubtype.None) continue;
+            filled.Add(EntryOf(weapon) ?? new EnemyWeapon { weapon = weapon });
+        }
+        if (filled.Count == 0) { Debug.LogWarning("No equipped weapon parts found under this enemy.", this); return; }
+        UnityEditor.Undo.RecordObject(this, "Fill From Equipped Parts");
+        weapons = filled.ToArray();
+        UnityEditor.EditorUtility.SetDirty(this);
+    }
+#endif
     void LateUpdate() => Tick(Time.deltaTime);
 
     public void Tick(float deltaTime)
