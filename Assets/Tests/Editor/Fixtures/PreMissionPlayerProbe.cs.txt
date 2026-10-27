@@ -1,0 +1,160 @@
+#if PREMISSION_SMOKE_CHECKS
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.Profiling;
+using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
+using Stopwatch=System.Diagnostics.Stopwatch;
+
+// Copied ONLY into a disposable smoke-build project. Never compiled in the game.
+public sealed class PreMissionPlayerProbe : MonoBehaviour
+{
+    [Serializable] public sealed class Results
+    {
+        public bool passed; public int checks; public string error,unityVersion,graphics;
+        public long raycastBytes; public double raycastMs,layoutMeanMs,layoutMaxMs,terrainMeanMs,terrainMaxMs;
+        public int layoutSamples,terrainSamples;
+    }
+    readonly Stack<IEnumerator> frames=new Stack<IEnumerator>();
+    readonly Results result=new Results();
+    readonly List<double> layouts=new List<double>(),terrains=new List<double>();
+    Recorder layoutRecorder,terrainRecorder; PreMissionFlowController flow; string output,unexpected;
+    float deadline; bool done;
+    PreMissionFlowController Flow { get { if(flow==null) flow=FindAnyObjectByType<PreMissionFlowController>(); return flow; } }
+    PreMissionStoneBoard Board=>Flow.StoneBoard;
+    PreMissionStoneMotion Motion=>Board.Motion;
+    QuestBoardImpactFeedback Fx=>Motion.Feedback;
+    bool Busy=>Flow==null||Flow.IsPosting||Flow.IsTransitioning;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void Boot() { var root=new GameObject("Disposable pre-mission smoke probe"); DontDestroyOnLoad(root); root.AddComponent<PreMissionPlayerProbe>(); }
+    void Start()
+    {
+        output=Path.Combine(Directory.GetParent(Application.dataPath).FullName,"SmokeResults"); Directory.CreateDirectory(output);
+        result.unityVersion=Application.unityVersion; result.graphics=SystemInfo.graphicsDeviceType+" / "+SystemInfo.graphicsDeviceName;
+        Application.runInBackground=true; QualitySettings.vSyncCount=0; Application.targetFrameRate=60;
+        foreach(var device in InputSystem.devices.Where(d=>d is Mouse||d is Keyboard).ToArray()) InputSystem.DisableDevice(device);
+        Application.logMessageReceived+=Log; deadline=Time.realtimeSinceStartup+180; frames.Push(Run());
+    }
+    void Log(string message,string trace,LogType type) { if(type==LogType.Error||type==LogType.Exception||type==LogType.Assert) unexpected=message; }
+    void Update()
+    {
+        if(done||frames.Count==0) return;
+        try
+        {
+            if(unexpected!=null) throw new Exception("Unexpected player error: "+unexpected);
+            if(Time.realtimeSinceStartup>deadline) throw new Exception("Smoke player timed out");
+            if(layoutRecorder!=null&&layoutRecorder.sampleBlockCount>0) layouts.Add(layoutRecorder.elapsedNanoseconds/1000000.0);
+            if(terrainRecorder!=null&&terrainRecorder.sampleBlockCount>0) terrains.Add(terrainRecorder.elapsedNanoseconds/1000000.0);
+            while(frames.Count>0)
+            {
+                var current=frames.Peek(); if(!current.MoveNext()) { (current as IDisposable)?.Dispose(); frames.Pop(); continue; }
+                if(current.Current is IEnumerator nested) { frames.Push(nested); continue; } return;
+            }
+            Finish(true,null);
+        }
+        catch(Exception exception) { Finish(false,exception.ToString()); }
+    }
+    void Finish(bool passed,string error)
+    {
+        done=true; Application.logMessageReceived-=Log; result.passed=passed; result.error=error;
+        result.layoutSamples=layouts.Count; result.terrainSamples=terrains.Count;
+        if(layouts.Count>0) { result.layoutMeanMs=layouts.Average(); result.layoutMaxMs=layouts.Max(); }
+        if(terrains.Count>0) { result.terrainMeanMs=terrains.Average(); result.terrainMaxMs=terrains.Max(); }
+        File.WriteAllText(Path.Combine(output,"results.json"),JsonUtility.ToJson(result,true));
+        Debug.Log("PRE-MISSION PLAYER SMOKE: "+(passed?"PASS":"FAIL")+", checks="+result.checks+", error="+error); Application.Quit(passed?0:1);
+    }
+    void Check(bool condition,string message) { if(!condition) throw new Exception(message); result.checks++; Debug.Log("PLAYER PASS: "+message); }
+    IEnumerator Frames(int count) { int target=Time.frameCount+count; while(Time.frameCount<target) yield return null; }
+    IEnumerator Ready() { yield return Frames(2); while(Busy||Board.Progression!=QuestProgressionRuntime.Current||Board.Stones.Count!=Board.Progression.Offers.Count) yield return null; }
+    bool AllHit()=>Board.InputEnabled&&Board.Stones.All(s=>Board.StoneAt(Board.BoardCamera.WorldToScreenPoint(s.HitCollider.bounds.center))==s);
+    bool Attached(QuestStoneView s)=>Vector3.Distance(Motion.Miniature.transform.position,s.SurfacePoint+s.SurfaceRotation*Vector3.up*0.015f)<0.001f;
+    IEnumerator Run()
+    {
+        Time.timeScale=0; yield return Ready();
+        Check(Board.Progression.SmallOfferCount==6&&Board.Progression.RequiredSmallCompletions==3&&AllHit(),"Player starts with six selectable side slabs and the three-success requirement");
+        Check(!Board.transform.Find("Impact Inlays").gameObject.activeSelf,"No reserved-main marker before unlock");
+        Capture("player-board");
+        layoutRecorder=Recorder.Get("PreMission.Layout"); terrainRecorder=Recorder.Get("PreMission.TerrainBuild"); layoutRecorder.enabled=terrainRecorder.enabled=true;
+        var catalogue=Board.Progression.Catalogue;
+        for(int seed=100;seed<108;seed++)
+        {
+            QuestProgressionRuntime.StartNewProgression(catalogue,seed); yield return Frames(2); Flow.SkipPosting(); yield return Ready();
+            Check(AllHit(),"Seeded player rebuild is selectable, seed "+seed);
+        }
+        var stone=Board.Stones[0]; var point=(Vector2)Board.BoardCamera.WorldToScreenPoint(stone.HitCollider.bounds.center);
+        for(int i=0;i<50;i++) Board.StoneAt(point);
+        var clock=Stopwatch.StartNew(); long before=GC.GetAllocatedBytesForCurrentThread();
+        for(int i=0;i<500;i++) Board.StoneAt(point);
+        result.raycastBytes=GC.GetAllocatedBytesForCurrentThread()-before; clock.Stop(); result.raycastMs=clock.Elapsed.TotalMilliseconds;
+        Check(result.raycastBytes<=256,"Warmed player pointer queries do not allocate per call");
+        var run=Board.Progression; var root=stone.transform.localPosition; Flow.SelectQuest(stone.Offer.Quest); yield return Ready();
+        Check(Attached(stone)&&Motion.Miniature.Progress==1,"The player shows the attached mission miniature and briefing"); Capture("player-briefing");
+        Fx.SetReducedMotion(true); yield return Frames(2);
+        Check(stone.CurrentOffset==Vector3.zero&&Attached(stone),"Live reduced motion updates a held inspection in the player");
+        Fx.SetReducedMotion(false); yield return Frames(2); Check(stone.CurrentOffset.y>0.2f&&Attached(stone),"Player restores the normal held pose safely");
+        Flow.AcceptQuest(); yield return Ready(); Flow.NextTorso(); yield return Ready();
+        var quest=Flow.Session.SelectedQuest; var torso=Flow.Session.SelectedTorso;
+        Check(torso!=null&&FindAnyObjectByType<StarterTorsoPreview>().HasPreview,"The starting torso model renders in the standalone player"); Capture("player-torso");
+        var field=typeof(PreMissionFlowController).GetField("missionStartHook",BindingFlags.Instance|BindingFlags.NonPublic);
+        var original=(MissionStartHook)field.GetValue(Flow); var hook=Flow.gameObject.AddComponent<PreMissionSmokeHook>(); field.SetValue(Flow,hook);
+        Flow.ConfirmTorso(); Flow.ConfirmTorso(); yield return Ready();
+        Check(hook.calls==1&&hook.quest==quest&&hook.torso==torso&&run.ActiveAttempt==null&&SceneManager.GetActiveScene().name=="PreMissionScene",
+            "Player confirmation submits the exact mission/torso once without entering gameplay");
+        field.SetValue(Flow,original); Destroy(hook); Flow.Back(); yield return Ready(); Flow.Back(); yield return Ready();
+        Check(AllHit()&&stone.transform.localPosition==root&&!Motion.Miniature.IsVisible,"Player return restores slots, preview state and input");
+        for(int i=0;i<3;i++)
+        {
+            var side=run.Offers.First(o=>o.Quest.category==QuestCategory.Side);
+            Check(run.TryBeginMission(side.Quest,Flow.Session.SelectedTorso,out var attempt)&&run.ReportMissionResult(attempt.Id,QuestMissionOutcome.Succeeded),"Smoke-only successful result "+(i+1));
+            yield return Ready();
+        }
+        Check(Board.Stones.Count==7&&run.SuccessfulSmallCompletions==3&&AllHit(),"Player main arrival leaves all seven quests freely selectable"); Capture("player-main-unlocked");
+        var poses=Board.Stones.ToDictionary(s=>s.Offer.Id,s=>s.transform.localPosition); int heavy=Fx.HeavyImpacts;
+        Flow.Back(); while(SceneManager.GetActiveScene().name!="MainMenuScene") yield return null; yield return Frames(2);
+        SceneManager.LoadScene("PreMissionScene"); flow=null; yield return Ready();
+        Check(Board.Progression==run&&Fx.HeavyImpacts==0&&Board.Stones.All(s=>s.transform.localPosition==poses[s.Offer.Id])&&AllHit(),
+            "Player menu/scene return preserves progression and moved slots without replaying the impact");
+        Screen.SetResolution(1024,768,false); yield return Frames(4); Flow.SelectQuest(Board.Stones.Single(s=>s.IsMain).Offer.Quest); yield return Ready();
+        Capture("player-main-4x3"); Flow.Back(); yield return Ready();
+        Check(AllHit(),"Player 4:3 inspection and return remain usable");
+        layoutRecorder.enabled=terrainRecorder.enabled=false;
+        Check(layouts.Count>0&&terrains.Count>0,"Standalone generation profiler samples were collected");
+    }
+    void Capture(string name)
+    {
+        var camera=Board.BoardCamera; var targetBefore=camera.targetTexture; int mask=camera.cullingMask;
+        var canvases=FindObjectsByType<Canvas>(FindObjectsSortMode.None).Where(c=>c.isRootCanvas).ToArray();
+        var modes=canvases.Select(c=>c.renderMode).ToArray(); var cameras=canvases.Select(c=>c.worldCamera).ToArray(); var planes=canvases.Select(c=>c.planeDistance).ToArray();
+        var target=new RenderTexture(1280,720,24); var active=RenderTexture.active; var pixels=new Texture2D(1280,720,TextureFormat.RGB24,false);
+        try
+        {
+            camera.targetTexture=target; camera.cullingMask|=1<<0|1<<5;
+            foreach(var canvas in canvases) { canvas.renderMode=RenderMode.ScreenSpaceCamera; canvas.worldCamera=camera; canvas.planeDistance=1; }
+            Canvas.ForceUpdateCanvases(); Board.RefreshCameraFrame(); Canvas.ForceUpdateCanvases();
+            foreach(var preview in FindObjectsByType<StarterTorsoPreview>(FindObjectsSortMode.None)) preview.RenderNow();
+            RenderPipeline.SubmitRenderRequest(camera,new RenderPipeline.StandardRequest { destination=target }); RenderTexture.active=target;
+            pixels.ReadPixels(new Rect(0,0,1280,720),0,0); pixels.Apply(); var colors=pixels.GetPixels32();
+            Check(colors.Count(p=>p.r>220&&p.b>220&&p.g<70)<colors.Length/200&&colors.Count(p=>p.r+p.g+p.b>240)>10000,
+                name+": actual player pixels are visible without missing-shader output");
+            File.WriteAllBytes(Path.Combine(output,name+".png"),pixels.EncodeToPNG());
+        }
+        finally
+        {
+            RenderTexture.active=active; camera.targetTexture=targetBefore; camera.cullingMask=mask;
+            for(int i=0;i<canvases.Length;i++) { canvases[i].renderMode=modes[i]; canvases[i].worldCamera=cameras[i]; canvases[i].planeDistance=planes[i]; }
+            Board.RefreshCameraFrame(); Destroy(target); Destroy(pixels);
+        }
+    }
+}
+public sealed class PreMissionSmokeHook : MissionStartHook
+{
+    public int calls; public QuestDefinition quest; public PartData torso;
+    public override void StartMission(QuestDefinition mission,PartData part) { calls++; quest=mission; torso=part; }
+}
+#endif

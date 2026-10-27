@@ -7,10 +7,14 @@ public sealed class QuestBoardImpactFeedback : MonoBehaviour
     public enum Cue { Pickup, Return, Progress, Accept, Torso, Confirm }
     [SerializeField] ParticleSystem smallDust;
     [SerializeField] ParticleSystem heavyDust;
+    [SerializeField] ParticleSystem heavyPlume;
     [SerializeField] ParticleSystem impactChips;
     [SerializeField] AudioSource impactAudio;
     [SerializeField] AudioClip smallImpact;
     [SerializeField] AudioClip heavyImpact;
+    [SerializeField] int smallDustCount=64;
+    [SerializeField] int heavyDustCount=220;
+    [SerializeField, HideInInspector] int impactVisualVersion;
     [SerializeField] Transform inlays;
     [SerializeField] Transform boardSurface;
     [SerializeField, Range(0,1)] float smallVolume = 0.22f;
@@ -40,6 +44,7 @@ public sealed class QuestBoardImpactFeedback : MonoBehaviour
     [SerializeField, Min(0f)] float heavyRecoilTilt = 0.12f;
     float age, duration, strength, shakeDuration;
     bool heavyResponse;
+    bool impulseSuppressed;
     Vector3 inlayHome;
     Vector3 surfaceHome;
     Quaternion surfaceRotation;
@@ -51,8 +56,9 @@ public sealed class QuestBoardImpactFeedback : MonoBehaviour
     public float CameraRoll { get; private set; }
     public int SmallImpacts { get; private set; }
     public int HeavyImpacts { get; private set; }
-    public bool IsShaking => !ReducedMotion && CameraShakeScale>0 && strength>0 && age < shakeDuration;
-    public bool IsRecoiling => !ReducedMotion && heavyResponse && age < duration;
+    public int TerrainBreaks { get; private set; }
+    public bool IsShaking => !ReducedMotion && !impulseSuppressed && CameraShakeScale>0 && strength>0 && age < shakeDuration;
+    public bool IsRecoiling => !ReducedMotion && !impulseSuppressed && heavyResponse && age < duration;
     public bool ReducedMotion => reducedMotion;
     public float MotionScale => ReducedMotion ? 0 : 1;
     public float CameraShakeScale => Mathf.Clamp01(cameraShakeScale);
@@ -62,6 +68,7 @@ public sealed class QuestBoardImpactFeedback : MonoBehaviour
     public Cue? LastCue { get; private set; }
     public ParticleSystem SmallDust => smallDust;
     public ParticleSystem HeavyDust => heavyDust;
+    public ParticleSystem HeavyPlume => heavyPlume;
     public ParticleSystem ImpactChips => impactChips;
     public Transform BoardSurface => boardSurface;
 
@@ -91,7 +98,7 @@ public sealed class QuestBoardImpactFeedback : MonoBehaviour
         if(previousReducedMotion!=reducedMotion)
         {
             previousReducedMotion=reducedMotion;
-            if(reducedMotion) { ClearParticles(); ResetMotion(); }
+            if(reducedMotion) { impulseSuppressed=true; ClearParticles(); ResetMotion(); }
         }
         if(ParticleScale==0 && previousParticleScale>0) ClearParticles();
         previousParticleScale=ParticleScale;
@@ -103,12 +110,14 @@ public sealed class QuestBoardImpactFeedback : MonoBehaviour
         if (dust != null && ParticleScale>0)
         {
             dust.transform.position = position + Vector3.up * 0.08f;
-            dust.Play(); dust.Emit(Mathf.RoundToInt((heavy ? 64 : 14)*ParticleScale));
+            dust.Play(); dust.Emit(Mathf.RoundToInt((heavy ? heavyDustCount : smallDustCount)*ParticleScale));
         }
+        if(heavy && heavyPlume!=null && ParticleScale>0)
+        { heavyPlume.transform.position=position+Vector3.up*0.12f; heavyPlume.Play(); heavyPlume.Emit(Mathf.RoundToInt(48*ParticleScale)); }
         if (heavy && impactChips != null && ParticleScale>0)
         {
             impactChips.transform.position=position+Vector3.up*0.12f;
-            impactChips.Play(); impactChips.Emit(Mathf.RoundToInt(12*ParticleScale));
+            impactChips.Play(); impactChips.Emit(Mathf.RoundToInt(36*ParticleScale));
         }
         var clip = heavy ? heavyImpact : smallImpact;
         // Do not repitch or replace a heavy tail with a light contact.
@@ -117,6 +126,7 @@ public sealed class QuestBoardImpactFeedback : MonoBehaviour
         if (heavy) HeavyImpacts++; else SmallImpacts++;
         if(heavyResponse && age<duration && !heavy) return;
         age=0; heavyResponse=heavy;
+        impulseSuppressed=ReducedMotion;
         shakeDuration=Mathf.Max(0.01f,heavy ? heavyShakeDuration : smallShakeDuration);
         duration=heavy ? Mathf.Max(shakeDuration,heavyRecoilDuration) : shakeDuration;
         strength=heavy ? heavyShakeStrength : smallShakeStrength;
@@ -134,7 +144,7 @@ public sealed class QuestBoardImpactFeedback : MonoBehaviour
     }
     void ApplyMotion()
     {
-        if(ReducedMotion || duration<=0 || age>=duration) { ResetMotion(); return; }
+        if(ReducedMotion || impulseSuppressed || duration<=0 || age>=duration) { ResetMotion(); return; }
         float shake=Mathf.Clamp01(age/Mathf.Max(0.01f,shakeDuration)), impulse=(1-shake)*(1-shake)*(1-shake);
         CameraOffset=new Vector3(Mathf.Sin(shake*19f),-Mathf.Cos(shake*24f)*0.65f,0)*(strength*impulse*CameraShakeScale);
         CameraRoll=Mathf.Sin(shake*22f)*impulse*strength*4f*CameraShakeScale;
@@ -164,7 +174,20 @@ public sealed class QuestBoardImpactFeedback : MonoBehaviour
     {
         if (smallDust != null) smallDust.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         if (heavyDust != null) heavyDust.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        if (heavyPlume != null) heavyPlume.Stop(true,ParticleSystemStopBehavior.StopEmittingAndClear);
         if (impactChips != null) impactChips.Stop(true,ParticleSystemStopBehavior.StopEmittingAndClear);
+    }
+    public void PlayTerrainBreak(Vector3 position)
+    {
+        TerrainBreaks++;
+        if(!isActiveAndEnabled || ParticleScale<=0) return;
+        for(int i=0;i<Mathf.RoundToInt(8*ParticleScale);i++)
+        {
+            float angle=i*2.399963f;
+            var emission=new ParticleSystem.EmitParams { position=position+Vector3.up*0.15f,applyShapeToPosition=false,
+                velocity=new Vector3(Mathf.Cos(angle)*0.6f,0.5f,Mathf.Sin(angle)*0.6f),startLifetime=0.45f,startSize=0.075f };
+            if(impactChips!=null) { impactChips.Play(); impactChips.Emit(emission,1); }
+        }
     }
     public void PlayCue(Cue cue)
     {

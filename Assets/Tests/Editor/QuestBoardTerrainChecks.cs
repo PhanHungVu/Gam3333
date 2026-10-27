@@ -120,7 +120,8 @@ public static class QuestBoardTerrainChecks
         SceneManager.LoadScene("PreMissionScene"); yield return Ready();
         Check(Board.Progression==run&&signature==Signature()&&revealEvents==1&&Motion.Feedback.SmallImpacts==0,"Scene return reconstructs the same terrain already raised without replaying stone arrivals");
         for(int i=0;i<3;i++) { Check(QuestStoneBoardChecks.CompleteSmallForTest(Flow),"Tracked side completion "+(i+1)); yield return Ready(); }
-        Check(run.BigQuest!=null&&Motion.Feedback.HeavyImpacts==1&&signature==Signature()&&revealEvents==1,"Three successes still unlock the centered heavy drop without changing terrain");
+        Check(run.BigQuest!=null&&Motion.Feedback.HeavyImpacts==1&&signature!=Signature()&&revealEvents==1
+            &&Terrain.BrokenCount==Terrain.PlanBreaks().Count,"Three successes unlock the centered heavy drop and persist its terrain slides/fractures without replaying the reveal");
         Check(Board.Stones.All(s=>Board.StoneAt(Board.BoardCamera.WorldToScreenPoint(s.HitCollider.bounds.center))==s),"All six sides and the main remain independently selectable through the landscape");
         Capture("terrain-main-unlocked");
         var seen=new HashSet<string>(); int minimum=32,maximum=0;

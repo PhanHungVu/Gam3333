@@ -93,12 +93,10 @@ public static class QuestStonePolishChecks
                 if(Physicality&&stone.IsMain&&!firstMainVerified)
                 {
                     var neighbours=Board.Stones.Where(s=>!s.IsMain).OrderBy(s=>Vector3.Distance(s.transform.position,stone.transform.position)).ToArray();
-                    Check(neighbours.All(s=>s.IsReacting&&s.IsReady&&!s.IsMoving&&s.HitCollider.enabled),"P1: nearby stone visuals react at contact while their hit areas stay ready and fixed");
-                    float near=Quaternion.Angle(restRotations[neighbours.First().Offer.Id],neighbours.First().Visual.localRotation);
-                    float far=Quaternion.Angle(restRotations[neighbours.Last().Offer.Id],neighbours.Last().Visual.localRotation);
-                    Check(near>far*1.2f&&far>0.05f,"P1: impact tilt decreases with distance from the main stone");
+                    Check(neighbours.All(s=>s.IsReady&&!s.IsMoving&&s.HitCollider.enabled),"P2: contact preserves every neighbouring stone's readiness and hit area");
+                    Check(neighbours.All(s=>!s.IsReacting),"P2: the contact starts an outward wave; neighbours wait for its front instead of tilting simultaneously");
                     Check(Fx.ImpactChips!=null&&Fx.ImpactChips.particleCount>0&&Fx.CameraOffset.magnitude>0,
-                        "P1: chips, dust, camera impulse and secondary reactions start together at contact");
+                        "P2: chips, dust and camera impulse start at the authoritative contact while the surface wave begins propagating");
                     Capture("p1-heavy-contact");
                 }
             };
@@ -184,7 +182,7 @@ public static class QuestStonePolishChecks
                 "P1: initial arrivals distribute light drop, tumble and tilt/settle with varied heights");
             Check(profiles.All(p=>p.FallDuration+p.SettleDuration>=0.3f&&p.FallDuration+p.SettleDuration<=0.55f),"P1: small arrival variations remain within the short repeatable timing range");
             Check(Fx.BoardSurface!=null&&Fx.ImpactChips!=null&&Fx.BoardSurface.GetComponentsInChildren<Collider>().Length==0
-                &&Board.GetComponentsInChildren<ParticleSystem>(true).Length==3,"P1: repeated upgrade owns one visual surface and three reusable effect systems, with no board physics");
+                &&Board.GetComponentsInChildren<ParticleSystem>(true).Length==4,"P1: repeated upgrade owns one visual surface and four reusable effect systems, with no board physics");
         }
         var run=Flow.Session.Progression;
         for(int win=1;win<=3;win++)
@@ -205,7 +203,9 @@ public static class QuestStonePolishChecks
                 yield return null; Capture("m3-main-impact");
             }
             while(Busy) yield return null;
-            Check(unchanged.All(pair=>Board.Stones.Contains(pair.Key)&&pair.Key.transform.position==pair.Value),"Arrival/recoil never displaces unrelated rocks, success "+win);
+            Check(unchanged.All(pair=>Board.Stones.Contains(pair.Key)
+                &&(win==3 ? pair.Key.transform.localPosition==Board.ShockwaveSlotPosition(pair.Key.Offer.Slot,pair.Key.transform.localPosition.y) : pair.Key.transform.position==pair.Value)),
+                "Side arrivals preserve other roots; the main wave resolves their permanent pushed slots, success "+win);
         }
         var main=Board.Stones.Single(s=>s.IsMain); var mainDrop=drops[main.Offer.Id];
         Check(mainDrop.maxY>5f&&mainDrop.frames>10&&Fx.HeavyImpacts==1&&heavyParticles>smallParticles,"Main arrives higher, settles longer and emits the stronger impact exactly once");
@@ -293,10 +293,10 @@ public static class QuestStonePolishChecks
         Flow.Back(); yield return null; yield return null;
         SceneManager.LoadScene("PreMissionScene"); yield return null; yield return null; while(Busy) yield return null;
         Check(Fx.HeavyImpacts==0&&Flow.Session.Progression==persisted&&Board.Stones.Count==persisted.SmallOfferCount+1,"A main already seen at contact never replays its heavy unlock on later scene returns");
-        Check(typeof(PreMissionFlowControllerEditor).IsSubclassOf(typeof(Editor))
+        Check(Type.GetType("PreMissionFlowControllerEditor, Assembly-CSharp-Editor")==null
             &&typeof(QuestProgressionTools).Assembly!=typeof(PreMissionFlowController).Assembly
             &&!typeof(PreMissionFlowController).GetMethods(BindingFlags.Instance|BindingFlags.Public|BindingFlags.DeclaredOnly).Any(m=>m.Name=="CompleteSmallQuest"),
-            "Restored temporary completion control is Editor-only and adds no runtime completion action");
+            "Temporary completion Inspector is retired; fixture completion remains Editor-only without a runtime action");
 
         if(Physicality)
         {

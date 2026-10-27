@@ -17,11 +17,14 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
     [SerializeField] Variant[] variants;
     [SerializeField, Min(0f)] float emergenceDepth=0.14f;
     [SerializeField, Range(0f,0.3f)] float pieceStagger=0.12f;
+    [SerializeField, Range(0.1f,0.5f)] float baseRevealFraction=0.32f;
+    [SerializeField, Range(0f,0.3f)] float objectiveStart=0.18f;
     PreMissionStoneBoard board;
     QuestStoneView stone;
     Variant active;
     bool initialized, wasDisabled;
     Renderer[] renderers;
+    Vector3 displayPosition,displayScale;
     public QuestDefinition Quest => stone!=null ? stone.Offer.Quest : null;
     public float Progress { get; private set; }
     public bool IsVisible => display.gameObject.activeInHierarchy;
@@ -31,6 +34,7 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
     {
         board=owner;
         if(initialized) return;
+        displayPosition=display.localPosition; displayScale=display.localScale;
         renderers=display.GetComponentsInChildren<Renderer>(true);
         foreach(var variant in variants)
         {
@@ -69,15 +73,19 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
         display.gameObject.SetActive(stone!=null && active!=null && Progress>0.001f);
         if(stone==null) return;
         stone.SetInscriptionVisibility(active!=null ? 1-Progress : 1);
-        var bounds=stone.RockBounds;
-        transform.position=new Vector3(bounds.center.x,bounds.max.y+0.015f,bounds.center.z);
-        transform.rotation=Quaternion.Euler(0,stone.transform.eulerAngles.y,0);
+        // Attach to the actual slab plane; an axis-aligned bounding-box maximum
+        // floats above the highest corner as a slab turns during inspection.
+        transform.SetPositionAndRotation(stone.SurfacePoint+stone.SurfaceRotation*Vector3.up*0.015f,stone.SurfaceRotation);
         transform.localScale=Vector3.one*(stone.IsMain ? 1.18f : 1f);
         if(active==null) return;
+        bool reduced=board!=null && board.Motion!=null && board.Motion.Feedback!=null && board.Motion.Feedback.ReducedMotion;
+        float foundation=reduced ? 1 : Mathf.SmoothStep(0,1,Mathf.Clamp01(Progress/Mathf.Max(0.01f,baseRevealFraction)));
+        display.localPosition=displayPosition-Vector3.up*(emergenceDepth*(1-foundation));
+        display.localScale=Vector3.Scale(displayScale,new Vector3(foundation,Mathf.Lerp(0.1f,1,foundation),foundation));
+        float formation=reduced ? 1 : Mathf.Clamp01((Progress-objectiveStart)/Mathf.Max(0.01f,1-objectiveStart));
         for(int i=0;i<active.pieces.Length;i++)
         {
-            bool reduced=board!=null && board.Motion!=null && board.Motion.Feedback!=null && board.Motion.Feedback.ReducedMotion;
-            float part=reduced ? 1 : Mathf.Clamp01(Progress*(1+pieceStagger*(active.pieces.Length-1))-pieceStagger*i);
+            float part=Mathf.Clamp01(formation*(1+pieceStagger*(active.pieces.Length-1))-pieceStagger*i);
             float eased=part*part*(3-2*part);
             active.pieces[i].gameObject.SetActive(part>0);
             active.pieces[i].localPosition=active.positions[i]-Vector3.up*(emergenceDepth*(1-eased));
@@ -88,18 +96,27 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
     {
         if(stone!=null) stone.SetInscriptionVisibility(1);
         stone=null; active=null; Progress=0;
-        if(display!=null) display.gameObject.SetActive(false);
+        if(display!=null)
+        {
+            display.gameObject.SetActive(false);
+            if(initialized) { display.localPosition=displayPosition; display.localScale=displayScale; }
+        }
     }
-    public Bounds InspectionBounds(QuestStoneView selected,Bounds rockBounds)
+    void LateUpdate()
+    {
+        if(stone==null || !IsVisible) return;
+        // Preference changes must update a held pose too, not just the next
+        // coroutine sample. Refresh the slab first so the preview cannot lag it.
+        stone.RefreshMotionPreference(); SetProgress(Progress);
+    }
+    public Bounds InspectionBounds(QuestStoneView selected,Vector3 offset,Vector3 angles,Vector3 scale,float motionAmount)
     {
         foreach(var variant in variants)
         {
             if(variant.missionType!=selected.Offer.Quest.missionType) continue;
-            var matrix=Matrix4x4.TRS(new Vector3(rockBounds.center.x,rockBounds.max.y+0.015f,rockBounds.center.z),
-                Quaternion.Euler(0,selected.transform.eulerAngles.y,0),Vector3.one*(selected.IsMain?1.18f:1f));
-            return QuestStoneView.TransformBounds(variant.fullBounds,matrix);
+            return QuestStoneView.TransformBounds(variant.fullBounds,selected.PreviewFrame(offset,angles,scale,motionAmount));
         }
-        return rockBounds;
+        return selected.MotionBounds(offset,angles,scale,motionAmount);
     }
     public Bounds WorldBounds
     {

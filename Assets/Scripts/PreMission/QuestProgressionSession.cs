@@ -97,8 +97,16 @@ public sealed class QuestProgressionSession
         BigQuest = CreateOffer(candidates[random.Next(candidates.Count)], SmallOfferCount);
         offers.Add(BigQuest); return BigQuest;
     }
-    public QuestOffer FindOffer(string id) => offers.Find(o => o.Id == id);
-    public QuestOffer FindOffer(QuestDefinition quest) => offers.Find(o => o.Quest == quest);
+    public QuestOffer FindOffer(string id)
+    {
+        for(int i=0;i<offers.Count;i++) if(offers[i].Id==id) return offers[i];
+        return null;
+    }
+    public QuestOffer FindOffer(QuestDefinition quest)
+    {
+        for(int i=0;i<offers.Count;i++) if(offers[i].Quest==quest) return offers[i];
+        return null;
+    }
     public bool TryBeginMission(QuestDefinition quest, PartData torso, out QuestMissionAttempt attempt)
     {
         attempt = null;

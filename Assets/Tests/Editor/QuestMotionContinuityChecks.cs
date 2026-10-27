@@ -93,15 +93,24 @@ public static class QuestMotionContinuityChecks
             var unrelated=Board.Stones.Where(s=>s!=stone).ToDictionary(s=>s.Offer.Id,s=>(s.transform.localPosition,s.transform.localRotation));
             Board.RefreshCameraFrame(); var home=Board.BoardCamera.transform.position; float homeSize=Board.BoardCamera.orthographicSize;
             Pointer(stone); yield return Wait(0.05f);
+            var renderer=Field<MeshRenderer>(stone,"rock"); var baseColor=renderer.sharedMaterial.color; var tint=new MaterialPropertyBlock();
+            bool NeutralTint()
+            {
+                renderer.GetPropertyBlock(tint); var color=tint.GetColor("_BaseColor");
+                return Mathf.Abs(color.r-baseColor.r)+Mathf.Abs(color.g-baseColor.g)+Mathf.Abs(color.b-baseColor.b)<0.0001f;
+            }
+            Check(!NeutralTint(),"The partial-hover fixture has an actual warm material tint: "+stone.Offer.Quest.title);
             var grabOffset=stone.CurrentOffset; var grabAngles=stone.CurrentAngles; var grabScale=stone.CurrentScale;
             Flow.SelectQuest(stone.Offer.Quest);
+            Check(NeutralTint(),"Pickup clears hover colour immediately without waiting for return: "+stone.Offer.Quest.title);
             Check(Vector3.Distance(stone.CurrentOffset,grabOffset)<0.0001f&&Vector3.Distance(stone.CurrentAngles,grabAngles)<0.001f
                 &&Vector3.Distance(stone.CurrentScale,grabScale)<0.0001f,"Click continues from the actual partial-hover pose: "+stone.Offer.Quest.title);
-            bool overlap=false, revealOverlap=false, controlsLocked=true, stableTarget=true, targetSeen=false;
+            bool overlap=false, revealOverlap=false, controlsLocked=true, stableTarget=true, targetSeen=false, neutralTint=true;
             Vector3 target=default; float targetSize=0; int targetFrames=0;
             var groups=UI.GetType().GetField("briefingGroups",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(UI) as CanvasGroup[];
             while(Busy)
             {
+                neutralTint&=NeutralTint();
                 Board.RefreshCameraFrame(); float p=Motion.InspectionProgress;
                 controlsLocked&=!CanUse(Field<Button>(Flow,"acceptButton"))&&!CanUse(Field<Button>(Flow,"declineButton"));
                 if(Motion.IsTransitioning&&p<1&&Details.gameObject.activeSelf&&Details.alpha>0.01f)
@@ -127,6 +136,7 @@ public static class QuestMotionContinuityChecks
             bool returnOverlap=false, stableReturn=true;
             while(Busy)
             {
+                neutralTint&=NeutralTint();
                 Board.RefreshCameraFrame(); float p=Motion.InspectionProgress;
                 if(p>0.15f&&p<0.98f)
                 {
@@ -138,6 +148,7 @@ public static class QuestMotionContinuityChecks
                 yield return null;
             }
             Check(returnOverlap&&stableReturn,"Panel retraction overlaps a stable camera return as the miniature retracts: "+stone.Offer.Quest.title);
+            Check(neutralTint&&NeutralTint(),"No stale yellow tint remains during inspection, decline or settled return: "+stone.Offer.Quest.title);
             Check(stone.transform.localPosition==root&&stone.transform.localRotation==rotation&&stone.CurrentOffset==Vector3.zero
                 &&stone.CurrentAngles.sqrMagnitude<0.0001f&&stone.CurrentScale==Vector3.one&&stone.HitCollider.enabled&&!Motion.Miniature.IsVisible,
                 "Return restores the exact root, visual, hit area and inscription: "+stone.Offer.Quest.title);

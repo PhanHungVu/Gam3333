@@ -2,7 +2,8 @@ using UnityEditor;
 using UnityEngine;
 using System.Linq;
 
-// Editor-only development actions. The temporary completion control is retired after P4 review.
+// Editor-only automated-test utilities and progression reset menu. P4 retired
+// the visible completion Inspector; no completion button is shipped.
 public static class QuestProgressionTools
 {
     const string Menu = "Tools/Mech/Pre-Mission/Development/";

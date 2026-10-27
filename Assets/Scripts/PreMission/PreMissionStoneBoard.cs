@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using Unity.Profiling;
 
 // World presentation/input only. QuestProgressionSession remains the offer authority.
 [DisallowMultipleComponent]
@@ -20,7 +21,14 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
     [SerializeField] QuestStoneView smallStonePrefab;
     [SerializeField] QuestStoneView mainStonePrefab;
     [SerializeField] Composition[] compositions;
-    [Header("Randomized surround placement (stable per run)")]
+    [Header("Whole-table quest slabs")]
+    [Tooltip("Scatter side slabs across the table, then clear the main landing area only when it unlocks. Positions remain stable for the run.")]
+    [SerializeField] bool wholeTableLayout=true;
+    [Tooltip("Side slab centers before the main quest arrives. Full collider corners are also checked against the table ellipse.")]
+    [SerializeField] Rect freePlacementBounds=new Rect(-6.9f,-3.3f,14.2f,6.6f);
+    [SerializeField] Vector2 tableRadii=new Vector2(10.05f,5.05f);
+    [SerializeField, Min(0f)] float slabSpacing=0.10f;
+    [Header("Legacy authored layout (Whole Table Layout off)")]
     [SerializeField] bool randomizePlacement = true;
     [SerializeField] Vector2 positionVariation = new Vector2(0.45f, 0.28f);
     [SerializeField, Range(0f, 0.15f)] float endPositionVariation = 0.08f;
@@ -32,6 +40,10 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
     [SerializeField] Rect screenArea = new Rect(0.035f, 0.19f, 0.93f, 0.59f);
     readonly List<QuestStoneView> stones = new List<QuestStoneView>();
     readonly List<RaycastResult> uiHits = new List<RaycastResult>();
+    static readonly ProfilerMarker LayoutMarker=new ProfilerMarker("PreMission.Layout");
+    IReadOnlyList<QuestStoneView> stoneView;
+    EventSystem raycastSystem;
+    PointerEventData uiPointer;
     PreMissionFlowController flow;
     QuestProgressionSession run;
     QuestStoneView focused;
@@ -41,8 +53,13 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
     PreMissionStoneMotion motion;
     Vector2 lastPointer;
     Vector2[] slotPositions;
+    Vector2[] landingPositions, impactPositions;
     float[] slotAngles;
-    public IReadOnlyList<QuestStoneView> Stones => stones.AsReadOnly();
+    Rect[] projectedFootprints;
+    Vector2[][] tabletopCorners;
+    Vector2 projectedX,projectedZ;
+    bool footprintCacheValid;
+    public IReadOnlyList<QuestStoneView> Stones => stoneView ?? (stoneView=stones.AsReadOnly());
     public Camera BoardCamera => boardCamera;
     public QuestProgressionSession Progression => run;
     public PreMissionStoneMotion Motion => motion;
@@ -57,6 +74,7 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
         }
     }
     public int CompositionIndex { get; private set; }
+    public bool UsesWholeTableLayout => wholeTableLayout;
     public bool InputEnabled => IsOperational
         && flow != null && flow.CanSelectBoard && !flow.IsPosting;
 
@@ -95,6 +113,7 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
             bool main = offer.Quest.category == QuestCategory.Main;
             var stone = Instantiate(main ? mainStonePrefab : smallStonePrefab, stoneParent);
             Vector2 slot = main ? Vector2.zero : slotPositions[offer.Slot];
+            if(!main) slot+=QuestProgressionRuntime.StoneDisplacement(run,offer.Slot);
             stone.transform.localPosition = new Vector3(slot.x, 0.03f, slot.y);
             float angle = main ? 0f : slotAngles[offer.Slot];
             stone.transform.localRotation = Quaternion.Euler(0, angle, 0);
@@ -104,9 +123,152 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
             stones.Add(stone);
         }
         stones.Sort((a, b) => a.Offer.Slot.CompareTo(b.Offer.Slot));
+        var inlays=transform.Find("Impact Inlays");
+        if(inlays!=null) inlays.gameObject.SetActive(run.BigQuest!=null);
         Physics.SyncTransforms();
     }
     void PreparePlacements()
+    {
+        using(LayoutMarker.Auto()) PreparePlacementData();
+    }
+    void PreparePlacementData()
+    {
+        if(wholeTableLayout && PrepareWholeTablePlacements()) return;
+        PrepareAuthoredPlacements();
+        footprintCacheValid=false;
+        landingPositions=(Vector2[])slotPositions.Clone(); impactPositions=null;
+    }
+    sealed class PlacementPair
+    {
+        public Vector2 landing,impact; public Rect landingArea,impactArea; public float cost;
+    }
+    bool PrepareWholeTablePlacements()
+    {
+        int count=compositions[CompositionIndex].smallSlots.Length;
+        var random=new System.Random(unchecked(run.Seed ^ 0x73A219D));
+        slotPositions=new Vector2[count]; slotAngles=new float[count];
+        for(int i=0;i<count;i++) slotAngles[i]=Signed(random)*(4+rotationVariation);
+        CacheFootprints(count);
+        var center=ProjectedHitArea(mainStonePrefab,Vector2.zero,0);
+        var main=Padded(center,slabSpacing);
+        // Restart bounded dart throwing instead of falling back to an overlapping
+        // final sample. No future main footprint is excluded from this first view.
+        for(int restart=0;restart<64;restart++)
+        {
+            var occupied=new List<Rect>(); bool complete=true,usesCenter=false;
+            for(int slot=0;slot<count;slot++)
+            {
+                bool placed=false;
+                for(int attempt=0;attempt<320;attempt++)
+                {
+                    var point=RandomTablePoint(random); if(!FitsTable(point,slot,0.35f)) continue;
+                    var raw=SlotArea(slot,point); var area=Padded(raw,slabSpacing);
+                    if(occupied.Exists(r=>r.Overlaps(area))) continue;
+                    slotPositions[slot]=point; occupied.Add(area); usesCenter|=center.Overlaps(raw); placed=true; break;
+                }
+                if(!placed) { complete=false; break; }
+            }
+            if(complete && usesCenter && PrepareLandingPairs(random,main,count)) return true;
+        }
+        Debug.LogWarning("Quest layout settings are too crowded; using the authored safe layout.");
+        return false;
+    }
+    Vector2 RandomTablePoint(System.Random random) => new Vector2(
+        Mathf.Lerp(freePlacementBounds.xMin,freePlacementBounds.xMax,(float)random.NextDouble()),
+        Mathf.Lerp(freePlacementBounds.yMin,freePlacementBounds.yMax,(float)random.NextDouble()));
+    bool PrepareLandingPairs(System.Random random,Rect main,int count)
+    {
+        float preferred=motion!=null && motion.Shockwave!=null ? motion.Shockwave.SlideDistance : 0.85f;
+        var candidates=new List<PlacementPair>[count]; var order=new List<int>();
+        for(int slot=0;slot<count;slot++)
+        {
+            var options=candidates[slot]=new List<PlacementPair>(); order.Add(slot);
+            for(int sample=0;sample<640;sample++)
+            {
+                var point=sample==0 ? slotPositions[slot] : RandomTablePoint(random);
+                if(!FitsTable(point,slot,0.12f)) continue;
+                var area=Padded(SlotArea(slot,point),slabSpacing);
+                if(area.Overlaps(main)) continue;
+                for(int step=0;step<6;step++)
+                {
+                    float distance=Mathf.Lerp(preferred,0.35f,step/5f);
+                    var target=point+point.normalized*distance;
+                    if(!FitsTable(target,slot,0)) continue;
+                    var targetArea=Padded(SlotArea(slot,target),slabSpacing);
+                    if(targetArea.Overlaps(main)) continue;
+                    options.Add(new PlacementPair { landing=point,impact=target,landingArea=area,impactArea=targetArea,
+                        cost=(point-slotPositions[slot]).sqrMagnitude+(float)random.NextDouble()*0.025f }); break;
+                }
+            }
+            options.Sort((a,b)=>a.cost.CompareTo(b.cost));
+            if(options.Count>180) options.RemoveRange(180,options.Count-180);
+            if(options.Count==0) return false;
+        }
+        // Outer slabs have fewer choices, so resolve them before relocating the
+        // central ones. Backtracking can move an outer slab when keeping it would
+        // prevent a complete, readable six-offer arrangement.
+        order.Sort((a,b)=>slotPositions[b].sqrMagnitude.CompareTo(slotPositions[a].sqrMagnitude));
+        var chosen=new PlacementPair[count]; int budget=24000;
+        bool Search(int at)
+        {
+            if(at==count) return true;
+            int slot=order[at];
+            foreach(var option in candidates[slot])
+            {
+                if(--budget<0) return false;
+                bool clear=true;
+                for(int i=0;i<at;i++)
+                {
+                    var other=chosen[order[i]];
+                    if(option.landingArea.Overlaps(other.landingArea)||option.impactArea.Overlaps(other.impactArea)) { clear=false; break; }
+                }
+                if(!clear) continue;
+                chosen[slot]=option; if(Search(at+1)) return true;
+            }
+            return false;
+        }
+        if(!Search(0)) return false;
+        landingPositions=new Vector2[count]; impactPositions=new Vector2[count];
+        for(int i=0;i<count;i++) { landingPositions[i]=chosen[i].landing; impactPositions[i]=chosen[i].impact; }
+        return true;
+    }
+    void CacheFootprints(int count)
+    {
+        projectedFootprints=new Rect[count]; tabletopCorners=new Vector2[count][];
+        var rotation=transform.rotation*cameraHomeRotation; var parent=stoneParent.localToWorldMatrix;
+        var right=rotation*Vector3.right; var up=rotation*Vector3.up;
+        projectedX=new Vector2(Vector3.Dot(parent.MultiplyVector(Vector3.right),right),Vector3.Dot(parent.MultiplyVector(Vector3.right),up));
+        projectedZ=new Vector2(Vector3.Dot(parent.MultiplyVector(Vector3.forward),right),Vector3.Dot(parent.MultiplyVector(Vector3.forward),up));
+        var hit=(BoxCollider)smallStonePrefab.HitCollider; var center=hit.center; var half=hit.size*0.5f;
+        for(int i=0;i<count;i++)
+        {
+            projectedFootprints[i]=ProjectedHitArea(smallStonePrefab,Vector2.zero,slotAngles[i]);
+            var corners=tabletopCorners[i]=new Vector2[4]; var yaw=Quaternion.Euler(0,slotAngles[i],0); int at=0;
+            for(int x=-1;x<=1;x+=2) for(int z=-1;z<=1;z+=2)
+            {
+                var corner=yaw*(center+Vector3.Scale(half,new Vector3(x,0,z))); corners[at++]=new Vector2(corner.x,corner.z);
+            }
+        }
+        footprintCacheValid=true;
+    }
+    Rect SlotArea(int slot,Vector2 point)
+    {
+        if(!footprintCacheValid) return ProjectedHitArea(smallStonePrefab,point,slotAngles[slot]);
+        var area=projectedFootprints[slot]; var offset=projectedX*point.x+projectedZ*point.y;
+        area.position+=offset; return area;
+    }
+    bool FitsTable(Vector2 point,int slot,float inset)
+    {
+        float xRadius=Mathf.Max(0.1f,tableRadii.x-inset),zRadius=Mathf.Max(0.1f,tableRadii.y-inset);
+        // The left rail and its labels occupy the otherwise usable table edge.
+        foreach(var corner in tabletopCorners[slot])
+        {
+            float px=point.x+corner.x,pz=point.y+corner.y;
+            if(px< -8.45f || px*px/(xRadius*xRadius)+pz*pz/(zRadius*zRadius)>1) return false;
+        }
+        return true;
+    }
+    void PrepareAuthoredPlacements()
     {
         var composition=compositions[CompositionIndex];
         int count=composition.smallSlots.Length;
@@ -164,13 +326,72 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
         return Rect.MinMaxRect(min.x,min.y,max.x,max.y);
     }
     static Rect Padded(Rect area,float margin) => Rect.MinMaxRect(area.xMin-margin,area.yMin-margin,area.xMax+margin,area.yMax+margin);
-    // Terrain reserves every possible slot, including the locked main and unused
-    // side slots. Camera-plane bounds protect labels as well as physical roots.
+    public Vector3 ShockwaveSlotPosition(int slot,float height)
+    {
+        var position=slotPositions[slot]+QuestProgressionRuntime.StoneDisplacement(run,slot);
+        return new Vector3(position.x,height,position.y);
+    }
+    public Dictionary<int,Vector2> LandingOffsets()
+    {
+        var offsets=new Dictionary<int,Vector2>();
+        foreach(var stone in stones) if(!stone.IsMain) offsets[stone.Offer.Slot]=landingPositions[stone.Offer.Slot]-slotPositions[stone.Offer.Slot];
+        return offsets;
+    }
+    public Vector3 LandingSlotPosition(int slot,float height) => new Vector3(landingPositions[slot].x,height,landingPositions[slot].y);
+    public List<Rect> ImpactExclusions(float clearance)
+    {
+        var result=new List<Rect> { Padded(ProjectedHitArea(mainStonePrefab,Vector2.zero,0),clearance) };
+        var positions=impactPositions ?? slotPositions;
+        for(int slot=0;slot<positions.Length;slot++) result.Add(Padded(SlotArea(slot,positions[slot]),clearance));
+        return result;
+    }
+    public Dictionary<int,Vector2> PlanShockwaveSlides(float distance,IReadOnlyList<Bounds> obstacles)
+    {
+        var result=new Dictionary<int,Vector2>();
+        if(wholeTableLayout && impactPositions!=null)
+        {
+            foreach(var stone in stones) if(!stone.IsMain) result[stone.Offer.Slot]=impactPositions[stone.Offer.Slot]-slotPositions[stone.Offer.Slot];
+            return result;
+        }
+        var occupied=new Dictionary<int,Rect>();
+        foreach(var stone in stones)
+            if(!stone.IsMain) occupied[stone.Offer.Slot]=ProjectedHitArea(smallStonePrefab,new Vector2(stone.transform.localPosition.x,stone.transform.localPosition.z),slotAngles[stone.Offer.Slot]);
+        foreach(var stone in stones)
+        {
+            if(stone.IsMain) continue;
+            int slot=stone.Offer.Slot; var start=new Vector2(stone.transform.localPosition.x,stone.transform.localPosition.z);
+            var direction=start.normalized; Vector2 target=start; bool found=false;
+            for(int step=0;step<10&&!found;step++) foreach(float angle in new[]{0f,-12f,12f,-24f,24f})
+            {
+                float radians=angle*Mathf.Deg2Rad;
+                var heading=new Vector2(direction.x*Mathf.Cos(radians)-direction.y*Mathf.Sin(radians),direction.x*Mathf.Sin(radians)+direction.y*Mathf.Cos(radians));
+                var candidate=start+heading*(distance*Mathf.Pow(0.88f,step));
+                candidate.x=Mathf.Clamp(candidate.x,-7.5f,7.5f); candidate.y=Mathf.Clamp(candidate.y,-4.05f,4.05f);
+                var area=Padded(ProjectedHitArea(smallStonePrefab,candidate,slotAngles[slot]),0.04f);
+                bool clear=true;
+                foreach(var other in occupied) if(other.Key!=slot && area.Overlaps(other.Value)) { clear=false; break; }
+                if(clear && obstacles!=null) foreach(var bounds in obstacles) if(area.Overlaps(ProjectTerrainBounds(bounds))) { clear=false; break; }
+                if(!clear) continue;
+                target=candidate; occupied[slot]=area; found=true; break;
+            }
+            result[slot]=target-slotPositions[slot];
+        }
+        return result;
+    }
+    // Terrain avoids the initial, landing and impact footprints. This does not
+    // reserve the main footprint from side quests before it unlocks.
     public List<Rect> TerrainExclusions(float clearance)
     {
         var result=new List<Rect> { Padded(ProjectedHitArea(mainStonePrefab,Vector2.zero,0),clearance) };
         for(int i=0;i<slotPositions.Length;i++)
-            result.Add(Padded(ProjectedHitArea(smallStonePrefab,slotPositions[i],slotAngles[i]),clearance));
+        {
+            result.Add(Padded(SlotArea(i,slotPositions[i]),clearance));
+            if(wholeTableLayout && impactPositions!=null)
+            {
+                result.Add(Padded(SlotArea(i,landingPositions[i]),clearance));
+                result.Add(Padded(SlotArea(i,impactPositions[i]),clearance));
+            }
+        }
         return result;
     }
     public Rect ProjectTerrainBounds(Bounds localBounds)
@@ -219,7 +440,10 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
     {
         if (EventSystem.current == null) return false;
         uiHits.Clear();
-        EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current) { position = screenPosition }, uiHits);
+        if(raycastSystem!=EventSystem.current || uiPointer==null)
+        { raycastSystem=EventSystem.current; uiPointer=new PointerEventData(raycastSystem); }
+        uiPointer.Reset(); uiPointer.position=screenPosition;
+        raycastSystem.RaycastAll(uiPointer,uiHits);
         foreach (var hit in uiHits) if (hit.module is GraphicRaycaster) return true;
         return false;
     }

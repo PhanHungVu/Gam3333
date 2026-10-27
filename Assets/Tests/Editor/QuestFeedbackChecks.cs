@@ -89,7 +89,7 @@ public static class QuestFeedbackChecks
         yield return Ready();
         var impact=Field<AudioSource>(Fx,"impactAudio"); var interaction=Field<AudioSource>(Fx,"interactionAudio");
         Check(impact!=interaction&&Board.GetComponentsInChildren<AudioSource>(true).Length==2,"Two reusable sources separate impact tails from interaction cues");
-        Check(Board.GetComponentsInChildren<ParticleSystem>(true).Length==3&&Fx.GetComponentsInChildren<Rigidbody>(true).Length==0,"Existing three reusable particle systems retained without physical debris");
+        Check(Board.GetComponentsInChildren<ParticleSystem>(true).Length==4&&Fx.GetComponentsInChildren<Rigidbody>(true).Length==0,"Four reusable particle systems including the heavy plume, without simulated debris bodies");
         var roles=new[]{"smallImpact","heavyImpact","handlingClip","progressClip","selectionClip","confirmationClip"};
         Check(roles.All(n=>Field<AudioClip>(Fx,n)==null),"All six shipped audio hooks remain empty after repeated setup");
         Fx.Play(Vector3.zero,false); Fx.Play(Vector3.zero,true);
@@ -158,8 +158,9 @@ public static class QuestFeedbackChecks
             Check(run.SuccessfulSmallCompletions==win&&Motion.ProgressTrack.ShownStep==win&&Motion.ProgressTrack.CameraFocus==0,"Reduced progress agrees with successful result, win "+win);
         }
         Check(Fx.InteractionCount==progress+3&&run.BigQuest!=null&&Fx.HeavyImpacts==heavy+1,"Three actual successes create three marker cues and one main contact");
-        Check(Fx.HeavyDust.particleCount+Fx.SmallDust.particleCount+Fx.ImpactChips.particleCount==0&&unchanged.All(p=>Board.FindStone(p.Key).transform.localPosition==p.Value),
-            "Reduced main reveal emits no debris and preserves unrelated slots");
+        Check(Fx.HeavyDust.particleCount+Fx.SmallDust.particleCount+Fx.HeavyPlume.particleCount+Fx.ImpactChips.particleCount==0&&unchanged.All(p=> {
+            var stone=Board.FindStone(p.Key); return stone!=null&&stone.transform.localPosition==Board.ShockwaveSlotPosition(stone.Offer.Slot,stone.transform.localPosition.y);
+        }),"Reduced main reveal emits no debris and resolves the same permanent pushed slots");
         Stable("Reduced main reveal"); Capture("p4-reduced-board",1600,900);
         // Change preference in the middle of real heavy feedback and object motion.
         Fx.SetReducedMotion(false); Flow.StartNewProgression(); yield return Ready();

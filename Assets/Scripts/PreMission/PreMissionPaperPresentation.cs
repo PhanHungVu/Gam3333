@@ -416,8 +416,7 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
         RememberPoses();
         var old = Group(from); var next = Group(to);
         SetGroup(old, true, false); SetGroup(next, true, false); next.alpha = 0f;
-        if(tabletopBriefing && to==PreMissionView.Torso)
-            yield return Animate(clickFeedbackDuration,t=>tabletopAccept.localScale=acceptScale*(1f-0.025f*Mathf.Sin(t*Mathf.PI)*MotionScale));
+        bool accepting=tabletopBriefing && to==PreMissionView.Torso;
         float direction = to == PreMissionView.Torso ? 1f : -1f;
         var oldRect = (RectTransform)old.transform; var nextRect = (RectTransform)next.transform;
         var oldHome = from == PreMissionView.Details ? detailsPosition : torsoPosition;
@@ -425,6 +424,11 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
         yield return Animate(viewFadeDuration, t =>
         {
             float eased = Smooth(t); old.alpha = 1f - eased; next.alpha = eased;
+            if(accepting)
+            {
+                float press=Mathf.Clamp01(t*viewFadeDuration/Mathf.Max(0.01f,clickFeedbackDuration));
+                tabletopAccept.localScale=acceptScale*(1f-0.025f*Mathf.Sin(press*Mathf.PI)*MotionScale);
+            }
             oldRect.anchoredPosition = oldHome + Vector2.left * (direction * viewTravel * eased*MotionScale);
             nextRect.anchoredPosition = nextHome + Vector2.right * (direction * viewTravel * (1f - eased)*MotionScale);
         });
@@ -587,15 +591,15 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
     }
     IEnumerator Animate(float seconds, Action<float> frame)
     {
-        if(ReducedMotion) seconds=Mathf.Min(seconds,0.16f);
-        float age = 0f; seconds = Mathf.Max(0.01f, seconds);
+        float progress=0f; seconds=Mathf.Max(0.01f,seconds);
         frame(0);
-        while (age < seconds)
+        while (progress<1)
         {
             yield return null;
             // A loading/compilation hitch must not consume an entire short UI animation.
-            age += Mathf.Min(Time.unscaledDeltaTime, 0.05f);
-            frame(Mathf.Clamp01(age / seconds));
+            float activeDuration=ReducedMotion ? Mathf.Min(seconds,0.16f) : seconds;
+            progress=Mathf.Min(1,progress+Mathf.Min(Time.unscaledDeltaTime,0.05f)/activeDuration);
+            frame(progress);
         }
     }
 }

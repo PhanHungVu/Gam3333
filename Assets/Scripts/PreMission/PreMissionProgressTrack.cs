@@ -176,8 +176,12 @@ public sealed class PreMissionProgressTrack : MonoBehaviour
     static float Ease(float t) => t*t*t*(t*(t*6-15)+10);
     IEnumerator Animate(float duration,Action<float> frame)
     {
-        if(ReducedMotion) duration=Mathf.Min(duration,0.12f);
-        float age=0; duration=Mathf.Max(0.01f,duration); frame(0);
-        while(age<duration) { yield return null; age+=Mathf.Min(Time.unscaledDeltaTime,0.05f); frame(Mathf.Clamp01(age/duration)); }
+        duration=Mathf.Max(0.01f,duration); float progress=0; frame(0);
+        while(progress<1)
+        {
+            yield return null;
+            float activeDuration=ReducedMotion ? Mathf.Min(duration,0.12f) : duration;
+            progress=Mathf.Min(1,progress+Mathf.Min(Time.unscaledDeltaTime,0.05f)/activeDuration); frame(progress);
+        }
     }
 }

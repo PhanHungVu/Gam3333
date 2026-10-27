@@ -202,8 +202,9 @@ public sealed class PreMissionFlowController : MonoBehaviour
                 stoneBoard.Motion?.ProgressTrack?.RememberResting();
                 stoneBoard.Motion?.Terrain?.RememberResting();
             }
-            foreach (var stone in stoneBoard.Stones)
-                if (stone.IsReady && !stone.IsMoving) QuestProgressionRuntime.MarkPresented(Session.Progression, stone.Offer.Id);
+            var stones=stoneBoard.Stones;
+            for(int i=0;i<stones.Count;i++)
+                if(stones[i].IsReady && !stones[i].IsMoving) QuestProgressionRuntime.MarkPresented(Session.Progression,stones[i].Offer.Id);
             return;
         }
         foreach (var notice in notices)

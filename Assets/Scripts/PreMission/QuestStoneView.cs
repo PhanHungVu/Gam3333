@@ -27,6 +27,10 @@ public sealed class QuestStoneView : MonoBehaviour
     float hoverAmount, hoverFrom, hoverTarget, hoverAge;
     Vector3 restCenter;
     Vector3 reactionOffset, reactionAngles;
+    BoxCollider hitCollider;
+    Vector3 requestedOffset,requestedAngles,requestedScale;
+    bool hasRequestedPose;
+    float appliedMotionScale;
     public QuestOffer Offer { get; private set; }
     public bool IsHighlighted { get; private set; }
     public bool IsReady { get; private set; }
@@ -35,8 +39,11 @@ public sealed class QuestStoneView : MonoBehaviour
     public Transform Visual => visual;
     public bool IsMain => Offer != null && Offer.Quest.category == QuestCategory.Main;
     public Vector3 InspectionPoint => transform.TransformPoint(restCenter) + Vector3.up * 0.12f;
-    public Collider HitCollider => GetComponent<BoxCollider>();
+    public Collider HitCollider => hitCollider!=null ? hitCollider : (hitCollider=GetComponent<BoxCollider>());
     public Bounds RockBounds => rock.bounds;
+    Vector3 LocalSurfacePoint => rockLocalBounds.center+Vector3.up*rockLocalBounds.extents.y;
+    public Vector3 SurfacePoint => rock.transform.TransformPoint(LocalSurfacePoint);
+    public Quaternion SurfaceRotation => visual.rotation;
     public float InscriptionOpacity => label.alpha;
     public Vector3 CurrentAngles
     {
@@ -76,13 +83,21 @@ public sealed class QuestStoneView : MonoBehaviour
         hoverAmount = Mathf.Lerp(hoverFrom, hoverTarget, Mathf.SmoothStep(0, 1, hoverAge / Mathf.Max(0.01f,IsMain ? mainHoverDuration : hoverDuration)));
         ApplyHover();
     }
+    void LateUpdate() => RefreshMotionPreference();
+    internal void RefreshMotionPreference()
+    {
+        if(IsMoving && hasRequestedPose && appliedMotionScale!=MotionScale) ApplyRequestedPose();
+    }
     void ApplyHover()
     {
         if (visual == null) return;
         visual.localPosition = visualPosition + (Vector3.up * ((IsMain ? mainHoverLift : hoverLift) * hoverAmount) + reactionOffset)*MotionScale;
         visual.localRotation = visualRotation * Quaternion.Euler((reactionAngles+new Vector3(-1,0,0.35f)*((IsMain ? mainHoverTilt : hoverTilt)*hoverAmount))*MotionScale);
         visual.localScale = visualScale * (1f + (IsMain ? 0.01f : 0.025f) * hoverAmount*MotionScale);
-        var color = Color.Lerp(baseColor, new Color(0.83f, 0.76f, 0.54f), 0.22f * hoverAmount);
+        SetTint(Color.Lerp(baseColor, new Color(0.83f, 0.76f, 0.54f), 0.22f * hoverAmount));
+    }
+    void SetTint(Color color)
+    {
         properties.SetColor("_BaseColor", color); properties.SetColor("_Color", color);
         rock.SetPropertyBlock(properties);
     }
@@ -92,11 +107,25 @@ public sealed class QuestStoneView : MonoBehaviour
     }
     public void SetMotionFrame(Vector3 offset, Vector3 angles, Vector3 scale)
     {
+        // Handling owns the pose now. Clear hover colour immediately, without
+        // applying the resting pose over a partial-hover pickup/return frame.
+        if(!IsMoving || IsHighlighted || hoverAmount>0)
+        {
+            hoverAmount=hoverFrom=hoverTarget=hoverAge=0;
+            SetTint(baseColor);
+        }
         reactionOffset = reactionAngles = Vector3.zero;
         IsMoving = true; IsHighlighted = false; selectionRing.SetActive(false); HitCollider.enabled = false;
         visual.gameObject.SetActive(true);
-        visual.localPosition = visualPosition + offset*MotionScale; visual.localRotation = visualRotation * Quaternion.Euler(angles*MotionScale);
-        visual.localScale = Vector3.Scale(visualScale, Vector3.Lerp(Vector3.one,scale,MotionScale));
+        requestedOffset=offset; requestedAngles=angles; requestedScale=scale; hasRequestedPose=true;
+        ApplyRequestedPose();
+    }
+    void ApplyRequestedPose()
+    {
+        appliedMotionScale=MotionScale;
+        visual.localPosition=visualPosition+requestedOffset*appliedMotionScale;
+        visual.localRotation=visualRotation*Quaternion.Euler(requestedAngles*appliedMotionScale);
+        visual.localScale=Vector3.Scale(visualScale,Vector3.Lerp(Vector3.one,requestedScale,appliedMotionScale));
     }
     // Secondary impact motion never changes readiness, the layout root or its collider.
     public void SetImpactReaction(Vector3 offset, Vector3 angles)
@@ -108,6 +137,7 @@ public sealed class QuestStoneView : MonoBehaviour
     {
         label.alpha=1;
         IsReady = true; IsMoving = false; IsHighlighted = false;
+        hasRequestedPose=false;
         hoverAmount = hoverFrom = hoverTarget = hoverAge = 0;
         reactionOffset = reactionAngles = Vector3.zero;
         visual.gameObject.SetActive(true); visual.localRotation = visualRotation;
@@ -119,9 +149,16 @@ public sealed class QuestStoneView : MonoBehaviour
     // Predict the final inspection bounds without temporarily moving visible geometry.
     public Bounds MotionBounds(Vector3 offset,Vector3 angles,Vector3 scale,float motionAmount)
     {
-        var matrix=visual.parent.localToWorldMatrix*Matrix4x4.TRS(visualPosition+offset*motionAmount,
-            visualRotation*Quaternion.Euler(angles*motionAmount),Vector3.Scale(visualScale,Vector3.Lerp(Vector3.one,scale,motionAmount)))*rockFromVisual;
-        return TransformBounds(rockLocalBounds,matrix);
+        return TransformBounds(rockLocalBounds,MotionMatrix(offset,angles,scale,motionAmount)*rockFromVisual);
+    }
+    Matrix4x4 MotionMatrix(Vector3 offset,Vector3 angles,Vector3 scale,float motionAmount) =>
+        visual.parent.localToWorldMatrix*Matrix4x4.TRS(visualPosition+offset*motionAmount,
+            visualRotation*Quaternion.Euler(angles*motionAmount),Vector3.Scale(visualScale,Vector3.Lerp(Vector3.one,scale,motionAmount)));
+    internal Matrix4x4 PreviewFrame(Vector3 offset,Vector3 angles,Vector3 scale,float motionAmount)
+    {
+        var rotation=visual.parent.rotation*visualRotation*Quaternion.Euler(angles*motionAmount);
+        var point=(MotionMatrix(offset,angles,scale,motionAmount)*rockFromVisual).MultiplyPoint3x4(LocalSurfacePoint);
+        return Matrix4x4.TRS(point+rotation*Vector3.up*0.015f,rotation,Vector3.one*(IsMain?1.18f:1f));
     }
     internal static Bounds TransformBounds(Bounds local,Matrix4x4 matrix)
     {

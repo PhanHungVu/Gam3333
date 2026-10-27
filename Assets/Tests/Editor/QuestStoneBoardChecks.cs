@@ -157,7 +157,9 @@ public static class QuestStoneBoardChecks
         Check(run.Offers.Select(o=>o.Quest.questId).Distinct().Count()==6,"All six surrounding offers use distinct quest data");
         Check(Camera.main==Board.BoardCamera && Camera.allCameras.Count(c=>c.enabled)==1 && Object.FindObjectsByType<AudioListener>().Count(a=>a.enabled)==1,"One dedicated overhead camera and audio listener are active");
         Check(Board.Stones.All(s=>s.GetComponent<Rigidbody>()==null && s.Offer.Quest.category==QuestCategory.Side),"M2 starts with small offers and stable collider objects without physics simulation");
-        Check(Board.StoneAt(Board.BoardCamera.WorldToScreenPoint(Vector3.zero))==null,"Reserved main location is empty and unselectable before unlock");
+        Check(!Board.transform.Find("Impact Inlays").gameObject.activeSelf&&Board.Stones.All(s=>!s.IsMain)
+            &&Board.Stones.Any(s=>Board.ProjectTerrainBounds(s.HitCollider.bounds).Overlaps(Board.ImpactExclusions(0)[0])),
+            "The center is available to side quests before unlock, with no main marker or forced reservation");
         CheckLayout("fresh"); Capture("m2-fresh");
         var first=Board.Stones[0]; var position=first.transform.position; var colliderBounds=first.HitCollider.bounds;
         MoveMouse(Point(first));
@@ -182,7 +184,9 @@ public static class QuestStoneBoardChecks
             var unchanged=Board.Stones.Where(s=>s.Offer.Id!=removed.Id).ToDictionary(s=>s,s=>s.transform.position);
             Check(CompleteSmallForTest(Flow),"Test fixture reports one actual small mission success "+win);
             yield return null; yield return null; while(Busy) yield return null;
-            Check(run.SuccessfulSmallCompletions==win && unchanged.All(pair=>Board.Stones.Contains(pair.Key) && pair.Key.transform.position==pair.Value),"Completion preserves unrelated rocks and positions "+win);
+            Check(run.SuccessfulSmallCompletions==win && unchanged.All(pair=>Board.Stones.Contains(pair.Key)
+                && (win==3 ? pair.Key.transform.localPosition==Board.ShockwaveSlotPosition(pair.Key.Offer.Slot,pair.Key.transform.localPosition.y) : pair.Key.transform.position==pair.Value)),
+                "Completion preserves unrelated offers; only main impact moves their slots "+win);
             Check(Board.Stones.Count==smallCount+(win==3?1:0)&&((run.BigQuest!=null)==(win==3)),"Six small offers remain while the main unlocks only on the third success "+win);
         }
         CheckLayout("unlocked"); Capture("m2-unlocked");

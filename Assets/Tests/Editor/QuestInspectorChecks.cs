@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Object=UnityEngine.Object;
 
-// Exercises the same Editor-only action used by the restored Inspector button.
+// Exercises the retained Editor-only fixture helper after Inspector cleanup.
 public static class QuestInspectorChecks
 {
     const string Pending="QuestInspectorChecks.Pending", Count="QuestInspectorChecks.Count";
@@ -26,7 +26,7 @@ public static class QuestInspectorChecks
         EditorSceneManager.OpenScene("Assets/Scenes/PreMissionScene.unity");
         Check(!QuestProgressionTools.CanCompleteSmallQuest(Flow)&&!QuestProgressionTools.CompleteSmallQuest(Flow),"Edit Mode rejects completion without mutating data");
         var inspector=Editor.CreateEditor(Flow);
-        Check(inspector is PreMissionFlowControllerEditor,"Unity selects the restored custom Inspector"); Object.DestroyImmediate(inspector);
+        Check(inspector.GetType().FullName=="UnityEditor.GenericInspector","Default Inspector is restored; the temporary completion button is retired"); Object.DestroyImmediate(inspector);
         SessionState.SetInt(Count,checks); SessionState.SetBool(Pending,true); EditorApplication.EnterPlaymode();
     }
     static void Check(bool ok,string message) { if(!ok) throw new Exception(message); checks++; Debug.Log("QUEST INSPECTOR PASS: "+message); }
@@ -79,8 +79,10 @@ public static class QuestInspectorChecks
             yield return null; yield return null;
             Check(!QuestProgressionTools.CanCompleteSmallQuest(Flow),"Arrival/marker animation locks the next test click, success "+win);
             while(Busy) yield return null;
-            Check(Flow.StoneBoard.Motion.ProgressTrack.ShownStep==win&&unchanged.All(p=>Flow.StoneBoard.FindStone(p.Key).transform.localPosition==p.Value),
-                "Real board presentation advances while unrelated rocks remain fixed, success "+win);
+            Check(Flow.StoneBoard.Motion.ProgressTrack.ShownStep==win&&unchanged.All(p=> {
+                var stone=Flow.StoneBoard.FindStone(p.Key);
+                return stone!=null&&stone.transform.localPosition==(win==3 ? Flow.StoneBoard.ShockwaveSlotPosition(stone.Offer.Slot,stone.transform.localPosition.y) : p.Value);
+            }),"Real board presentation advances; only the third success pushes other rocks, success "+win);
         }
         Check(run.BigQuest!=null&&Flow.StoneBoard.Stones.Count==run.SmallOfferCount+1&&Flow.StoneBoard.Motion.Feedback.HeavyImpacts==1,
             "Three Inspector completions trigger one central main-rock reveal");
