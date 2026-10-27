@@ -4,7 +4,8 @@ using UnityEngine;
 // Generates a sub-level from a seed and the settings asset: the terrain (a low-poly mesh with a
 // collider, cliffs steeper than Max Walkable Slope as walls), then the start chunk near the middle
 // and the mission chunks spread across the map, each on flattened ground, joined by roads from path
-// connector to path connector (ramps carved through cliffs where needed). On Play the player is
+// connector to path connector (ramps carved through cliffs where needed), then decor such as trees in
+// woods and clearings, kept off roads, chunks and cliffs. On Play the player is
 // moved to the start chunk's PlayerStart. Generates on Play, or from the component's menu in the editor.
 // Everything generated is rebuilt from the seed, so none of it is saved into the scene.
 [DisallowMultipleComponent]
@@ -36,9 +37,12 @@ public sealed class SubLevelGenerator : MonoBehaviour
     [SerializeField] int roadsBuilt;
     [SerializeField] int roadsCarved;
     [SerializeField] bool allConnected;
+    [SerializeField] int decorPlaced;
 
     const string TerrainName = "Generated Terrain";
     const string ChunksName = "Generated Chunks";
+    const string DecorName = "Generated Decor";
+    const string ObstacleTag = "Obstacle";
     TerrainMap map;
     List<ChunkPlacement> placements = new List<ChunkPlacement>();
     List<Road> roads = new List<Road>();
@@ -105,6 +109,41 @@ public sealed class SubLevelGenerator : MonoBehaviour
             if (!Application.isPlaying)
                 foreach (var part in chunk.GetComponentsInChildren<Transform>(true)) part.gameObject.hideFlags = HideFlags.DontSave;
             if (isStart) startInstance = chunk.transform;
+        }
+
+        PlaceDecor(footprints);
+    }
+
+    // Each decor group, seeded separately so adding a group never moves another group's items.
+    void PlaceDecor(List<ChunkFootprint> footprints)
+    {
+        var decor = Rebuild(DecorName).transform;
+        decorPlaced = 0;
+        if (settings.decorGroups == null) return;
+        for (int g = 0; g < settings.decorGroups.Length; g++)
+        {
+            var group = settings.decorGroups[g];
+            if (group == null || group.prefabs == null || group.prefabs.Length == 0) continue;
+            var parent = new GameObject(string.IsNullOrEmpty(group.name) ? "Decor " + g : group.name).transform;
+            parent.SetParent(decor, false);
+            if (!Application.isPlaying) parent.gameObject.hideFlags = HideFlags.DontSave;
+            var items = DecorScatter.Scatter(map, seed ^ (0x7f4a7c15 * (g + 1)), group.ToSettings(), placements, footprints,
+                settings.startChunk != null);
+            foreach (var item in items)
+            {
+                var prefab = group.prefabs[item.Prefab] != null ? group.prefabs[item.Prefab].prefab : null;
+                if (prefab == null) continue;
+                var placedItem = Instantiate(prefab, transform.TransformPoint(new Vector3(item.X, item.Height, item.Z)),
+                    transform.rotation * Quaternion.Euler(0f, item.Yaw, 0f), parent);
+                placedItem.transform.localScale = prefab.transform.localScale * item.Scale;
+                foreach (var part in placedItem.GetComponentsInChildren<Transform>(true))
+                {
+                    // NavGrid counts objects tagged Obstacle that carry a collider themselves.
+                    if (group.blocksPathing && part.GetComponent<Collider>() != null) part.gameObject.tag = ObstacleTag;
+                    if (!Application.isPlaying) part.gameObject.hideFlags = HideFlags.DontSave;
+                }
+                decorPlaced++;
+            }
         }
     }
 

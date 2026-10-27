@@ -91,6 +91,7 @@ public static class MechFoundationChecks
             TerrainGenerationChecks.Run(Check);
             ChunkPlacementChecks.Run(Check);
             RoadChecks.Run(Check);
+            DecorChecks.Run(Check);
             MechProjectileModelChecks.Run(Check);
             MechSfxChecks.Run(Check);
             MechDashMeleeChecks.Run(Check);

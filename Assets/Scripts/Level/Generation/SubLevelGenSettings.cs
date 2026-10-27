@@ -1,7 +1,55 @@
 using UnityEngine;
 
+// One prefab a decor group can place, with its chance relative to the group's other prefabs.
+[System.Serializable]
+public sealed class DecorPrefab
+{
+    public GameObject prefab;
+    [Min(0f)] public float weight = 1f;
+}
+
+// A kind of decor scattered over the map (trees now; rocks or grass can be added as more groups).
+[System.Serializable]
+public sealed class DecorGroup
+{
+    public string name = "Trees";
+    public DecorPrefab[] prefabs = new DecorPrefab[0];
+    [Tooltip("Metres: no two items in this group closer than this.")]
+    [Min(0.5f)] public float spacing = 6f;
+    [Tooltip("Chance an available spot gets an item, before woods and clearings. Raise for more items.")]
+    [Range(0f, 1f)] public float density = 0.15f;
+    [Tooltip("0 = spread evenly, 1 = only in woods, with empty clearings between.")]
+    [Range(0f, 1f)] public float clusterStrength = 0.85f;
+    [Tooltip("Metres across a wood or a clearing.")]
+    [Min(5f)] public float clusterSize = 120f;
+    [Tooltip("Metres kept clear beside roads.")]
+    [Min(0f)] public float roadClearance = 4f;
+    [Tooltip("Metres kept clear around mission chunks.")]
+    [Min(0f)] public float chunkClearance = 6f;
+    [Tooltip("Metres kept clear around the start chunk, so the player spawns into an open space.")]
+    [Min(0f)] public float startClearance = 30f;
+    [Tooltip("Nothing placed on ground steeper than this (degrees), nor on cliffs.")]
+    [Range(0f, 89f)] public float maxSlope = 30f;
+    [Min(0.01f)] public float minScale = 0.8f;
+    [Min(0.01f)] public float maxScale = 1.3f;
+    [Tooltip("Tag each placed item Obstacle so enemy pathing goes round it.")]
+    public bool blocksPathing = true;
+
+    public DecorGroupSettings ToSettings()
+    {
+        var weights = new float[prefabs.Length];
+        for (int i = 0; i < prefabs.Length; i++) weights[i] = prefabs[i] != null && prefabs[i].prefab != null ? prefabs[i].weight : 0f;
+        return new DecorGroupSettings
+        {
+            weights = weights, spacing = spacing, density = density, clusterStrength = clusterStrength, clusterSize = clusterSize,
+            roadClearance = roadClearance, chunkClearance = chunkClearance, startClearance = startClearance, maxSlope = maxSlope,
+            minScale = Mathf.Min(minScale, maxScale), maxScale = Mathf.Max(minScale, maxScale),
+        };
+    }
+}
+
 // Tuning for sub-level generation, kept in an asset so design can adjust it without code.
-// Terrain, chunk placement and roads; POIs add their settings later.
+// Terrain, chunk placement, roads and decor; POIs add their settings later.
 [CreateAssetMenu(fileName = "SubLevelGenSettings", menuName = "Mech/Sub-level Generation")]
 public sealed class SubLevelGenSettings : ScriptableObject
 {
@@ -81,6 +129,10 @@ public sealed class SubLevelGenSettings : ScriptableObject
     [Min(1f)] public float roadCliffCost = 10f;
     [Tooltip("Cells either side averaged when evening out a road's height. Higher = smoother, flatter roads.")]
     [Range(0, 10)] public int roadSmoothing = 3;
+
+    [Header("Decor")]
+    [Tooltip("Things scattered over the map after roads, one group per kind (e.g. Trees). Each group has its own rules.")]
+    public DecorGroup[] decorGroups = new DecorGroup[0];
 
     public RoadSettings ToRoadSettings() => new RoadSettings
     {
