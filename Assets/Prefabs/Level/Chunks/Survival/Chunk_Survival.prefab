@@ -60,7 +60,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 120, y: 0.05, z: 120}
+  m_LocalScale: {x: 80, y: 0.05, z: 80}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6846061459378792984}
@@ -192,7 +192,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f894b27de71e4d84ab663f1f36ecbbcb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChunkDefinition
-  sizeInGolems: {x: 30, y: 30}
+  sizeInGolems: {x: 20, y: 20}
   rulesConfig: {fileID: 11400000, guid: ee7e37eb664fbfb4695ed0f740b434c4, type: 2}
   pathConnectors:
   - {fileID: 0}

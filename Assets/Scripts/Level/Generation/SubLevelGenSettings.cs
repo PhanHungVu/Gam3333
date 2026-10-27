@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // Tuning for sub-level generation, kept in an asset so design can adjust it without code.
-// Step 1 covers the terrain; chunk placement, roads and POIs add their settings later.
+// Terrain, then chunk placement; roads and POIs add their settings later.
 [CreateAssetMenu(fileName = "SubLevelGenSettings", menuName = "Mech/Sub-level Generation")]
 public sealed class SubLevelGenSettings : ScriptableObject
 {
@@ -34,6 +34,31 @@ public sealed class SubLevelGenSettings : ScriptableObject
     [Header("Walls")]
     [Tooltip("Cells steeper than this (degrees) are cliffs: walls nobody can climb.")]
     [Range(1f, 89f)] public float maxWalkableSlope = 35f;
+
+    [Header("Chunks")]
+    [Tooltip("Start/extract chunk, placed near the middle of the map. The player starts at its PlayerStart child.")]
+    public ChunkDefinition startChunk;
+    [Tooltip("The mission's chunk (e.g. Chunk_Survival), repeated across the map.")]
+    public ChunkDefinition missionChunk;
+    [Tooltip("How many mission chunks to place; the seed picks a number in this range.")]
+    [Min(0)] public int missionChunkMin = 3;
+    [Min(0)] public int missionChunkMax = 4;
+    [Tooltip("Metres of gap between chunk footprints.")]
+    [Min(0f)] public float minSpacing = 20f;
+    [Tooltip("Metres kept clear of chunks at the map border.")]
+    [Min(0f)] public float edgeMargin = 20f;
+    [Tooltip("Metres over which the flattened ground under a chunk fades into the hills (wider = gentler ramps up to it).")]
+    [Min(0.1f)] public float blendDistance = 24f;
+    [Tooltip("Random spots tried when placing chunks. More finds better spots but is slower.")]
+    [Range(20, 2000)] public int placementCandidates = 300;
+    [Tooltip("How much uneven ground counts against a spot, compared with spreading chunks out.")]
+    [Min(0f)] public float flatnessWeight = 10f;
+
+    public ChunkPlacementSettings ToPlacementSettings() => new ChunkPlacementSettings
+    {
+        minSpacing = minSpacing, edgeMargin = edgeMargin, blendDistance = blendDistance, candidates = placementCandidates,
+        flatnessWeight = flatnessWeight, levelHeight = levelHeight, terraceLevels = terraceLevels, maxWalkableSlope = maxWalkableSlope,
+    };
 
     public TerrainSettings ToTerrainSettings() => new TerrainSettings
     {

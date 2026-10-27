@@ -16187,7 +16187,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MechMovementController
   gameplayCamera: {fileID: 0}
   energy: {fileID: 6057257043024523587}
-  moveSpeed: 6
+  moveSpeed: 10
   sprintSpeed: 12
   acceleration: 20
   deceleration: 32
