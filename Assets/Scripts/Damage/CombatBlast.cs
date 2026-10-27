@@ -23,8 +23,9 @@ public sealed class CombatBlast
     {
         damaged.Clear();
         int hits = 0, kills = 0;
+        CombatTeam attacker = CombatTeams.Of(owner);
         if (direct != null && !IsOwner(direct, owner))
-            Apply(direct.GetComponentInParent<CombatHealth>(), damage, ref hits, ref kills);
+            Apply(direct.GetComponentInParent<CombatHealth>(), damage, attacker, ref hits, ref kills);
         if (radius > 0)
         {
             int count;
@@ -38,7 +39,7 @@ public sealed class CombatBlast
                 var health = candidate.GetComponentInParent<CombatHealth>();
                 if (health == null || damaged.Contains(health)) continue;
                 if (Blocked(origin, candidate, owner, layers)) continue;
-                Apply(health, damage, ref hits, ref kills);
+                Apply(health, damage, attacker, ref hits, ref kills);
             }
             Array.Clear(overlaps, 0, count);
         }
@@ -53,6 +54,7 @@ public sealed class CombatBlast
     {
         damaged.Clear();
         int hits = 0, kills = 0, count;
+        CombatTeam attacker = CombatTeams.Of(owner);
         while ((count = Physics.OverlapBoxNonAlloc(center, halfExtents, overlaps, rotation, layers,
             QueryTriggerInteraction.Ignore)) == overlaps.Length)
             Array.Resize(ref overlaps, overlaps.Length * 2);
@@ -62,7 +64,7 @@ public sealed class CombatBlast
             if (IsOwner(candidate, owner)) continue;
             var health = candidate.GetComponentInParent<CombatHealth>();
             if (health == null || damaged.Contains(health) || Blocked(wallOrigin, candidate, owner, layers)) continue;
-            Apply(health, damage, ref hits, ref kills);
+            Apply(health, damage, attacker, ref hits, ref kills);
         }
         Array.Clear(overlaps, 0, count);
         damaged.Clear();
@@ -73,9 +75,10 @@ public sealed class CombatBlast
     public bool LineBlocked(Vector3 origin, Collider candidate, Transform owner, LayerMask layers)
         => Blocked(origin, candidate, owner, layers);
 
-    bool Apply(CombatHealth health, float damage, ref int hits, ref int kills)
+    // Same-team targets are skipped: no friendly fire.
+    bool Apply(CombatHealth health, float damage, CombatTeam attacker, ref int hits, ref int kills)
     {
-        if (health == null || !damaged.Add(health)) return false;
+        if (health == null || !CombatTeams.CanDamage(attacker, health.Team) || !damaged.Add(health)) return false;
         if (!health.ApplyDamage(damage)) return false;
         hits++;
         if (health.IsDead) kills++;

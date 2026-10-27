@@ -43,7 +43,7 @@ public static class MechHealthHudSceneChecks
             switch (phase)
             {
                 case 0:
-                    foreach (var spawner in Object.FindObjectsByType<EnemySpawnerManager>()) spawner.enabled = false;
+                    foreach (var director in Object.FindObjectsByType<SpawnDirector>()) director.enabled = false;
                     foreach (var enemy in Object.FindObjectsByType<EnemyAgent>()) enemy.gameObject.SetActive(false);
                     hud = Object.FindAnyObjectByType<MechHealthHud>(); health = hud.Health; player = health.gameObject;
                     var energy = Object.FindAnyObjectByType<MechEnergyHud>();

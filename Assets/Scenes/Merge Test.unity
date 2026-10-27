@@ -256,7 +256,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 0.3}
@@ -698,7 +698,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5612884456999447422, guid: 6c2939aec845f0c4a8bd71439e707f92, type: 3}
       propertyPath: canvas
-      value:
+      value: 
       objectReference: {fileID: 1054055418}
     - target: {fileID: 5612884456999447422, guid: 6c2939aec845f0c4a8bd71439e707f92, type: 3}
       propertyPath: health
@@ -1111,15 +1111,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8802850597739263, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -5.72165
+      value: -5.39165
       objectReference: {fileID: 0}
     - target: {fileID: 8802850597739263, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.67
+      value: 4.065
       objectReference: {fileID: 0}
     - target: {fileID: 8802850597739263, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1.38
+      value: 2.4350002
       objectReference: {fileID: 0}
     - target: {fileID: 8802850597739263, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1735,15 +1735,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -8.72165
+      value: -8.39165
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.67
+      value: 4.065
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1.38
+      value: 0.18200016
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalRotation.w
@@ -3470,7 +3470,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -3804,7 +3804,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -3970,15 +3970,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 8802850597739263, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 17.5
+      value: 16.445
       objectReference: {fileID: 0}
     - target: {fileID: 8802850597739263, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 3
+      value: 2.395
       objectReference: {fileID: 0}
     - target: {fileID: 8802850597739263, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -1.1194302
+      value: -0.78943
       objectReference: {fileID: 0}
     - target: {fileID: 8802850597739263, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
       propertyPath: m_LocalRotation.w
@@ -4047,15 +4047,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 20
+      value: 21.198
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 3
+      value: 2.395
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -1.1194303
+      value: -0.7894298
       objectReference: {fileID: 0}
     - target: {fileID: 8723502505440537359, guid: 8748d76aa7db46544a525d15ca58b2b1, type: 3}
       propertyPath: m_LocalRotation.w

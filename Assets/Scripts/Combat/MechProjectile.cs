@@ -39,9 +39,6 @@ public class MechProjectile : MonoBehaviour
     public Part Source { get; set; }
     public PartSubtype Subtype { get; set; }
     // Optional enemy shot filter. Other bodies still block the shot, without friendly damage.
-    CombatHealth damageTarget;
-    bool targetOnly;
-    public CombatHealth DamageTarget { get => damageTarget; set { damageTarget = value; targetOnly = true; } }
     public event Action<MechProjectileImpact> ImpactResolved;
 
     public static MechProjectile Create(GameObject prefab, string shotName, Vector3 position,
@@ -162,9 +159,8 @@ public class MechProjectile : MonoBehaviour
         float impactDamage = damage * RangeMultiplier(travelled, effectiveRange, maximumRange);
         // Mark spent first: callbacks and compound colliders cannot cause repeat damage.
         Finish();
-        var result = !targetOnly || damageTarget != null && collider.GetComponentInParent<CombatHealth>() == damageTarget
-            ? blast.Resolve(impactPoint, explosionRadius, impactDamage, owner, collisionLayers, collider)
-            : default;
+        // Teams decide who takes damage (CombatBlast skips the shooter's own team).
+        var result = blast.Resolve(impactPoint, explosionRadius, impactDamage, owner, collisionLayers, collider);
         ImpactResolved?.Invoke(new MechProjectileImpact(Source, Subtype, impactPoint, explosionRadius,
             result.Hits, result.Kills, direction: direction));
         ImpactResolved = null;

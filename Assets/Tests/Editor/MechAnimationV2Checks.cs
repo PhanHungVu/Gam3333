@@ -15,6 +15,7 @@ public static class MechAnimationV2Checks
         floor.transform.localScale = new Vector3(500, 1, 500);
         var view = new GameObject("V2 animation check view");
         var motor = player.GetComponent<MechMovementController>();
+        float walk = new SerializedObject(motor).FindProperty("moveSpeed").floatValue; // the player prefab's Move Speed
         var equipment = player.GetComponent<EquipManager>();
         var swap = player.GetComponent<MechLocomotionDebug>();
         MechLegAnimator Driver() => equipment.GetEquipped(PartCategory.Legs).GetComponent<MechLegAnimator>();
@@ -42,10 +43,12 @@ public static class MechAnimationV2Checks
             check(Driver().Animator.name == "golem2_v2", "Animated modules use the v2 model instance");
             Step(player, view.transform, 100, Vector2.up);
             CheckPose(Driver(), MechLegAnimator.PoseState.Locomotion, "Biped_Run", check);
-            check(Mathf.Abs(Driver().Animator.GetFloat("PlaybackSpeed") - 1f) < 0.03f, "Normal walk uses normal clip cadence");
+            // The run clip plays faster when the mech walks faster than the clip's reference speed, so feet keep pace.
+            float cadence = Mathf.Clamp(walk / new SerializedObject(Driver()).FindProperty("referenceSpeed").floatValue, 0.35f, 2f);
+            check(Mathf.Abs(Driver().Animator.GetFloat("PlaybackSpeed") - cadence) < 0.03f, "Normal walk plays the clip at Move Speed / reference speed");
             Step(player, view.transform, 100, Vector2.up, sprint: true);
             CheckPose(Driver(), MechLegAnimator.PoseState.Locomotion, "Biped_Run", check);
-            check(Mathf.Abs(motor.AnimationData.Speed - 6f) < 0.1f && Mathf.Abs(Driver().Animator.GetFloat("PlaybackSpeed") - 1f) < 0.03f,
+            check(Mathf.Abs(motor.AnimationData.Speed - walk) < 0.1f && Mathf.Abs(Driver().Animator.GetFloat("PlaybackSpeed") - cadence) < 0.03f,
                 "Removed sprint retains the ordinary Fast walk clip and cadence");
 
             Step(player, view.transform, 90);
@@ -102,7 +105,8 @@ public static class MechAnimationV2Checks
             swap.TrySwap(1);
             Step(player, view.transform, 100, Vector2.up, sprint: true);
             CheckPose(Driver(), MechLegAnimator.PoseState.Locomotion, "Heavy_Walk.001", check);
-            check(Mathf.Abs(motor.AnimationData.Speed - 3f) < 0.1f && Mathf.Abs(Driver().Animator.GetFloat("PlaybackSpeed") - 1f) < 0.03f,
+            float heavyCadence = Mathf.Clamp(walk * 0.5f / new SerializedObject(Driver()).FindProperty("referenceSpeed").floatValue, 0.35f, 2f);
+            check(Mathf.Abs(motor.AnimationData.Speed - walk * 0.5f) < 0.1f && Mathf.Abs(Driver().Animator.GetFloat("PlaybackSpeed") - heavyCadence) < 0.03f,
                 "Removed sprint retains the ordinary Heavy walk clip and cadence");
             Step(player, view.transform, 90);
             CheckPose(Driver(), MechLegAnimator.PoseState.Neutral, "Heavy_Neutral", check);

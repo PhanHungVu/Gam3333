@@ -15,6 +15,7 @@ public static class MechAnimatedLegChecks
         floor.transform.localScale = new Vector3(300, 1, 300);
         var view = new GameObject("Animated Legs Check View");
         var motor = player.GetComponent<MechMovementController>();
+        float walk = new SerializedObject(motor).FindProperty("moveSpeed").floatValue; // the player prefab's Move Speed
         var equipment = player.GetComponent<EquipManager>();
         var debug = player.GetComponent<MechLocomotionDebug>();
         var energy = player.GetComponent<MechEnergyController>();
@@ -42,8 +43,8 @@ public static class MechAnimatedLegChecks
             Debug.Log("ANIMATED LEGS FOOT HEIGHT: " + floorHeight);
             check(floorHeight > -0.2f && floorHeight < 0.3f, "Animated idle feet align with the ground instead of sinking below the capsule");
             Step(motor, equipment, view, 100, Vector2.up);
-            check(Mathf.Abs(motor.AnimationData.Speed - 6f) < 0.08f && ClipWeight(driver, "Biped_Run") > 0.99f,
-                "Moving the default player runs the fast clip at the existing 6 m/s speed");
+            check(Mathf.Abs(motor.AnimationData.Speed - walk) < 0.08f && ClipWeight(driver, "Biped_Run") > 0.99f,
+                "Moving the default player runs the fast clip at its Move Speed");
             Transform leg = driver.Animator.transform.Find("Armature/Root/Leg.L");
             Vector3 rootPosition = player.transform.position;
             check(BoneChanges(driver.Animator, leg), "Fast animation visibly changes the leg bone pose");
@@ -70,8 +71,8 @@ public static class MechAnimatedLegChecks
             check(heavy.transform.parent == legSocket && Vector3.Distance(heavy.transform.position, legSocket.position) < 0.01f,
                 "Both leg modules use the same socket origin");
             Step(motor, equipment, view, 100, Vector2.up);
-            check(Mathf.Abs(motor.AnimationData.Speed - 3f) < 0.08f && ClipWeight(heavyDriver, "Heavy_Walk.001") > 0.99f,
-                "Heavy rating slows movement to 3 m/s while its authored heavy gait plays normally");
+            check(Mathf.Abs(motor.AnimationData.Speed - walk * 0.5f) < 0.08f && ClipWeight(heavyDriver, "Heavy_Walk.001") > 0.99f,
+                "Heavy rating halves movement speed while its authored heavy gait plays");
             leg = heavyDriver.Animator.transform.Find("Armature/Root/Leg.L");
             check(BoneChanges(heavyDriver.Animator, leg), "Heavy animation changes bone transforms rather than just changing a label");
             check(heavyDriver.Animator.runtimeAnimatorController.animationClips.Any(c => c.name == "Heavy_Walk.001" && c.isLooping),

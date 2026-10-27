@@ -205,7 +205,7 @@ Transform:
   m_GameObject: {fileID: 5013508583002914211}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.35, z: 0.15}
+  m_LocalPosition: {x: -0.6600002, y: 0.86, z: -1.9600004}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -315,7 +315,7 @@ Transform:
   m_GameObject: {fileID: 5344667911303307272}
   serializedVersion: 2
   m_LocalRotation: {x: 0.062794715, y: -0.70539147, z: 0.030046728, w: 0.70539135}
-  m_LocalPosition: {x: 1.1414495, y: -2.8121278, z: 2.289558}
+  m_LocalPosition: {x: 0.48144925, y: -1.6021278, z: 0.17955756}
   m_LocalScale: {x: 1.0000002, y: 0.99999994, z: 1.0000001}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -457,6 +457,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
+  recoilAxis: {x: -1, y: 0, z: 0}
   muzzle: {fileID: 775482316968121261}
   authoredScale: {x: 1, y: 1, z: 1}
   data: {fileID: 11400000, guid: 8ec1d572786d6d54ca5b1e61c52ee8f5, type: 2}
@@ -631,15 +632,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2349100094175838907, guid: f93591e03db83aa4da5a8afd81f7493c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.66000015
+      value: -0.000000059604645
       objectReference: {fileID: 0}
     - target: {fileID: 2349100094175838907, guid: f93591e03db83aa4da5a8afd81f7493c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -1.21
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2349100094175838907, guid: f93591e03db83aa4da5a8afd81f7493c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 2.1100006
+      value: 0.00000023841858
       objectReference: {fileID: 0}
     - target: {fileID: 2349100094175838907, guid: f93591e03db83aa4da5a8afd81f7493c, type: 3}
       propertyPath: m_LocalRotation.w

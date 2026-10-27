@@ -16,6 +16,8 @@ public static class MechLocomotionChecks
         var view = new GameObject("Locomotion Check View");
         var player = Object.Instantiate(prefab, new Vector3(30000, 1.6f, 0), Quaternion.identity);
         var motor = player.GetComponent<MechMovementController>();
+        // Ordinary walking speed is the player prefab's Move Speed, so tuning it never breaks these checks.
+        float walk = new SerializedObject(motor).FindProperty("moveSpeed").floatValue;
         var equipment = player.GetComponent<EquipManager>();
         var debug = player.GetComponent<MechLocomotionDebug>();
         var energy = player.GetComponent<MechEnergyController>();
@@ -38,7 +40,7 @@ public static class MechLocomotionChecks
             Physics.SyncTransforms();
             Step(motor, view, 90);
             Step(motor, view, 60, Vector2.up);
-            check(motor.IsGrounded && Near(motor.AnimationData.Speed, 6f), "Biped retains the existing 6 m/s ground speed");
+            check(motor.IsGrounded && Near(motor.AnimationData.Speed, walk), "Biped walks at the player's Move Speed");
             var torso = equipment.GetEquipped(PartCategory.Torso);
             Vector3 torsoPosition = torso.transform.localPosition;
             Vector3 position = player.transform.position;
@@ -148,7 +150,7 @@ public static class MechLocomotionChecks
                 "Disabling movement clears transient animation values");
             motor.enabled = true;
             Step(motor, view, 90, Vector2.up);
-            check(Near(motor.AnimationData.Speed, 6f), "Movement remains usable after re-enable");
+            check(Near(motor.AnimationData.Speed, walk), "Movement remains usable after re-enable");
 
             check(debug.TrySwap(2), "Hover reuses its stored module");
             Step(motor, view, 100);
@@ -175,6 +177,8 @@ public static class MechLocomotionChecks
         var view = new GameObject("Boost braking view");
         var player = Object.Instantiate(prefab, new Vector3(90000f, 1.6f, 0f), Quaternion.identity);
         var motor = player.GetComponent<MechMovementController>();
+        // Ordinary walking speed is the player prefab's Move Speed, so tuning it never breaks these checks.
+        float walk = new SerializedObject(motor).FindProperty("moveSpeed").floatValue;
         TestMech.StopPlayerInput(motor);
         var energy = player.GetComponent<MechEnergyController>();
         try
@@ -197,11 +201,11 @@ public static class MechLocomotionChecks
                 "Released boost stops within 0.44 seconds and about six metres of travel");
             Step(motor, view, 60, Vector2.up);
             Step(motor, view);
-            check(Near(motor.AnimationData.Speed, 5.36f),
+            check(Near(motor.AnimationData.Speed, walk - 0.64f),
                 "Ordinary 32 m/s² walking braking resumes after boost momentum settles");
             Boost();
             Step(motor, view, 18, Vector2.up);
-            check(!motor.IsAssaultBoosting && Near(motor.AnimationData.Speed, 6f),
+            check(!motor.IsAssaultBoosting && Near(motor.AnimationData.Speed, walk),
                 "Holding forward after boost returns to walking speed within 0.36 seconds");
             Step(motor, view, 90);
             energy.TickRecovery(10f, true);
@@ -217,8 +221,8 @@ public static class MechLocomotionChecks
             Step(motor, view, 90);
             Boost();
             Step(motor, view, 20, Vector2.up);
-            check(Near(motor.AnimationData.Speed, 3f),
-                "Post-boost braking returns heavy legs to their own 3 m/s travel speed");
+            check(Near(motor.AnimationData.Speed, walk * 0.5f),
+                "Post-boost braking returns heavy legs to their own half-speed travel");
         }
         finally
         {

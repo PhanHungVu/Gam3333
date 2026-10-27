@@ -3,11 +3,12 @@ using UnityEngine;
 
 // Fires one projectile from a Projectile or Explosive part. Damage, reload, speed, size, colour,
 // model and splash all come from the part's stats; the shot uses one round and starts the reload.
+// Enemies pass multipliers to scale damage and projectile speed; the player uses the stats as-is.
 public static class RangedAttack
 {
     public static MechProjectile Fire(Part part, Transform owner, Vector3 muzzle, Vector3 aimPoint, Vector3 fallbackDirection,
         float effectiveRange, float maximumRange, LayerMask layers, Material fallbackMaterial,
-        Action<MechProjectileImpact> onImpact)
+        Action<MechProjectileImpact> onImpact, float damageMultiplier = 1f, float speedMultiplier = 1f)
     {
         var stats = part.Stats;
         Vector3 direction = (aimPoint - muzzle).normalized;
@@ -22,7 +23,8 @@ public static class RangedAttack
         projectile.ImpactResolved += onImpact;
         float splash = stats.subtype == PartSubtype.Explosive ? Mathf.Max(0f, stats.GetStat(StatType.SplashRadius)) : 0f;
         projectile.ConfigureRangeAndExplosion(effectiveRange, splash);
-        projectile.Launch(owner, direction, stats.GetStat(StatType.ProjectileSpeed), Mathf.Max(0f, stats.GetStat(StatType.Damage)),
+        projectile.Launch(owner, direction, stats.GetStat(StatType.ProjectileSpeed) * Mathf.Max(0.01f, speedMultiplier),
+            Mathf.Max(0f, stats.GetStat(StatType.Damage) * Mathf.Max(0f, damageMultiplier)),
             size, maximumRange, layers, muzzle);
         return projectile;
     }
