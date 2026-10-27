@@ -26,16 +26,19 @@ public sealed class TerrainMap
     public float MinZ { get; }   // world Z of the grid's bottom edge
     public float[] Heights { get; }   // (Cols + 1) * (Rows + 1) corners
     public bool[] Walkable { get; }   // Cols * Rows cells
+    public bool[] Road { get; }       // Cols * Rows cells, set by RoadBuilder
 
     public TerrainMap(int cols, int rows, float cellSize, float minX, float minZ)
     {
         Cols = cols; Rows = rows; CellSize = cellSize; MinX = minX; MinZ = minZ;
         Heights = new float[(cols + 1) * (rows + 1)];
         Walkable = new bool[cols * rows];
+        Road = new bool[cols * rows];
     }
 
     public float Height(int cornerX, int cornerZ) => Heights[cornerZ * (Cols + 1) + cornerX];
     public bool IsWalkable(int col, int row) => Walkable[row * Cols + col];
+    public bool IsRoad(int col, int row) => Road[row * Cols + col];
     public int WalkableCount { get { int n = 0; foreach (var w in Walkable) if (w) n++; return n; } }
 }
 

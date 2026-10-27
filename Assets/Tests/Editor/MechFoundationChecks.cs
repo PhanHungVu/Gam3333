@@ -90,6 +90,7 @@ public static class MechFoundationChecks
             SpawnDirectorChecks.Run(Check);
             TerrainGenerationChecks.Run(Check);
             ChunkPlacementChecks.Run(Check);
+            RoadChecks.Run(Check);
             MechProjectileModelChecks.Run(Check);
             MechSfxChecks.Run(Check);
             MechDashMeleeChecks.Run(Check);

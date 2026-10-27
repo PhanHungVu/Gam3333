@@ -3,7 +3,8 @@ using UnityEngine;
 
 // Generates a sub-level from a seed and the settings asset: the terrain (a low-poly mesh with a
 // collider, cliffs steeper than Max Walkable Slope as walls), then the start chunk near the middle
-// and the mission chunks spread across the map, each on flattened ground. On Play the player is
+// and the mission chunks spread across the map, each on flattened ground, joined by roads from path
+// connector to path connector (ramps carved through cliffs where needed). On Play the player is
 // moved to the start chunk's PlayerStart. Generates on Play, or from the component's menu in the editor.
 // Everything generated is rebuilt from the seed, so none of it is saved into the scene.
 [DisallowMultipleComponent]
@@ -21,6 +22,8 @@ public sealed class SubLevelGenerator : MonoBehaviour
     [SerializeField] Material groundMaterial;
     [Tooltip("Optional. Left empty, a plain grey-brown material is made.")]
     [SerializeField] Material cliffMaterial;
+    [Tooltip("Optional. Left empty, a plain sandy material is made.")]
+    [SerializeField] Material roadMaterial;
     [Tooltip("Scene view: mark wall (cliff) cells in red while this object is selected.")]
     [SerializeField] bool drawWalls = true;
     [Tooltip("On Play the player is placed this far above the start chunk's PlayerStart and drops onto it.")]
@@ -30,15 +33,18 @@ public sealed class SubLevelGenerator : MonoBehaviour
     [SerializeField] int lastSeed;
     [SerializeField] float walkablePercent;
     [SerializeField] int missionChunksPlaced;
+    [SerializeField] int roadsBuilt;
 
     const string TerrainName = "Generated Terrain";
     const string ChunksName = "Generated Chunks";
     TerrainMap map;
     List<ChunkPlacement> placements = new List<ChunkPlacement>();
+    List<Road> roads = new List<Road>();
     Transform startInstance;
 
     public TerrainMap Map => map;
     public IReadOnlyList<ChunkPlacement> Placements => placements;
+    public IReadOnlyList<Road> Roads => roads;
     public int Seed => seed;
 
     void Start()
@@ -59,6 +65,8 @@ public sealed class SubLevelGenerator : MonoBehaviour
         var placement = settings.ToPlacementSettings();
         placements = ChunkPlacer.Place(map, seed, footprints, placement);
         ChunkPlacer.Flatten(map, placements, footprints, placement);
+        roads = RoadBuilder.Build(map, placements, footprints, Connectors(footprints.Count), settings.ToRoadSettings());
+        roadsBuilt = roads.Count;
         walkablePercent = 100f * map.WalkableCount / Mathf.Max(1, map.Cols * map.Rows);
         missionChunksPlaced = 0;
         foreach (var p in placements) if (!(settings.startChunk != null && p.Footprint == 0)) missionChunksPlaced++;
@@ -72,6 +80,7 @@ public sealed class SubLevelGenerator : MonoBehaviour
         {
             groundMaterial != null ? groundMaterial : MakeMaterial(new Color(0.42f, 0.62f, 0.32f)),
             cliffMaterial != null ? cliffMaterial : MakeMaterial(new Color(0.45f, 0.38f, 0.32f)),
+            roadMaterial != null ? roadMaterial : MakeMaterial(new Color(0.76f, 0.66f, 0.47f)),
         };
         terrain.AddComponent<MeshCollider>().sharedMesh = mesh;
 
@@ -103,6 +112,29 @@ public sealed class SubLevelGenerator : MonoBehaviour
     }
 
     static ChunkFootprint FootprintOf(ChunkDefinition chunk) => new ChunkFootprint(chunk.SizeMetres.x, chunk.SizeMetres.y);
+
+    // Path connectors per footprint, in the same order as ChunkFootprints, in each chunk's own space.
+    List<IReadOnlyList<ChunkConnector>> Connectors(int footprintCount)
+    {
+        var list = new List<IReadOnlyList<ChunkConnector>>();
+        if (settings.startChunk != null) list.Add(ConnectorsOf(settings.startChunk));
+        var mission = settings.missionChunk != null ? ConnectorsOf(settings.missionChunk) : new List<ChunkConnector>();
+        while (list.Count < footprintCount) list.Add(mission);
+        return list;
+    }
+
+    static List<ChunkConnector> ConnectorsOf(ChunkDefinition chunk)
+    {
+        var list = new List<ChunkConnector>();
+        var root = chunk.transform;
+        foreach (var connector in chunk.PathConnectors)
+        {
+            Vector3 local = root.InverseTransformPoint(connector.position);
+            Vector3 forward = root.InverseTransformDirection(connector.forward);
+            list.Add(new ChunkConnector(local.x, local.z, forward.x, forward.z));
+        }
+        return list;
+    }
 
     // Replaces a generated child; in the editor it is marked never to be saved into the scene.
     GameObject Rebuild(string childName)

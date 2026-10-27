@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // Tuning for sub-level generation, kept in an asset so design can adjust it without code.
-// Terrain, then chunk placement; roads and POIs add their settings later.
+// Terrain, chunk placement and roads; POIs add their settings later.
 [CreateAssetMenu(fileName = "SubLevelGenSettings", menuName = "Mech/Sub-level Generation")]
 public sealed class SubLevelGenSettings : ScriptableObject
 {
@@ -53,6 +53,28 @@ public sealed class SubLevelGenSettings : ScriptableObject
     [Range(20, 2000)] public int placementCandidates = 300;
     [Tooltip("How much uneven ground counts against a spot, compared with spreading chunks out.")]
     [Min(0f)] public float flatnessWeight = 10f;
+
+    [Header("Roads")]
+    [Tooltip("Extra road links beyond the shortest network joining every chunk, so there are loops and route choices.")]
+    [Range(0, 6)] public int extraLinks = 1;
+    [Tooltip("Road width in metres (12 = three golems).")]
+    [Min(1f)] public float roadWidth = 12f;
+    [Tooltip("Roads are evened out to stay under this slope (degrees), carving ramps through cliffs where needed.")]
+    [Range(1f, 45f)] public float maxRoadSlope = 20f;
+    [Tooltip("Metres over which a road's edges fade into the terrain.")]
+    [Min(0.1f)] public float roadBlend = 8f;
+    [Tooltip("How strongly a road's route avoids slopes.")]
+    [Min(0f)] public float roadSlopeCost = 4f;
+    [Tooltip("How strongly a road's route avoids cliffs (it still carves through when there is no way round).")]
+    [Min(1f)] public float roadCliffCost = 10f;
+    [Tooltip("Cells either side averaged when evening out a road's height. Higher = smoother, flatter roads.")]
+    [Range(0, 10)] public int roadSmoothing = 3;
+
+    public RoadSettings ToRoadSettings() => new RoadSettings
+    {
+        extraLinks = extraLinks, roadWidth = roadWidth, maxRoadSlope = maxRoadSlope, roadBlend = roadBlend,
+        slopeCost = roadSlopeCost, cliffCost = roadCliffCost, smoothing = roadSmoothing, maxWalkableSlope = maxWalkableSlope,
+    };
 
     public ChunkPlacementSettings ToPlacementSettings() => new ChunkPlacementSettings
     {

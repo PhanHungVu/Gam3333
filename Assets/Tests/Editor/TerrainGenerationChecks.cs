@@ -37,9 +37,9 @@ public static class TerrainGenerationChecks
         var mesh = TerrainMeshBuilder.Build(first);
         try
         {
-            check(mesh.vertexCount == first.Cols * first.Rows * 6 && mesh.subMeshCount == 2
+            check(mesh.vertexCount == first.Cols * first.Rows * 6 && mesh.subMeshCount == 3
                 && mesh.GetTriangles(1).Length == (first.Cols * first.Rows - first.WalkableCount) * 6,
-                "The terrain mesh is flat-shaded, with cliffs in their own part");
+                "The terrain mesh is flat-shaded, with cliffs and roads in their own parts");
             check(mesh.normals.All(n => n.y > 0f), "Every terrain face points upward");
         }
         finally { UnityEngine.Object.DestroyImmediate(mesh); }
