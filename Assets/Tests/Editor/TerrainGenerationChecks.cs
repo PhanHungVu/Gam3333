@@ -30,6 +30,9 @@ public static class TerrainGenerationChecks
         var full = TerrainGenerator.Generate(42, new TerrainSettings());
         int levelsUsed = full.Heights.Select(h => Mathf.RoundToInt(h / 6f)).Distinct().Count();
         check(levelsUsed >= 3, "Height Spread lets the map reach most terrace levels");
+        var allCliffs = TerrainGenerator.Generate(42, new TerrainSettings { cliffCoverage = 1f, terraceSharpness = 1f });
+        var noCliffs = TerrainGenerator.Generate(42, new TerrainSettings { cliffCoverage = 0f, terraceSharpness = 1f });
+        check(noCliffs.WalkableCount > allCliffs.WalkableCount, "Lower Cliff Coverage gives smoother hills with fewer cliffs");
         var sharp = TerrainGenerator.Generate(42, new TerrainSettings { terraceSharpness = 1f });
         check(sharp.WalkableCount > 0 && sharp.WalkableCount < sharp.Cols * sharp.Rows,
             "Sharp terraces give walkable levels separated by cliffs");

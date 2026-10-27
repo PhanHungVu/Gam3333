@@ -29,7 +29,17 @@ public sealed class SubLevelGenSettings : ScriptableObject
     [Tooltip("Metres between one level and the next.")]
     [Min(0.1f)] public float levelHeight = 6f;
     [Tooltip("0 = smooth rolling hills, 1 = sharp steps. In between, gentle rises become ramps and steep ones cliffs.")]
-    [Range(0f, 1f)] public float terraceSharpness = 0.85f;
+    [Range(0f, 1f)] public float terraceSharpness = 0.75f;
+
+    [Header("Variety")]
+    [Tooltip("Roughly how much of the map is terraced with cliffs. The rest is smooth rolling hills. 1 = cliffs everywhere, 0 = all smooth.")]
+    [Range(0f, 1f)] public float cliffCoverage = 0.75f;
+    [Tooltip("Metres across a cliffy or a smooth region. Bigger gives whole areas of each rather than patches.")]
+    [Min(10f)] public float variationSize = 350f;
+    [Tooltip("How gradually cliffy areas soften into smooth ones. Small = abrupt edge, large = cliffs fade into hills.")]
+    [Range(0.02f, 0.5f)] public float regionBlend = 0.25f;
+    [Tooltip("How much terracing smooth areas keep, so they read as a softer version of the cliff areas. 0 = pure rolling hills.")]
+    [Range(0f, 1f)] public float smoothAreaTerracing = 0.4f;
 
     [Header("Walls")]
     [Tooltip("Cells steeper than this (degrees) are cliffs: walls nobody can climb.")]
@@ -65,7 +75,9 @@ public sealed class SubLevelGenSettings : ScriptableObject
     [Min(0.1f)] public float roadBlend = 8f;
     [Tooltip("How strongly a road's route avoids slopes.")]
     [Min(0f)] public float roadSlopeCost = 4f;
-    [Tooltip("How strongly a road's route avoids cliffs (it still carves through when there is no way round).")]
+    [Tooltip("Roads go round cliffs. When there is no way round at all, carve a ramp through for that road (with a Console warning) so every chunk stays reachable.")]
+    public bool carveIfNoWayRound = true;
+    [Tooltip("Only for carved roads: how strongly they still avoid crossing cliffs.")]
     [Min(1f)] public float roadCliffCost = 10f;
     [Tooltip("Cells either side averaged when evening out a road's height. Higher = smoother, flatter roads.")]
     [Range(0, 10)] public int roadSmoothing = 3;
@@ -74,6 +86,7 @@ public sealed class SubLevelGenSettings : ScriptableObject
     {
         extraLinks = extraLinks, roadWidth = roadWidth, maxRoadSlope = maxRoadSlope, roadBlend = roadBlend,
         slopeCost = roadSlopeCost, cliffCost = roadCliffCost, smoothing = roadSmoothing, maxWalkableSlope = maxWalkableSlope,
+        carveIfNoWayRound = carveIfNoWayRound,
     };
 
     public ChunkPlacementSettings ToPlacementSettings() => new ChunkPlacementSettings
@@ -87,5 +100,6 @@ public sealed class SubLevelGenSettings : ScriptableObject
         mapSize = mapSize, cellSize = cellSize, hillSize = hillSize, noiseLayers = noiseLayers,
         layerStrength = layerStrength, layerDetail = layerDetail, heightSpread = heightSpread, terraceLevels = terraceLevels,
         levelHeight = levelHeight, terraceSharpness = terraceSharpness, maxWalkableSlope = maxWalkableSlope,
+        cliffCoverage = cliffCoverage, variationSize = variationSize, regionBlend = regionBlend, smoothAreaTerracing = smoothAreaTerracing,
     };
 }

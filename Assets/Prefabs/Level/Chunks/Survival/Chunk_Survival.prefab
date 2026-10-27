@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4255273437170789067}
   m_Layer: 0
-  m_Name: PathConnector_E
+  m_Name: PathConnector_N
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -41,7 +41,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1095040083531879427}
   m_Layer: 0
-  m_Name: PathConnector_W
+  m_Name: PathConnector_E
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -72,7 +72,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2777041526300355091}
   m_Layer: 0
-  m_Name: PathConnector_S
+  m_Name: PathConnector_W
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -309,7 +309,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8278794649368416165}
   m_Layer: 0
-  m_Name: PathConnector_N
+  m_Name: PathConnector_S
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

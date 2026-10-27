@@ -34,6 +34,8 @@ public sealed class SubLevelGenerator : MonoBehaviour
     [SerializeField] float walkablePercent;
     [SerializeField] int missionChunksPlaced;
     [SerializeField] int roadsBuilt;
+    [SerializeField] int roadsCarved;
+    [SerializeField] bool allConnected;
 
     const string TerrainName = "Generated Terrain";
     const string ChunksName = "Generated Chunks";
@@ -67,6 +69,13 @@ public sealed class SubLevelGenerator : MonoBehaviour
         ChunkPlacer.Flatten(map, placements, footprints, placement);
         roads = RoadBuilder.Build(map, placements, footprints, Connectors(footprints.Count), settings.ToRoadSettings());
         roadsBuilt = roads.Count;
+        roadsCarved = 0;
+        foreach (var r in roads) if (r.Carved) roadsCarved++;
+        if (roadsCarved > 0)
+            Debug.LogWarning($"SubLevelGenerator: {roadsCarved} road(s) on seed {seed} had no way round and carve through a cliff.", this);
+        allConnected = RoadBuilder.AllConnected(placements.Count, roads);
+        if (!allConnected)
+            Debug.LogWarning($"SubLevelGenerator: on seed {seed} not every chunk is joined to the start by road.", this);
         walkablePercent = 100f * map.WalkableCount / Mathf.Max(1, map.Cols * map.Rows);
         missionChunksPlaced = 0;
         foreach (var p in placements) if (!(settings.startChunk != null && p.Footprint == 0)) missionChunksPlaced++;

@@ -21,7 +21,8 @@ public sealed class RoadSettings
     public float maxRoadSlope = 20f;   // degrees; roads are evened out to stay under this
     public float roadBlend = 8f;       // metres over which a road's edge fades into the terrain
     public float slopeCost = 4f;       // how strongly the route avoids slopes
-    public float cliffCost = 10f;      // how strongly it avoids cliffs (it can still carve through them)
+    public float cliffCost = 10f;      // carved roads only: how strongly they still avoid crossing cliffs
+    public bool carveIfNoWayRound = true; // when no route avoids cliffs, carve a ramp through instead of skipping the road
     public int smoothing = 3;          // cells either side averaged when evening out the road
     public float maxWalkableSlope = 35f;
 }
@@ -32,14 +33,16 @@ public sealed class Road
     public int From, To;                                   // indices into the placements
     public readonly List<float> X = new List<float>(), Z = new List<float>(), Height = new List<float>();
     public readonly List<int> RouteCells = new List<int>(); // the pathfound cells (row * cols + col)
+    public bool Carved;                                    // true when no way round existed and it cuts through a cliff
 }
 
 // Connects placed chunks with roads, in plain code (portable).
 // 1. Links: the shortest network joining every chunk, plus a few extra links for loops.
 // 2. Each link runs between the best-facing pair of path connectors, leaving each chunk straight out.
-// 3. A* over the terrain grid finds the route: slopes cost more, cliffs a lot more, chunks are off-limits.
-// 4. The road's height is evened out and kept under Max Road Slope (carving ramps through cliffs where
-//    needed), pressed into the terrain across its width and blended at the edges. Cells are re-marked walkable.
+// 3. A* over the terrain grid finds the route: it goes round cliffs and chunks, preferring gentle ground.
+//    Only if there is no way round at all (and Carve If No Way Round is on) does it cut through a cliff.
+// 4. The road's height is evened out and kept under Max Road Slope, pressed into the terrain across
+//    its width and blended at the edges. Cells are re-marked walkable.
 public static class RoadBuilder
 {
     public static List<Road> Build(TerrainMap map, IReadOnlyList<ChunkPlacement> placed, IReadOnlyList<ChunkFootprint> footprints,
@@ -58,10 +61,13 @@ public static class RoadBuilder
             float ax = a.X + ca.X, az = a.Z + ca.Z, bx = b.X + cb.X, bz = b.Z + cb.Z;
             float lax = ax + ca.ForwardX * leadOut, laz = az + ca.ForwardZ * leadOut;
             float lbx = bx + cb.ForwardX * leadOut, lbz = bz + cb.ForwardZ * leadOut;
-            var route = FindRoute(map, Cell(map, lax, laz), Cell(map, lbx, lbz), blocked, s);
+            int from = Cell(map, lax, laz), to = Cell(map, lbx, lbz);
+            var route = FindRoute(map, from, to, blocked, s, false);
+            bool carved = false;
+            if (route == null && s.carveIfNoWayRound) { route = FindRoute(map, from, to, blocked, s, true); carved = route != null; }
             if (route == null) continue;
 
-            var road = new Road { From = link.Item1, To = link.Item2 };
+            var road = new Road { From = link.Item1, To = link.Item2, Carved = carved };
             road.RouteCells.AddRange(route);
             Add(road, ax, az, a.Height); Add(road, lax, laz, a.Height);
             foreach (int c in route) Add(road, CellX(map, c), CellZ(map, c), CellHeight(map, c));
@@ -71,6 +77,24 @@ public static class RoadBuilder
         }
         Press(map, roads, placed, footprints, halfWidth, s);
         return roads;
+    }
+
+    // True when every placed chunk can be reached from the start (placement 0) by road.
+    public static bool AllConnected(int placedCount, IReadOnlyList<Road> roads)
+    {
+        if (placedCount <= 1) return true;
+        var reached = new bool[placedCount]; reached[0] = true;
+        int count = 1;
+        for (bool grew = true; grew;)
+        {
+            grew = false;
+            foreach (var road in roads)
+            {
+                if (road.From >= placedCount || road.To >= placedCount || reached[road.From] == reached[road.To]) continue;
+                reached[road.From] = reached[road.To] = true; count++; grew = true;
+            }
+        }
+        return count == placedCount;
     }
 
     // Minimum spanning tree over chunk centres (Prim's), then the shortest unused links as loops.
@@ -144,9 +168,10 @@ public static class RoadBuilder
     public static bool InsideFootprint(float x, float z, ChunkPlacement p, ChunkFootprint size, float pad) =>
         Math.Abs(x - p.X) <= size.Width * 0.5f + pad && Math.Abs(z - p.Z) <= size.Depth * 0.5f + pad;
 
-    // A* over cells, 8 directions. Slope and cliffs cost more; footprint cells are impassable
-    // (except the start and goal, which sit just outside their chunks).
-    static List<int> FindRoute(TerrainMap map, int start, int goal, bool[] blocked, RoadSettings s)
+    // A* over cells, 8 directions; slopes cost more. Footprint cells are impassable (except the start and
+    // goal, which sit just outside their chunks). Cliffs are impassable too, unless carving is allowed,
+    // when they are only very expensive.
+    static List<int> FindRoute(TerrainMap map, int start, int goal, bool[] blocked, RoadSettings s, bool throughCliffs)
     {
         if (start < 0 || goal < 0) return null;
         int count = map.Cols * map.Rows;
@@ -173,7 +198,11 @@ public static class RoadBuilder
                     float step = map.CellSize * (dx != 0 && dz != 0 ? 1.41421356f : 1f);
                     float rise = Math.Abs(CellHeight(map, next) - CellHeight(map, current));
                     float cost = step * (1f + s.slopeCost * (rise / step) / tanMax);
-                    if (!map.IsWalkable(nx, nz)) cost *= Math.Max(1f, s.cliffCost);
+                    if (!map.IsWalkable(nx, nz))
+                    {
+                        if (!throughCliffs && next != goal) continue;
+                        cost *= Math.Max(1f, s.cliffCost);
+                    }
                     float total = g[current] + cost;
                     if (total >= g[next]) continue;
                     g[next] = total; came[next] = current;

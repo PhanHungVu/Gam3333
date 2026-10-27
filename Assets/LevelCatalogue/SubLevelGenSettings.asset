@@ -16,12 +16,14 @@ MonoBehaviour:
   cellSize: 4
   hillSize: 160
   noiseLayers: 4
-  layerStrength: 0.461
+  layerStrength: 0.5
   layerDetail: 2
   heightSpread: 2.2
   terraceLevels: 4
   levelHeight: 12
-  terraceSharpness: 0.85
+  terraceSharpness: 0.75
+  cliffCoverage: 0.75
+  variationSize: 350
   maxWalkableSlope: 35
   startChunk: {fileID: 2121723537569621097, guid: 5ca732db150bf2f4e9fef87b4ed55b9a, type: 3}
   missionChunk: {fileID: 5514633955760966115, guid: 5109d7bb88dd5d848900d25d76d6867d, type: 3}
@@ -32,3 +34,11 @@ MonoBehaviour:
   blendDistance: 24
   placementCandidates: 300
   flatnessWeight: 10
+  extraLinks: 1
+  roadWidth: 12
+  maxRoadSlope: 20
+  roadBlend: 8
+  roadSlopeCost: 4
+  carveIfNoWayRound: 1
+  roadCliffCost: 10
+  roadSmoothing: 3

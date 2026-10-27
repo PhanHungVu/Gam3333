@@ -18,34 +18,32 @@ public static class RoadChecks
         var missionConnectors = new List<ChunkConnector> { new ChunkConnector(0f, 40f, 0f, 1f), new ChunkConnector(-40f, 0f, -1f, 0f) };
         var connectors = new List<IReadOnlyList<ChunkConnector>> { startConnectors, missionConnectors, missionConnectors, missionConnectors };
 
-        TerrainMap Map(out List<ChunkPlacement> placed, out List<Road> roads)
+        TerrainMap Map(out List<ChunkPlacement> placed, out List<Road> roads, out bool[] walkableBefore)
         {
             var map = TerrainGenerator.Generate(7, terrain);
             placed = ChunkPlacer.Place(map, 7, footprints, placement);
             ChunkPlacer.Flatten(map, placed, footprints, placement);
+            walkableBefore = (bool[])map.Walkable.Clone();
             roads = RoadBuilder.Build(map, placed, footprints, connectors, road);
             return map;
         }
-        var first = Map(out var placedA, out var roadsA);
-        var second = Map(out _, out var roadsB);
+        var first = Map(out var placedA, out var roadsA, out var walkableA);
+        var second = Map(out _, out var roadsB, out _);
         check(roadsA.Count == roadsB.Count && first.Heights.SequenceEqual(second.Heights) && first.Road.SequenceEqual(second.Road),
             "The same seed builds the same roads");
 
         var links = RoadBuilder.Links(placedA, road.extraLinks);
         check(links.Count == placedA.Count - 1 + road.extraLinks, "Roads form the shortest network plus the extra loop links");
-        var joined = new HashSet<int> { 0 };
-        for (bool grew = true; grew;)
-        {
-            grew = false;
-            foreach (var r in roadsA)
-                if (joined.Contains(r.From) != joined.Contains(r.To)) { joined.Add(r.From); joined.Add(r.To); grew = true; }
-        }
-        check(roadsA.Count == links.Count && joined.Count == placedA.Count, "Every chunk is joined to the start by road");
+        check(roadsA.Count == links.Count && RoadBuilder.AllConnected(placedA.Count, roadsA), "Every chunk is joined to the start by road");
+        var partial = new List<Road> { new Road { From = 0, To = 1 } };
+        check(!RoadBuilder.AllConnected(3, partial), "The connection check spots a chunk with no road to the start");
 
         bool atConnectors = roadsA.All(r =>
             IsConnector(placedA[r.From], r.X[0], r.Z[0], connectors[placedA[r.From].Footprint])
             && IsConnector(placedA[r.To], r.X[r.X.Count - 1], r.Z[r.Z.Count - 1], connectors[placedA[r.To].Footprint]));
         check(atConnectors, "Roads start and end at path connectors");
+        bool roundCliffs = roadsA.Where(r => !r.Carved).All(r => r.RouteCells.Skip(1).Take(r.RouteCells.Count - 2).All(c => walkableA[c]));
+        check(roadsA.Any(r => !r.Carved) && roundCliffs, "Roads go round cliffs rather than through them when there is a way round");
 
         bool clearOfChunks = true; int roadCells = 0, walkableRoad = 0;
         for (int c = 0; c < first.Cols * first.Rows; c++)
