@@ -58,6 +58,8 @@ public sealed class NavGrid : MonoBehaviour
         // note from a few phases back, this avoids touching that system at all), and
         // Collider.bounds is already an axis-aligned box even for a rotated cube,
         // which is a safe (slightly conservative) footprint to block against.
+        // With generated terrain (NavTerrain), the height band is measured from the ground under
+        // each obstacle, so cover and trees on a plateau count just like on low ground.
         var footprints = new List<Rect>();
         foreach (var go in GameObject.FindGameObjectsWithTag(obstacleTag))
         {
@@ -65,8 +67,9 @@ public sealed class NavGrid : MonoBehaviour
             if (col == null) continue;
 
             Bounds b = col.bounds;
-            float bandMin = origin.y + stepHeight;
-            float bandMax = origin.y + shoulderHeight;
+            float floor = NavTerrain.GroundHeight(b.center, origin.y);
+            float bandMin = floor + stepHeight;
+            float bandMax = floor + shoulderHeight;
             bool inBand = b.max.y >= bandMin && b.min.y <= bandMax;
             if (!inBand) continue; // shorter than step height (or floating above the band) - climbable/irrelevant, ignored
 
@@ -77,24 +80,36 @@ public sealed class NavGrid : MonoBehaviour
         float minX = origin.x - width * 0.5f;
         float minZ = origin.z - depth * 0.5f;
 
-        for (int r = 0; r < rows; r++)
+        // Each footprint marks only the cells it covers (same result as testing every cell against
+        // every footprint, but fast enough for hundreds of trees).
+        foreach (var f in footprints)
         {
-            for (int c = 0; c < cols; c++)
-            {
-                Rect cellRect = new Rect(minX + c * cellSize, minZ + r * cellSize, cellSize, cellSize);
-                bool isBlocked = false;
-                for (int i = 0; i < footprints.Count; i++)
-                {
-                    if (footprints[i].Overlaps(cellRect)) { isBlocked = true; break; }
-                }
-                blocked[r * cols + c] = isBlocked;
-            }
+            int c0 = Mathf.Max(0, Mathf.FloorToInt((f.xMin - minX) / cellSize));
+            int c1 = Mathf.Min(cols - 1, Mathf.CeilToInt((f.xMax - minX) / cellSize) - 1);
+            int r0 = Mathf.Max(0, Mathf.FloorToInt((f.yMin - minZ) / cellSize));
+            int r1 = Mathf.Min(rows - 1, Mathf.CeilToInt((f.yMax - minZ) / cellSize) - 1);
+            for (int r = r0; r <= r1; r++)
+                for (int c = c0; c <= c1; c++)
+                    if (f.Overlaps(new Rect(minX + c * cellSize, minZ + r * cellSize, cellSize, cellSize))) blocked[r * cols + c] = true;
         }
+
+        // Cliffs and off-map ground from generated terrain are walls too.
+        int wallCells = 0;
+        if (NavTerrain.Active)
+            for (int r = 0; r < rows; r++)
+                for (int c = 0; c < cols; c++)
+                {
+                    var centre = new Vector3(minX + (c + 0.5f) * cellSize, origin.y, minZ + (r + 0.5f) * cellSize);
+                    if (!NavTerrain.IsWall(centre)) continue;
+                    if (!blocked[r * cols + c]) wallCells++;
+                    blocked[r * cols + c] = true;
+                }
 
         baked = true;
         int blockedCount = 0;
         for (int i = 0; i < blocked.Length; i++) if (blocked[i]) blockedCount++;
-        Debug.Log($"[NavGrid] Baked {cols}x{rows} cells. Found {footprints.Count} obstacle(s) tagged '{obstacleTag}'. {blockedCount} cells blocked.");
+        Debug.Log($"[NavGrid] Baked {cols}x{rows} cells. Found {footprints.Count} obstacle(s) tagged '{obstacleTag}'. {blockedCount} cells blocked" +
+            (NavTerrain.Active ? $" ({wallCells} by terrain walls)." : "."));
     }
 
     // ---- public query API - unused today, this is what Pathing reads from next phase ----
