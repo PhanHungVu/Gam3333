@@ -38,7 +38,7 @@ public static class MechEnemyCombatChecks
     {
         var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.PlayerPath),
             new Vector3(52000f, 2f, 0f), Quaternion.identity);
-        EnemyAttack mace = null, crossbow = null, dual = null, far = null;
+        EnemyAttack mace = null, crossbow = null, dual = null, far = null, uphill = null, below = null;
         GameObject wall = null;
         try
         {
@@ -155,6 +155,17 @@ public static class MechEnemyCombatChecks
             farTuning.ApplyModifiedPropertiesWithoutUndo();
             check(!far.TryAttack(), "Weapons never attack beyond their own reach");
             Object.DestroyImmediate(far.gameObject); far = null;
+
+            // Height: ranged enemies shoot up a slope; melee still can't reach a target well above it.
+            var level = player.transform.position;
+            uphill = Enemy("crossbow", player, 8f);
+            below = Enemy("mace", player, 2f);
+            player.transform.position = level + Vector3.up * 6f; Physics.SyncTransforms();
+            check(uphill.TryAttack(), "Ranged enemies fire at a player standing well above them");
+            check(!below.TryAttack(), "Melee enemies can't swing at a player well above them");
+            player.transform.position = level; Physics.SyncTransforms();
+            Object.DestroyImmediate(uphill.gameObject); uphill = null;
+            Object.DestroyImmediate(below.gameObject); below = null;
             health.ApplyDamage(10000f);
             check(health.IsDead && !player.activeSelf && !player.GetComponent<MechMovementController>().isActiveAndEnabled,
                 "Zero player health disables movement/combat through the existing death lifecycle");
@@ -164,6 +175,8 @@ public static class MechEnemyCombatChecks
             foreach (var bolt in Object.FindObjectsByType<MechProjectile>().Where(FromEnemy)) Object.DestroyImmediate(bolt.gameObject);
             if (dual != null) Object.DestroyImmediate(dual.gameObject);
             if (far != null) Object.DestroyImmediate(far.gameObject);
+            if (uphill != null) Object.DestroyImmediate(uphill.gameObject);
+            if (below != null) Object.DestroyImmediate(below.gameObject);
             if (wall != null) Object.DestroyImmediate(wall);
             if (mace != null) Object.DestroyImmediate(mace.gameObject);
             if (crossbow != null) Object.DestroyImmediate(crossbow.gameObject);
