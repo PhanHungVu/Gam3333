@@ -19,6 +19,26 @@ public sealed class ChunkDefinition : MonoBehaviour
     [SerializeField] MechRulesConfig rulesConfig;
     [Tooltip("Where roads join the chunk. Empty slots are ignored; with none assigned, children whose name starts with 'PathConnector' are used.")]
     [SerializeField] Transform[] pathConnectors;
+    [Header("Interior (circles only)")]
+    [Tooltip("Generate random slopes, blocks and walls inside a circular chunk. Off = flat.")]
+    [SerializeField] bool generateInterior;
+    [Tooltip("Metres across a typical block or dip.")]
+    [SerializeField, Min(2f)] float featureSize = 20f;
+    [Tooltip("Metres per step. One step is chest-high cover, two stacked are a full wall. Below about 3 m a step is too gentle to be a wall with 4 m terrain cells.")]
+    [SerializeField, Min(0.5f)] float stepHeight = 3f;
+    [Tooltip("The tallest the interior rises above the chunk's base, in metres.")]
+    [SerializeField, Min(0.5f)] float maxHeight = 6f;
+    [Tooltip("0 = smooth slopes, 1 = sheer steps.")]
+    [SerializeField, Range(0f, 1f)] float sharpness = 0.85f;
+    [Tooltip("The open hold area in the middle, as a fraction of the radius.")]
+    [SerializeField, Range(0f, 0.9f)] float holdArea = 0.3f;
+    [Tooltip("How much light cover the hold area gets (one step at most). 0 = completely open.")]
+    [SerializeField, Range(0f, 1f)] float holdCover = 0.5f;
+    [Tooltip("Metres: a lane from each road entrance to the centre stays at base level, so the centre is always reachable.")]
+    [SerializeField, Min(2f)] float laneWidth = 8f;
+    [Tooltip("Fraction of the radius over which the interior fades back to base at the edge, so roads join smoothly.")]
+    [SerializeField, Range(0.02f, 0.5f)] float edgeFade = 0.15f;
+    [Header("Links")]
     [Tooltip("Whether this chunk can serve as a sub-level's start or extraction area.")]
     [SerializeField] bool canBeStartOrEnd;
     [Tooltip("Roaming spawns pause while the player is inside this chunk. Start/end chunks never pause roaming.")]
@@ -32,6 +52,12 @@ public sealed class ChunkDefinition : MonoBehaviour
     public Vector2 SizeMetres => IsCircle ? new Vector2(sizeInGolems.x, sizeInGolems.x) * MetresPerGolem : sizeInGolems * MetresPerGolem;
     public bool IsCircle => shape == ChunkShape.Circle;
     public float RadiusMetres => SizeMetres.x * 0.5f;
+    // The interior rules for the generator, or null when this chunk stays flat.
+    public ChunkInteriorSettings Interior => IsCircle && generateInterior ? new ChunkInteriorSettings
+    {
+        featureSize = featureSize, stepHeight = stepHeight, maxHeight = maxHeight, sharpness = sharpness,
+        holdArea = holdArea, holdCover = holdCover, laneWidth = laneWidth, edgeFade = edgeFade,
+    } : null;
     public bool CanBeStartOrEnd => canBeStartOrEnd;
     public bool PausesRoaming => pausesRoaming && !canBeStartOrEnd;
     float MetresPerGolem => rulesConfig != null ? rulesConfig.metresPerGolem : 4f;

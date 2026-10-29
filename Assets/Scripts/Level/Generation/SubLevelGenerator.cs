@@ -4,7 +4,8 @@ using UnityEngine;
 // Generates a sub-level from a seed and the settings asset: the terrain (a low-poly mesh with a
 // collider, cliffs steeper than Max Walkable Slope as walls), then the start chunk near the middle
 // and the mission chunks spread across the map, each on flattened ground, joined by roads from path
-// connector to path connector (ramps carved through cliffs where needed), then decor such as trees in
+// connector to path connector (ramps carved through cliffs where needed), circular chunks' interiors
+// (slopes, blocks and walls, with lanes from each road to the centre), then decor such as trees in
 // woods and clearings, kept off roads, chunks and cliffs. On Play the player is
 // moved to the start chunk's PlayerStart. Generates in Awake on Play (before NavGrid bakes, so enemy
 // pathing sees the terrain), or from the component's menu in the editor. During Play it registers the
@@ -121,6 +122,8 @@ public sealed class SubLevelGenerator : MonoBehaviour
         foreach (var r in roads) if (r.Carved) roadsCarved++;
         if (roadsCarved > 0)
             Debug.LogWarning($"SubLevelGenerator: {roadsCarved} road(s) on seed {seed} had no way round and carve through a cliff.", this);
+        ChunkInterior.Build(map, seed, placements, footprints, roads, settings.maxWalkableSlope);
+        walkablePercent = 100f * map.WalkableCount / Mathf.Max(1, map.Cols * map.Rows);
         allConnected = RoadBuilder.AllConnected(placements.Count, roads);
         if (!allConnected)
             Debug.LogWarning($"SubLevelGenerator: on seed {seed} not every chunk is joined to the start by road.", this);
@@ -204,7 +207,8 @@ public sealed class SubLevelGenerator : MonoBehaviour
         return list;
     }
 
-    static ChunkFootprint FootprintOf(ChunkDefinition chunk) => new ChunkFootprint(chunk.SizeMetres.x, chunk.SizeMetres.y, chunk.IsCircle);
+    static ChunkFootprint FootprintOf(ChunkDefinition chunk) =>
+        new ChunkFootprint(chunk.SizeMetres.x, chunk.SizeMetres.y, chunk.IsCircle, chunk.Interior);
 
     // Path connectors per footprint, in the same order as ChunkFootprints, in each chunk's own space.
     List<IReadOnlyList<ChunkConnector>> Connectors(int footprintCount)

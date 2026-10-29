@@ -4,7 +4,7 @@ using UnityEngine;
 // A place enemies can appear (e.g. a tent model). Registers itself while enabled, so the
 // SpawnDirector never needs to know how many exist: hand-placed, inside a chunk prefab, or
 // placed by the level generator later all work the same. Which points a wave uses is decided
-// by whoever starts the wave (e.g. Survival_Zone sends the points inside its chunk).
+// by whoever starts the wave (e.g. KOTH_Zone sends the points inside its chunk).
 [DisallowMultipleComponent]
 public class SpawnPoint : MonoBehaviour
 {

@@ -7,13 +7,15 @@ public readonly struct ChunkFootprint
 {
     public readonly float Width, Depth;
     public readonly bool Circle;
+    public readonly ChunkInteriorSettings Interior; // circles only: generated slopes, walls and cover inside; null = flat
     public float Radius => Width * 0.5f;
 
-    public ChunkFootprint(float width, float depth, bool circle = false)
+    public ChunkFootprint(float width, float depth, bool circle = false, ChunkInteriorSettings interior = null)
     {
         Width = Math.Max(1f, width);
         Depth = circle ? Width : Math.Max(1f, depth);
         Circle = circle;
+        Interior = circle ? interior : null;
     }
 
     // dx, dz: offset from the chunk's centre. Inside, with the footprint grown by pad metres.

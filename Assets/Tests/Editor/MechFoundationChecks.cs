@@ -93,6 +93,7 @@ public static class MechFoundationChecks
             RoadChecks.Run(Check);
             DecorChecks.Run(Check);
             NavTerrainChecks.Run(Check);
+            KOTHChecks.Run(Check);
             MechProjectileModelChecks.Run(Check);
             MechSfxChecks.Run(Check);
             MechDashMeleeChecks.Run(Check);

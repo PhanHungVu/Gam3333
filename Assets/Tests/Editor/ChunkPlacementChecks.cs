@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 // Chunk placement: seeded, spread out, never overlapping, inside the margin, on flattened ground.
@@ -83,6 +84,45 @@ public static class ChunkPlacementChecks
                 }
         }
         check(roundFlat, "Ground inside a circular chunk is flat");
+
+        // Interior: blocks and walls up to Max Height, open hold area, lanes keep the centre reachable.
+        var interior = new ChunkInteriorSettings();
+        var arena = new List<ChunkFootprint> { new ChunkFootprint(24f, 24f) };
+        for (int i = 0; i < 3; i++) arena.Add(new ChunkFootprint(100f, 100f, true, interior));
+        TerrainMap Arena(out List<ChunkPlacement> spots, out List<Road> ways)
+        {
+            var m = TerrainGenerator.Generate(9, terrain);
+            spots = ChunkPlacer.Place(m, 9, arena, s);
+            ChunkPlacer.Flatten(m, spots, arena, s);
+            ways = RoadBuilder.Build(m, spots, arena, null, new RoadSettings());
+            ChunkInterior.Build(m, 9, spots, arena, ways, 35f);
+            return m;
+        }
+        var arenaMap = Arena(out var arenaSpots, out var arenaRoads);
+        var arenaAgain = Arena(out _, out _);
+        check(arenaMap.Heights.SequenceEqual(arenaAgain.Heights), "The same seed generates the same chunk interiors");
+
+        bool inRange = true, holdLight = true, varied = false, reachable = true;
+        for (int i = 0; i < arenaSpots.Count; i++)
+        {
+            var p = arenaSpots[i]; var size = arena[p.Footprint];
+            if (!size.Circle) continue;
+            for (int z = 0; z <= arenaMap.Rows; z++)
+                for (int x = 0; x <= arenaMap.Cols; x++)
+                {
+                    float dx = arenaMap.MinX + x * arenaMap.CellSize - p.X, dz = arenaMap.MinZ + z * arenaMap.CellSize - p.Z;
+                    float r = Mathf.Sqrt(dx * dx + dz * dz);
+                    if (r >= size.Radius) continue;
+                    float rise = arenaMap.Height(x, z) - p.Height;
+                    if (rise < -0.001f || rise > interior.maxHeight + 0.001f) inRange = false;
+                    if (r <= size.Radius * interior.holdArea && rise > interior.stepHeight + 0.001f) holdLight = false;
+                    if (rise > interior.stepHeight - 0.5f) varied = true;
+                }
+            if (!ChunkInterior.CentreReachable(arenaMap, p, size, ChunkInterior.Entrances(i, p, arenaRoads))) reachable = false;
+        }
+        check(inRange && varied, "Chunk interiors rise in steps up to Max Height above the chunk's base");
+        check(holdLight, "The hold area in the middle only gets light cover (one step at most)");
+        check(reachable, "Every road entrance can walk to the chunk's centre through the generated interior");
 
         var roundRoads = RoadBuilder.Build(circleMap, round, circles, null, new RoadSettings());
         bool onEdge = true;

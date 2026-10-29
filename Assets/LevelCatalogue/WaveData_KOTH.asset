@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e07b17f81fc473d40bf95e4ef8c4c8b9, type: 3}
-  m_Name: WaveData_Survival
+  m_Name: WaveData_KOTH
   m_EditorClassIdentifier: Assembly-CSharp::WaveData
   type: 1
   spawnInterval: 0.2
