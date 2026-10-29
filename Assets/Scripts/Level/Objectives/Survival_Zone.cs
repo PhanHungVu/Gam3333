@@ -151,12 +151,6 @@ public sealed class Survival_Zone : MonoBehaviour
         if (found != null) player = found.transform;
     }
 
-    // Inside the chunk's footprint box, in the chunk's own orientation. Height is ignored (flat map).
-    bool InsideChunk(Vector3 position)
-    {
-        if (chunk == null) return false;
-        Vector3 local = chunk.transform.InverseTransformPoint(position);
-        Vector2 half = chunk.SizeMetres * 0.5f;
-        return Mathf.Abs(local.x) <= half.x && Mathf.Abs(local.z) <= half.y;
-    }
+    // Inside the chunk's footprint (box or circle); the rule lives in ChunkDefinition.Contains.
+    bool InsideChunk(Vector3 position) => chunk != null && chunk.Contains(position);
 }

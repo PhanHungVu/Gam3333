@@ -204,7 +204,7 @@ public sealed class SubLevelGenerator : MonoBehaviour
         return list;
     }
 
-    static ChunkFootprint FootprintOf(ChunkDefinition chunk) => new ChunkFootprint(chunk.SizeMetres.x, chunk.SizeMetres.y);
+    static ChunkFootprint FootprintOf(ChunkDefinition chunk) => new ChunkFootprint(chunk.SizeMetres.x, chunk.SizeMetres.y, chunk.IsCircle);
 
     // Path connectors per footprint, in the same order as ChunkFootprints, in each chunk's own space.
     List<IReadOnlyList<ChunkConnector>> Connectors(int footprintCount)

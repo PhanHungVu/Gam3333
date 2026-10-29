@@ -256,6 +256,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f894b27de71e4d84ab663f1f36ecbbcb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChunkDefinition
+  shape: 1
   sizeInGolems: {x: 20, y: 20}
   rulesConfig: {fileID: 11400000, guid: ee7e37eb664fbfb4695ed0f740b434c4, type: 2}
   pathConnectors:

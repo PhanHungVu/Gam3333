@@ -5,6 +5,8 @@ using UnityEngine;
 // Chunk placement: seeded, spread out, never overlapping, inside the margin, on flattened ground.
 public static class ChunkPlacementChecks
 {
+    static float Dist(float dx, float dz) => Mathf.Sqrt(dx * dx + dz * dz);
+
     public static void Run(Action<bool, string> check)
     {
         var terrain = new TerrainSettings();
@@ -54,5 +56,44 @@ public static class ChunkPlacementChecks
         }
         check(onLevel, "Each chunk sits on a terrace level");
         check(flat && walkable, "Ground under every chunk is flat and walkable after flattening");
+
+        // Circular chunks: placed apart by the gap between circles, flattened as circles, roads meet their edge.
+        var circles = new List<ChunkFootprint> { new ChunkFootprint(24f, 24f) };
+        for (int i = 0; i < 3; i++) circles.Add(new ChunkFootprint(100f, 100f, true));
+        var circleMap = TerrainGenerator.Generate(9, terrain);
+        var round = ChunkPlacer.Place(circleMap, 9, circles, s);
+        bool circlesApart = round.Count == circles.Count;
+        for (int i = 0; i < round.Count; i++)
+            for (int j = i + 1; j < round.Count; j++)
+                if (ChunkFootprint.Gap(circles[round[i].Footprint], circles[round[j].Footprint],
+                        round[j].X - round[i].X, round[j].Z - round[i].Z) < s.minSpacing - 0.01f) circlesApart = false;
+        check(circlesApart, "Circular chunks all fit and keep their spacing");
+
+        ChunkPlacer.Flatten(circleMap, round, circles, s);
+        bool roundFlat = true;
+        foreach (var p in round)
+        {
+            var size = circles[p.Footprint];
+            if (!size.Circle) continue;
+            for (int z = 0; z <= circleMap.Rows; z++)
+                for (int x = 0; x <= circleMap.Cols; x++)
+                {
+                    float dx = circleMap.MinX + x * circleMap.CellSize - p.X, dz = circleMap.MinZ + z * circleMap.CellSize - p.Z;
+                    if (size.Inside(dx, dz, 0f) && Mathf.Abs(circleMap.Height(x, z) - p.Height) > 0.001f) roundFlat = false;
+                }
+        }
+        check(roundFlat, "Ground inside a circular chunk is flat");
+
+        var roundRoads = RoadBuilder.Build(circleMap, round, circles, null, new RoadSettings());
+        bool onEdge = true;
+        foreach (var r in roundRoads)
+        {
+            var a = round[r.From]; var b = round[r.To];
+            if (circles[a.Footprint].Circle && Mathf.Abs(Dist(r.X[0] - a.X, r.Z[0] - a.Z) - circles[a.Footprint].Radius) > 0.01f) onEdge = false;
+            int last = r.X.Count - 1;
+            if (circles[b.Footprint].Circle && Mathf.Abs(Dist(r.X[last] - b.X, r.Z[last] - b.Z) - circles[b.Footprint].Radius) > 0.01f) onEdge = false;
+        }
+        check(roundRoads.Count > 0 && onEdge && RoadBuilder.AllConnected(round.Count, roundRoads),
+            "Roads join circular chunks at the point on their edge facing the next chunk");
     }
 }
