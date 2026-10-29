@@ -87,6 +87,9 @@ public sealed class FlowField : MonoBehaviour
         TryBuild(force: false);
     }
 
+    // Rebuilds everything from the current NavGrid, e.g. after it re-bakes for newly generated terrain.
+    public void Rebuild() => TryBuild(force: true);
+
     void TryBuild(bool force)
     {
         if (!grid.Baked) return; // NavGrid hasn't baked yet this frame - wait

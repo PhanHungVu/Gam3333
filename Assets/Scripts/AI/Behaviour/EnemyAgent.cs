@@ -137,14 +137,17 @@ public sealed class EnemyAgent : MonoBehaviour
 
     void OnDisable() => All.Remove(this);
 
+    // The ground an enemy starts on: generated terrain's height there if there is terrain, else the fallback.
+    public static float SpawnGroundY(Vector3 position, float fallback) => NavTerrain.GroundHeight(position, fallback);
+
     void Start()
     {
         // Don't trust the Y this spawned at - a spawn point can sit above the real
         // floor (on a pillar, say), and if we treated that as correct we'd float
-        // there forever. This scene has one flat floor, so snap straight to the
-        // known groundY instead of measuring anything - no raycast needed.
+        // there forever. On generated terrain the ground height comes from the terrain
+        // itself; on a flat scene it is the known groundY - no raycast needed either way.
         Vector3 p = transform.position;
-        p.y = groundY + pivotHeight;
+        p.y = SpawnGroundY(p, groundY) + pivotHeight;
         transform.position = p;
         hasGround = true; // the ongoing SnapToGround below still raycasts every frame on its own
     }

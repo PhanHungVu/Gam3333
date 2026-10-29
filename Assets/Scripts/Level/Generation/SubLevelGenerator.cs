@@ -6,7 +6,10 @@ using UnityEngine;
 // and the mission chunks spread across the map, each on flattened ground, joined by roads from path
 // connector to path connector (ramps carved through cliffs where needed), then decor such as trees in
 // woods and clearings, kept off roads, chunks and cliffs. On Play the player is
-// moved to the start chunk's PlayerStart. Generates on Play, or from the component's menu in the editor.
+// moved to the start chunk's PlayerStart. Generates in Awake on Play (before NavGrid bakes, so enemy
+// pathing sees the terrain), or from the component's menu in the editor. During Play it registers the
+// terrain with NavTerrain (cliffs as walls, ground heights) and sets the player's climbable slope to
+// Max Walkable Slope, so player and enemies obey the same limit.
 // Everything generated is rebuilt from the seed, so none of it is saved into the scene.
 [DisallowMultipleComponent]
 public sealed class SubLevelGenerator : MonoBehaviour
@@ -53,12 +56,53 @@ public sealed class SubLevelGenerator : MonoBehaviour
     public IReadOnlyList<Road> Roads => roads;
     public int Seed => seed;
 
-    void Start()
+    void Awake()
     {
         if (!generateOnStart) return;
         if (randomSeedOnPlay) seed = Random.Range(int.MinValue, int.MaxValue);
         Generate();
+    }
+
+    void Start()
+    {
         MovePlayerToStart();
+        ApplyPlayerSlope();
+    }
+
+    void OnDestroy() => NavTerrain.Unregister(this);
+
+    // Enemy pathing reads the terrain through NavTerrain; regenerating during Play re-bakes it.
+    void ShareTerrainWithPathing()
+    {
+        if (!Application.isPlaying || map == null) return;
+        NavTerrain.Register(this, IsWallAt, GroundAt);
+        var grid = FindAnyObjectByType<NavGrid>();
+        if (grid != null && grid.Baked)
+        {
+            grid.Bake();
+            if (FlowField.Instance != null) FlowField.Instance.Rebuild();
+        }
+    }
+
+    bool IsWallAt(Vector3 world)
+    {
+        Vector3 local = transform.InverseTransformPoint(world);
+        return map.WallAt(local.x, local.z);
+    }
+
+    float GroundAt(Vector3 world)
+    {
+        Vector3 local = transform.InverseTransformPoint(world);
+        return transform.TransformPoint(new Vector3(local.x, DecorScatter.HeightAt(map, local.x, local.z), local.z)).y;
+    }
+
+    // The player can climb exactly what enemies can: Max Walkable Slope.
+    void ApplyPlayerSlope()
+    {
+        if (settings == null) return;
+        var player = GameObject.FindWithTag("Player");
+        var controller = player != null ? player.GetComponent<CharacterController>() : null;
+        if (controller != null) controller.slopeLimit = settings.maxWalkableSlope;
     }
 
     [ContextMenu("Generate")]
@@ -112,6 +156,7 @@ public sealed class SubLevelGenerator : MonoBehaviour
         }
 
         PlaceDecor(footprints);
+        ShareTerrainWithPathing();
     }
 
     // Each decor group, seeded separately so adding a group never moves another group's items.

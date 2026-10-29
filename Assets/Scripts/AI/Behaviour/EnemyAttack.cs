@@ -53,6 +53,7 @@ public sealed class EnemyAttack : MonoBehaviour
     [SerializeField, Min(0.01f)] float fireDuration = 0.7f;
     [SerializeField, Range(0f, 1f)] float releaseFrame = 0.6f;
     [SerializeField, Range(0f, 180f)] float facingAngle = 70f;
+    [Tooltip("Melee only: how far above or below the target can be. Ranged weapons shoot at any height.")]
     [SerializeField, Min(0f)] float verticalReach = 2.5f;
     [Header("Melee box")]
     [Tooltip("Same shape as the player's melee box; its depth scales with the weapon's Range.")]
@@ -270,9 +271,11 @@ public sealed class EnemyAttack : MonoBehaviour
     {
         var weapon = entry != null ? entry.weapon : null;
         var part = PartOf(weapon);
-        if (!HasStats(part) || !CanReach(target.transform, Mathf.Min(ReachOf(weapon), rangeCap))) return false;
+        if (!HasStats(part)) return false;
+        bool melee = part.Stats.subtype == PartSubtype.Melee;
+        if (!CanReach(target.transform, ReachOf(weapon), rangeCap, melee)) return false;
         // Melee only cares about walls; ranged also won't shoot into the back of another body.
-        if (!ClearPath(target, AimPoint(target), part.Stats.subtype == PartSubtype.Melee)) return false;
+        if (!ClearPath(target, AimPoint(target), melee)) return false;
         float cooldown = CooldownOf(weapon);
         if (!weapon.PlayAttack(cooldown, fireDuration)) return false;
         activeWeapon = weapon;
@@ -286,13 +289,18 @@ public sealed class EnemyAttack : MonoBehaviour
         return true;
     }
 
-    bool CanReach(Transform target, float reach)
+    // Melee: within reach on the flat and no more than Vertical Reach above or below.
+    // Ranged: within the weapon's reach in a straight line (3D), at any height - slopes and plateaus
+    // don't stop a shot. Both: no further than rangeCap on the flat (the enemy's Attack Range when taking
+    // turns), and facing the target on the flat. Line of sight is checked separately (ClearPath).
+    bool CanReach(Transform target, float reach, float rangeCap, bool melee)
     {
         var offset = target.position - transform.position;
-        if (Mathf.Abs(offset.y) > verticalReach) return false;
-        offset.y = 0f;
-        return offset.magnitude <= reach + 0.5f
-            && (offset.sqrMagnitude < 0.001f || Vector3.Angle(transform.forward, offset) <= facingAngle);
+        if (melee && Mathf.Abs(offset.y) > verticalReach) return false;
+        var flat = new Vector3(offset.x, 0f, offset.z);
+        float distance = melee ? flat.magnitude : offset.magnitude;
+        return distance <= reach + 0.5f && flat.magnitude <= rangeCap + 0.5f
+            && (flat.sqrMagnitude < 0.001f || Vector3.Angle(transform.forward, flat) <= facingAngle);
     }
 
     static Vector3 AimPoint(CombatHealth health)

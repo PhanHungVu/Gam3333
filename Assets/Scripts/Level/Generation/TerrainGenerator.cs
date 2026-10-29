@@ -43,6 +43,14 @@ public sealed class TerrainMap
     public float Height(int cornerX, int cornerZ) => Heights[cornerZ * (Cols + 1) + cornerX];
     public bool IsWalkable(int col, int row) => Walkable[row * Cols + col];
     public bool IsRoad(int col, int row) => Road[row * Cols + col];
+
+    // True on cliffs and anywhere off the map (x, z in the map's own space).
+    public bool WallAt(float x, float z)
+    {
+        int col = (int)Math.Floor((x - MinX) / CellSize), row = (int)Math.Floor((z - MinZ) / CellSize);
+        if (col < 0 || row < 0 || col >= Cols || row >= Rows) return true;
+        return !IsWalkable(col, row);
+    }
     public int WalkableCount { get { int n = 0; foreach (var w in Walkable) if (w) n++; return n; } }
 }
 
