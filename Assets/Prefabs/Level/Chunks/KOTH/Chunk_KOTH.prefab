@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6846061459378792984}
   - component: {fileID: 5514633955760966115}
+  - component: {fileID: 2412568738316114111}
   m_Layer: 0
   m_Name: Chunk_KOTH
   m_TagString: Untagged
@@ -61,6 +62,57 @@ MonoBehaviour:
   canBeStartOrEnd: 0
   pausesRoaming: 1
   laneWidthInGolems: 2
+--- !u!114 &2412568738316114111
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3219658408120823296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d356dd9961e055c439c0e6a7ff4f27ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChunkOutpost
+  centre:
+    pieces:
+    - prefab: {fileID: 5854075567610878944, guid: 7a4895dda5a81ad4299c24a6ff47472c, type: 3}
+      weight: 1
+    min: 1
+    max: 1
+  wallEdge:
+    pieces:
+    - prefab: {fileID: 6484178164421893807, guid: 5b22f154c852edc4fa91b196bf14ebbf, type: 3}
+      weight: 1
+    - prefab: {fileID: 8303662618639250219, guid: 807e6d7a77bd17546a3adeaa68927a44, type: 3}
+      weight: 0.5
+    - prefab: {fileID: 4192077305038318011, guid: 97a399160491f8a4cb9be1d5a3dfef86, type: 3}
+      weight: 1
+    min: 4
+    max: 8
+  high:
+    pieces:
+    - prefab: {fileID: 6656519580673021803, guid: fe5a59c42c3aa9347b2c1486e2dc28a6, type: 3}
+      weight: 1
+    - prefab: {fileID: 5854075567610878944, guid: 7a4895dda5a81ad4299c24a6ff47472c, type: 3}
+      weight: 1
+    min: 1
+    max: 3
+  flat:
+    pieces:
+    - prefab: {fileID: 6656519580673021803, guid: fe5a59c42c3aa9347b2c1486e2dc28a6, type: 3}
+      weight: 1
+    - prefab: {fileID: 8758049249749649652, guid: 46ec93bee1b04294f9a9b5b2697c50e6, type: 3}
+      weight: 1
+    - prefab: {fileID: 2598977150594171762, guid: 182152baecb3f304a83d39d0f0306314, type: 3}
+      weight: 0.5
+    min: 3
+    max: 6
+  spacing: 6
+  laneClearance: 2
+  minScale: 0.9
+  maxScale: 1.2
+  blocksPathing: 1
 --- !u!1 &8469459782908356340
 GameObject:
   m_ObjectHideFlags: 0
