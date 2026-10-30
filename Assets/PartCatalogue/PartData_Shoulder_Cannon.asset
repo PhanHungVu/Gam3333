@@ -18,6 +18,8 @@ MonoBehaviour:
   partType: 4
   subtype: 2
   stats:
+  - type: 1
+    value: -4
   - type: 2
     value: 100
   - type: 14

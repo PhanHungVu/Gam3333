@@ -16,8 +16,8 @@ public static class MechLocomotionChecks
         var view = new GameObject("Locomotion Check View");
         var player = Object.Instantiate(prefab, new Vector3(30000, 1.6f, 0), Quaternion.identity);
         var motor = player.GetComponent<MechMovementController>();
-        // Ordinary walking speed is the player prefab's Move Speed, so tuning it never breaks these checks.
-        float walk = new SerializedObject(motor).FindProperty("moveSpeed").floatValue;
+        // Ordinary walking speed comes from the legs and part Speed stats, so tuning them never breaks these checks.
+        float walk = motor.WalkSpeed;
         var equipment = player.GetComponent<EquipManager>();
         var debug = player.GetComponent<MechLocomotionDebug>();
         var energy = player.GetComponent<MechEnergyController>();
@@ -63,8 +63,9 @@ public static class MechLocomotionChecks
             check(motor.AnimationData.LocomotionType == LocomotionType.Hover, "Animation module identity updates immediately on equip");
 
             Step(motor, view, 150, Vector2.up);
-            check(!motor.IsGrounded && Near(motor.AnimationData.Speed, 12f) && player.transform.position.y > 2f,
-                "Hover glides at 12 m/s above actual ground contact");
+            float partMultiplier = player.GetComponent<MechStats>().SpeedMultiplier;
+            check(!motor.IsGrounded && Near(motor.AnimationData.Speed, 12f * partMultiplier) && player.transform.position.y > 2f,
+                "Hover glides at its 12 m/s (times the other parts' Speed) above actual ground contact");
             float oldSpeed = motor.AnimationData.Speed;
             Step(motor, view);
             check(Near(motor.AnimationData.Speed, oldSpeed - 0.12f), "Hover retains momentum with lower braking acceleration");
@@ -90,7 +91,8 @@ public static class MechLocomotionChecks
             Step(motor, view, 1, jump: true, held: true);
             check(motor.IsGrounded && player.transform.position.y <= tankHeight + 0.01f, "Tank ignores jump without moving or lifting its root");
             Step(motor, view, 90, Vector2.up);
-            check(Near(motor.AnimationData.Speed, 4.5f), "Tank uses its slower 4.5 m/s travel speed");
+            check(Near(motor.AnimationData.Speed, 4.5f * player.GetComponent<MechStats>().SpeedMultiplier),
+                "Tank uses its slower 4.5 m/s travel speed (times the other parts' Speed)");
             Step(motor, view, 60);
             Vector3 forward = player.transform.forward;
             Step(motor, view, 1, Vector2.left, boost: true);
@@ -177,8 +179,8 @@ public static class MechLocomotionChecks
         var view = new GameObject("Boost braking view");
         var player = Object.Instantiate(prefab, new Vector3(90000f, 1.6f, 0f), Quaternion.identity);
         var motor = player.GetComponent<MechMovementController>();
-        // Ordinary walking speed is the player prefab's Move Speed, so tuning it never breaks these checks.
-        float walk = new SerializedObject(motor).FindProperty("moveSpeed").floatValue;
+        // Ordinary walking speed comes from the legs and part Speed stats, so tuning them never breaks these checks.
+        float walk = motor.WalkSpeed;
         TestMech.StopPlayerInput(motor);
         var energy = player.GetComponent<MechEnergyController>();
         try
