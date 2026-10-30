@@ -38,18 +38,7 @@ public sealed class RoamingSpawner : SpawnPoint
         var player = Target;
         if (player == null) return false;
         if (grid == null) grid = FindAnyObjectByType<NavGrid>();
-        Vector3 centre = player.position;
-        for (int i = 0; i < attempts; i++)
-        {
-            float angle = Random.value * Mathf.PI * 2f;
-            Vector3 candidate = centre + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
-            if (grid != null && grid.IsBlockedWorld(candidate)) continue;
-            position = candidate;
-            Vector3 toPlayer = centre - candidate; toPlayer.y = 0f;
-            rotation = Quaternion.LookRotation(toPlayer.normalized, Vector3.up);
-            return true;
-        }
-        return false;
+        return SpawnRing.TryPick(player.position, radius, attempts, grid, out position, out rotation);
     }
 
     // Keeps the object on the player so its gizmo shows the circle where they are.
@@ -59,18 +48,5 @@ public sealed class RoamingSpawner : SpawnPoint
         if (player != null) transform.position = player.position;
     }
 
-    protected override void OnDrawGizmos()
-    {
-        Gizmos.color = new Color(1f, 0.4f, 0.1f);
-        Vector3 centre = target != null ? target.position : transform.position;
-        const int segments = 64;
-        Vector3 previous = centre + new Vector3(radius, 0f, 0f);
-        for (int i = 1; i <= segments; i++)
-        {
-            float angle = i * Mathf.PI * 2f / segments;
-            Vector3 next = centre + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
-            Gizmos.DrawLine(previous, next);
-            previous = next;
-        }
-    }
+    protected override void OnDrawGizmos() => SpawnRing.DrawGizmo(target != null ? target.position : transform.position, radius);
 }

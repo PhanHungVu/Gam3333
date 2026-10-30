@@ -4,8 +4,10 @@ using UnityEngine;
 // Generates a sub-level from a seed and the settings asset: the terrain (a low-poly mesh with a
 // collider, cliffs steeper than Max Walkable Slope as walls), then the start chunk near the middle
 // and the mission chunks spread across the map, each on flattened ground, joined by roads from path
-// connector to path connector (ramps carved through cliffs where needed), then decor such as trees in
-// woods and clearings, kept off roads, chunks and cliffs. On Play the player is
+// connector to path connector (ramps carved through cliffs where needed), circular chunks' interiors
+// (slopes, blocks and walls, with lanes from each road to the centre), then decor such as trees in
+// woods and clearings, kept off roads, chunks and cliffs, and each KOTH chunk's outpost (ChunkOutpost)
+// laid out on its interior. On Play the player is
 // moved to the start chunk's PlayerStart. Generates in Awake on Play (before NavGrid bakes, so enemy
 // pathing sees the terrain), or from the component's menu in the editor. During Play it registers the
 // terrain with NavTerrain (cliffs as walls, ground heights) and sets the player's climbable slope to
@@ -41,6 +43,7 @@ public sealed class SubLevelGenerator : MonoBehaviour
     [SerializeField] int roadsCarved;
     [SerializeField] bool allConnected;
     [SerializeField] int decorPlaced;
+    [SerializeField] int outpostPieces;
 
     const string TerrainName = "Generated Terrain";
     const string ChunksName = "Generated Chunks";
@@ -121,6 +124,8 @@ public sealed class SubLevelGenerator : MonoBehaviour
         foreach (var r in roads) if (r.Carved) roadsCarved++;
         if (roadsCarved > 0)
             Debug.LogWarning($"SubLevelGenerator: {roadsCarved} road(s) on seed {seed} had no way round and carve through a cliff.", this);
+        ChunkInterior.Build(map, seed, placements, footprints, roads, settings.maxWalkableSlope);
+        walkablePercent = 100f * map.WalkableCount / Mathf.Max(1, map.Cols * map.Rows);
         allConnected = RoadBuilder.AllConnected(placements.Count, roads);
         if (!allConnected)
             Debug.LogWarning($"SubLevelGenerator: on seed {seed} not every chunk is joined to the start by road.", this);
@@ -143,8 +148,10 @@ public sealed class SubLevelGenerator : MonoBehaviour
 
         var chunks = Rebuild(ChunksName).transform;
         startInstance = null;
-        foreach (var p in placements)
+        outpostPieces = 0;
+        for (int index = 0; index < placements.Count; index++)
         {
+            var p = placements[index];
             bool isStart = settings.startChunk != null && p.Footprint == 0;
             var prefab = isStart ? settings.startChunk : settings.missionChunk;
             if (prefab == null) continue;
@@ -153,10 +160,40 @@ public sealed class SubLevelGenerator : MonoBehaviour
             if (!Application.isPlaying)
                 foreach (var part in chunk.GetComponentsInChildren<Transform>(true)) part.gameObject.hideFlags = HideFlags.DontSave;
             if (isStart) startInstance = chunk.transform;
+            BuildOutpost(index, p, prefab, footprints[p.Footprint], chunk.transform);
         }
 
         PlaceDecor(footprints);
         ShareTerrainWithPathing();
+    }
+
+    // The chunk's outpost (if its prefab has a ChunkOutpost), planned on its generated interior and
+    // placed under the chunk as "Outpost". Seeded per chunk.
+    void BuildOutpost(int index, ChunkPlacement p, ChunkDefinition prefab, ChunkFootprint footprint, Transform chunk)
+    {
+        var outpost = prefab.GetComponent<ChunkOutpost>();
+        if (outpost == null || !footprint.Circle) return;
+        var interior = footprint.Interior ?? new ChunkInteriorSettings();
+        var items = OutpostPlanner.Plan(map, seed ^ (0x2545f491 * (index + 1)), p, footprint,
+            ChunkInterior.Entrances(index, p, roads), interior.laneWidth, interior.stepHeight, outpost.ToSettings());
+        var parent = new GameObject("Outpost").transform;
+        parent.SetParent(chunk, true);
+        if (!Application.isPlaying) parent.gameObject.hideFlags = HideFlags.DontSave;
+        foreach (var item in items)
+        {
+            var pieces = outpost.Slot(item.Slot).pieces;
+            var piece = item.Prefab < pieces.Length && pieces[item.Prefab] != null ? pieces[item.Prefab].prefab : null;
+            if (piece == null) continue;
+            var placed = Instantiate(piece, transform.TransformPoint(new Vector3(item.X, item.Height, item.Z)),
+                transform.rotation * Quaternion.Euler(0f, item.Yaw, 0f), parent);
+            placed.transform.localScale = piece.transform.localScale * item.Scale;
+            foreach (var part in placed.GetComponentsInChildren<Transform>(true))
+            {
+                if (outpost.blocksPathing && part.GetComponent<Collider>() != null) part.gameObject.tag = ObstacleTag;
+                if (!Application.isPlaying) part.gameObject.hideFlags = HideFlags.DontSave;
+            }
+            outpostPieces++;
+        }
     }
 
     // Each decor group, seeded separately so adding a group never moves another group's items.
@@ -204,7 +241,8 @@ public sealed class SubLevelGenerator : MonoBehaviour
         return list;
     }
 
-    static ChunkFootprint FootprintOf(ChunkDefinition chunk) => new ChunkFootprint(chunk.SizeMetres.x, chunk.SizeMetres.y);
+    static ChunkFootprint FootprintOf(ChunkDefinition chunk) =>
+        new ChunkFootprint(chunk.SizeMetres.x, chunk.SizeMetres.y, chunk.IsCircle, chunk.Interior);
 
     // Path connectors per footprint, in the same order as ChunkFootprints, in each chunk's own space.
     List<IReadOnlyList<ChunkConnector>> Connectors(int footprintCount)

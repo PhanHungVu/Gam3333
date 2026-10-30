@@ -39,6 +39,7 @@ public sealed class Road
 // Connects placed chunks with roads, in plain code (portable).
 // 1. Links: the shortest network joining every chunk, plus a few extra links for loops.
 // 2. Each link runs between the best-facing pair of path connectors, leaving each chunk straight out.
+//    A chunk without connectors uses its edge facing the other chunk (for a circle, the facing point).
 // 3. A* over the terrain grid finds the route: it goes round cliffs and chunks, preferring gentle ground.
 //    Only if there is no way round at all (and Carve If No Way Round is on) does it cut through a cliff.
 // 4. The road's height is evened out and kept under Max Road Slope, pressed into the terrain across
@@ -150,6 +151,13 @@ public static class RoadBuilder
         if (own != null && own.Count > 0) return own;
         var size = footprints[self.Footprint];
         float dx = other.X - self.X, dz = other.Z - self.Z;
+        if (size.Circle)
+        {
+            // A circle with no connectors: the point on its edge facing the other chunk.
+            float length = (float)Math.Sqrt(dx * dx + dz * dz);
+            float ux = length > 0.001f ? dx / length : 0f, uz = length > 0.001f ? dz / length : 1f;
+            return new[] { new ChunkConnector(ux * size.Radius, uz * size.Radius, ux, uz) };
+        }
         if (Math.Abs(dx) * size.Depth >= Math.Abs(dz) * size.Width)
             return new[] { new ChunkConnector(Math.Sign(dx) * size.Width * 0.5f, 0f, Math.Sign(dx), 0f) };
         return new[] { new ChunkConnector(0f, Math.Sign(dz) * size.Depth * 0.5f, 0f, Math.Sign(dz)) };
@@ -166,7 +174,7 @@ public static class RoadBuilder
     }
 
     public static bool InsideFootprint(float x, float z, ChunkPlacement p, ChunkFootprint size, float pad) =>
-        Math.Abs(x - p.X) <= size.Width * 0.5f + pad && Math.Abs(z - p.Z) <= size.Depth * 0.5f + pad;
+        size.Inside(x - p.X, z - p.Z, pad);
 
     // A* over cells, 8 directions; slopes cost more. Footprint cells are impassable (except the start and
     // goal, which sit just outside their chunks). Cliffs are impassable too, unless carving is allowed,

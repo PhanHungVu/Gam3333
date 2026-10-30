@@ -96,7 +96,7 @@ public sealed class SubLevelGenSettings : ScriptableObject
     [Header("Chunks")]
     [Tooltip("Start/extract chunk, placed near the middle of the map. The player starts at its PlayerStart child.")]
     public ChunkDefinition startChunk;
-    [Tooltip("The mission's chunk (e.g. Chunk_Survival), repeated across the map.")]
+    [Tooltip("The mission's chunk (e.g. Chunk_KOTH), repeated across the map.")]
     public ChunkDefinition missionChunk;
     [Tooltip("How many mission chunks to place; the seed picks a number in this range.")]
     [Min(0)] public int missionChunkMin = 3;

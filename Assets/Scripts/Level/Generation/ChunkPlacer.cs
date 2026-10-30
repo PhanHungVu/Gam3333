@@ -1,11 +1,44 @@
 using System;
 using System.Collections.Generic;
 
-// A chunk's footprint in metres (X by Z), as the placer sees it.
+// A chunk's footprint in metres, as the placer sees it: a box (Width by Depth) or a circle
+// (Width is the diameter). Every "how far from / inside this chunk" question goes through here.
 public readonly struct ChunkFootprint
 {
     public readonly float Width, Depth;
-    public ChunkFootprint(float width, float depth) { Width = Math.Max(1f, width); Depth = Math.Max(1f, depth); }
+    public readonly bool Circle;
+    public readonly ChunkInteriorSettings Interior; // circles only: generated slopes, walls and cover inside; null = flat
+    public float Radius => Width * 0.5f;
+
+    public ChunkFootprint(float width, float depth, bool circle = false, ChunkInteriorSettings interior = null)
+    {
+        Width = Math.Max(1f, width);
+        Depth = circle ? Width : Math.Max(1f, depth);
+        Circle = circle;
+        Interior = circle ? interior : null;
+    }
+
+    // dx, dz: offset from the chunk's centre. Inside, with the footprint grown by pad metres.
+    public bool Inside(float dx, float dz, float pad) => Circle
+        ? dx * dx + dz * dz <= (Radius + pad) * (Radius + pad)
+        : Math.Abs(dx) <= Width * 0.5f + pad && Math.Abs(dz) <= Depth * 0.5f + pad;
+
+    // Distance from the footprint's edge (0 inside it).
+    public float OutsideDistance(float dx, float dz)
+    {
+        if (Circle) return Math.Max(0f, (float)Math.Sqrt(dx * dx + dz * dz) - Radius);
+        float ox = Math.Max(0f, Math.Abs(dx) - Width * 0.5f), oz = Math.Max(0f, Math.Abs(dz) - Depth * 0.5f);
+        return (float)Math.Sqrt(ox * ox + oz * oz);
+    }
+
+    // Gap between two footprints (negative when they overlap); b sits at (dx, dz) from a.
+    public static float Gap(ChunkFootprint a, ChunkFootprint b, float dx, float dz)
+    {
+        if (a.Circle && b.Circle) return (float)Math.Sqrt(dx * dx + dz * dz) - a.Radius - b.Radius;
+        if (a.Circle) return b.OutsideDistance(-dx, -dz) - a.Radius;
+        if (b.Circle) return a.OutsideDistance(dx, dz) - b.Radius;
+        return Math.Max(Math.Abs(dx) - (a.Width + b.Width) * 0.5f, Math.Abs(dz) - (a.Depth + b.Depth) * 0.5f);
+    }
 }
 
 // Where one chunk went: its centre, the ground height it sits on, and which footprint it uses.
@@ -87,9 +120,7 @@ public static class ChunkPlacer
                 for (int x = 0; x <= map.Cols; x++)
                 {
                     float wx = map.MinX + x * map.CellSize, wz = map.MinZ + z * map.CellSize;
-                    float dx = Math.Max(0f, Math.Abs(wx - p.X) - size.Width * 0.5f);
-                    float dz = Math.Max(0f, Math.Abs(wz - p.Z) - size.Depth * 0.5f);
-                    float outside = (float)Math.Sqrt(dx * dx + dz * dz);
+                    float outside = size.OutsideDistance(wx - p.X, wz - p.Z);
                     if (outside >= blend) continue;
                     float t = outside / blend;
                     float keep = t * t * (3f - 2f * t); // 0 at the footprint, 1 at the blend's edge
@@ -128,18 +159,15 @@ public static class ChunkPlacer
         int z0 = Clamp((int)Math.Ceiling((z - size.Depth * 0.5f - map.MinZ) / map.CellSize), 0, map.Rows);
         int z1 = Clamp((int)Math.Floor((z + size.Depth * 0.5f - map.MinZ) / map.CellSize), 0, map.Rows);
         for (int cz = z0; cz <= z1; cz++)
-            for (int cx = x0; cx <= x1; cx++) visit(map.Height(cx, cz));
+            for (int cx = x0; cx <= x1; cx++)
+                if (size.Inside(map.MinX + cx * map.CellSize - x, map.MinZ + cz * map.CellSize - z, 0f)) visit(map.Height(cx, cz));
     }
 
     public static bool Overlaps(float x, float z, ChunkFootprint size, IReadOnlyList<ChunkPlacement> placed,
         IReadOnlyList<ChunkFootprint> footprints, float spacing)
     {
         foreach (var p in placed)
-        {
-            var other = footprints[p.Footprint];
-            if (Math.Abs(x - p.X) < (size.Width + other.Width) * 0.5f + spacing
-                && Math.Abs(z - p.Z) < (size.Depth + other.Depth) * 0.5f + spacing) return true;
-        }
+            if (ChunkFootprint.Gap(footprints[p.Footprint], size, x - p.X, z - p.Z) < spacing) return true;
         return false;
     }
 

@@ -4,7 +4,7 @@ using UnityEngine;
 // The single spawn manager for a scene. Runs one wave at a time on the spawn points it is given:
 // every Spawn Interval it picks an affordable enemy from the wave's list by its chance, spawns it
 // at one of the wave's points and spends its cost; when nothing is affordable it waits Timer Reset,
-// refills and carries on. Other scripts start and stop waves (e.g. Survival_Zone runs the Survival
+// refills and carries on. Other scripts start and stop waves (e.g. KOTH_Zone runs the KOTH
 // wave on its chunk's spawn points). Enemies already spawned are never removed. Put one in each scene.
 // Roaming: with a Roaming Wave and a Roaming Spawner it runs that wave on its own whenever no other
 // wave is running and the player isn't inside an area that pauses roaming (objective chunks). A paused
