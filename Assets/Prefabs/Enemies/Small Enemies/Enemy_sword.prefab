@@ -74932,6 +74932,10 @@ GameObject:
   - component: {fileID: 1602365964940855930}
   - component: {fileID: 4133779281385898726}
   - component: {fileID: 2488247309208738744}
+  - component: {fileID: 804876338288827233}
+  - component: {fileID: 736576087195366785}
+  - component: {fileID: 3383167243525719635}
+  - component: {fileID: 634281957708447049}
   m_Layer: 0
   m_Name: Enemy_sword
   m_TagString: Untagged
@@ -75051,6 +75055,7 @@ MonoBehaviour:
   pivotHeight: 1
   groundY: 0
   debugState: 
+  externalDecisions: 1
 --- !u!114 &6683077240449309910
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -75073,6 +75078,10 @@ MonoBehaviour:
     cooldownMultiplier: 1.5
     projectileSpeedMultiplier: 1
   independentWeapons: 0
+  externalRequests: 1
+  forceOverheadMelee: 0
+  respectAttackRangeAtRelease: 1
+  aimSpreadDegrees: 0
   muzzle: {fileID: 0}
   rulesConfig: {fileID: 11400000, guid: ee7e37eb664fbfb4695ed0f740b434c4, type: 2}
   fireDuration: 0.7
@@ -75161,7 +75170,77 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2cc64d0180827c4da16e7047fc714bf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawnCost
-  cost: 5
+  cost: 1
+--- !u!114 &804876338288827233
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7844480342519530753}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0038c16c34866b4f9e25c9c0dc0f7e6, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Unity.Behavior::Unity.Behavior.BehaviorGraphAgent
+  m_Graph: {fileID: -8197705158698095557, guid: ad6bdc20f3a8b424fb41783771610191, type: 2}
+  m_BlackboardVariableOverridesList:
+  - rid: 6080984986951876617
+  m_OriginalGraph: {fileID: -8197705158698095557, guid: ad6bdc20f3a8b424fb41783771610191, type: 2}
+  m_IsInitialised: 0
+  m_IsStarted: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: 6080984986951876617
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1
+          m_Value1: 0
+        Name: Self
+        m_Value: {fileID: 7844480342519530753}
+--- !u!114 &736576087195366785
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7844480342519530753}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99792b1a61dfa544183d9f694a22ae18, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyGraphController
+  currentAction:
+  role: 0
+  minimumRange: 0
+--- !u!114 &3383167243525719635
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7844480342519530753}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a287914e39905f48b6ec911e13e11ee, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyThreatMarker
+  warningColor: {r: 1, g: 0.4, b: 0.12, a: 0.85}
+  material: {fileID: 2100000, guid: a128b5b21c841bf41ab638418f57fbd0, type: 2}
+--- !u!114 &634281957708447049
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7844480342519530753}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19b282fea837f494eba9921c829af6bd, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyWeaponTelegraph
 --- !u!1 &9200341255374459326
 GameObject:
   m_ObjectHideFlags: 0

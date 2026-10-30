@@ -50272,6 +50272,10 @@ GameObject:
   - component: {fileID: 2317099856583387135}
   - component: {fileID: 388974039334746544}
   - component: {fileID: 8240038712278213534}
+  - component: {fileID: 5425919516276427644}
+  - component: {fileID: 7139341849629662674}
+  - component: {fileID: 3732340197155134796}
+  - component: {fileID: 3732413620461668047}
   m_Layer: 0
   m_Name: Enemy_crossbow
   m_TagString: Untagged
@@ -50325,7 +50329,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc15aad914b342bc859e2ab8c19fce6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
-  maximumHealth: 100
+  maximumHealth: 80
   currentHealth: 0
   team: 2
 --- !u!114 &2097355057362920606
@@ -50354,14 +50358,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAgent
   target: {fileID: 0}
-  maxSpeed: 6
+  maxSpeed: 5
   maxForce: 15
   wanderSpeedFraction: 0.4
   turnSpeed: 240
   detectRadius: 40
   loseRadius: 60
-  arriveRadius: 12
-  attackRange: 9
+  arriveRadius: 14
+  attackRange: 8
   perceptionRadius: 10
   separationRadius: 3.5
   separationWeight: 1.5
@@ -50391,6 +50395,7 @@ MonoBehaviour:
   pivotHeight: 1
   groundY: 0
   debugState: 
+  externalDecisions: 1
 --- !u!114 &5667391269682614564
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -50405,14 +50410,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAttack
   weapons:
   - weapon: {fileID: 5721094564432976276}
-    damageMultiplier: 0.1
-    cooldownMultiplier: 1
-    projectileSpeedMultiplier: 0.1125
+    damageMultiplier: 0.2
+    cooldownMultiplier: 2
+    projectileSpeedMultiplier: 0.6
   - weapon: {fileID: 4587992763705115653}
-    damageMultiplier: 0.1
-    cooldownMultiplier: 1
-    projectileSpeedMultiplier: 0.1125
+    damageMultiplier: 0.2
+    cooldownMultiplier: 2
+    projectileSpeedMultiplier: 0.6
   independentWeapons: 0
+  externalRequests: 1
+  forceOverheadMelee: 0
+  respectAttackRangeAtRelease: 0
+  aimSpreadDegrees: 12
   muzzle: {fileID: 0}
   rulesConfig: {fileID: 11400000, guid: ee7e37eb664fbfb4695ed0f740b434c4, type: 2}
   fireDuration: 0.7
@@ -50501,7 +50510,77 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2cc64d0180827c4da16e7047fc714bf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawnCost
-  cost: 5
+  cost: 2
+--- !u!114 &5425919516276427644
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7062185459325199375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0038c16c34866b4f9e25c9c0dc0f7e6, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Unity.Behavior::Unity.Behavior.BehaviorGraphAgent
+  m_Graph: {fileID: -7146618944395774935, guid: cef963b3192afd94cad0b2fbd010152c, type: 2}
+  m_BlackboardVariableOverridesList:
+  - rid: 6080984987399619383
+  m_OriginalGraph: {fileID: -7146618944395774935, guid: cef963b3192afd94cad0b2fbd010152c, type: 2}
+  m_IsInitialised: 0
+  m_IsStarted: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: 6080984987399619383
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1
+          m_Value1: 0
+        Name: Self
+        m_Value: {fileID: 7062185459325199375}
+--- !u!114 &7139341849629662674
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7062185459325199375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99792b1a61dfa544183d9f694a22ae18, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyGraphController
+  currentAction:
+  role: 5
+  minimumRange: 5
+--- !u!114 &3732340197155134796
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7062185459325199375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a287914e39905f48b6ec911e13e11ee, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyThreatMarker
+  warningColor: {r: 1, g: 0.4, b: 0.12, a: 0.85}
+  material: {fileID: 2100000, guid: a128b5b21c841bf41ab638418f57fbd0, type: 2}
+--- !u!114 &3732413620461668047
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7062185459325199375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19b282fea837f494eba9921c829af6bd, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyWeaponTelegraph
 --- !u!1 &7252553595477060627
 GameObject:
   m_ObjectHideFlags: 0

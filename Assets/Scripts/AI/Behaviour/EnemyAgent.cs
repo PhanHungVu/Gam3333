@@ -13,6 +13,9 @@ public enum PathingMode
     Zigzag     // follows the flow field's own line, swaying left-right as it goes
 }
 
+// Movement intentions only; the existing agent still owns steering and motion.
+public enum EnemyMovementIntent { Hold, Wander, Chase, Arrive, Retreat, Directed }
+
 public sealed class EnemyAgent : MonoBehaviour
 {
     // Every active enemy. Enable/disable keeps this in sync, so CombatHealth's
@@ -78,6 +81,14 @@ public sealed class EnemyAgent : MonoBehaviour
 
     [Header("Debug (read-only)")]
     [SerializeField] string debugState;
+    [Header("Decision ownership")]
+    [Tooltip("Behavior Graph supplies movement intentions. Disables the legacy state machine; missing/stopped graphs hold position.")]
+    [SerializeField] bool externalDecisions;
+    public bool ExternalDecisions => externalDecisions;
+    int intentionFrame = -1;
+    EnemyMovementIntent intention;
+    Vector3 directedVelocity;
+    public bool LastMotionBlocked { get; private set; }
 
     // ---- read by Steering and the states ----
     public Vector3 Position => transform.position;
@@ -132,7 +143,8 @@ public sealed class EnemyAgent : MonoBehaviour
         All.Add(this);
         WanderAngle = UnityEngine.Random.value * Mathf.PI * 2f;
         velocity = Vector3.zero;
-        Fsm.Transition(Wander);
+        intentionFrame = -1;
+        if (!externalDecisions) Fsm.Transition(Wander);
     }
 
     void OnDisable() => All.Remove(this);
@@ -161,8 +173,25 @@ public sealed class EnemyAgent : MonoBehaviour
         EnemySpatialHash.EnsureBuilt(All);
 
         // 1. the active state decides where we want to go (sets BehaviourForce)
-        Fsm.Tick(dt);
-        debugState = Fsm.Current?.GetType().Name;
+        if (externalDecisions)
+        {
+            // No new command this frame means stop, never resume a stale chase.
+            if (intentionFrame != Time.frameCount) SetMovementIntent(EnemyMovementIntent.Hold, dt);
+            debugState = "Graph: " + intention;
+        }
+        else
+        {
+            Fsm.Tick(dt);
+            debugState = Fsm.Current?.GetType().Name;
+        }
+
+        // Committed charges/pulls still use this motor's collision and ground
+        // handling, but do not let flocking bend the telegraphed direction.
+        if (externalDecisions && intention == EnemyMovementIntent.Directed)
+        {
+            velocity = directedVelocity;
+            Move(velocity * dt); Face(dt); SnapToGround(dt); return;
+        }
 
         // 2. crowd + obstacle forces on top, like Flocking.compute_flocking_force
         neighbors.Clear();
@@ -176,6 +205,38 @@ public sealed class EnemyAgent : MonoBehaviour
 
         // 3. integrate
         ApplyForce(Vector3.ClampMagnitude(force, maxForce), dt);
+    }
+
+    public void RefreshTarget() => ResolveTarget();
+
+    public void SetMovementIntent(EnemyMovementIntent next, float dt)
+    {
+        if (!externalDecisions) return;
+        intention = next; intentionFrame = Time.frameCount;
+        switch (next)
+        {
+            case EnemyMovementIntent.Wander: Wander.Move(dt); break;
+            case EnemyMovementIntent.Chase: Chase.Move(dt); break;
+            case EnemyMovementIntent.Arrive: Arrive.Move(dt); break;
+            case EnemyMovementIntent.Retreat:
+                FaceTarget = true; GoalDirection = Steering.Flat(Position - TargetPosition).normalized;
+                BehaviourForce = Steering.SeekDirection(this, GoalDirection) * seekWeight;
+                break;
+            default:
+                FaceTarget = false; GoalDirection = Vector3.zero;
+                BehaviourForce = Vector3.ClampMagnitude(-velocity / Mathf.Max(0.001f, dt), maxForce);
+                break;
+        }
+        // The graph requests attacks explicitly, not the legacy range hook.
+        InAttackRange = false;
+    }
+
+    public void SetDirectedMovement(Vector3 direction, float speed)
+    {
+        if (!externalDecisions) return;
+        intention = EnemyMovementIntent.Directed; intentionFrame = Time.frameCount;
+        directedVelocity = Steering.Flat(direction).normalized * Mathf.Max(0, speed);
+        GoalDirection = directedVelocity.normalized; FaceTarget = false; InAttackRange = false;
     }
 
     void ResolveTarget()
@@ -204,7 +265,9 @@ public sealed class EnemyAgent : MonoBehaviour
         velocity = Vector3.ClampMagnitude(velocity, maxSpeed);
 
         Move(velocity * dt);
-        Face(dt);
+        // A committed graph attack keeps the visual swing aligned to the
+        // existing attack's snapshotted strike direction.
+        if (!externalDecisions || intention != EnemyMovementIntent.Hold) Face(dt);
         SnapToGround(dt);
     }
 
@@ -212,11 +275,13 @@ public sealed class EnemyAgent : MonoBehaviour
     // The fish slid along one grid axis; in 3D we slide along the surface we hit.
     void Move(Vector3 motion)
     {
+        LastMotionBlocked = false;
         float dist = motion.magnitude;
         if (dist < 1e-5f) return;
 
         if (TryProbe(motion / dist, dist + skin, out RaycastHit hit))
         {
+            LastMotionBlocked = true;
             Vector3 n = Steering.Flat(hit.normal).normalized;
             motion = Vector3.ProjectOnPlane(motion, n);
             velocity = Vector3.ProjectOnPlane(velocity, n); // stop pushing into the wall

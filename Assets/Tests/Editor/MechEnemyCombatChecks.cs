@@ -13,6 +13,9 @@ public static class MechEnemyCombatChecks
         var enemy = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemies/Small Enemies/Enemy_" + family + ".prefab"),
             player.transform.position - Vector3.forward * distance, Quaternion.identity);
         var agent = enemy.GetComponent<EnemyAgent>(); agent.enabled = false;
+        // Isolate hit/occlusion rules from the ranged AI's intentional aim spread.
+        var attackSettings = new SerializedObject(enemy.GetComponent<EnemyAttack>());
+        attackSettings.FindProperty("aimSpreadDegrees").floatValue = 0; attackSettings.ApplyModifiedPropertiesWithoutUndo();
         // Random physical loot from an earlier death can obstruct a later attack scenario.
         var drops = enemy.GetComponent<EnemyPartDrop>();
         if (drops != null) drops.enabled = false;
@@ -109,7 +112,8 @@ public static class MechEnemyCombatChecks
             check(health.CurrentHealth == before - crossbow.DamageOf(crossbow.Weapon) && !bolt.IsLive,
                 "Enemy bolt uses swept collision to damage player once");
             Object.DestroyImmediate(bolt.gameObject);
-            Step(crossbow, 2f); check(crossbow.TryAttack(), "Crossbow can fire again after reload cooldown");
+            check(!crossbow.TryAttack(), "Crossbow cannot restart before its weapon cooldown expires");
+            Step(crossbow, crossbow.CooldownRemaining + .01f); check(crossbow.TryAttack(), "Crossbow can fire again after reload cooldown");
             Step(crossbow, 0.45f); bolt = Bolt(); before = health.CurrentHealth;
             var friendly = GameObject.CreatePrimitive(PrimitiveType.Cube);
             friendly.transform.position = player.transform.position - Vector3.forward * 4f;
@@ -119,11 +123,14 @@ public static class MechEnemyCombatChecks
             check(health.CurrentHealth == before && friendlyHealth.CurrentHealth == 100f && !bolt.IsLive,
                 "Other enemies block bolts without receiving friendly damage");
             Object.DestroyImmediate(bolt.gameObject); Object.DestroyImmediate(friendly);
-            Step(crossbow, 2f); crossbow.TryAttack(); Step(crossbow, 0.45f); bolt = Bolt();
+            Step(crossbow, crossbow.CooldownRemaining + .01f); crossbow.TryAttack(); Step(crossbow, 0.45f); bolt = Bolt();
+            var committedDirection = bolt.Direction;
             player.transform.position += Vector3.right * 5f; Physics.SyncTransforms(); Fly(bolt, 1f);
-            check(health.CurrentHealth == before && bolt.IsLive, "Player can dodge a non-homing enemy crossbow bolt");
+            // Faster prototype shots may exhaust their range during this full second.
+            check(health.CurrentHealth == before && (bolt.Direction - committedDirection).sqrMagnitude < .000001f,
+                "Player can dodge a non-homing enemy crossbow bolt");
             Object.DestroyImmediate(bolt.gameObject); player.transform.position -= Vector3.right * 5f; Physics.SyncTransforms();
-            Step(crossbow, 2f); crossbow.TryAttack(); Step(crossbow, 0.45f); bolt = Bolt(); wall = Wall(player, 4f); Fly(bolt, 1f);
+            Step(crossbow, crossbow.CooldownRemaining + .01f); crossbow.TryAttack(); Step(crossbow, 0.45f); bolt = Bolt(); wall = Wall(player, 4f); Fly(bolt, 1f);
             check(health.CurrentHealth == before && !bolt.IsLive, "World geometry stops enemy bolts before player damage");
             Object.DestroyImmediate(bolt.gameObject); Object.DestroyImmediate(wall); wall = null;
             float injured = health.CurrentHealth;

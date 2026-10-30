@@ -1,11 +1,6 @@
 # Enemy attacks and animation
 
-The existing `Enemy_mace` and `Enemy_crossbow` prefabs now carry `EnemyAttack` and `EnemyAnimation`. Merge Test's existing spawners use these prefabs automatically; AI flow fields, zigzag movement, steering, ground following, and spawning remain their existing systems.
-
-| Enemy | Stop range | Damage | Attack cooldown | Fire duration | Hit/release frame |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Mace | 2.2 m | 20 | 1.8 s | 0.7 s | 60% of Fire |
-| Arm crossbow | 9 m | 12 | 2 s | 0.7 s | 60% of Fire |
+The small and elite roster now uses Unity Behavior Graphs for decisions, while `EnemyAgent`, `EnemyAttack`, `EnemyAnimation`, `CombatHealth` and `SpawnDirector` continue handling execution. See [Enemy Behavior](EnemyBehavior.md) for the eight prefabs, graph/subgraph paths, current prototype tuning, wave presets and Inspector-driven playtest arena. Existing spawners referencing those prefabs pick up the changes; flow fields, zigzag movement, steering and ground following remain their existing systems.
 
 Both enemies alternate their two existing weapon arms. `MechWeaponAnimator` supports permanently equipped enemy weapons as well as the player's modular loadout. Mace uses MaceArm Fire; crossbow uses CrossBowArm Fire and Reload. The shared saved biped clips animate the legs, body, and head while the existing AI moves the gameplay root. There is no animation root motion or player controller installed on an enemy. After three stationary seconds, only the current enemy weapon can play Neutral.
 
@@ -13,7 +8,7 @@ Melee checks facing, vertical reach, distance, and obstruction again at the hit 
 
 Crossbows snapshot their aim during windup and release a visible placeholder bolt at the release frame. Bolts travel using the existing swept `MechProjectile` collision queries, hit walls, and can be dodged. Their optional damage-target filter restricts damage to the selected player; other actors still block the bolt. Launched projectiles continue travelling after the shooter dies. Actual authored bolt assets can replace these placeholder visuals in the later projectile step.
 
-Tune attack damage, cooldown, Fire Duration, Release Frame, facing angle, and projectile speed on **Enemy Attack**. Tune approach/stop range on **Enemy Agent**. The earlier cube test enemy retains its existing behavior; the two weapon-bearing spawner families provide the animated combat showcase.
+Tune weapon damage/cooldown multipliers, Fire Duration, Release Frame, facing angle, aim spread and projectile speed on **Enemy Attack**. Tune approach/stop range on **Enemy Agent**, and ranged minimum distance on **Enemy Graph Controller**. Graph-controlled prefabs have **External Decisions** and **External Requests** enabled to prevent competing legacy decisions; the earlier cube test enemy retains its existing behavior. Spinner and rock-rope attacks have separate execution components and explicitly ordered graph stages described in the linked guide.
 
 The player prefab has **Combat Health → Use Equipment Stats** enabled. Maximum health comes from `EquipManager.Health`; current health starts full and accepts damage. `MechHealthHud` displays the supplied HP artwork above the movement meter, preserving its sprite colours. Part swaps update capacity and its readout without healing. Zero health deactivates the player, stopping input, movement, combat, and player HUDs. Respawn remains separate future work.
 

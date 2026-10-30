@@ -156,7 +156,7 @@ public sealed class MechPlayerInput : MonoBehaviour
     // The camera that follows this player (works with several players and cameras).
     CameraControlThirdPerson FindCamera()
     {
-        foreach (var candidate in FindObjectsByType<CameraControlThirdPerson>(FindObjectsSortMode.None))
+        foreach (var candidate in FindObjectsByType<CameraControlThirdPerson>())
             if (candidate.Target == transform) return candidate;
         return null;
     }

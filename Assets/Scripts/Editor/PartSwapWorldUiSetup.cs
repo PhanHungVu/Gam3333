@@ -17,6 +17,7 @@ public static class PartSwapWorldUiSetup
         var prefab=asset!=null ? asset.GetComponent<PartSwapWorldView>() : null;
         if(prefab==null) prefab=CreateView();
         UpgradeCompactLayout();
+        UpgradeOverlayRendering();
         prefab=AssetDatabase.LoadAssetAtPath<GameObject>(ViewPath).GetComponent<PartSwapWorldView>();
         var player=PrefabUtility.LoadPrefabContents(PlayerPath);
         try
@@ -34,19 +35,46 @@ public static class PartSwapWorldUiSetup
         finally { PrefabUtility.UnloadPrefabContents(player); }
         AssetDatabase.SaveAssets(); Debug.Log("WORLD PART SWAP UI READY: existing selected part, sockets and bindings reused");
     }
+    static void UpgradeOverlayRendering()
+    {
+        const string folder="Assets/Materials/UI";
+        const string materialPath=folder+"/Part Swap Overlay.mat";
+        if(!AssetDatabase.IsValidFolder(folder)) AssetDatabase.CreateFolder("Assets/Materials","UI");
+        var shader=Shader.Find("Mech/UI/Part Swap Overlay");
+        var textShader=Shader.Find("TextMeshPro/Distance Field Overlay");
+        if(shader==null || textShader==null) throw new InvalidOperationException("Part swap overlay shaders are missing.");
+        var material=AssetDatabase.LoadAssetAtPath<Material>(materialPath);
+        if(material==null)
+        {
+            material=new Material(shader) { name="Part Swap Overlay" };
+            AssetDatabase.CreateAsset(material,materialPath);
+        }
+        var root=PrefabUtility.LoadPrefabContents(ViewPath);
+        try
+        {
+            var fields=new SerializedObject(root.GetComponent<PartSwapWorldView>());
+            Set(fields,"panelOverlayMaterial",material); Set(fields,"textOverlayShader",textShader);
+            fields.ApplyModifiedPropertiesWithoutUndo();
+            PrefabUtility.SaveAsPrefabAsset(root,ViewPath);
+        }
+        finally { PrefabUtility.UnloadPrefabContents(root); }
+    }
     static void UpgradeCompactLayout()
     {
         var root=PrefabUtility.LoadPrefabContents(ViewPath);
         try
         {
             var fields=new SerializedObject(root.GetComponent<PartSwapWorldView>());
-            if(fields.FindProperty("compactLayoutVersion").intValue>=1) return;
+            if(fields.FindProperty("compactLayoutVersion").intValue>=2) return;
             var upper=(RectTransform)fields.FindProperty("newPartCard").objectReferenceValue;
             upper.Find("New").GetComponent<TMP_Text>().text="NEW";
-            Style((TMP_Text)fields.FindProperty("partName").objectReferenceValue,14,30,632,34,30);
-            Style((TMP_Text)fields.FindProperty("partType").objectReferenceValue,14,64,632,22,20);
-            foreach(string name in new[]{"statsLeft","statsRight"})
-            { var label=(TMP_Text)fields.FindProperty(name).objectReferenceValue; label.text=""; label.gameObject.SetActive(false); }
+            Style((TMP_Text)fields.FindProperty("partName").objectReferenceValue,14,34,310,36,28);
+            Style((TMP_Text)fields.FindProperty("partType").objectReferenceValue,14,74,310,24,20);
+            var unused=(TMP_Text)fields.FindProperty("statsLeft").objectReferenceValue;
+            unused.text=""; unused.gameObject.SetActive(false);
+            var basic=(TMP_Text)fields.FindProperty("statsRight").objectReferenceValue;
+            Style(basic,338,12,308,104,21); basic.richText=false; basic.text=""; basic.gameObject.SetActive(true);
+            upper.sizeDelta=new Vector2(660,126);
             var cards=fields.FindProperty("cards");
             for(int i=0;i<cards.arraySize;i++)
             {
@@ -55,9 +83,9 @@ public static class PartSwapWorldUiSetup
                 var slot=(TMP_Text)card.FindPropertyRelative("slot").objectReferenceValue; slot.text=""; slot.gameObject.SetActive(false);
                 Style((TMP_Text)card.FindPropertyRelative("current").objectReferenceValue,12,44,300,26,21);
                 var comparison=(TMP_Text)card.FindPropertyRelative("comparison").objectReferenceValue;
-                Style(comparison,12,76,300,120,24); comparison.richText=true;
+                Style(comparison,12,76,300,112,22); comparison.richText=true;
             }
-            fields.FindProperty("compactLayoutVersion").intValue=1; fields.ApplyModifiedPropertiesWithoutUndo();
+            fields.FindProperty("compactLayoutVersion").intValue=2; fields.ApplyModifiedPropertiesWithoutUndo();
             PrefabUtility.SaveAsPrefabAsset(root,ViewPath);
         }
         finally { PrefabUtility.UnloadPrefabContents(root); }

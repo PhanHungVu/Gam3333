@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using UnityEngine;
 
@@ -6,9 +7,9 @@ using UnityEngine;
 // the existing sockets, PartSlots and MechRulesConfig, never a second rule table.
 public static class PartSwapDisplay
 {
-    // Show only player-facing changes, at most four lines per destination.
+    // Basic incoming values above; only changed values per destination below.
     static readonly StatType[] order={StatType.Damage,StatType.CooldownReload,StatType.MoveSpeed,
-        StatType.Health,StatType.Range,StatType.MagSize,StatType.Ammo,StatType.SplashRadius};
+        StatType.Health,StatType.Range,StatType.Ammo,StatType.MagSize,StatType.SplashRadius};
     public static string Name(Part part) => part==null ? "Empty" :
         part.Stats!=null && !string.IsNullOrWhiteSpace(part.Stats.partName) ? part.Stats.partName : part.name;
     public static string SocketName(PartCategory slot) => slot switch {
@@ -34,6 +35,28 @@ public static class PartSwapDisplay
         StatType.CooldownReload=>incoming.subtype==PartSubtype.Melee ? "Attack rate" : "Fire rate",
         StatType.Range=>"Range",StatType.SplashRadius=>"Blast size",_=>type.ToString()
     };
+    static bool Value(PartData data,StatType type,out float value)
+    {
+        value=0; if(!Has(data,type)) return false;
+        value=data.GetStat(type); if(float.IsNaN(value)||float.IsInfinity(value)) return false;
+        // Both existing attack paths clamp the interval to at least 0.01 s.
+        if(type==StatType.CooldownReload) value=1f/Mathf.Max(0.01f,value);
+        return true;
+    }
+    static string Number(float value)=>value.ToString(value!=0 && Mathf.Abs(value)<0.01f ? "0.##e+0" : "0.##",CultureInfo.InvariantCulture);
+    static string Unit(StatType type)=>type==StatType.CooldownReload ? "/s" : "";
+    public static int BasicStats(Part incoming,out string text)
+    {
+        var data=incoming!=null ? incoming.Stats : null; var result=new StringBuilder(); int count=0;
+        foreach(var type in order)
+        {
+            if(!Value(data,type,out float value)) continue;
+            if(count++>0) result.Append('\n');
+            result.Append(Label(type,data)).Append(' ').Append(Number(value)).Append(Unit(type));
+            if(count==4) break;
+        }
+        text=result.ToString(); return count;
+    }
     public static int Comparison(Part current,Part incoming,out string text)
     {
         var old=current!=null ? current.Stats : null; var next=incoming!=null ? incoming.Stats : null;
@@ -41,14 +64,13 @@ public static class PartSwapDisplay
         foreach(var type in order)
         {
             // Missing values are not zero (e.g. melee has no ammunition limit).
-            if(!Has(next,type) || !Has(old,type)) continue;
-            float before=old.GetStat(type),delta=next.GetStat(type)-before;
+            if(!Value(next,type,out float after) || !Value(old,type,out float before)) continue;
+            float delta=after-before;
             if(float.IsNaN(delta)||float.IsInfinity(delta)||Mathf.Abs(delta)<0.0001f) continue;
-            bool better=type==StatType.CooldownReload ? delta<0 : delta>0;
-            int strength=Mathf.Abs(delta)/Mathf.Max(0.001f,Mathf.Abs(before))>=0.25f ? 2 : 1;
+            bool better=delta>0;
             if(count++>0) result.Append('\n');
             result.Append(Label(type,next)).Append(" <color=").Append(better ? "#8FD6A2" : "#ED9990").Append('>')
-                .Append(new string(better ? '+' : '-',strength)).Append("</color>");
+                .Append(better ? "+" : "").Append(Number(delta)).Append(Unit(type)).Append("</color>");
             if(count==4) break;
         }
         text=result.Length==0 ? "—" : result.ToString(); return count;

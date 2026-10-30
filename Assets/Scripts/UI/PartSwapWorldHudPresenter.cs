@@ -9,7 +9,7 @@ public sealed class PartSwapWorldHudPresenter : MonoBehaviour
     [SerializeField] PartSwapWorldView viewPrefab;
     [Header("World presentation")]
     [SerializeField,Range(0.15f,0.45f)] float screenWidthFraction=0.30f;
-    [Tooltip("The current ammo HUD occupies the upper right; left is the default.")]
+    [Tooltip("Fallback for a part centered exactly on the player. Other parts choose their side from their camera-view position.")]
     [SerializeField] bool preferRightSide;
     [SerializeField,Range(0.08f,0.22f)] float playerScreenClearance=0.13f;
     [SerializeField,Min(0.02f)] float groundClearance=0.20f;
@@ -29,6 +29,7 @@ public sealed class PartSwapWorldHudPresenter : MonoBehaviour
     int nearbyCount;
     float alpha,successAge,successAlpha;
     PartCategory? confirmed;
+    bool? anchorOnRight;
     Vector3 lastAnchor;
     readonly Vector3[] corners=new Vector3[4];
     public bool HasView=>view!=null;
@@ -59,7 +60,7 @@ public sealed class PartSwapWorldHudPresenter : MonoBehaviour
     void OnDisable()
     {
         if(subscribed) { owner.EquipmentChanged-=EquipmentChanged; InputSystem.onActionChange-=ActionChanged; subscribed=false; }
-        displayed=null; confirmed=null; alpha=0; if(view!=null) view.Clear();
+        displayed=null; confirmed=null; anchorOnRight=null; alpha=0; if(view!=null) view.Clear();
     }
     void ActionChanged(object action,InputActionChange change)
     {
@@ -77,6 +78,7 @@ public sealed class PartSwapWorldHudPresenter : MonoBehaviour
     }
     void Populate(Part part)
     {
+        if(displayed!=part) anchorOnRight=null;
         displayed=part; dirty=false;
         if(part==null) { view.Clear(); return; }
         lastAnchor=part.transform.position; view.Populate(part,owner,input,detector);
@@ -85,7 +87,7 @@ public sealed class PartSwapWorldHudPresenter : MonoBehaviour
     {
         if(view==null) return;
         if(owner==null || !owner.isActiveAndEnabled || detector==null || !detector.isActiveAndEnabled)
-        { displayed=null; confirmed=null; alpha=0; view.Clear(); return; }
+        { displayed=null; confirmed=null; anchorOnRight=null; alpha=0; view.Clear(); return; }
         float dt=Mathf.Min(Time.unscaledDeltaTime,0.05f);
         var selected=owner.GetSelectedPart();
         if(confirmed.HasValue)
@@ -130,7 +132,13 @@ public sealed class PartSwapWorldHudPresenter : MonoBehaviour
         float scale=worldPerPixel*pixelScale*(reducedMotion ? 1 : Mathf.Lerp(0.98f,1,alpha));
         float playerX=camera.WorldToViewportPoint(owner.transform.position).x;
         float leftRoom=playerX-playerScreenClearance-0.035f,rightRoom=0.965f-playerX-playerScreenClearance;
-        bool right=preferRightSide;
+        float partOffset=camera.WorldToViewportPoint(lastAnchor).x-playerX;
+        // New selections use their actual screen side immediately. Keep that
+        // side through tiny center crossings while the player/camera moves.
+        if(!anchorOnRight.HasValue)
+            anchorOnRight=Mathf.Abs(partOffset)>0.0001f ? partOffset>0 : preferRightSide;
+        else if(Mathf.Abs(partOffset)>0.02f) anchorOnRight=partOffset>0;
+        bool right=anchorOnRight.Value;
         if((right ? rightRoom : leftRoom)<0.24f && (right ? leftRoom : rightRoom)>(right ? rightRoom : leftRoom)) right=!right;
         scale=Mathf.Min(scale,worldPerPixel*camera.pixelWidth*Mathf.Max(0.14f,right ? rightRoom : leftRoom)/660);
         float side=right ? 1 : -1;

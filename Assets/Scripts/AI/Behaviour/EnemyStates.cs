@@ -41,6 +41,11 @@ public sealed class WanderState : EnemyState
             agent.Fsm.Transition(agent.Chase);
             return;
         }
+        Move(dt);
+    }
+
+    public void Move(float dt)
+    {
         agent.GoalDirection = Vector3.zero;
         agent.BehaviourForce = Steering.Wander(agent, dt) * agent.WanderWeight;
     }
@@ -73,6 +78,11 @@ public sealed class ChaseState : EnemyState
         if (agent.DistanceToTarget <= agent.ArriveRadius)
         { agent.Fsm.Transition(agent.Arrive); return; }
 
+        Move(dt);
+    }
+
+    public void Move(float dt)
+    {
         Vector3 dir;
         switch (agent.Pathing)
         {
@@ -151,6 +161,11 @@ public sealed class ArriveState : EnemyState
         if (agent.DistanceToTarget > agent.ArriveRadius * 1.2f)
         { agent.Fsm.Transition(agent.Chase); return; }
 
+        Move(dt);
+    }
+
+    public void Move(float dt)
+    {
         agent.GoalDirection = Steering.Flat(agent.TargetPosition - agent.Position).normalized;
         agent.BehaviourForce = Steering.Arrive(agent, agent.TargetPosition, agent.ArriveRadius, agent.AttackRange) * agent.SeekWeight;
         agent.InAttackRange = agent.DistanceToTarget <= agent.AttackRange + 0.5f;

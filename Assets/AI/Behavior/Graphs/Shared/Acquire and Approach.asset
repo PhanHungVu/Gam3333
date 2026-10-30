@@ -1,0 +1,358 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-8468252334833671241
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2dd922ae02c94c87a66e46a10a7319b9, type: 3}
+  m_Name: Acquire and Approach Blackboard
+  m_EditorClassIdentifier: Unity.Behavior.Authoring::Unity.Behavior.BehaviorBlackboardAuthoringAsset
+  AssetID:
+    m_Value0: 4967123917500197272
+    m_Value1: 2968143795624147547
+  m_Variables:
+  - rid: 6080984987399618560
+  m_VersionTimestamp: 639289843484789432
+  m_CommandBuffer:
+    m_Commands: []
+  m_RuntimeBlackboardAsset: {fileID: 3126086308555258176}
+  references:
+    version: 2
+    RefIds:
+    - rid: 6080984987399618560
+      type: {class: 'TypedVariableModel`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        ID:
+          m_Value0: 1
+          m_Value1: 0
+        Name: Self
+        IsExposed: 1
+        m_IsShared: 0
+        m_Value: {fileID: 0}
+--- !u!114 &-8019559809425796438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db920e62f70f420bb33c771449926fa4, type: 3}
+  m_Name: Acquire and Approach
+  m_EditorClassIdentifier: Unity.Behavior::Unity.Behavior.BehaviorGraph
+  Graphs:
+  - rid: 6080984987399618561
+  m_DebugInfo: {fileID: 2255349567283008543}
+  m_WasCompileWithPlaceholderNode: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
+    - rid: 6080984987399618561
+      type: {class: BehaviorGraphModule, ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        AuthoringAssetID:
+          m_Value0: 4967123917500197272
+          m_Value1: 2968143795624147547
+        m_DebugInfo: {fileID: 2255349567283008543}
+        BlackboardReference:
+          rid: 6080984987399618562
+        BlackboardGroupReferences: []
+        Root:
+          rid: 6080984987749056692
+        m_VersionTimestamp: 639289856815039591
+    - rid: 6080984987399618562
+      type: {class: BlackboardReference, ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        m_Blackboard:
+          rid: 6080984987399618564
+        m_Source: {fileID: 3126086308555258176}
+    - rid: 6080984987399618564
+      type: {class: Blackboard, ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        m_Variables:
+        - rid: 6080984987749056694
+    - rid: 6080984987749056692
+      type: {class: Start, ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        ID:
+          m_Value0: 13738495105278459654
+          m_Value1: 9104972182689457161
+        Graph:
+          rid: 6080984987399618561
+        m_Parent:
+          rid: -2
+        m_Child:
+          rid: 6080984987749056693
+        Repeat: 0
+        AllowMultipleRepeatsPerTick: 0
+    - rid: 6080984987749056693
+      type: {class: SequenceComposite, ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        ID:
+          m_Value0: 5310387985511203190
+          m_Value1: 15458575419781295635
+        Graph:
+          rid: 6080984987399618561
+        m_Parent:
+          rid: 6080984987749056692
+        m_Children:
+        - rid: 6080984987749056695
+        - rid: 6080984987749056696
+        m_RegisteredObservers: []
+    - rid: 6080984987749056694
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1
+          m_Value1: 0
+        Name: Self
+        m_Value: {fileID: 0}
+    - rid: 6080984987749056695
+      type: {class: DetectEnemyPlayerAction, ns: Lithomachia.EnemyBehavior, asm: Assembly-CSharp}
+      data:
+        ID:
+          m_Value0: 5310387985511203190
+          m_Value1: 15458575419781295635
+        Graph:
+          rid: 6080984987399618561
+        m_Parent:
+          rid: 6080984987749056693
+    - rid: 6080984987749056696
+      type: {class: ApproachEnemyAction, ns: Lithomachia.EnemyBehavior, asm: Assembly-CSharp}
+      data:
+        ID:
+          m_Value0: 2348025375702396154
+          m_Value1: 7103257008336562357
+        Graph:
+          rid: 6080984987399618561
+        m_Parent:
+          rid: 6080984987749056693
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bad8f2220607dac4db5082ff333fafb8, type: 3}
+  m_Name: Acquire and Approach
+  m_EditorClassIdentifier: Unity.Behavior.Authoring::Unity.Behavior.BehaviorAuthoringGraph
+  Blackboard: {fileID: -8468252334833671241}
+  m_Description:
+  m_Nodes:
+  - rid: 6080984987399618566
+  - rid: 6080984987399618569
+  - rid: 6080984987399618570
+  m_VersionTimestamp: 639289856815039591
+  m_SerializedVersion: 3
+  m_DebugInfo: {fileID: 2255349567283008543}
+  m_RuntimeGraph: {fileID: -8019559809425796438}
+  AssetID:
+    m_Value0: 4967123917500197272
+    m_Value1: 2968143795624147547
+  Story:
+    Story:
+    StoryVariableNames: []
+    Variables: []
+  m_NodeModelsInfo:
+  - Name: On Start
+    Story:
+    RuntimeTypeString: Unity.Behavior.Start, Unity.Behavior, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    RuntimeTypeID:
+      m_Value0: 3335272451348827663
+      m_Value1: 11549843281177505721
+    Variables: []
+    NamedChildren: []
+    IsPlaceholder: 0
+  - Name: Detect Player
+    Story: Detect player
+    RuntimeTypeString: Lithomachia.EnemyBehavior.DetectEnemyPlayerAction, Assembly-CSharp,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    RuntimeTypeID:
+      m_Value0: 17242484629994548098
+      m_Value1: 13864338920518620593
+    Variables: []
+    NamedChildren: []
+    IsPlaceholder: 0
+  - Name: Approach Attack Range
+    Story: Approach attack range
+    RuntimeTypeString: Lithomachia.EnemyBehavior.ApproachEnemyAction, Assembly-CSharp,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    RuntimeTypeID:
+      m_Value0: 1532271284324926705
+      m_Value1: 9552178708838652569
+    Variables: []
+    NamedChildren: []
+    IsPlaceholder: 0
+  m_Blackboards: []
+  m_MainBlackboardAuthoringAsset: {fileID: -8468252334833671241}
+  m_CommandBuffer:
+    m_Commands: []
+  m_SubgraphsInfo: []
+  m_BlackboardMissingManagedRef: 0
+  m_GraphMissingManagedRef: 0
+  m_HasMissingTypeInManagedRef: 0
+  m_EnumDependencyCache:
+    Entries: []
+  references:
+    version: 2
+    RefIds:
+    - rid: 6080984987399618566
+      type: {class: StartNodeModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        Position: {x: 0, y: 0}
+        ID:
+          m_Value0: 13738495105278459654
+          m_Value1: 9104972182689457161
+        Parents: []
+        PortModels:
+        - rid: 6080984987399618567
+        NodeType:
+          m_SerializableType: Unity.Behavior.Start, Unity.Behavior, Version=0.0.0.0,
+            Culture=neutral, PublicKeyToken=null
+        NodeTypeID:
+          m_Value0: 3335272451348827663
+          m_Value1: 11549843281177505721
+        m_FieldValues: []
+        Repeat: 0
+        AllowMultipleRepeatsPerTick: 0
+    - rid: 6080984987399618567
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: OutputPort
+        m_PortDataFlowType: 1
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 6080984987399618566
+        m_Connections:
+        - rid: 6080984987399618571
+    - rid: 6080984987399618569
+      type: {class: ActionNodeModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        Position: {x: 0, y: 140}
+        ID:
+          m_Value0: 5310387985511203190
+          m_Value1: 15458575419781295635
+        Parents: []
+        PortModels:
+        - rid: 6080984987399618571
+        - rid: 6080984987399618572
+        NodeType:
+          m_SerializableType: Lithomachia.EnemyBehavior.DetectEnemyPlayerAction,
+            Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        NodeTypeID:
+          m_Value0: 17242484629994548098
+          m_Value1: 13864338920518620593
+        m_FieldValues: []
+    - rid: 6080984987399618570
+      type: {class: ActionNodeModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        Position: {x: 0, y: 280}
+        ID:
+          m_Value0: 2348025375702396154
+          m_Value1: 7103257008336562357
+        Parents: []
+        PortModels:
+        - rid: 6080984987399618573
+        - rid: 6080984987399618574
+        NodeType:
+          m_SerializableType: Lithomachia.EnemyBehavior.ApproachEnemyAction, Assembly-CSharp,
+            Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        NodeTypeID:
+          m_Value0: 1532271284324926705
+          m_Value1: 9552178708838652569
+        m_FieldValues: []
+    - rid: 6080984987399618571
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: InputPort
+        m_PortDataFlowType: 0
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 6080984987399618569
+        m_Connections:
+        - rid: 6080984987399618567
+    - rid: 6080984987399618572
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: OutputPort
+        m_PortDataFlowType: 1
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 6080984987399618569
+        m_Connections:
+        - rid: 6080984987399618573
+    - rid: 6080984987399618573
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: InputPort
+        m_PortDataFlowType: 0
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 6080984987399618570
+        m_Connections:
+        - rid: 6080984987399618572
+    - rid: 6080984987399618574
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: OutputPort
+        m_PortDataFlowType: 1
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 6080984987399618570
+        m_Connections: []
+--- !u!114 &2255349567283008543
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b27bb6d9a2c8d540a10dff10acc543e, type: 3}
+  m_Name: Acquire and Approach Debug Info
+  m_EditorClassIdentifier: Unity.Behavior::Unity.Behavior.BehaviorGraphDebugInfo
+  m_CodeBreakPointsList: []
+--- !u!114 &3126086308555258176
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c02bb70996b49eba31d0c206e28da24, type: 3}
+  m_Name: Acquire and Approach Blackboard
+  m_EditorClassIdentifier: Unity.Behavior::Unity.Behavior.RuntimeBlackboardAsset
+  VersionTimestamp: 639289843484789432
+  AssetID:
+    m_Value0: 0
+    m_Value1: 0
+  m_Blackboard:
+    m_Variables:
+    - rid: 6080984987399618568
+  m_SharedBlackboardVariableGuids: []
+  references:
+    version: 2
+    RefIds:
+    - rid: 6080984987399618568
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1
+          m_Value1: 0
+        Name: Self
+        m_Value: {fileID: 0}

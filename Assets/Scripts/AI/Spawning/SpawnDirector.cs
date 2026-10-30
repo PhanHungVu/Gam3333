@@ -128,6 +128,8 @@ public sealed class SpawnDirector : MonoBehaviour
 
     void TrySpawn(ActiveWave active)
     {
+        if (active.data.maxConcurrentEnemies > 0 && EnemyAgent.All.Count >= active.data.maxConcurrentEnemies)
+        { active.cycle.Skipped(); return; }
         int pick = WaveCycle.Pick(active.costs, active.weights, active.cycle.Resource, Random.value);
         if (pick < 0) { active.cycle.OutOfResource(); return; }
         if (!TryPickPose(active.points, out var position, out var rotation)) { active.cycle.Skipped(); return; }

@@ -69,6 +69,10 @@ public static class MechEnemyCombatSceneChecks
                 case 5:
                     if (health.CurrentHealth >= before) { next = Time.time + 0.05f; return; }
                     Check(health.CurrentHealth == before - enemy.DamageOf(enemy.Weapon), "Live enemy bolt travels to and damages the player");
+                    break;
+                case 6:
+                    // A fast bolt can connect while Fire is still playing; Reload follows Fire.
+                    if (enemy.Weapon.CurrentPose == MechWeaponAnimator.PoseState.Fire) { next = Time.time + 0.05f; return; }
                     Check(enemy.Weapon.CurrentPose == MechWeaponAnimator.PoseState.Reload,
                         "Enemy crossbow plays its own Reload after release");
                     Capture("enemy-crossbow-reload");
@@ -88,6 +92,9 @@ public static class MechEnemyCombatSceneChecks
         var position = player.transform.position - Vector3.forward * distance;
         var root = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemies/Small Enemies/Enemy_" + family + ".prefab"), position, Quaternion.identity);
         enemy = root.GetComponent<EnemyAttack>(); start = root.transform.position; before = health.CurrentHealth;
+        // Isolate release timing and collision from the crossbow's intentional aim spread.
+        var attackFields = new SerializedObject(enemy); attackFields.FindProperty("aimSpreadDegrees").floatValue = 0;
+        attackFields.ApplyModifiedPropertiesWithoutUndo();
     }
     static void Capture(string name)
     {

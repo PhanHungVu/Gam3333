@@ -26,6 +26,8 @@ public sealed class WaveData : ScriptableObject
     [Min(0f)] public float timerReset = 120f;
     [Tooltip("Resource at full; each enemy spawned spends its Spawn Cost from it.")]
     [Min(1)] public int resourceTotal = 50;
+    [Tooltip("Optional scene-wide active enemy limit. Zero retains the legacy unlimited behavior. At the limit, spawning waits without spending resource.")]
+    [Min(0)] public int maxConcurrentEnemies;
     [Tooltip("Enemies this wave can spawn, each with its chance. Enemies it can't afford are skipped.")]
     public WaveEnemy[] enemies = new WaveEnemy[0];
 }

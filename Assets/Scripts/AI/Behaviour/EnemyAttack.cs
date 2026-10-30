@@ -43,6 +43,23 @@ public sealed class EnemyAttack : MonoBehaviour
     [SerializeField] EnemyWeapon[] weapons = new EnemyWeapon[0];
     [Tooltip("Off: weapons take turns, one attack then that weapon's cooldown. On: every weapon has its own timer and fires whenever ready and in reach, even while walking in.")]
     [SerializeField] bool independentWeapons;
+    [Tooltip("Behavior Graph requests attacks; animation, hit release and cooldown still run here. Disables automatic attack requests.")]
+    [SerializeField] bool externalRequests;
+    public bool ExternalRequests => externalRequests;
+    [Tooltip("Type 1 throwing-axe variant uses the common overhead contact attack instead of throwing a projectile.")]
+    [SerializeField] bool forceOverheadMelee;
+    [SerializeField] bool respectAttackRangeAtRelease;
+    [SerializeField, Range(0, 20)] float aimSpreadDegrees;
+    public bool IsTelegraphing => PendingLane() != null;
+    public Vector3 CommittedAim => PendingLane() != null ? PendingLane().aim : transform.position + transform.forward;
+    public float TelegraphProgress => PendingLane() != null ? Mathf.Clamp01(PendingLane().age / Mathf.Max(0.01f, fireDuration * releaseFrame)) : 0;
+    public bool CurrentAttackIsMelee => forceOverheadMelee || (PartOf(Weapon) != null && PartOf(Weapon).Stats.subtype == PartSubtype.Melee);
+    Lane PendingLane()
+    {
+        if (!independentWeapons) return turnLane.attacking && !turnLane.released ? turnLane : null;
+        foreach (var lane in weaponLanes) if (lane.attacking && !lane.released) return lane;
+        return null;
+    }
     MechWeaponAnimator activeWeapon;
     int nextWeapon;
     [Tooltip("Fallback shot origin when a weapon part has no muzzle marker.")]
@@ -138,7 +155,7 @@ public sealed class EnemyAttack : MonoBehaviour
         var part = PartOf(weapon);
         if (!HasStats(part)) return 0f;
         var stats = part.Stats;
-        if (stats.subtype == PartSubtype.Melee)
+        if (forceOverheadMelee || stats.subtype == PartSubtype.Melee)
             return (meleeCenter.z + meleeSize.z * 0.5f) * MeleeAttack.BoxScale(transform.lossyScale, part, MetresPerGolem).z;
         return stats.GetStat(StatType.Range) * MetresPerGolem * Mathf.Max(1f, stats.GetStat(StatType.MaxRangeMultiplier));
     }
@@ -204,12 +221,35 @@ public sealed class EnemyAttack : MonoBehaviour
         if (!independentWeapons)
         {
             Advance(turnLane, deltaTime);
-            if (!turnLane.attacking && agent.InAttackRange) TryAttack();
+            if (!externalRequests && !turnLane.attacking && agent.InAttackRange) TryAttack();
             return;
         }
         EnsureLanes();
         foreach (var lane in weaponLanes) Advance(lane, deltaTime);
-        TryAttack();
+        if (!externalRequests) TryAttack();
+    }
+
+    // Cancels unreleased damage without resetting cooldown or a launched projectile.
+    public void CancelPendingAttack()
+    {
+        turnLane.Clear();
+        foreach (var lane in weaponLanes) lane.Clear();
+    }
+
+    public bool TargetInReach()
+    {
+        if (!isActiveAndEnabled || self.IsDead || agent.Target == null) return false;
+        var targetHealth = agent.Target.GetComponentInParent<CombatHealth>();
+        if (targetHealth == null || targetHealth.IsDead || !targetHealth.isActiveAndEnabled) return false;
+        foreach (var entry in weapons)
+        {
+            var part = entry != null ? PartOf(entry.weapon) : null;
+            if (!HasStats(part)) continue;
+            bool melee = forceOverheadMelee || part.Stats.subtype == PartSubtype.Melee;
+            if (CanReach(targetHealth.transform, ReachOf(entry.weapon), agent.AttackRange, melee)
+                && ClearPath(targetHealth, AimPoint(targetHealth), melee)) return true;
+        }
+        return false;
     }
 
     // Counts down a lane's cooldown and plays out its attack: the hit lands at the release frame.
@@ -226,9 +266,10 @@ public sealed class EnemyAttack : MonoBehaviour
             Releases++;
             var part = PartOf(lane.entry.weapon);
             var subtype = HasStats(part) ? part.Stats.subtype : PartSubtype.None;
-            if (subtype == PartSubtype.Melee)
+            if (forceOverheadMelee || subtype == PartSubtype.Melee)
             {
-                if (ClearPath(lane.target, AimPoint(lane.target), true)) StrikeMelee(part, lane);
+                if ((!respectAttackRangeAtRelease || CanReach(lane.target.transform, ReachOf(lane.entry.weapon), agent.AttackRange, true))
+                    && ClearPath(lane.target, AimPoint(lane.target), true)) StrikeMelee(part, lane);
             }
             else if (subtype == PartSubtype.Projectile || subtype == PartSubtype.Explosive) FireRanged(part, lane);
         }
@@ -272,7 +313,7 @@ public sealed class EnemyAttack : MonoBehaviour
         var weapon = entry != null ? entry.weapon : null;
         var part = PartOf(weapon);
         if (!HasStats(part)) return false;
-        bool melee = part.Stats.subtype == PartSubtype.Melee;
+        bool melee = forceOverheadMelee || part.Stats.subtype == PartSubtype.Melee;
         if (!CanReach(target.transform, ReachOf(weapon), rangeCap, melee)) return false;
         // Melee only cares about walls; ranged also won't shoot into the back of another body.
         if (!ClearPath(target, AimPoint(target), melee)) return false;
@@ -282,6 +323,16 @@ public sealed class EnemyAttack : MonoBehaviour
         lane.entry = entry;
         lane.target = target;
         lane.aim = AimPoint(target); // Ranged shots aim once; projectiles never home.
+        if (!melee && aimSpreadDegrees > 0)
+        {
+            Vector3 origin = part.muzzle != null ? part.muzzle.position : transform.position + Vector3.up * 0.5f;
+            Vector3 ray = lane.aim - origin; Vector3 forward = ray.normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
+            if (right.sqrMagnitude < 0.1f) right = transform.right;
+            Vector3 up = Vector3.Cross(forward, right).normalized;
+            Vector2 spread = UnityEngine.Random.insideUnitCircle * Mathf.Tan(aimSpreadDegrees * Mathf.Deg2Rad);
+            lane.aim += (right * spread.x + up * spread.y) * ray.magnitude;
+        }
         lane.strikeRotation = transform.rotation; // Melee strikes where the swing began, so side-steps dodge it.
         lane.age = stationaryAge = 0f;
         lane.remaining = cooldown;

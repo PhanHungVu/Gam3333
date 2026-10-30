@@ -115,7 +115,7 @@ public static class PartSwapWorldUiChecks
             var player=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(PartSwapWorldUiSetup.PlayerPath),Vector3.zero,Quaternion.identity); owned.Add(player);
         }
         yield return Frames(3);
-        hud=Object.FindObjectsByType<PartSwapWorldHudPresenter>(FindObjectsSortMode.None).Single(h=>h.isActiveAndEnabled);
+        hud=Object.FindObjectsByType<PartSwapWorldHudPresenter>().Single(h=>h.isActiveAndEnabled);
         equipment=hud.GetComponent<EquipManager>(); detector=equipment.GetComponentInChildren<PickupDetector>(); input=equipment.GetComponent<MechPlayerInput>();
         input.AssumeCursorCaptured=true;
         Check(hud.View!=null&&detector.worldSpaceHud==hud,"Shared player owns exactly one connected world view after repeated setup");
@@ -137,15 +137,21 @@ public static class PartSwapWorldUiChecks
         yield return Frames(2); Check(hud.View.Group.alpha<1,"Appearance preserves an observable fade at paused gameplay time");
         yield return Visible(arm); CheckArm(arm);
         Capture("arms",1280,720); Capture("arms-4x3",1024,768);
+        Capture("arms-occluded",1280,720,true);
         var firstView=hud.View; var cannon=Drop("shoulder_cannon",new Vector3(-1,0.3f,1));
         Target(cannon); yield return Frames(2); Check(hud.View.Group.alpha<1,"Target changes retract the existing panel before replacing its data");
         yield return Visible(cannon);
         Check(ReferenceEquals(hud.View,firstView)&&hud.View.DisplayedSlots.SequenceEqual(new[]{PartCategory.ShoulderL,PartCategory.ShoulderR}),"Shoulder selection reuses the view and exposes the actual two shoulder sockets");
         Check(hud.View.Card(0).binding.text.Contains(input.SwapBindingLabel(PartCategory.ShoulderL))
             &&hud.View.Card(1).binding.text.Contains(input.SwapBindingLabel(PartCategory.ShoulderR)),"Shoulder prompts show the actual 1/2 actions");
-        Check(!hud.View.transform.Find("New Part/Stats Left").gameObject.activeSelf
-            &&!hud.View.transform.Find("New Part/Stats Right").gameObject.activeSelf,"The full raw-stat blocks are removed");
+        var basic=hud.View.transform.Find("New Part/Stats Right").GetComponent<TMP_Text>();
+        Check(!hud.View.transform.Find("New Part/Stats Left").gameObject.activeSelf&&basic.gameObject.activeSelf
+            &&basic.text=="Damage 100\nFire rate 0.33/s\nRange 5\nAmmo 20","The new cannon's four basic numeric stats appear on the upper card's right side");
+        Check(basic.rectTransform.anchoredPosition.x>=338&&basic.fontSizeMax<=22
+            &&hud.View.Card(1).comparison.text.Contains("+70")&&hud.View.Card(1).comparison.text.Contains("-0.67/s")
+            &&hud.View.Card(1).comparison.text.Contains("-30"),"New stats use a smaller font beside the name; the old crossbow shows actual damage, fire-rate and ammo differences");
         Capture("shoulders",1280,720);
+        yield return PlacementFlow(cannon,arm);
         var head=Drop("head_base",new Vector3(0.6f,0.3f,1)); Target(head); yield return Visible(head);
         Check(hud.View.DisplayedSlots.Count==1&&hud.View.Card(0).category==PartCategory.Head&&hud.View.Card(0).available
             &&hud.View.Card(0).binding.text=="[1] Head","Single-slot head exposes key 1");
@@ -180,7 +186,10 @@ public static class PartSwapWorldUiChecks
         InputSystem.QueueStateEvent(keyboard,new KeyboardState()); InputSystem.QueueStateEvent(mouse,new MouseState());
         Time.timeScale=0; Target(null); yield return Frames(2);
         double hiddenBy=EditorApplication.timeSinceStartup+3;
-        while(hud.IsVisible && EditorApplication.timeSinceStartup<hiddenBy) yield return null;
+        // Alpha can cross the visibility threshold one frame before the short
+        // equipment acknowledgement clears its data. Wait for the final state.
+        while((hud.IsVisible||hud.DisplayedPart!=null||!string.IsNullOrEmpty(hud.View.DisplayedName))
+            &&EditorApplication.timeSinceStartup<hiddenBy) yield return null;
         Check(!hud.IsVisible&&hud.DisplayedPart==null&&string.IsNullOrEmpty(hud.View.DisplayedName),"After removal the panel hides and clears stale part data");
         detector.enabled=false; Time.timeScale=1; changed=0;
         InputSystem.QueueStateEvent(keyboard,new KeyboardState(Key.Digit1)); yield return Frames(2);
@@ -208,9 +217,9 @@ public static class PartSwapWorldUiChecks
         detector.enabled=true; Target(cannon); yield return Visible(cannon);
         hud.enabled=false; Check(!hud.IsVisible,"Disabling the presenter clears the view immediately");
         hud.enabled=true; yield return Visible(cannon);
-        Check(hud.View==firstView&&Object.FindObjectsByType<PartSwapWorldView>(FindObjectsSortMode.None).Length==1,"Re-enable and repeated selections retain one reusable panel");
+        Check(hud.View==firstView&&Object.FindObjectsByType<PartSwapWorldView>().Length==1,"Re-enable and repeated selections retain one reusable panel");
         var root=equipment.gameObject; Object.Destroy(root); yield return Frames(3);
-        Check(Object.FindObjectsByType<PartSwapWorldView>(FindObjectsSortMode.None).Length==0,"Destroying the player releases its owned view and subscriptions");
+        Check(Object.FindObjectsByType<PartSwapWorldView>().Length==0,"Destroying the player releases its owned view and subscriptions");
     }
     static void CheckArm(Part arm)
     {
@@ -218,9 +227,57 @@ public static class PartSwapWorldUiChecks
         Check(hud.View.DisplayedSlots.SequenceEqual(new[]{PartCategory.ArmL,PartCategory.ArmR}),"Arm-compatible parts display the real left/right sockets");
         Check(hud.View.Card(0).binding.text=="[1] Left"&&hud.View.Card(1).binding.text=="[2] Right","Arm prompts show only 1/2 and left/right");
         string plain=System.Text.RegularExpressions.Regex.Replace(hud.View.Card(0).comparison.text,"<[^>]+>","");
-        Check(plain.Contains("Damage --")&&plain.Contains("Fire rate ++")&&!plain.Any(char.IsDigit)&&plain.Split('\n').Length<=4,
-            "Comparisons show only a few qualitative changes; lower cooldown correctly improves fire rate");
+        Check(plain.Contains("Damage -50")&&plain.Contains("Fire rate +0.57/s")&&!plain.Contains("++")&&!plain.Contains("--")&&plain.Split('\n').Length<=4,
+            "Comparisons show actual numeric changes; lower cooldown correctly improves fire rate");
+        var basic=hud.View.transform.Find("New Part/Stats Right").GetComponent<TMP_Text>();
+        Check(basic.gameObject.activeSelf&&basic.text=="Damage 50\nFire rate 2/s\nRange 3\nAmmo 30",
+            "The selected throwing axe shows its own values above the two equipped-part comparisons");
         Check(hud.View.Card(1).comparison.text=="—","Identical equipped/incoming stats do not create repeated unchanged rows");
+    }
+    static void CheckSide(bool right,string message)
+    {
+        var corners=new Vector3[4]; hud.View.Panel.GetWorldCorners(corners);
+        var points=corners.Select(Camera.WorldToViewportPoint).ToArray();
+        float playerX=Camera.WorldToViewportPoint(equipment.transform.position).x;
+        Check(right ? points.Min(p=>p.x)>playerX+0.115f : points.Max(p=>p.x)<playerX-0.115f,message);
+    }
+    static IEnumerator CycleTo(Part part)
+    {
+        InputSystem.QueueStateEvent(keyboard,new KeyboardState(Key.V)); yield return Frames(2);
+        InputSystem.QueueStateEvent(keyboard,new KeyboardState()); yield return Frames(2);
+        Check(equipment.GetSelectedPart()==part,"Actual V input selects the other nearby part: "+part.Stats.partName);
+        yield return Visible(part);
+    }
+    static IEnumerator PlacementFlow(Part left,Part right)
+    {
+        Target(left);
+        foreach(var collider in right.GetComponentsInChildren<Collider>()) Call(detector,"OnTriggerStay",collider);
+        Call(detector,"Update"); yield return Visible(left);
+        Check(detector.DistinctNearbyPartCount==2,"Placement fixture has two distinct parts on opposite sides of the stationary player");
+        var cameraPosition=Camera.transform.position; var cameraRotation=Camera.transform.rotation;
+        CheckSide(false,"Selecting the left-side cannon places its complete panel to the left of the golem");
+        Capture("cycle-left",1280,720);
+        yield return CycleTo(right);
+        CheckSide(true,"Cycling to the right-side axe moves its complete panel to the right of the golem");
+        Capture("cycle-right",1280,720); Capture("cycle-right-4x3",1024,768);
+        yield return CycleTo(left);
+        CheckSide(false,"Cycling back returns the reused panel to the left-side part");
+        Check(Camera.transform.position==cameraPosition&&Quaternion.Angle(Camera.transform.rotation,cameraRotation)<0.001f,
+            "Cycling changes only UI placement and does not move the gameplay camera");
+        yield return CycleTo(right);
+        Vector3 original=right.transform.position;
+        right.transform.position=new Vector3(-0.005f,original.y,original.z); yield return Frames();
+        CheckSide(true,"Tiny center crossings do not make the selected part's panel flicker between sides");
+        right.transform.position=new Vector3(-1.2f,original.y,original.z); yield return Frames();
+        CheckSide(false,"The same selected part moving clearly across the player updates its panel side");
+        right.transform.position=original; yield return Frames();
+        Camera.transform.SetPositionAndRotation(new Vector3(0,4,10),Quaternion.LookRotation(new Vector3(0,0.6f,0)-new Vector3(0,4,10)));
+        yield return Frames();
+        CheckSide(false,"Camera orbit chooses the part's projected side instead of its fixed world-X side");
+        Capture("cycle-orbit",1280,720);
+        Camera.transform.SetPositionAndRotation(cameraPosition,cameraRotation); yield return Frames();
+        CheckSide(true,"Restoring the camera puts the same part's panel back on its visible right side");
+        Target(left); yield return Visible(left);
     }
     static IEnumerator SceneFlow()
     {
@@ -232,19 +289,26 @@ public static class PartSwapWorldUiChecks
         for(int i=0;equipment.GetSelectedPart()!=part&&i<detector.NearbyParts.Count+1;i++) { detector.CycleSelection(); yield return Frames(2); }
         yield return Visible(part); CheckArm(part); Time.timeScale=0;
         Capture("jhmap-selected",1600,900);
+        Capture("jhmap-occluded",1600,900,true);
         Check(Camera.GetComponent<CameraControlThirdPerson>().Target==equipment.transform,"World UI retains the existing gameplay camera and player target");
         equipment.gameObject.SetActive(false); yield return Frames(2); Check(!hud.IsVisible,"JhMapScene player disable releases the panel cleanly");
     }
-    static void Capture(string name,int width,int height)
+    static void Capture(string name,int width,int height,bool occluded=false)
     {
         var camera=Camera; var before=camera.targetTexture; var active=RenderTexture.active;
         var target=new RenderTexture(width,height,24); var texture=new Texture2D(width,height,TextureFormat.RGB24,false);
-        var overlays=Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None).Where(c=>c.isRootCanvas&&c.renderMode==RenderMode.ScreenSpaceOverlay).ToArray();
+        var overlays=Object.FindObjectsByType<Canvas>().Where(c=>c.isRootCanvas&&c.renderMode==RenderMode.ScreenSpaceOverlay).ToArray();
         var cameras=overlays.Select(c=>c.worldCamera).ToArray(); var planes=overlays.Select(c=>c.planeDistance).ToArray();
+        GameObject blocker=null; Material blockerMaterial=null;
+        var backings=hud.View.GetComponentsInChildren<Image>().Where(i=>i.enabled&&i.rectTransform.rect.width>30).ToArray();
+        var backingColors=backings.Select(i=>i.color).ToArray();
         try
         {
             camera.targetTexture=target;
             foreach(var canvas in overlays) { canvas.renderMode=RenderMode.ScreenSpaceCamera; canvas.worldCamera=camera; canvas.planeDistance=1; }
+            // Isolate depth testing from the expected blending of the authored
+            // translucent cards with different scenery behind them.
+            if(occluded) foreach(var image in backings) { var color=image.color; color.a=1; image.color=color; }
             Call(hud,"LateUpdate"); Canvas.ForceUpdateCanvases();
             var corners=new Vector3[4]; hud.View.Panel.GetWorldCorners(corners);
             var points=corners.Select(camera.WorldToViewportPoint).ToArray();
@@ -254,6 +318,50 @@ public static class PartSwapWorldUiChecks
             Check(hud.View.transform.position.y>=hud.DisplayedPart.transform.position.y+0.024f,name+": panel base stays above the selected ground anchor");
             RenderPipeline.SubmitRenderRequest(camera,new RenderPipeline.StandardRequest {destination=target}); RenderTexture.active=target;
             texture.ReadPixels(new Rect(0,0,width,height),0,0); texture.Apply(); var shown=texture.GetPixels32();
+            if(occluded)
+            {
+                // A solid mesh entirely between the camera and panel must hide
+                // neither its backing cards nor its font atlas. It has no physics.
+                var unobstructed=shown;
+                blocker=GameObject.CreatePrimitive(PrimitiveType.Cube); blocker.name="UI depth occluder";
+                Object.DestroyImmediate(blocker.GetComponent<Collider>());
+                const float depthFraction=0.6f;
+                var center=(corners[0]+corners[2])*0.5f;
+                blocker.transform.SetPositionAndRotation(camera.transform.position+(center-camera.transform.position)*depthFraction,camera.transform.rotation);
+                blocker.transform.localScale=new Vector3(Vector3.Distance(corners[0],corners[3])*depthFraction*1.1f,
+                    Vector3.Distance(corners[0],corners[1])*depthFraction*1.1f,0.05f);
+                blockerMaterial=new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                blockerMaterial.SetColor("_BaseColor",new Color(0.03f,0.06f,0.8f));
+                blocker.GetComponent<Renderer>().sharedMaterial=blockerMaterial;
+                RenderPipeline.SubmitRenderRequest(camera,new RenderPipeline.StandardRequest {destination=target});
+                texture.ReadPixels(new Rect(0,0,width,height),0,0); texture.Apply(); shown=texture.GetPixels32();
+                // Sample the cards and their text, excluding gaps/border pixels
+                // where sky, trees and other world objects legitimately change.
+                var regions=new List<RectInt>(); var imageCorners=new Vector3[4];
+                foreach(var image in backings)
+                {
+                    image.rectTransform.GetWorldCorners(imageCorners); var vertices=imageCorners.Select(camera.WorldToViewportPoint).ToArray();
+                    int left=Mathf.Clamp(Mathf.CeilToInt(vertices.Min(p=>p.x)*width)+2,0,width-1),right=Mathf.Clamp(Mathf.FloorToInt(vertices.Max(p=>p.x)*width)-2,0,width-1);
+                    int bottom=Mathf.Clamp(Mathf.CeilToInt(vertices.Min(p=>p.y)*height)+2,0,height-1),top=Mathf.Clamp(Mathf.FloorToInt(vertices.Max(p=>p.y)*height)-2,0,height-1);
+                    regions.Add(new RectInt(left,bottom,Mathf.Max(0,right-left),Mathf.Max(0,top-bottom)));
+                }
+                (int text,int backing) Count(Color32[] pixels)
+                {
+                    int ink=0,backing=0;
+                    foreach(var region in regions) for(int y=region.yMin;y<region.yMax;y++) for(int x=region.xMin;x<region.xMax;x++)
+                    {
+                        var pixel=pixels[y*width+x];
+                        if(pixel.r>180&&pixel.g>180&&pixel.b>170) ink++;
+                        if(pixel.r<140&&pixel.g<140&&pixel.b<140) backing++;
+                    }
+                    return (ink,backing);
+                }
+                var clean=Count(unobstructed); var covered=Count(shown);
+                texture.SetPixels32(shown); texture.Apply(); File.WriteAllBytes(Path.Combine(captures,name+".png"),texture.EncodeToPNG());
+                texture.SetPixels32(unobstructed); texture.Apply(); File.WriteAllBytes(Path.Combine(captures,name+"-unobstructed.png"),texture.EncodeToPNG());
+                Check(clean.text>100&&covered.text>=clean.text*0.9f&&covered.backing>=clean.backing*0.9f,
+                    name+": text and card backgrounds remain visible over an opaque foreground model; text="+covered.text+"/"+clean.text+", cards="+covered.backing+"/"+clean.backing);
+            }
             hud.View.SetAlpha(0); Canvas.ForceUpdateCanvases();
             RenderPipeline.SubmitRenderRequest(camera,new RenderPipeline.StandardRequest {destination=target});
             texture.ReadPixels(new Rect(0,0,width,height),0,0); texture.Apply(); var hidden=texture.GetPixels32();
@@ -264,6 +372,9 @@ public static class PartSwapWorldUiChecks
         finally
         {
             camera.targetTexture=before; RenderTexture.active=active;
+            for(int i=0;i<backings.Length;i++) backings[i].color=backingColors[i];
+            if(blocker!=null) Object.DestroyImmediate(blocker);
+            if(blockerMaterial!=null) Object.DestroyImmediate(blockerMaterial);
             for(int i=0;i<overlays.Length;i++) { overlays[i].renderMode=RenderMode.ScreenSpaceOverlay; overlays[i].worldCamera=cameras[i]; overlays[i].planeDistance=planes[i]; }
             Object.Destroy(target); Object.Destroy(texture); Call(hud,"LateUpdate");
         }

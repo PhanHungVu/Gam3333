@@ -24473,6 +24473,10 @@ GameObject:
   - component: {fileID: -1835539670090701261}
   - component: {fileID: 130150662591981641}
   - component: {fileID: -5745010320056777852}
+  - component: {fileID: 6837569606281129476}
+  - component: {fileID: 6486138928801703586}
+  - component: {fileID: 6793171350753173592}
+  - component: {fileID: 5576944706546732369}
   m_Layer: 0
   m_Name: Enemy_mace
   m_TagString: Untagged
@@ -24526,7 +24530,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc15aad914b342bc859e2ab8c19fce6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
-  maximumHealth: 100
+  maximumHealth: 120
   currentHealth: 0
   team: 2
 --- !u!114 &5944626833141471218
@@ -24592,6 +24596,7 @@ MonoBehaviour:
   pivotHeight: 1
   groundY: 0
   debugState: 
+  externalDecisions: 1
 --- !u!114 &2183906395315735722
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24606,14 +24611,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAttack
   weapons:
   - weapon: {fileID: 2901997483434555311}
-    damageMultiplier: 0.2
-    cooldownMultiplier: 2
+    damageMultiplier: 0.25
+    cooldownMultiplier: 1.5
     projectileSpeedMultiplier: 1
   - weapon: {fileID: 474273004463784925}
-    damageMultiplier: 0.2
-    cooldownMultiplier: 2
+    damageMultiplier: 0.25
+    cooldownMultiplier: 1.5
     projectileSpeedMultiplier: 1
   independentWeapons: 0
+  externalRequests: 1
+  forceOverheadMelee: 0
+  respectAttackRangeAtRelease: 1
+  aimSpreadDegrees: 0
   muzzle: {fileID: 0}
   rulesConfig: {fileID: 11400000, guid: ee7e37eb664fbfb4695ed0f740b434c4, type: 2}
   fireDuration: 0.7
@@ -24702,7 +24711,77 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2cc64d0180827c4da16e7047fc714bf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawnCost
-  cost: 5
+  cost: 1
+--- !u!114 &6837569606281129476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1767564731750688855}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0038c16c34866b4f9e25c9c0dc0f7e6, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Unity.Behavior::Unity.Behavior.BehaviorGraphAgent
+  m_Graph: {fileID: -8197705158698095557, guid: ad6bdc20f3a8b424fb41783771610191, type: 2}
+  m_BlackboardVariableOverridesList:
+  - rid: 6080984987399619379
+  m_OriginalGraph: {fileID: -8197705158698095557, guid: ad6bdc20f3a8b424fb41783771610191, type: 2}
+  m_IsInitialised: 0
+  m_IsStarted: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: 6080984987399619379
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1
+          m_Value1: 0
+        Name: Self
+        m_Value: {fileID: 1767564731750688855}
+--- !u!114 &6486138928801703586
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1767564731750688855}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99792b1a61dfa544183d9f694a22ae18, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyGraphController
+  currentAction:
+  role: 1
+  minimumRange: 0
+--- !u!114 &6793171350753173592
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1767564731750688855}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a287914e39905f48b6ec911e13e11ee, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyThreatMarker
+  warningColor: {r: 1, g: 0.4, b: 0.12, a: 0.85}
+  material: {fileID: 2100000, guid: a128b5b21c841bf41ab638418f57fbd0, type: 2}
+--- !u!114 &5576944706546732369
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1767564731750688855}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19b282fea837f494eba9921c829af6bd, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyWeaponTelegraph
 --- !u!1 &1977460072594296530
 GameObject:
   m_ObjectHideFlags: 0
