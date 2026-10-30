@@ -107,9 +107,19 @@
                     "priority": 0
                 },
                 {
-                    "name": "SwapPart",
+                    "name": "SwapLeft",
                     "type": "Button",
                     "id": "ee10a7d6-675b-4abd-9450-8c6b8a03307b",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "SwapRight",
+                    "type": "Button",
+                    "id": "ed4a11ab-032e-42c0-a4d0-b03781d31951",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -505,11 +515,22 @@
                 {
                     "name": "",
                     "id": "233c9075-0b8d-4bef-8134-cfb70b025880",
-                    "path": "<Keyboard>/f",
+                    "path": "<Keyboard>/1",
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse",
-                    "action": "SwapPart",
+                    "action": "SwapLeft",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "44cf3586-96ed-4cec-b7e9-38b0a48c60e0",
+                    "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "SwapRight",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

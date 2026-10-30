@@ -56,9 +56,8 @@ public class EquipManager : MonoBehaviour
     public void SetSelectedPart(Part part) { if (part != null && !part.isEquipped) selectedPart = part; }
     public Part GetSelectedPart() => selectedPart != null && !selectedPart.isEquipped && selectedPart.gameObject.activeInHierarchy ? selectedPart : null;
     public void ClearSelectedPart(Part part) { if (selectedPart == part) selectedPart = null; }
-    // Swap the selected floor part into this socket (MechPlayerInput: hold SwapPart + an attack button). Incompatible parts are refused by
-    // TryEquip's rules check (e.g. F + Q on an arm part does nothing).
-    // Head and legs have no button yet; a future key alongside F will call this with Head/Legs.
+    // Input routes 1 to the selected part's left/single slot and 2 to its right slot.
+    // Compatibility and torso-transfer validation remain owned by TryEquip.
     public bool TrySwapSelectedInto(PartCategory slot)
     {
         var part = GetSelectedPart();

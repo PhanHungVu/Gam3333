@@ -7,6 +7,8 @@ public sealed class QuestStoneView : MonoBehaviour
 {
     [SerializeField] Transform visual;
     [SerializeField] MeshRenderer rock;
+    [Tooltip("Fitted render meshes from the supplied HUD slabs; logical footprints stay unchanged.")]
+    [SerializeField] Mesh[] slabVariants;
     [SerializeField] GameObject selectionRing;
     [SerializeField] TMP_Text label;
     [SerializeField, Min(0.01f)] float hoverDuration = 0.12f;
@@ -41,6 +43,7 @@ public sealed class QuestStoneView : MonoBehaviour
     public Vector3 InspectionPoint => transform.TransformPoint(restCenter) + Vector3.up * 0.12f;
     public Collider HitCollider => hitCollider!=null ? hitCollider : (hitCollider=GetComponent<BoxCollider>());
     public Bounds RockBounds => rock.bounds;
+    public int SlabVariantIndex { get; private set; } = -1;
     Vector3 LocalSurfacePoint => rockLocalBounds.center+Vector3.up*rockLocalBounds.extents.y;
     public Vector3 SurfacePoint => rock.transform.TransformPoint(LocalSurfacePoint);
     public Quaternion SurfaceRotation => visual.rotation;
@@ -54,10 +57,20 @@ public sealed class QuestStoneView : MonoBehaviour
         }
     }
 
-    public void Bind(QuestOffer offer)
+    public void Bind(QuestOffer offer, int appearanceSeed = 0)
     {
         properties = new MaterialPropertyBlock();
         Offer = offer;
+        if(slabVariants!=null && slabVariants.Length>0)
+        {
+            // Ignore the run GUID so rebuilding the same seeded offers keeps their art.
+            uint hash=2166136261u ^ (uint)appearanceSeed;
+            if(offer.Quest.questId!=null) foreach(char c in offer.Quest.questId) hash=unchecked((hash^c)*16777619u);
+            for(int i=offer.Id.LastIndexOf(':')+1;i<offer.Id.Length;i++) hash=unchecked((hash^offer.Id[i])*16777619u);
+            SlabVariantIndex=(int)(hash%(uint)slabVariants.Length);
+            var mesh=slabVariants[SlabVariantIndex];
+            if(mesh!=null) rock.GetComponent<MeshFilter>().sharedMesh=mesh;
+        }
         name = (offer.Quest.category == QuestCategory.Main ? "Main Stone - " : "Small Stone - ") + offer.Quest.title;
         visualPosition = visual.localPosition; visualScale = visual.localScale;
         visualRotation = visual.localRotation;

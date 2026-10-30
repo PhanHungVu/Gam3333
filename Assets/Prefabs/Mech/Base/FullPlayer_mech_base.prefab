@@ -15712,6 +15712,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PartPickup
   partSwapHudPopupParent: {fileID: 0}
+  worldSpaceHud: {fileID: 1139920132479959995}
   highlightElementPrefab: {fileID: 2660861773203468729, guid: 02564f784f7b5ce4f97c2f616cba0a62, type: 3}
   armHighlight: {r: 0.147, g: 0.81, b: 0.819, a: 1}
   shoulderHighlight: {r: 0.25, g: 0.9, b: 0.3, a: 1}
@@ -16026,6 +16027,7 @@ GameObject:
   - component: {fileID: 327758736479981224}
   - component: {fileID: 732845130996398655}
   - component: {fileID: 671720309205676776}
+  - component: {fileID: 1139920132479959995}
   m_Layer: 0
   m_Name: FullPlayer_mech_base
   m_TagString: Player
@@ -16453,6 +16455,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MechPlayerInput
   inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   lockCursorOnPlay: 1
+--- !u!114 &1139920132479959995
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3053454427299694765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f6c750bfddeec0479375e322fd0b4e6, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PartSwapWorldHudPresenter
+  viewPrefab: {fileID: 6710405881133785968, guid: 50c5fcb7b7c0c3241b2a7e16e6555705, type: 3}
+  screenWidthFraction: 0.3
+  preferRightSide: 0
+  playerScreenClearance: 0.13
+  groundClearance: 0.2
+  rise: 0.14
+  appearDuration: 0.2
+  switchDuration: 0.1
+  disappearDuration: 0.16
+  successDuration: 0.18
+  reducedMotion: 0
 --- !u!1 &3220106313594343585
 GameObject:
   m_ObjectHideFlags: 0

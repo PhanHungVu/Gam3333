@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Optional development harness. Real pickups still use F and EquipManager.TryEquip.
+// Optional development harness. F1-F4 keep number keys free for real pickups.
 [RequireComponent(typeof(MechEquipmentLocomotion))]
 [DisallowMultipleComponent]
 public sealed class MechLocomotionDebug : MonoBehaviour
@@ -29,10 +29,10 @@ public sealed class MechLocomotionDebug : MonoBehaviour
         if (keyboard == null || Time.timeScale <= 0f) return;
         if (keyboard.f8Key.wasPressedThisFrame) showOverlay = !showOverlay;
         if (!enableSwapShortcuts) return;
-        if (keyboard.digit1Key.wasPressedThisFrame) TrySwap(0);
-        else if (keyboard.digit2Key.wasPressedThisFrame) TrySwap(1);
-        else if (keyboard.digit3Key.wasPressedThisFrame) TrySwap(2);
-        else if (keyboard.digit4Key.wasPressedThisFrame) TrySwap(3);
+        if (keyboard.f1Key.wasPressedThisFrame) TrySwap(0);
+        else if (keyboard.f2Key.wasPressedThisFrame) TrySwap(1);
+        else if (keyboard.f3Key.wasPressedThisFrame) TrySwap(2);
+        else if (keyboard.f4Key.wasPressedThisFrame) TrySwap(3);
     }
 
     public bool TrySwap(int index)
@@ -94,7 +94,7 @@ public sealed class MechLocomotionDebug : MonoBehaviour
         string shortcuts = "";
         for (int i = 0; i < Mathf.Min(4, modulePrefabs.Length); i++)
             if (modulePrefabs[i] != null && modulePrefabs[i].data != null)
-                shortcuts += $"{i + 1} {modulePrefabs[i].data.partName}" + (i % 2 == 0 ? "   " : "\n");
+                shortcuts += $"F{i + 1} {modulePrefabs[i].data.partName}" + (i % 2 == 0 ? "   " : "\n");
         GUILayout.Label($"Module: {moduleName}\nState: {data.State}\n"
             + $"Speed: {data.Speed:F2} m/s\nForward: {data.ForwardSpeed:F2}   Side: {data.SideSpeed:F2}\n"
             + $"Vertical: {data.VerticalSpeed:F2} m/s\nGrounded: {data.IsGrounded}   Boosting: {data.IsBoosting}\n"

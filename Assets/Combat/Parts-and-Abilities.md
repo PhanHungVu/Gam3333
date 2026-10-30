@@ -6,7 +6,7 @@ Lower-body swapping and movement are covered in [modular locomotion milestones 1
 
 Use `Assets/Prefabs/Mech/Base/FullPlayer_mech_base.prefab`. A33 and Merge Test now use this integrated player. The existing `Prefab/Mech.prefab` remains a legacy prototype for regression checks; do not place both players in one scene.
 
-The integrated prefab contains the existing movement, energy, boost presentation, targeting, combat, feedback and weapon HUD components. It replaces SimpleMove and the dynamic root Rigidbody with the existing CharacterController. VisualMech handles boost lean; Model Orientation converts the teammate's +X-facing model to gameplay +Z. The player capsule remains upright. Equipped part colliders are disabled, and dropped part colliders/physics are restored.
+The integrated prefab contains the existing movement, energy, boost presentation, targeting, combat, feedback and weapon HUD components. It replaces SimpleMove and the dynamic root Rigidbody with the existing CharacterController. VisualMech handles boost lean; Model Orientation converts the teammate's +X-facing model to gameplay +Z. The player capsule remains upright. Equipped part colliders are disabled, and dropped part colliders/physics are restored. Loose Default-layer collider objects use **MechPart (user layer 8)** so a dropped head cannot trigger an unintended first-person camera close-up. The camera ignores that layer while retaining world collision; attachment restores authored layers, and explicit custom layers remain intact. See the [camera correction and verification](PartSwapUI.md#equip-camera-correction--2026-10-30).
 
 MechPlayerRig reuses an existing third-person camera or creates the configured Main Camera prefab. It binds the existing cursor and energy UI, with Mech Cursor Canvas as a fallback. Camera orbit, soft/hard/free-aim behavior, melee framing and FOV settings are preserved. This is the existing single local-player setup, not a multiplayer camera manager.
 
@@ -20,19 +20,19 @@ No duplicate sword, throwing axe, cannon or crossbow data assets were created. T
 | RMB | ArmR | Throwing axe | 50 | 30 | 0.5 s | 12 / 18 m |
 | Q | ShoulderL | Cannon | 100 | 20 | 3 s | 20 / 30 m |
 | E | ShoulderR | Large crossbow | 30 | 50 | 1 s | 40 / 60 m |
-| F | Nearby matching part | Equip / swap | | | | |
+| 1 / 2 | Highlighted matching part | Left / right swap (1 for a single socket) | | | | |
 
-F opens the teammate's part selection HUD for the highlighted pickup. V cycles between distinct nearby parts, including parts with multiple colliders. The left/right buttons choose the actual arm or shoulder socket; empty sockets are supported. Escape closes the menu. Camera and cursor state are restored when the menu closes or the player is disabled. Scenes without this HUD retain direct F pickup. Startup only installs this player's own child parts, including the preinstalled torso; it no longer searches the scene for other players' equipment. Torso replacement transfers equipped socket occupants when the replacement supports all required sockets.
+The current input path uses **1 / 2** for the highlighted part's left/right arm or shoulder, and **1** for a head, legs or torso. V cycles distinct nearby parts, including parts with multiple colliders. The [world-space part swap UI](PartSwapUI.md) displays the active part and actual bindings without opening a modal menu or changing the cursor/camera. Empty sockets are supported. The optional leg-debug swaps use F1–F4 so number keys do not conflict. Startup only installs this player's own child parts, including the preinstalled torso; it no longer searches the scene for other players' equipment. Torso replacement transfers equipped socket occupants when the replacement supports all required sockets.
 
 Ammo and reload deadlines belong to each physical Part instance. Dropping and re-equipping never refills it or clears its reload. PartData assets do not contain mutable ammunition. A missing weapon disables its attack and is reported in the HUD. Ranged parts provide their own optional muzzle Transform; the cannon's mesh-only recoil child follows swaps. The legacy prototype still uses its original built-in loadout without MechEquipmentCombat.
 
 `EquipManager.Health` exposes the sum of positive Health stats on the currently equipped parts. Dropping or swapping a part changes the total automatically; grounded pickups contribute nothing. Edit Health entries on the existing PartCatalogue assets. The player has `CombatHealth` with **Use Equipment Stats** enabled: it starts at this maximum and accepts damage. Capacity changes clamp current health and never refill lost health. `MechHealthHud` shows the supplied three-layer HP artwork above the movement bar on their shared Canvas; its glow squeezes horizontally, its front crops with HP, and its backing stays full-sized. Its own CanvasGroup follows the player enable/disable lifecycle without hiding other UI. Zero health disables the player; respawn is not implemented. Movement and energy retain their existing tuning.
 
-## Part swap model previews
+## Part swap presentation
 
-The shared `Prefabs/UI/PartSwapSelectPod.prefab` displays the selected pickup and current equipped parts as framed 3D model snapshots, using their visible meshes and materials. Empty sockets show no model. The existing names, stats and socket buttons are retained. Opening the menu copies mesh visuals only; it does not run pickup scripts, clone colliders, change ammo or animate ground weapons. Render textures and baked skinned meshes are released when the menu closes or its cards are replaced. The menu scales to fit its Canvas at smaller resolutions.
+The current checkout uses `Prefabs/UI/PartSwapWorldUI.prefab`, a single non-interactive World Space Canvas beside the active dropped part. It shows the incoming name, existing socket occupants and a few qualitative stat changes such as Damage -- or Fire rate ++. Raw/unchanged stat lists are hidden. It has no gameplay input handlers, raycasters or swap calls. Appearance, target changes, successful swaps and removal receive restrained feedback. The previous modal `PartSwapSelectPod` model-preview implementation is not present in this checkout; this UI uses placeholder panels/text.
 
-Select the prefab's `Sprite` child to adjust **Part Model Preview** resolution, view angles, framing padding and background. Future part models are previewed automatically from the displayed Part; no separate icons are required. `Tools > Mech > UI > Set Up Part Model Previews` restores the preview component on the shared card prefab if needed. `PartModelPreviewSceneChecks.RunBatch` verifies real rendered pixels, empty slots, cleanup and the existing equip callbacks in a disposable project.
+Use **Tools > Mech > UI > Set Up World Part Swap UI** for explicit setup. See [PartSwapUI.md](PartSwapUI.md) for data ownership, tuning, missing bindings and disposable-project verification.
 
 ## Three independently equippable ability modules
 
@@ -64,7 +64,7 @@ MechCombatController > Optional Cannon Pattern > Spiral Barrage remains off by d
 
 `MechAbilitySceneChecks.RunBatch` and `RunMergeBatch` run the A33 and Merge Test scenes, render the effects, and assert single-player camera binding, visible damage, one completion per activation, pool cleanup and unchanged cannon ammo. They do not save test enemy positions. `MechPartsIntegration` is the explicit batch asset migration helper, not an automatic import hook; the assets are already integrated and do not need migration on project load.
 
-Final manual checks: pickup with F near compound-collider drops; aim and fire each socket while moving; soft/hard target switching; close-range sword/camera comfort; visible cannon recoil; swap all four weapon parts and the torso; equip each ability and judge readability during boost. Optional sound levels can only be tuned after clips are supplied.
+Final manual checks: pickup with 1/2 near compound-collider drops; aim and fire each socket while moving; soft/hard target switching; close-range sword/camera comfort; visible cannon recoil; swap all four weapon parts and the torso; equip each ability and judge readability during boost. Optional sound levels can only be tuned after clips are supplied.
 
 ### Results from this integration
 

@@ -94,8 +94,10 @@ public static class MechCameraCollisionChecks
             check(Vector3.Distance(Evaluate(), anchor.position + Vector3.back * 10f) < 0.05f,
                 "Player-tagged colliders are excluded from camera obstruction");
             wall.tag = "Untagged";
-            wall.layer = 8;
-            Set(control, "obstacleLayers", (LayerMask)(1 << 8));
+            // Layer 8 is now reserved for loose parts, which must not obstruct
+            // the camera. Use another user layer to exercise structure masks.
+            wall.layer = 9;
+            Set(control, "obstacleLayers", (LayerMask)(1 << 9));
             Configure();
             check(Evaluate().z >= safeZ - 0.03f, "Camera respects the configured structure collision layers");
             wall.layer = 0;

@@ -2,6 +2,9 @@ using UnityEngine;
 
 public class Part : MonoBehaviour
 {
+    // Loose Default-layer colliders keep normal gameplay physics, but do not
+    // obstruct the follow camera when a replaced part drops from a socket.
+    public const string LoosePhysicsLayerName = "MechPart";
     public Transform recoilVisual;
     [Tooltip("Direction the recoil visual kicks, in its local space.")]
     public Vector3 recoilAxis = Vector3.left;
@@ -23,6 +26,7 @@ public class Part : MonoBehaviour
     bool initialized;
     Collider[] colliders;
     bool[] colliderStates;
+    int[] colliderLayers;
     void Awake() { if (EquippedBy == null && !isEquipped) SetEquippedPhysics(false); }
 
     // State belongs to this physical part, not the shared PartData asset.
@@ -44,10 +48,23 @@ public class Part : MonoBehaviour
             foreach (var c in GetComponentsInChildren<Collider>(true))
                 if (c.GetComponentInParent<Part>() == this) own.Add(c);
             colliders = own.ToArray(); colliderStates = new bool[colliders.Length];
-            for (int i = 0; i < colliders.Length; i++) colliderStates[i] = colliders[i].enabled;
+            colliderLayers = new int[colliders.Length];
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                colliderStates[i] = colliders[i].enabled;
+                colliderLayers[i] = colliders[i].gameObject.layer;
+            }
         }
+        int looseLayer = LayerMask.NameToLayer(LoosePhysicsLayerName);
         for (int i = 0; i < colliders.Length; i++)
-            if (colliders[i] != null) colliders[i].enabled = !equipped && colliderStates[i];
+            if (colliders[i] != null)
+            {
+                // Preserve explicitly authored custom layers and restore the
+                // original layer on attachment, including nested limb parts.
+                colliders[i].gameObject.layer = !equipped && colliderLayers[i] == 0 && looseLayer >= 0
+                    ? looseLayer : colliderLayers[i];
+                colliders[i].enabled = !equipped && colliderStates[i];
+            }
         var body = GetComponent<Rigidbody>();
         if (!equipped && body == null) body = gameObject.AddComponent<Rigidbody>();
         if (body != null) { body.isKinematic = equipped; body.useGravity = !equipped; body.detectCollisions = !equipped; }

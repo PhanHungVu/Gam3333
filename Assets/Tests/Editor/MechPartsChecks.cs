@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
@@ -68,14 +69,15 @@ public static class MechPartsChecks
         equipment.SetSelectedPart(crossbowPart);
         check(!equipment.TrySwapSelectedInto(PartCategory.ArmL) && !crossbowPart.isEquipped,"An arm socket refuses a shoulder part");
         check(equipment.TrySwapSelectedInto(PartCategory.ShoulderL) && equipment.GetEquipped(PartCategory.ShoulderL)==crossbowPart,
-            "Hold-F swap puts the selected floor part into the pressed button's socket");
+            "The existing selected-part API equips the requested socket");
         var detector=player.GetComponentInChildren<PickupDetector>(true);
         check(detector.HighlightColour(PartType.Arm)!=detector.HighlightColour(PartType.Shoulder),"Arm and shoulder pickups glow in different colours");
         Object.DestroyImmediate(secondCannon.gameObject);
         check(player.GetComponent<MechTargetLockController>().IsFreeAim==targetMode,"Equipment swaps preserve targeting mode");
-        var swapAction=AssetDatabase.LoadAssetAtPath<UnityEngine.InputSystem.InputActionAsset>("Assets/InputSystem_Actions.inputactions").FindAction("Player/SwapPart");
-        check(swapAction!=null && System.Linq.Enumerable.Any(swapAction.bindings,b=>b.path=="<Keyboard>/f")
-            && !System.Linq.Enumerable.Any(swapAction.bindings,b=>b.path=="<Keyboard>/q"||b.path=="<Keyboard>/e"),"Pickup does not conflict with Q/E weapon activation");
+        var actions=AssetDatabase.LoadAssetAtPath<UnityEngine.InputSystem.InputActionAsset>("Assets/InputSystem_Actions.inputactions");
+        check(actions.FindAction("Player/SwapLeft").bindings.Any(b=>b.path=="<Keyboard>/1")
+            &&actions.FindAction("Player/SwapRight").bindings.Any(b=>b.path=="<Keyboard>/2")
+            &&actions.FindAction("Player/SwapPart",false)==null,"Pickup uses 1/2 independently of F, mouse and Q/E attacks");
         Object.DestroyImmediate(player);Object.DestroyImmediate(floor);
     }
 }

@@ -7,7 +7,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
 using Object = UnityEngine.Object;
 
-// Real player-loop animation, keyboard swaps, and the scene's ordinary F pickup.
+// Real player-loop animation, keyboard swaps, and the scene's ordinary pickup.
 public static class MechAnimatedLegSceneChecks
 {
     const string Pending = "MechAnimatedLegSceneChecks.Pending";
@@ -19,6 +19,7 @@ public static class MechAnimatedLegSceneChecks
     static Quaternion pose;
     static Transform torsoVisual, headVisual;
     static Vector3 bodyRest, headRest, movingBody, movingHead;
+    static float boneTravel,bodyTravel,headTravel;
     static float next = -1f, deadline;
     static int phase;
 
@@ -44,6 +45,12 @@ public static class MechAnimatedLegSceneChecks
     static void Update()
     {
         if (!SessionState.GetBool(Pending, false) || !EditorApplication.isPlaying || EditorApplication.isCompiling) return;
+        if(phase==3 && leg!=null)
+        {
+            boneTravel=Mathf.Max(boneTravel,Quaternion.Angle(pose,leg.localRotation));
+            bodyTravel=Mathf.Max(bodyTravel,Vector3.Distance(movingBody,torsoVisual.localPosition));
+            headTravel=Mathf.Max(headTravel,Vector3.Distance(movingHead,headVisual.localPosition));
+        }
         if (next < 0f) { next = Time.time + 1f; deadline = Time.time + 25f; }
         if (Time.time < next) return;
         try
@@ -58,6 +65,7 @@ public static class MechAnimatedLegSceneChecks
                 Check(motors.Length == 1, "Scene retains one gameplay motor");
                 motor = motors[0];
                 equipment = motor.GetComponent<EquipManager>();
+                motor.GetComponent<MechPlayerInput>().AssumeCursorCaptured=true;
                 fast = equipment.GetEquipped(PartCategory.Legs);
                 torso = equipment.GetEquipped(PartCategory.Torso);
                 torsoVisual = torso.transform.Find("Animated Torso Visual");
@@ -78,32 +86,34 @@ public static class MechAnimatedLegSceneChecks
                 Check(Vector3.Distance(torsoVisual.localPosition, bodyRest) > 0.01f && Vector3.Distance(headVisual.localPosition, headRest) > 0.005f,
                     "Fast body and head animate through the normal LateUpdate path");
                 Capture("fast");
-                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.Digit2));
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.F2));
             }
             else if (phase == 2)
             {
                 var heavy = equipment.GetEquipped(PartCategory.Legs);
-                Check(heavy.data.partId == "Legs_Heavy" && motor.AnimationData.Speed > 2.9f && motor.AnimationData.Speed < 3.1f,
-                    "Keyboard 2 selects the heavy biped and its movement rating");
+                var configured=(MechLocomotionSettings)typeof(MechMovementController).GetProperty("Settings",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(motor);
+                Check(heavy.data.partId == "Legs_Heavy" && Mathf.Abs(motor.AnimationData.Speed-configured.moveSpeed)<0.1f,
+                    "Keyboard F2 selects the heavy biped and its movement rating; part="+heavy.data.partId+", speed="+motor.AnimationData.Speed);
                 var driver = heavy.GetComponent<MechLegAnimator>();
                 Check(MechAnimatedLegChecks.ClipWeight(driver, "Heavy_Walk.001") > 0.99f, "Heavy gait plays after the real keyboard swap");
                 leg = driver.Animator.transform.Find("Armature/Root/Leg.L");
                 pose = leg.localRotation;
+                boneTravel=bodyTravel=headTravel=0;
                 movingBody = torsoVisual.localPosition; movingHead = headVisual.localPosition;
                 Capture("heavy");
                 InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W));
             }
             else if (phase == 3)
             {
-                Check(Quaternion.Angle(pose, leg.localRotation) > 2f, "Heavy bones keep animating across player-loop frames");
-                Check(Vector3.Distance(movingBody, torsoVisual.localPosition) > 0.01f && Vector3.Distance(movingHead, headVisual.localPosition) > 0.005f,
+                Check(boneTravel > 2f, "Heavy bones keep animating across player-loop frames; travel="+boneTravel);
+                Check(bodyTravel > 0.01f && headTravel > 0.005f,
                     "Visible torso and head keep following the heavy gait after swapping");
-                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.Digit1));
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.F1));
             }
             else if (phase == 4)
             {
                 Check(equipment.GetEquipped(PartCategory.Legs) == fast && MechAnimatedLegChecks.ClipWeight(fast.GetComponent<MechLegAnimator>(), "Biped_Run") > 0.99f,
-                    "Keyboard 1 restores the original fast rig and clip");
+                    "Keyboard F1 restores the original fast rig and clip");
                 pickup = GameObject.Find("Heavy Legs Pickup").GetComponent<Part>();
                 pickup.GetComponent<Rigidbody>().isKinematic = true;
                 var collider = pickup.GetComponentInChildren<Collider>();
@@ -112,7 +122,7 @@ public static class MechAnimatedLegSceneChecks
                 Physics.SyncTransforms();
                 InputSystem.QueueStateEvent(keyboard, new KeyboardState());
             }
-            else if (phase == 5) { equipment.TrySwapSelectedInto(PartCategory.Legs); InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W)); }
+            else if (phase == 5) { InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.Digit1)); }
             else if (phase == 6)
             {
                 Check(equipment.GetEquipped(PartCategory.Legs) == pickup, "The highlighted heavy pickup swaps into the legs through the detector and part system");

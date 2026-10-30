@@ -128,7 +128,7 @@ public static class MechWeaponAnimationSceneChecks
                 case 8:
                     Pose(PartCategory.ShoulderR, MechWeaponAnimator.PoseState.Reload, "Crossbow");
                     Pose(PartCategory.ShoulderL, MechWeaponAnimator.PoseState.Reload, "Cannon");
-                    Capture("crossbow-reload"); Keys(Key.Digit2, Key.LeftCtrl); delay = 0.2f; break;
+                    Capture("crossbow-reload"); Keys(Key.F2, Key.LeftCtrl); delay = 0.2f; break;
                 case 9:
                     Check(equipment.GetEquipped(PartCategory.Legs).data.partId == "Legs_Heavy"
                         && equipment.GetEquipped(PartCategory.Legs).GetComponent<MechLegAnimator>().CurrentPose == MechLegAnimator.PoseState.Boost,
@@ -138,11 +138,11 @@ public static class MechWeaponAnimationSceneChecks
                 case 10: PlacePickup("Mace Animation Pickup"); delay = 0.45f; break;
                 case 11:
                     if (!SelectPickup("Mace Animation Pickup")) { next = Time.time + 0.15f; return; }
-                    Keys(Key.F); Button(MouseButton.Left); break; // hold F + LMB: swap into the left arm
+                    Keys(Key.Digit1); Button(); break; // 1: selected part into the left arm
                 case 12:
                     Keys(); Button();
                     Check(equipment.GetEquipped(PartCategory.ArmL) != originalSword && Driver(PartCategory.ArmL).Animations.name == "Mace",
-                        "Holding F and clicking LMB swaps the highlighted mace into the left arm"); 
+                        "Pressing 1 swaps the highlighted mace into the left arm");
                     // Keep the dropped sword outside pickup range before selecting
                     // the second test pickup's highlighted selection.
                     originalSword.GetComponent<Rigidbody>().isKinematic = true;
@@ -161,11 +161,11 @@ public static class MechWeaponAnimationSceneChecks
                     Capture("mace-fire"); Button(); PlacePickup("Arm Crossbow Animation Pickup"); delay = 0.45f; break;
                 case 14:
                     if (!SelectPickup("Arm Crossbow Animation Pickup")) { next = Time.time + 0.15f; return; }
-                    Keys(Key.F); Button(MouseButton.Right); break; // hold F + RMB: swap into the right arm
+                    Keys(Key.Digit2); Button(); break; // 2: selected part into the right arm
                 case 15:
                     Keys(); Button();
                     Check(equipment.GetEquipped(PartCategory.ArmR) != originalAxe && Driver(PartCategory.ArmR).Animations.name == "ArmCrossbow",
-                        "Holding F and clicking RMB swaps the highlighted arm crossbow into the right arm");
+                        "Pressing 2 swaps the highlighted arm crossbow into the right arm");
                     Check(!originalAxe.isEquipped && LoadedModelVisible(originalAxe, "ThrowingAxeMesh"),
                         "Dropped throwing axe retains its visible model on the ground");
                     Keys(); Button(MouseButton.Right); delay = 0.1f; break;

@@ -70,7 +70,7 @@ public class MechWeaponHud : MonoBehaviour
     void LateUpdate()
     {
         readout.text = SocketLine(PartCategory.ArmL, "LMB") + "\n" + SocketLine(PartCategory.ArmR, "RMB") + "\n"
-            + SocketLine(PartCategory.ShoulderL, "Q") + "\n" + SocketLine(PartCategory.ShoulderR, "E") + "\nHOLD F + BUTTON  SWAP PART";
+            + SocketLine(PartCategory.ShoulderL, "Q") + "\n" + SocketLine(PartCategory.ShoulderR, "E");
     }
 
     static string AnimationLine(Part part, string key)

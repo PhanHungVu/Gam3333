@@ -71,7 +71,7 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     [Header("Obstacle Avoidance")]
     [SerializeField] bool avoidObstacles = true;
-    [Tooltip("Solid structures must have colliders on these layers. Triggers are ignored.")]
+    [Tooltip("Solid structures must have colliders on these layers. Triggers and loose MechPart pickups are ignored.")]
     [SerializeField] LayerMask obstacleLayers = 1;
     [Tooltip("Minimum clearance. Automatically enlarged when needed to protect the camera's near clip plane.")]
     [SerializeField, Range(0.05f, 1f)] float cameraRadius = 0.35f;
@@ -245,10 +245,15 @@ public class CameraControlThirdPerson : MonoBehaviour
         LensSettings lens = cinemachineCamera.Lens;
         lens.FieldOfView = baseFieldOfView + movementFovOffset;
         cinemachineCamera.Lens = lens;
+        // A replaced part drops beside the follow pivot. It must not collapse
+        // the camera boom, even when a custom structure mask includes all layers.
+        int cameraObstacles = obstacleLayers.value;
+        int loosePartLayer = LayerMask.NameToLayer(Part.LoosePhysicsLayerName);
+        if (loosePartLayer >= 0) cameraObstacles &= ~(1 << loosePartLayer);
         thirdPersonFollow.AvoidObstacles = new CinemachineThirdPersonFollow.ObstacleSettings
         {
             Enabled = avoidObstacles,
-            CollisionFilter = obstacleLayers,
+            CollisionFilter = cameraObstacles,
             IgnoreTag = "Player",
             CameraRadius = CameraCollisionRadius(lens),
             DampingIntoCollision = 0f,

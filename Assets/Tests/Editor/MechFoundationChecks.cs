@@ -1202,7 +1202,7 @@ public static class MechFoundationChecks
         var copy = (InputActionAsset)Get(input, "runtimeInputActions");
         Check(copy != null && copy != source, "Player input owns its own runtime copy of the action layout");
         Check(copy.FindAction("Player/Move").enabled && copy.FindAction("Player/Look").enabled && copy.FindAction("Player/Cannon").enabled
-            && copy.FindAction("Player/SwapPart").enabled && copy.FindAction("Player/CyclePart").enabled,
+            && copy.FindAction("Player/SwapLeft").enabled && copy.FindAction("Player/SwapRight").enabled && copy.FindAction("Player/CyclePart").enabled,
             "The runtime copy enables every mapped gameplay input");
         int errors = 0;
         Application.LogCallback onLog = (message, stack, type) =>

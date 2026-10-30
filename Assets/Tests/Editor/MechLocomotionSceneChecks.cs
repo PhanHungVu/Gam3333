@@ -60,7 +60,7 @@ public static class MechLocomotionSceneChecks
                 torso = motor.GetComponent<EquipManager>().GetEquipped(PartCategory.Torso);
                 start = motor.transform.position;
                 keyboard = InputSystem.AddDevice<Keyboard>();
-                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.Digit3));
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.F3));
             }
             else if (phase <= 3)
             {
@@ -78,8 +78,8 @@ public static class MechLocomotionSceneChecks
                     + " legs=" + bounds + " capsule=" + motor.GetComponent<CharacterController>().bounds);
                 typeof(CombatFeedbackSceneChecks).GetMethod("Capture", BindingFlags.Static | BindingFlags.NonPublic)
                     .Invoke(null, new object[] { "locomotion-" + expected.ToString().ToLowerInvariant() });
-                InputSystem.QueueStateEvent(keyboard, phase == 1 ? new KeyboardState(Key.W, Key.Digit4)
-                    : phase == 2 ? new KeyboardState(Key.W, Key.Digit1) : new KeyboardState());
+                InputSystem.QueueStateEvent(keyboard, phase == 1 ? new KeyboardState(Key.W, Key.F4)
+                    : phase == 2 ? new KeyboardState(Key.W, Key.F1) : new KeyboardState());
             }
             else
             {

@@ -13,6 +13,8 @@ public class PickupDetector : MonoBehaviour
 
     public IReadOnlyList<Part> NearbyParts => nearbyParts;
     public GameObject partSwapHudPopupParent;
+    [Tooltip("Optional replacement presentation; detection and selection are unchanged.")]
+    public PartSwapWorldHudPresenter worldSpaceHud;
     GameObject popup1;
     GameObject popup2;
     public GameObject highlightElementPrefab;
@@ -42,6 +44,8 @@ public class PickupDetector : MonoBehaviour
         ShowPopups(false, false);
     }
     readonly List<Part> uniqueParts = new List<Part>();
+    // Presentation uses the same deduplicated list as active-target cycling.
+    public int DistinctNearbyPartCount => uniqueParts.Count;
     void RebuildUnique()
     {
         uniqueParts.Clear();
@@ -86,6 +90,7 @@ public class PickupDetector : MonoBehaviour
 
     void ShowPopups(bool single, bool multiple)
     {
+        if(worldSpaceHud!=null && worldSpaceHud.isActiveAndEnabled && worldSpaceHud.HasView) single=multiple=false;
         if (popup1 != null) popup1.SetActive(single);
         if (popup2 != null) popup2.SetActive(multiple);
     }

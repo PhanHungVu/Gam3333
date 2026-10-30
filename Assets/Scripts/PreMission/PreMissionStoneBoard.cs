@@ -117,7 +117,7 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
             stone.transform.localPosition = new Vector3(slot.x, 0.03f, slot.y);
             float angle = main ? 0f : slotAngles[offer.Slot];
             stone.transform.localRotation = Quaternion.Euler(0, angle, 0);
-            stone.Bind(offer);
+            stone.Bind(offer,run.Seed);
             stone.ConfigureFeedback(motion!=null ? motion.Feedback : null);
             if (motion != null && !QuestProgressionRuntime.WasPresented(offer.Id)) stone.PrepareArrival();
             stones.Add(stone);

@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 // The one place that reads the player's devices. Each frame it turns input into actions for the
 // other systems: movement (move, jump, boosts), the camera (look), targeting (lock-on, switching),
-// the part system (hold F + attack button swaps, V cycles the highlighted part) and combat (attack
+// the part system (1/2 swap left/right, V cycles the highlighted part) and combat (attack
 // with the socket's part). It also owns the cursor rule: Esc frees the mouse, a click captures it,
 // and gameplay input only flows while it is captured and the game is not paused.
 [DisallowMultipleComponent]
@@ -17,7 +17,7 @@ public sealed class MechPlayerInput : MonoBehaviour
 
     InputActionAsset runtimeInputActions;
     InputAction move, jump, quickBoost, assaultBoost, look, lockOn;
-    InputAction leftArm, rightArm, leftShoulder, rightShoulder, swapPart, cyclePart;
+    InputAction leftArm, rightArm, leftShoulder, rightShoulder, swapLeft, swapRight, cyclePart;
     MechMovementController movement;
     MechCombat combat;
     EquipManager parts;
@@ -25,6 +25,28 @@ public sealed class MechPlayerInput : MonoBehaviour
     MechTargetLockController targeting;
     CameraControlThirdPerson cameraControl;
     bool attacksArmed;
+
+    // Presentation queries only. The existing Update/Attack path still owns all input.
+    public string SwapBindingLabel(PartCategory socket)
+    {
+        var button=socket==PartCategory.ArmR || socket==PartCategory.ShoulderR ? swapRight : swapLeft;
+        return button!=null && button.enabled ? DisplayBinding(button,"<Keyboard>") : null;
+    }
+    public string CycleBindingLabel => cyclePart!=null && cyclePart.enabled ? DisplayBinding(cyclePart,"<Keyboard>") : null;
+    static string DisplayBinding(InputAction action,string preferredDevice)
+    {
+        string fallback=null; bool keyboardMouseFallback=false;
+        for(int i=0;i<action.bindings.Count;i++)
+        {
+            var binding=action.bindings[i]; string path=binding.effectivePath;
+            if(binding.isComposite || binding.isPartOfComposite || string.IsNullOrEmpty(path)) continue;
+            string label=action.GetBindingDisplayString(i); if(string.IsNullOrEmpty(label)) continue;
+            if(path.StartsWith(preferredDevice,System.StringComparison.OrdinalIgnoreCase)) return label;
+            bool keyboardMouse=path.StartsWith("<Keyboard>",System.StringComparison.OrdinalIgnoreCase)||path.StartsWith("<Mouse>",System.StringComparison.OrdinalIgnoreCase);
+            if(fallback==null || (keyboardMouse&&!keyboardMouseFallback)) { fallback=label; keyboardMouseFallback=keyboardMouse; }
+        }
+        return fallback;
+    }
 
     void Awake()
     {
@@ -44,7 +66,7 @@ public sealed class MechPlayerInput : MonoBehaviour
         look = Enable("Player/Look"); lockOn = Enable("Player/LockOn");
         leftArm = Enable("Player/Melee"); rightArm = Enable("Player/Attack");
         leftShoulder = Enable("Player/Cannon"); rightShoulder = Enable("Player/Crossbow");
-        swapPart = Enable("Player/SwapPart"); cyclePart = Enable("Player/CyclePart");
+        swapLeft = Enable("Player/SwapLeft"); swapRight = Enable("Player/SwapRight"); cyclePart = Enable("Player/CyclePart");
     }
 
     InputAction Enable(string name)
@@ -60,7 +82,7 @@ public sealed class MechPlayerInput : MonoBehaviour
     {
         MechInputActions.Release(ref runtimeInputActions);
         move = jump = quickBoost = assaultBoost = look = lockOn = null;
-        leftArm = rightArm = leftShoulder = rightShoulder = swapPart = cyclePart = null;
+        leftArm = rightArm = leftShoulder = rightShoulder = swapLeft = swapRight = cyclePart = null;
         targeting?.CancelLockButtonInput();
         attacksArmed = false;
         SetCursorLocked(false);
@@ -101,23 +123,32 @@ public sealed class MechPlayerInput : MonoBehaviour
             }
         }
 
+        if(gameplay)
+        {
+            if(Pressed(swapLeft)) SwapSelected(false);
+            else if(Pressed(swapRight)) SwapSelected(true);
+        }
         if (combat == null) return;
         if (!gameplay) { attacksArmed = false; return; }
         // A click that captures the mouse must not also attack.
         if (!attacksArmed) { attacksArmed = !Held(leftArm) && !Held(rightArm) && !Held(leftShoulder) && !Held(rightShoulder); return; }
-        // Holding SwapPart with a floor part highlighted turns each attack button into
-        // "swap the highlighted part into that button's socket" instead of attacking.
-        bool swap = Held(swapPart) && parts != null && parts.GetSelectedPart() != null;
-        Attack(leftArm, PartCategory.ArmL, swap);          // LMB: left arm
-        Attack(rightArm, PartCategory.ArmR, swap);         // RMB: right arm
-        Attack(leftShoulder, PartCategory.ShoulderL, swap); // Q: left shoulder
-        Attack(rightShoulder, PartCategory.ShoulderR, swap); // E: right shoulder
+        Attack(leftArm, PartCategory.ArmL);          // LMB: left arm
+        Attack(rightArm, PartCategory.ArmR);         // RMB: right arm
+        Attack(leftShoulder, PartCategory.ShoulderL); // Q: left shoulder
+        Attack(rightShoulder, PartCategory.ShoulderR); // E: right shoulder
     }
 
-    void Attack(InputAction button, PartCategory socket, bool swap)
+    void SwapSelected(bool right)
+    {
+        var selected=parts!=null ? parts.GetSelectedPart() : null;
+        if(selected==null || selected.Stats==null) return;
+        var slots=PartSlots.SlotsFor(selected.partType);
+        int index=right ? 1 : 0;
+        if(index<slots.Count) parts.TrySwapSelectedInto(slots[index]);
+    }
+    void Attack(InputAction button, PartCategory socket)
     {
         if (!Pressed(button)) return;
-        if (swap) { parts.TrySwapSelectedInto(socket); return; }
         Physics.SyncTransforms();
         combat.TryAttack(socket);
     }

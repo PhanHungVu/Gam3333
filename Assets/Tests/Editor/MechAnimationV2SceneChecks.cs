@@ -123,7 +123,7 @@ public static class MechAnimationV2SceneChecks
             {
                 AssertPose(MechLegAnimator.PoseState.Neutral, "Biped_Neutral");
                 Check(motor.IsGrounded, "Landing restores Neutral");
-                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Digit2));
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.F2));
             }
             else if (phase == 10)
             {
@@ -167,7 +167,7 @@ public static class MechAnimationV2SceneChecks
             {
                 AssertPose(MechLegAnimator.PoseState.Neutral, "Heavy_Neutral");
                 Check(motor.IsGrounded, "Heavy landing restores its own Neutral");
-                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Digit1));
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.F1));
             }
             else
             {
