@@ -58,10 +58,12 @@ public class MechWeaponHud : MonoBehaviour
             case PartSubtype.Melee:
                 return key + "  " + name + (wait > 0f ? $"  {wait:0.0}s" : "  READY");
             case PartSubtype.Projectile:
-            case PartSubtype.Explosive:
+            case PartSubtype.Splash:
                 int ammo = part.RemainingAmmo;
-                string state = ammo == 0 ? "EMPTY" : wait > 0f ? $"RELOAD {wait:0.0}s" : "READY";
-                return $"{key}  {name}  {ammo}  {state}";
+                // Magazine / total ammo, or just the total for weapons without a magazine.
+                string rounds = part.Stats.MagazineSize > 0 ? $"{part.MagazineRounds}/{ammo}" : ammo.ToString();
+                string state = ammo == 0 ? "EMPTY" : part.IsReloading ? $"RELOAD {wait:0.0}s" : wait > 0f ? $"{wait:0.0}s" : "READY";
+                return $"{key}  {name}  {rounds}  {state}";
             default:
                 return AnimationLine(part, key) ?? key + "  NO PART EQUIPPED";
         }

@@ -89,7 +89,7 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
         // A wall contact is already a valid landing. Do not teleport it down to the floor.
         destination = next; rock.position = airbornePosition = destination;
         if (!impactApplied)
-        { blast.Resolve(destination, impactRadius, damage, transform, ~0); impactApplied = true; Impacts++; ImpactSound(); }
+        { blast.Resolve(destination, impactRadius, damage, damage, transform, ~0); impactApplied = true; Impacts++; ImpactSound(); }
         marker.Hide(); return true;
     }
     public override void BeginPull() { CurrentStage = Stage.Pull; age = 0; }

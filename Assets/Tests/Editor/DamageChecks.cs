@@ -57,7 +57,7 @@ public static class DamageChecks
             var hidden = Target(origin + Vector3.forward * 3.5f, 100f);
             Wall(origin + Vector3.forward * 2f, new Vector3(3f, 3f, 0.2f));
             Physics.SyncTransforms();
-            var area = blast.Resolve(origin, 4f, 30f, owner.transform, ~0);
+            var area = blast.Resolve(origin, 4f, 30f, 30f, owner.transform, ~0);
             check(area.Hits == 2 && compound.CurrentHealth == 70f && plain.CurrentHealth == 70f,
                 "Area damage hits each target once, even with several colliders");
             check(owner.CurrentHealth == 100f, "Area damage never hurts its owner");

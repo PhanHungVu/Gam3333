@@ -17,7 +17,8 @@ public sealed class EnemyWeapon
 
 // AI chooses when to attack; the animation clock determines its hit/release window.
 // What each attack does comes from the weapon part's PartData: its subtype (Melee / Projectile /
-// Explosive), damage, reload, projectile and splash, scaled by that weapon's multipliers.
+// Splash), damage, fire rate, projectile and splash, scaled by that weapon's multipliers. Enemies
+// never reload: they attack once per 1 / Fire Rate (x Cooldown Multiplier) with unlimited ammo.
 // Enemies never run out of ammo. Each weapon only attacks when the target is within its reach
 // (melee: its hit box; ranged: as far as its shot still does damage).
 // Taking turns (default): one weapon attacks at a time, then the enemy waits that weapon's cooldown.
@@ -145,8 +146,8 @@ public sealed class EnemyAttack : MonoBehaviour
     public float CooldownOf(MechWeaponAnimator weapon)
     {
         var entry = EntryOf(weapon); var part = PartOf(weapon);
-        float reload = HasStats(part) ? part.Stats.GetStat(StatType.CooldownReload) : 0f;
-        return Mathf.Max(0.01f, reload * (entry != null ? entry.cooldownMultiplier : 1f));
+        float interval = HasStats(part) ? part.Stats.ShotInterval : 1f;
+        return Mathf.Max(0.01f, interval * (entry != null ? entry.cooldownMultiplier : 1f));
     }
 
     // How far a weapon can hit from: the front of its melee box, or as far as its shot still deals damage.
@@ -271,7 +272,7 @@ public sealed class EnemyAttack : MonoBehaviour
                 if ((!respectAttackRangeAtRelease || CanReach(lane.target.transform, ReachOf(lane.entry.weapon), agent.AttackRange, true))
                     && ClearPath(lane.target, AimPoint(lane.target), true)) StrikeMelee(part, lane);
             }
-            else if (subtype == PartSubtype.Projectile || subtype == PartSubtype.Explosive) FireRanged(part, lane);
+            else if (subtype == PartSubtype.Projectile || subtype == PartSubtype.Splash) FireRanged(part, lane);
         }
         if (lane.age >= fireDuration) lane.Clear();
     }

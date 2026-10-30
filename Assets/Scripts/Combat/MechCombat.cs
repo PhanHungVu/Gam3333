@@ -10,7 +10,7 @@ public readonly struct AttackResult
 }
 
 // The mech's combat brain. TryAttack(socket) attacks with whatever part is mounted in that socket,
-// choosing the attack from the part's subtype: Projectile and Explosive parts fire (RangedAttack),
+// choosing the attack from the part's subtype: Projectile and Splash parts fire (RangedAttack),
 // Melee parts swing (MeleeAttack), and arm parts with no weapon play an animation-only attack.
 // Every stat comes from the part's data; ammo and reload live on the part. Presentation listens to
 // the events below and never changes gameplay.
@@ -87,7 +87,7 @@ public class MechCombat : MonoBehaviour
         var part = isActiveAndEnabled ? GetPart(socket) : null;
         return part != null && part.Stats.subtype == PartSubtype.Melee ? part : null;
     }
-    static bool IsRanged(Part part) => part.Stats.subtype == PartSubtype.Projectile || part.Stats.subtype == PartSubtype.Explosive;
+    static bool IsRanged(Part part) => part.Stats.subtype == PartSubtype.Projectile || part.Stats.subtype == PartSubtype.Splash;
 
     // ---- Attacking ----
 
@@ -160,7 +160,7 @@ public class MechCombat : MonoBehaviour
         {
             var part = parts.GetEquipped(socket);
             if (part == null || part.Stats == null) continue;
-            if (IsRanged(part)) part.InitializeAmmo(Mathf.Max(0, Mathf.RoundToInt(part.Stats.GetStat(StatType.Ammo))));
+            if (IsRanged(part)) part.InitializeAmmo(Mathf.Max(0, Mathf.RoundToInt(part.Stats.GetStat(StatType.Ammo))), part.Stats.MagazineSize);
         }
         melee.Cancel();
     }

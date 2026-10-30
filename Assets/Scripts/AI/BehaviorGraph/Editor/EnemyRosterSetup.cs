@@ -72,7 +72,7 @@ public static class EnemyRosterSetup
                 else if (role == EnemyBehaviorRole.HeavyRanged)
                 {
                     var cannons = root.GetComponentsInChildren<MechWeaponAnimator>(true).Where(w => w.GetComponent<Part>() is Part p
-                        && p.Stats != null && p.partType == PartType.Shoulder && p.Stats.subtype == PartSubtype.Explosive).ToArray();
+                        && p.Stats != null && p.partType == PartType.Shoulder && p.Stats.subtype == PartSubtype.Splash).ToArray();
                     if (cannons.Length == 0) throw new InvalidOperationException("Heavy elite has no existing shoulder cannon");
                     weapons.arraySize = cannons.Length;
                     for (int n = 0; n < cannons.Length; n++) weapons.GetArrayElementAtIndex(n).FindPropertyRelative("weapon").objectReferenceValue = cannons[n];

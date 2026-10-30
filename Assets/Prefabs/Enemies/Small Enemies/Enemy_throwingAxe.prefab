@@ -55117,11 +55117,11 @@ MonoBehaviour:
   weapons:
   - weapon: {fileID: 837807586368485531}
     damageMultiplier: 0.3
-    cooldownMultiplier: 3
+    cooldownMultiplier: 0.75
     projectileSpeedMultiplier: 1
   - weapon: {fileID: 3067291191276112108}
     damageMultiplier: 0.3
-    cooldownMultiplier: 3
+    cooldownMultiplier: 0.75
     projectileSpeedMultiplier: 1
   independentWeapons: 0
   externalRequests: 1

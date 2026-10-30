@@ -106,9 +106,10 @@ public static class MechProjectileModelChecks
             original.transform.position += Vector3.right * 100f; Physics.SyncTransforms();
             view.transform.SetPositionAndRotation(right.muzzle.position, Quaternion.identity);
             var bolt = combat.TryAttack(PartCategory.ArmR).Projectile; Model(bolt, "CrossbowBoltMesh", check);
-            check(bolt.Source == right && right.RemainingAmmo == 29
-                && right.Stats.GetStat(StatType.Damage) == 100f && combat.ReloadRemaining(PartCategory.ArmR) > 1.9f,
-                "RMB arm crossbow uses its existing damage, ammo and cooldown stats");
+            int crossbowAmmo = (int)right.Stats.GetStat(StatType.Ammo);
+            float nextShot = right.Stats.MagazineSize == 1 ? Mathf.Max(right.Stats.ShotInterval, right.Stats.GetStat(StatType.Reload)) : right.Stats.ShotInterval;
+            check(bolt.Source == right && right.RemainingAmmo == crossbowAmmo - 1 && combat.ReloadRemaining(PartCategory.ArmR) > nextShot - 0.1f,
+                "RMB arm crossbow uses its ammo, fire rate and reload stats");
             check(combat.TryAttack(PartCategory.ArmR).Projectile == null && combat.AmmoRemaining(PartCategory.ShoulderR) == shoulderAmmo,
                 "Arm reload rejects duplicate shots without consuming shoulder ammo");
             Object.DestroyImmediate(bolt.gameObject);
@@ -122,7 +123,7 @@ public static class MechProjectileModelChecks
             combat.ShotFired += fired;
             check(combat.TryAttack(PartCategory.ArmL).Started, "LMB fires the actual left arm crossbow while the right reloads");
             combat.ShotFired -= fired; Model(leftShot, "CrossbowBoltMesh", check);
-            check(left.RemainingAmmo == 29 && right.RemainingAmmo == 29 && combat.AmmoRemaining(PartCategory.ShoulderR) == shoulderAmmo,
+            check(left.RemainingAmmo == crossbowAmmo - 1 && right.RemainingAmmo == crossbowAmmo - 1 && combat.AmmoRemaining(PartCategory.ShoulderR) == shoulderAmmo,
                 "Both arm weapons own independent ammo and keep shoulder state intact");
             Object.DestroyImmediate(leftShot.gameObject);
             equipment.Unequip(PartCategory.ArmR); cleanup.Add(right.gameObject);

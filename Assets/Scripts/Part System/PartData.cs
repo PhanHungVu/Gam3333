@@ -4,16 +4,22 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
+// Weapon stats: Damage per hit; Ammo = total shots; MagSize = shots before a reload (0 = never reloads);
+// FireRate = shots or swings per second; Reload = seconds to refill the magazine; Range in golem lengths;
+// SplashRadius and SplashDamage for Splash weapons.
 public enum StatType
 {
     Health, MoveSpeed,
-    Damage, MagSize, Ammo, CooldownReload, Range, SingleShot, AutoAim,
+    Damage, MagSize, Ammo, Reload, Range, SingleShot, AutoAim,
     // Appended so stats already saved in part assets keep their meaning.
-    MaxRangeMultiplier, ProjectileSpeed, ProjectileSize, SplashRadius
+    MaxRangeMultiplier, ProjectileSpeed, ProjectileSize, SplashRadius,
+    FireRate, SplashDamage
 }
 
-// How a part attacks. None for parts that don't attack (head, legs, torso).
-public enum PartSubtype { None, Projectile, Explosive, Melee }
+// How a part attacks, which decides how its damage is checked. None for parts that don't attack
+// (head, legs, torso). Melee: a hit box. Projectile: a shot that hits what it touches. Splash: a shot
+// that also damages everything within its Splash Radius.
+public enum PartSubtype { None, Projectile, Splash, Melee }
 
 
 [System.Serializable]
@@ -49,6 +55,11 @@ public class PartData : ScriptableObject
     }
 
     public bool GetBool(StatType type) => GetStat(type) > 0.5f;
+
+    // Seconds between shots or swings: 1 / Fire Rate (1 s if no Fire Rate is set).
+    public float ShotInterval { get { float rate = GetStat(StatType.FireRate); return rate > 0f ? 1f / rate : 1f; } }
+    // Shots per magazine; 0 means the weapon never needs reloading.
+    public int MagazineSize => Mathf.Max(0, Mathf.RoundToInt(GetStat(StatType.MagSize)));
 
 #if UNITY_EDITOR
     void OnValidate()

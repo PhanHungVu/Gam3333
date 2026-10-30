@@ -27,7 +27,7 @@ public class MechProjectile : MonoBehaviour
     Transform owner;
     Vector3 direction;
     float speed, damage, radius, remainingDistance;
-    float effectiveRange = float.PositiveInfinity, maximumRange, travelled, explosionRadius;
+    float effectiveRange = float.PositiveInfinity, maximumRange, travelled, explosionRadius, splashDamage;
     LayerMask collisionLayers;
     bool live;
     RaycastHit[] hits = new RaycastHit[16];
@@ -63,10 +63,13 @@ public class MechProjectile : MonoBehaviour
     }
 
 
-    public void ConfigureRangeAndExplosion(float effective, float blastRadius)
+    // effective: full damage up to here, falling off to the maximum range. blastRadius and splash:
+    // a Splash weapon's radius and the damage everything inside it takes (the direct hit takes both).
+    public void ConfigureRangeAndExplosion(float effective, float blastRadius, float splash = 0f)
     {
         effectiveRange = Mathf.Max(0f, effective);
         explosionRadius = Mathf.Max(0f, blastRadius);
+        splashDamage = Mathf.Max(0f, splash);
     }
 
     public static float RangeMultiplier(float distance, float effective, float maximum)
@@ -156,11 +159,12 @@ public class MechProjectile : MonoBehaviour
     {
         if (!live) return;
         Vector3 impactPoint = transform.position;
-        float impactDamage = damage * RangeMultiplier(travelled, effectiveRange, maximumRange);
+        float falloff = RangeMultiplier(travelled, effectiveRange, maximumRange);
+        float impactDamage = damage * falloff;
         // Mark spent first: callbacks and compound colliders cannot cause repeat damage.
         Finish();
         // Teams decide who takes damage (CombatBlast skips the shooter's own team).
-        var result = blast.Resolve(impactPoint, explosionRadius, impactDamage, owner, collisionLayers, collider);
+        var result = blast.Resolve(impactPoint, explosionRadius, impactDamage, splashDamage * falloff, owner, collisionLayers, collider);
         ImpactResolved?.Invoke(new MechProjectileImpact(Source, Subtype, impactPoint, explosionRadius,
             result.Hits, result.Kills, direction: direction));
         ImpactResolved = null;

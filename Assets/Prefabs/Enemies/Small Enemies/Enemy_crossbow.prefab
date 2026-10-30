@@ -50410,12 +50410,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAttack
   weapons:
   - weapon: {fileID: 5721094564432976276}
-    damageMultiplier: 0.2
-    cooldownMultiplier: 2
+    damageMultiplier: 0.285714
+    cooldownMultiplier: 2.4
     projectileSpeedMultiplier: 0.6
   - weapon: {fileID: 4587992763705115653}
-    damageMultiplier: 0.2
-    cooldownMultiplier: 2
+    damageMultiplier: 0.285714
+    cooldownMultiplier: 2.4
     projectileSpeedMultiplier: 0.6
   independentWeapons: 0
   externalRequests: 1

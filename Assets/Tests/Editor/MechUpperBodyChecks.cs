@@ -97,7 +97,8 @@ public static class MechUpperBodyChecks
                 "Heavy clip drives body and head as well as the working legs");
             var cannon = player.GetComponent<MechCombat>();
             var projectile = cannon.TryAttack(PartCategory.ShoulderL).Projectile;
-            check(projectile != null && cannon.AmmoRemaining(PartCategory.ShoulderL) == 19, "Weapons still fire with animated attachment sockets");
+            check(projectile != null && cannon.AmmoRemaining(PartCategory.ShoulderL) == (int)cannon.GetPart(PartCategory.ShoulderL).Stats.GetStat(StatType.Ammo) - 1,
+                "Weapons still fire with animated attachment sockets");
             if (projectile != null) Object.DestroyImmediate(projectile.gameObject);
 
             presentation.enabled = false;

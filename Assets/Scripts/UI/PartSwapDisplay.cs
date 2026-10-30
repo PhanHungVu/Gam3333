@@ -8,7 +8,7 @@ using UnityEngine;
 public static class PartSwapDisplay
 {
     // Basic incoming values above; only changed values per destination below.
-    static readonly StatType[] order={StatType.Damage,StatType.CooldownReload,StatType.MoveSpeed,
+    static readonly StatType[] order={StatType.Damage,StatType.FireRate,StatType.MoveSpeed,
         StatType.Health,StatType.Range,StatType.Ammo,StatType.MagSize,StatType.SplashRadius};
     public static string Name(Part part) => part==null ? "Empty" :
         part.Stats!=null && !string.IsNullOrWhiteSpace(part.Stats.partName) ? part.Stats.partName : part.name;
@@ -32,19 +32,17 @@ public static class PartSwapDisplay
     { if(data!=null && data.stats!=null) foreach(var entry in data.stats) if(entry.type==type) return true; return false; }
     static string Label(StatType type,PartData incoming) => type switch {
         StatType.MoveSpeed=>"Movement",StatType.MagSize=>"Magazine",StatType.Ammo=>"Ammo",
-        StatType.CooldownReload=>incoming.subtype==PartSubtype.Melee ? "Attack rate" : "Fire rate",
+        StatType.FireRate=>incoming.subtype==PartSubtype.Melee ? "Attack rate" : "Fire rate",
         StatType.Range=>"Range",StatType.SplashRadius=>"Blast size",_=>type.ToString()
     };
     static bool Value(PartData data,StatType type,out float value)
     {
         value=0; if(!Has(data,type)) return false;
         value=data.GetStat(type); if(float.IsNaN(value)||float.IsInfinity(value)) return false;
-        // Both existing attack paths clamp the interval to at least 0.01 s.
-        if(type==StatType.CooldownReload) value=1f/Mathf.Max(0.01f,value);
         return true;
     }
     static string Number(float value)=>value.ToString(value!=0 && Mathf.Abs(value)<0.01f ? "0.##e+0" : "0.##",CultureInfo.InvariantCulture);
-    static string Unit(StatType type)=>type==StatType.CooldownReload ? "/s" : "";
+    static string Unit(StatType type)=>type==StatType.FireRate ? "/s" : "";
     public static int BasicStats(Part incoming,out string text)
     {
         var data=incoming!=null ? incoming.Stats : null; var result=new StringBuilder(); int count=0;

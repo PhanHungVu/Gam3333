@@ -37,7 +37,7 @@ public static class MechDashMeleeChecks
                 var health = target.AddComponent<CombatHealth>();
                 var second = new GameObject("Second Hurt Collider"); second.transform.SetParent(target.transform, false); second.AddComponent<BoxCollider>();
                 Physics.SyncTransforms();
-                check(combat.TryAttack(PartCategory.ArmL).Started && health.CurrentHealth == (family == "sword" ? 0f : 50f),
+                check(combat.TryAttack(PartCategory.ArmL).Started && Mathf.Abs(health.CurrentHealth - Mathf.Max(0f, health.MaximumHealth - part.Stats.GetStat(StatType.Damage))) < 0.002f,
                     family + " enlarged hitbox reaches a wider/farther target and damages compound colliders only once");
                 check(!combat.TryAttack(PartCategory.ArmL).Started, family + " retains its configured melee cooldown");
                 check(part.GetComponent<MechWeaponAnimator>().CurrentPose == MechWeaponAnimator.PoseState.Fire,

@@ -76,6 +76,7 @@ public static class MechFoundationChecks
             CheckCombat(view);
             CheckMeleeFramingAndAssist(view);
             CheckWeaponLoadout(view);
+            CheckMagazine(view);
             CheckInputIsolation();
             CombatFeedbackChecks.Run(Check);
             MechPartsChecks.Run(Check);
@@ -1097,6 +1098,34 @@ public static class MechFoundationChecks
         view.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
     }
 
+    // Fire Rate, magazine and reload: a 2-round magazine, 5 rounds in all, 0.5 s between shots, 3 s reload.
+    static void CheckMagazine(Camera view)
+    {
+        Vector3 origin = new Vector3(6100, 2, 0);
+        var player = new GameObject("Magazine Player");
+        player.SetActive(false);
+        player.transform.position = origin;
+        var combat = player.AddComponent<MechCombat>();
+        Set(combat, "gameplayCamera", view);
+        var gun = TestMech.WithMagazine(TestMech.Ranged("Magazine gun", PartType.Arm, PartSubtype.Projectile, 10, 5, 0.5f, 3, 100, 0.1f), 2, 3f);
+        TestMech.Equip(player, (PartCategory.ArmR, gun));
+        player.SetActive(true);
+        view.transform.SetPositionAndRotation(origin, Quaternion.identity);
+        var part = combat.GetPart(PartCategory.ArmR);
+        void Shoot() { var shot = combat.TryAttack(PartCategory.ArmR).Projectile; if (shot != null) Object.DestroyImmediate(shot.gameObject); }
+        Shoot();
+        Check(part.MagazineRounds == 1 && part.RemainingAmmo == 4 && !part.IsReloading
+            && TestMech.Near(combat.ReloadRemaining(PartCategory.ArmR), 0.5f), "A magazine fires at its Fire Rate until it is empty");
+        TestMech.Advance(player, 0.5f); Shoot();
+        Check(part.IsReloading && part.MagazineRounds == 2 && part.RemainingAmmo == 3
+            && TestMech.Near(combat.ReloadRemaining(PartCategory.ArmR), 3f) && combat.TryAttack(PartCategory.ArmR).Projectile == null,
+            "An emptied magazine reloads by itself for its Reload time, refilling from the ammo left");
+        for (int i = 0; i < 3; i++) { TestMech.Advance(player, 3f); Shoot(); }
+        Check(part.RemainingAmmo == 0 && part.MagazineRounds == 0 && !part.IsReloading && combat.TryAttack(PartCategory.ArmR).Projectile == null,
+            "The last magazine holds only the ammo left, and an empty weapon stops without reloading");
+        Object.DestroyImmediate(player);
+    }
+
     static void CheckWeaponLoadout(Camera view)
     {
         Vector3 origin = new Vector3(6000, 2, 0);
@@ -1174,12 +1203,12 @@ public static class MechFoundationChecks
         player.AddComponent<BoxCollider>();
         projectile = new GameObject("Blast Test").AddComponent<MechProjectile>();
         projectile.transform.position = origin;
-        projectile.ConfigureRangeAndExplosion(10, 6);
+        projectile.ConfigureRangeAndExplosion(10, 6, 20);
         Physics.SyncTransforms();
         projectile.Launch(player.transform, Vector3.forward, 100, 30, 0.1f, 15, ~0, origin);
         Call(projectile, "Step", 1f);
-        Check(directHealth.CurrentHealth == 70 && nearbyHealth.CurrentHealth == 70,
-            "Cannon damages its direct victim and nearby compound enemy exactly once each");
+        Check(directHealth.CurrentHealth == 50 && nearbyHealth.CurrentHealth == 80,
+            "Splash shot: the direct victim takes damage + splash damage, the nearby compound enemy splash damage, once each");
         Check(shieldedHealth.CurrentHealth == 100 && ownerHealth.CurrentHealth == 100,
             "Cannon splash is blocked by walls and excludes the shooter");
         foreach (var obj in new[] { player, direct.gameObject, nearby.gameObject, shielded.gameObject, wall }) obj.SetActive(false);
