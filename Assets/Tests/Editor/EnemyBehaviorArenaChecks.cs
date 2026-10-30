@@ -14,7 +14,7 @@ public static partial class EnemyBehaviorChecks
         if (!Application.isBatchMode || !Path.GetFullPath(root).StartsWith(Path.GetFullPath(Path.GetTempPath()), StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Disposable project only.");
         EditorSceneManager.OpenScene(EnemyBehaviorArenaSetup.ScenePath);
-        SessionState.SetBool(Pending + ".Arena", true); SessionState.SetBool(Pending, true); EditorApplication.EnterPlaymode();
+        SessionState.SetBool(Pending + ".Rope", false); SessionState.SetBool(Pending + ".Arena", true); SessionState.SetBool(Pending, true); EditorApplication.EnterPlaymode();
     }
     static IEnumerator RunArena()
     {

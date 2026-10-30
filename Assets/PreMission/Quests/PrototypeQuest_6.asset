@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: PrototypeQuest_6
   m_EditorClassIdentifier: Assembly-CSharp::QuestDefinition
   questId: prototype-quest-6
-  title: Guard the Workshop
+  title: Capture the Workshop
   description: 'A notice calls for a golem to answer this request. Inspect the briefing,
     accept the quest, and choose a starting torso.
 
@@ -21,7 +21,7 @@ MonoBehaviour:
     Prototype offer: mission
     gameplay, enemy settings and reward payment are not connected.'
   category: 0
-  missionType: 4
+  missionType: 2
   estimatedMinutes: 18
   gniReward: 225
   available: 1

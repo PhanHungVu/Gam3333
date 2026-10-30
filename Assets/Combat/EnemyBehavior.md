@@ -52,9 +52,23 @@ Spinner hops its visual root while approaching, visibly accelerates its spin for
 
 **Rock-rope movement follows the chosen design:** snapshot the player's location, show a landing circle during a 1.1-second windup, throw along a 0.95-second arc, apply one 35-damage landing area with radius 2.5, then pull the elite toward the fixed landed rock. Moving the player after landing does not redirect the pull. Pulling stops within 2 units, at a wall, or after 2 seconds. The rock returns to the hand during recovery; cooldown is 6 seconds with at least 0.8 seconds of recovery. Pull movement itself does not apply an additional hit. A wall can intercept the airborne rock early.
 
+The rope now attaches to the proxy rig's **right shoulder mount**, with **Rope Anchor** exposed for the art team's eventual hand attachment. It follows the animated rig after pose updates. The centered throwable has a 1.2-unit maximum diameter and cancels the elite root's non-uniform scale; its mesh and rope endpoint therefore follow the same position used by the attack. The rope has light slack while held and becomes taut during the pull. Recovery returns to the held offset beside the mount rather than swallowing the rock into the attachment point. Roster setup reapplies this fitted proxy without changing the source rock model.
+
+Landing samples the target's actual floor, including raised platforms. A wall interception preserves its contact height instead of snapping the rock down to the floor. If the rock already overlaps scenery at launch, it stops there; an empty initial-overlap contact point is never interpreted as world origin. The landed rock stays fixed while pulling, and the final movement step is limited to the stopping clearance. Lost targets during recovery, stopped graphs and death cancel the presentation; a cancelled rope stays hidden instead of being re-enabled by `LateUpdate`.
+
 The hammer uses two replaceable block heads on the existing animated mace rigs. Spinner reuses the current small golem art; the rope elite reuses the current heavy golem and a map-rock proxy with a simple rope. These are gameplay prototypes, not final character art. Source models, shared player `PartData` and animation clips are unchanged. Replace visual references on these new prefabs when authored assets arrive. Threat lines are lightweight, replaceable world-space presentation without damage or collision. New special-attack audio slots are intentionally empty for authored clips later; existing weapon audio remains its existing system.
 
 ## Waves
+
+### ZooScene exhibit
+
+`Scenes/ZooScene.unity` uses its existing two floor switches and spawn-model locations. Step onto a switch and press **F** to toggle **Small Enemies** (sword, mace, hammer, throwing axe, spinner, crossbow) or **Elite Enemies** (heavy ranged, rock on a rope). Both groups start off. Both can be enabled together. The retired `EnemySpawnerManager_Mace` / `EnemySpawnerManager_Crossbow` prefab references have been replaced by scene group objects, preserving the original switch references.
+
+One **SpawnDirector** and **ZooEnemyWaves** component on the **Enemy** object use the shared roster and the zoo's existing navigation/spawn points. The showcase makes a temporary filtered wave: one spawn every 2 seconds, 50 resource per cycle, 15-second refill delay and a scene-wide limit of 8 active enemies. Tune these showcase values on **Zoo Enemy Waves**; the saved Roaming/Survival presets are unchanged. An active group permits its roster and spawn location; with both enabled, the director uses both locations. Turning a switch off stops further spawning from that group; already spawned enemies remain until defeated or the scene is restarted.
+
+`ZooEnemyChecks.RunBatch` passed 15 checks in a disposable copy of the saved scene: no missing prefabs/scripts, intact switch bindings, startup-off state, shared navigation, actual spawns of all six small/two elite roles, running graphs, combined roster, population/resource limits and stopping the wave. The environment, player and camera retain their existing scene setup.
+
+### Roaming and Survival
 
 | Setting | Roaming | Survival |
 | --- | ---: | ---: |
@@ -73,6 +87,10 @@ The optional **Max Concurrent Enemies** setting counts active `EnemyAgent` actor
 ## Validation and remaining review
 
 `Tests/Editor/EnemyBehaviorChecks.RunBatch` runs the real graphs and prefabs in a disposable project. It covers awareness and reacquisition, overhead release/cooldown, disabled graph/death cleanup, separation and obstacle routing, every roster role, crossbow repositioning/inaccuracy, committed spinner dodging and wall contact, rope landing/pull/cancellation, wave budget/refill/caps, and a twenty-second mixed-roster encounter. Rendered captures cover the attack stages. Existing combat and movement regressions run separately. Deterministic damage fixtures turn off the crossbow's random cone only inside those fixtures.
+
+`EnemyBehaviorChecks.RunRopeBatch` isolates the rope regression using the real prefab and graph: centered geometry and attachment while walking/turning, the complete attack, a relocated player during the pull, recovery target loss, interruption in every attack stage, actor reactivation, a high wall interception, raised-floor targeting, death during flight and scenery overlapping the launch point. Like the other runners, it refuses to run outside a disposable temporary project.
+
+The rope follow-up passed **21 focused rope checks and 78 existing roster/integration checks** in isolated Unity 6000.5.8f1. Rendered held, windup, flight, pull, recovery, wall-contact and raised-floor stages were reviewed. The initial-overlap fixture first reproduced the world-origin teleport before the fix; its final run stops at the actual launch position.
 
 Validated in Unity 6000.5.8f1: 78 roster/integration checks, 8 saved-arena checks (`EnemyBehaviorChecks.RunArenaBatch`), 933 existing foundation checks, and 9 live Merge Test combat checks passed. Registry resolution of Behavior 1.0.16 was also verified. The mixed encounter's editor timing is diagnostic only; it is not a target-device performance benchmark.
 

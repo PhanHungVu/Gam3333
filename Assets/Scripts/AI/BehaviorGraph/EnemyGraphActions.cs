@@ -87,11 +87,14 @@ namespace Lithomachia.EnemyBehavior
     [NodeDescription(name:"Recover Weapon Cooldown", story:"Recover weapon cooldown", category:"Lithomachia/Enemy", id:"a8110da821b546f0a5d10af059770ce7")]
     public partial class RecoverEnemyAction : EnemyGraphAction
     {
+        [NonSerialized] bool completed;
+        protected override void Begin() => completed = false;
         protected override Status Tick()
         {
             Controller.Hold("Recover");
             if (!Controller.SensePlayer()) return Status.Failure;
-            return Controller.Recover() ? Status.Success : Status.Running;
+            completed = Controller.Recover(); return completed ? Status.Success : Status.Running;
         }
+        protected override void OnEnd() { if (!completed && Controller != null) Controller.CancelAttack(); }
     }
 }

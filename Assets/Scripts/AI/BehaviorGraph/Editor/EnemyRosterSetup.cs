@@ -102,16 +102,9 @@ public static class EnemyRosterSetup
                     }
                     else
                     {
-                        var held = root.transform.Find("Rock art proxy");
-                        if (held == null)
-                        {
-                            var source = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Map Elements/rocks-low.prefab");
-                            var rock = source != null ? (GameObject)PrefabUtility.InstantiatePrefab(source, root.transform) : GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                            rock.name = "Rock art proxy"; rock.transform.SetParent(root.transform, false); rock.transform.localScale = Vector3.one * 1.2f;
-                            foreach (var collider in rock.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
-                            held = rock.transform;
-                        }
+                        var held = RopeRock(root);
                         var special = new SerializedObject(Add<EnemyRopeAttack>(root)); special.FindProperty("rock").objectReferenceValue = held;
+                        special.FindProperty("ropeAnchor").objectReferenceValue = visual.GetComponentsInChildren<Transform>(true).First(t => t.name == "shoulder_socket_r");
                         special.FindProperty("ropeMaterialTemplate").objectReferenceValue = ropeMaterial;
                         Value(special, "damage", 35); Value(special, "windupDuration", 1.1f); Value(special, "cooldown", 6); special.ApplyModifiedPropertiesWithoutUndo();
                     }
@@ -136,6 +129,42 @@ public static class EnemyRosterSetup
         var root = PrefabUtility.LoadPrefabContents(source);
         try { root.name = System.IO.Path.GetFileNameWithoutExtension(target); PrefabUtility.SaveAsPrefabAsset(root, target); }
         finally { PrefabUtility.UnloadPrefabContents(root); }
+    }
+    static Transform RopeRock(GameObject root)
+    {
+        var pivot = root.transform.Find("Rope rock pivot");
+        var art = pivot != null ? pivot.Find("Rock art proxy") : root.transform.Find("Rock art proxy");
+        if (pivot == null) { pivot = new GameObject("Rope rock pivot").transform; pivot.SetParent(root.transform, false); }
+        // The elite root is non-uniformly scaled. Keep its throwable at its actual
+        // 0.6-unit collision radius instead of stretching the mesh with the body.
+        var scale = root.transform.lossyScale;
+        pivot.localRotation = Quaternion.identity;
+        pivot.localScale = new Vector3(1 / scale.x, 1 / scale.y, 1 / scale.z);
+        pivot.localPosition = Vector3.zero;
+        if (art == null)
+        {
+            var source = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Map Elements/rocks-low.prefab");
+            art = (source != null ? (GameObject)PrefabUtility.InstantiatePrefab(source, pivot) : GameObject.CreatePrimitive(PrimitiveType.Sphere)).transform;
+            art.name = "Rock art proxy";
+        }
+        art.SetParent(pivot, false); art.localPosition = Vector3.zero; art.localRotation = Quaternion.identity; art.localScale = Vector3.one;
+        var meshes = art.GetComponentsInChildren<MeshFilter>(true);
+        bool found = false; var bounds = new Bounds();
+        foreach (var mesh in meshes)
+        {
+            if (mesh.sharedMesh == null) continue;
+            var b = mesh.sharedMesh.bounds; var matrix = pivot.worldToLocalMatrix * mesh.transform.localToWorldMatrix;
+            for (int i = 0; i < 8; i++)
+            {
+                var point = matrix.MultiplyPoint3x4(b.center + Vector3.Scale(b.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1)));
+                if (!found) { bounds = new Bounds(point, Vector3.zero); found = true; } else bounds.Encapsulate(point);
+            }
+        }
+        if (!found || bounds.size.sqrMagnitude < 0.0001f) throw new InvalidOperationException("Rope rock has no usable geometry.");
+        float fit = 1.2f / Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
+        art.localScale = Vector3.one * fit; art.localPosition = -bounds.center * fit;
+        foreach (var collider in art.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+        return pivot;
     }
     static Material MaterialAsset(string name, Color color)
     {

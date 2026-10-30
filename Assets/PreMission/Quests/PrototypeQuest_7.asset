@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: PrototypeQuest_7
   m_EditorClassIdentifier: Assembly-CSharp::QuestDefinition
   questId: prototype-quest-7
-  title: Recover the Quarry Relic
+  title: Clear the Quarry
   description: 'A notice calls for a golem to answer this request. Inspect the briefing,
     accept the quest, and choose a starting torso.
 
@@ -21,7 +21,7 @@ MonoBehaviour:
     Prototype offer: mission
     gameplay, enemy settings and reward payment are not connected.'
   category: 0
-  missionType: 0
+  missionType: 1
   estimatedMinutes: 20
   gniReward: 250
   available: 1

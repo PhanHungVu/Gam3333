@@ -28,6 +28,7 @@ public static class QuestSlabInspectionChecks
     public static void RunBatch()
     {
         if(!Application.isBatchMode) throw new Exception("Disposable project only");
+        PreMissionMissionLogoSetup.UpgradeAssets(); PreMissionMissionLogoSetup.UpgradeAssets();
         GraphicsSettings.defaultRenderPipeline=AssetDatabase.LoadAssetAtPath<RenderPipelineAsset>("Assets/Settings/PC_RPAsset.asset"); QualitySettings.renderPipeline=null;
         EditorSceneManager.OpenScene("Assets/Scenes/PreMissionScene.unity");
         SessionState.SetBool(Pending,true); EditorApplication.EnterPlaymode();
@@ -74,8 +75,14 @@ public static class QuestSlabInspectionChecks
         PreMissionReliabilityChecks.BeginLogAudit(); Time.timeScale=0; Application.runInBackground=true; QualitySettings.vSyncCount=0; Application.targetFrameRate=60;
         foreach(var device in InputSystem.devices.Where(d=>d is Mouse||d is Keyboard).ToArray()) InputSystem.DisableDevice(device);
         yield return Ready();
+        var enabled=new HashSet<QuestMissionType> { QuestMissionType.KingOfTheHill, QuestMissionType.Escort, QuestMissionType.Elimination };
+        Check(enabled.SetEquals(Board.Progression.Catalogue.offeredMissionTypes)&&Board.Stones.Count==6
+            &&Board.Stones.All(s=>enabled.Contains(s.Offer.Quest.missionType)),
+            "The shipped board offers six side quests using only KOTH, Escort and Elimination");
         for(int i=0;i<3;i++) { QuestStoneBoardChecks.CompleteSmallForTest(Flow); yield return Ready(); }
         var run=Board.Progression; var ids=string.Join(";",run.Offers.Select(o=>o.Id));
+        Check(Board.Stones.Count==7&&run.BigQuest!=null&&enabled.Contains(run.BigQuest.Quest.missionType),
+            "Three completions add a supported main mission while keeping all six side quests available");
         var positions=Board.Stones.ToDictionary(s=>s.Offer.Id,s=>s.transform.localPosition);
         var seen=new HashSet<QuestMissionType>();
         foreach(var stone in Board.Stones.ToArray())
@@ -102,20 +109,33 @@ public static class QuestSlabInspectionChecks
                 var display=Field<Transform>(Mini,"display"); var variant=ActiveVariant(); var full=display.localScale;
                 Mini.SetProgress(0.02f);
                 Check(display.gameObject.activeInHierarchy&&display.localScale.x/full.x<0.05f
-                    &&Enumerable.Range(0,variant.childCount).All(i=>!variant.GetChild(i).gameObject.activeSelf),
-                    "The preview base grows from a tiny footprint before objectives appear: "+Mini.ActiveType);
+                    &&(Mini.UsesAuthoredLogo || Enumerable.Range(0,variant.childCount).All(i=>!variant.GetChild(i).gameObject.activeSelf)),
+                    "The preview grows from a tiny footprint while preserving its art formation: "+Mini.ActiveType);
                 Mini.SetProgress(0.26f);
                 int shown=Enumerable.Range(0,variant.childCount).Count(i=>variant.GetChild(i).gameObject.activeSelf);
-                Check(display.localScale.x>0&&display.localScale.x<full.x&&shown>0&&shown<variant.childCount,
-                    "The base and objective pieces form in a staggered sequence: "+Mini.ActiveType);
+                Check(display.localScale.x>0&&display.localScale.x<full.x&&shown>0&&(Mini.UsesAuthoredLogo ? shown==1 : shown<variant.childCount),
+                    "Authored logos form as one object while prototype objectives retain their stagger: "+Mini.ActiveType);
                 Mini.SetProgress(1);
                 Check(display.localScale==full&&Enumerable.Range(0,variant.childCount).All(i=>variant.GetChild(i).gameObject.activeSelf),
                     "The completed preview restores the authored display scale: "+Mini.ActiveType);
                 Mini.SetProgress(0.16f);
                 Check(display.gameObject.activeInHierarchy&&display.localScale.x>0
-                    &&Enumerable.Range(0,variant.childCount).All(i=>!variant.GetChild(i).gameObject.activeSelf),
-                    "Objective pieces retract before their supporting base disappears: "+Mini.ActiveType);
+                    &&(Mini.UsesAuthoredLogo || Enumerable.Range(0,variant.childCount).All(i=>!variant.GetChild(i).gameObject.activeSelf)),
+                    "The preview retracts coherently before returning to the slab: "+Mini.ActiveType);
                 Mini.SetProgress(1);
+                int logo=Mini.ActiveType==QuestMissionType.KingOfTheHill ? 1 : Mini.ActiveType==QuestMissionType.Escort ? 2 : Mini.ActiveType==QuestMissionType.Elimination ? 3 : 0;
+                Check(Mini.UsesAuthoredLogo==(logo>0),"Only mission types with supplied artwork use the new logos: "+Mini.ActiveType);
+                if(logo>0)
+                {
+                    var meshes=variant.GetComponentsInChildren<MeshFilter>(true);
+                    Check(variant.childCount==1&&meshes.Length>0&&meshes.All(m=>AssetDatabase.GetAssetPath(m.sharedMesh)==PreMissionMissionLogoSetup.SourceDirectory+"/Logo"+logo+".glb"),
+                        "Mission type maps to its actual supplied model: Logo"+logo+" / "+Mini.ActiveType);
+                    Check(variant.GetComponentsInChildren<MeshRenderer>(true).All(r=>r.gameObject.layer==26
+                        &&AssetDatabase.GetAssetPath(r.sharedMaterial.GetTexture("_BaseMap"))==PreMissionMissionLogoSetup.SourceDirectory+"/Logo"+logo+"Tex.png")
+                        &&!Field<GameObject>(Mini,"prototypePlinth").activeSelf,
+                        "The matching texture is used on the board layer without the extra placeholder base: Logo"+logo);
+                    QuestCinematicChecks.Capture("Logo"+logo+"-"+Mini.ActiveType);
+                }
             }
             if(stone.IsMain)
             {
@@ -142,8 +162,8 @@ public static class QuestSlabInspectionChecks
                 &&stone.CurrentScale==Vector3.one&&stone.transform.localPosition==positions[stone.Offer.Id],
                 "Decline retracts the attached preview and restores the exact pushed slot: "+stone.Offer.Quest.title);
         }
-        Check(seen.Count==5&&ids==string.Join(";",run.Offers.Select(o=>o.Id))&&run.SuccessfulSmallCompletions==3,
-            "All five mission previews were exercised without changing offers or progression");
+        Check(seen.SetEquals(run.Catalogue.offeredMissionTypes)&&ids==string.Join(";",run.Offers.Select(o=>o.Id))&&run.SuccessfulSmallCompletions==3,
+            "All enabled mission previews were exercised without changing offers or progression");
         Motion.Feedback.SetReducedMotion(true);
         var selected=Board.Stones.First(s=>!s.IsMain); Flow.SelectQuest(selected.Offer.Quest); yield return Ready();
         Check(selected.CurrentOffset==Vector3.zero&&selected.CurrentAngles.sqrMagnitude<0.0001f&&Attached(selected)

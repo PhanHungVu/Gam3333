@@ -28,6 +28,11 @@ public sealed class QuestProgressionChecks
             q.questId = "progression-" + i; q.category = i == 0 ? QuestCategory.Main : QuestCategory.Side; return q;
         }).ToArray();
         var torso = ScriptableObject.CreateInstance<PartData>(); torso.partId = "torso"; torso.partType = PartType.Torso;
+        var excluded = new[] { QuestMissionType.Retrieval, QuestMissionType.Defense }.SelectMany(type => new[] { QuestCategory.Side, QuestCategory.Main }.Select(category =>
+        {
+            var q = ScriptableObject.CreateInstance<QuestDefinition>(); q.questId = "excluded-" + type + "-" + category;
+            q.missionType = type; q.category = category; return q;
+        })).ToArray();
         catalogue.quests.AddRange(quests); catalogue.starterTorsos.Add(torso);
         try
         {
@@ -90,10 +95,32 @@ public sealed class QuestProgressionChecks
             catalogue.smallOfferCount = 0; catalogue.smallCompletionsToUnlockBig = 0;
             var clamped = new QuestProgressionSession(catalogue, 0);
             check(clamped.SmallOfferCount == 1 && clamped.RequiredSmallCompletions == 1, "M1: invalid programmatic configuration is clamped safely");
+
+            catalogue.quests.Clear(); catalogue.quests.AddRange(quests); catalogue.quests.AddRange(excluded);
+            catalogue.smallOfferCount = 6; catalogue.smallCompletionsToUnlockBig = 3;
+            bool onlyAllowed = true, fullBoards = true, mainUnlocked = true;
+            for (int seed = 0; seed < 64; seed++)
+            {
+                var filtered = new QuestProgressionSession(catalogue, seed);
+                for (int win = 0; win < 6; win++)
+                {
+                    onlyAllowed &= filtered.Offers.All(o => catalogue.AllowsMissionType(o.Quest.missionType));
+                    fullBoards &= filtered.Offers.Count(o => o.Quest.category == QuestCategory.Side) == 6;
+                    filtered.TryBeginMission(filtered.Offers.First(o => o.Quest.category == QuestCategory.Side).Quest, torso, out var result);
+                    filtered.ReportMissionResult(result.Id, QuestMissionOutcome.Succeeded);
+                    mainUnlocked &= (filtered.BigQuest != null) == (win >= 2);
+                }
+                onlyAllowed &= filtered.Offers.All(o => catalogue.AllowsMissionType(o.Quest.missionType));
+            }
+            check(onlyAllowed, "Only enabled mission types enter initial offers, replacements and main draws, including legacy definitions in the pool");
+            check(fullBoards && mainUnlocked, "Mission-type filtering retains six distinct side offers and the three-completion main unlock across 64 seeds");
+            catalogue.offeredMissionTypes.Clear();
+            check(new QuestProgressionSession(catalogue, 0).Offers.Count == 0, "An empty enabled-type list safely offers no missions");
         }
         finally
         {
             foreach (var quest in quests) Object.DestroyImmediate(quest);
+            foreach (var quest in excluded) Object.DestroyImmediate(quest);
             Object.DestroyImmediate(torso); Object.DestroyImmediate(catalogue);
         }
     }

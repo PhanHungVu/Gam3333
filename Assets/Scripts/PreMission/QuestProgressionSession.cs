@@ -67,7 +67,8 @@ public sealed class QuestProgressionSession
         var seen = new HashSet<string>(StringComparer.Ordinal);
         if (Catalogue == null || Catalogue.quests == null) yield break;
         foreach (var quest in Catalogue.quests)
-            if (quest != null && quest.available && !string.IsNullOrWhiteSpace(quest.questId) && seen.Add(quest.questId) && quest.category == category)
+            if (quest != null && quest.available && Catalogue.AllowsMissionType(quest.missionType)
+                && !string.IsNullOrWhiteSpace(quest.questId) && seen.Add(quest.questId) && quest.category == category)
                 yield return quest;
     }
     QuestOffer CreateOffer(QuestDefinition quest, int slot) => new QuestOffer(Id + ":" + (++nextOffer), quest, slot);

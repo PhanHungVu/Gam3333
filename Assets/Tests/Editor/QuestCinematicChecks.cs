@@ -106,8 +106,9 @@ public static class QuestCinematicChecks
         Check(Project((RectTransform)Field<Button>(Flow,"acceptButton").transform).width>0.13f
             &&Project((RectTransform)Field<Button>(Flow,"declineButton").transform).width>0.13f,label+": Accept and Decline retain usable hit areas");
     }
-    static void Capture(string name,int width=1600,int height=900,bool checkLayout=true)
+    public static void Capture(string name,int width=1600,int height=900,bool checkLayout=true)
     {
+        if(captures==null) { captures=Path.Combine(Directory.GetParent(Application.dataPath).FullName,"MissionLogoCaptures"); Directory.CreateDirectory(captures); }
         var camera=Board.BoardCamera; var oldTarget=camera.targetTexture; int mask=camera.cullingMask;
         var canvases=Object.FindObjectsByType<Canvas>().Where(c=>c.isRootCanvas).ToArray();
         var modes=canvases.Select(c=>c.renderMode).ToArray(); var cameras=canvases.Select(c=>c.worldCamera).ToArray(); var distances=canvases.Select(c=>c.planeDistance).ToArray();
@@ -196,15 +197,15 @@ public static class QuestCinematicChecks
         yield return Wait(0.25f); Check(small.IsHighlighted,"Stationary-pointer hover works after the new return sequence");
 
         Flow.SelectQuest(main.Offer.Quest); while(Busy) yield return null;
-        Check(main.CurrentOffset.y<smallLift*3&&main.CurrentOffset.y<0.16f&&Mini.ActiveType==QuestMissionType.Retrieval,
-            "Main inspection stays restrained and uses its actual Retrieval type rather than inventing a boss preview");
+        Check(main.CurrentOffset.y<smallLift*3&&main.CurrentOffset.y<0.16f&&Mini.ActiveType==main.Offer.Quest.missionType,
+            "Main inspection stays restrained and uses its actual configured mission type");
         Capture("p3-main-1600"); Capture("p3-main-1024",1024,768);
         Flow.Back(); while(Busy) yield return null;
 
         var catalogue=Field<QuestBoardCatalogue>(Flow,"catalogue"); int authoredOfferCount=catalogue.smallOfferCount;
         catalogue.smallOfferCount=6; Flow.StartNewProgression(); Flow.SkipPosting(); yield return null;
         var run=Flow.Session.Progression; var ids=string.Join(";",run.Offers.Select(o=>o.Id));
-        foreach(var type in (QuestMissionType[])Enum.GetValues(typeof(QuestMissionType)))
+        foreach(var type in run.Catalogue.offeredMissionTypes.Distinct())
         {
             var offer=run.Offers.First(o=>o.Quest.missionType==type); string authored=EditorJsonUtility.ToJson(offer.Quest);
             Flow.SelectQuest(offer.Quest); while(Busy) yield return null;

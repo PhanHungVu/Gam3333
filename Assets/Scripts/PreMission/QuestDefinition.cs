@@ -12,7 +12,7 @@ public sealed class QuestDefinition : ScriptableObject
     public string title;
     [TextArea(3, 10)] public string description;
     public QuestCategory category;
-    public QuestMissionType missionType;
+    public QuestMissionType missionType = QuestMissionType.Elimination;
     [Min(1)] public int estimatedMinutes = 10;
     [Min(0)] public int gniReward;
     public bool available = true;

@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::QuestBoardCatalogue
   smallOfferCount: 6
   smallCompletionsToUnlockBig: 3
+  offeredMissionTypes: 020000000300000001000000
   quests:
   - {fileID: 11400000, guid: 3f7f67a34abe655459c14cd1fef5d764, type: 2}
   - {fileID: 11400000, guid: e45bbb61cd9941a4eb53c808d0cd9362, type: 2}

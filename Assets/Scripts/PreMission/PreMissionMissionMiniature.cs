@@ -9,12 +9,15 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
     {
         public QuestMissionType missionType;
         public Transform root;
+        [Tooltip("The supplied logo includes its own base and forms as one object.")]
+        public bool authoredLogo;
         [NonSerialized] public Transform[] pieces;
         [NonSerialized] public Vector3[] positions, scales;
         [NonSerialized] public Bounds fullBounds;
     }
     [SerializeField] Transform display;
     [SerializeField] Variant[] variants;
+    [SerializeField] GameObject prototypePlinth;
     [SerializeField, Min(0f)] float emergenceDepth=0.14f;
     [SerializeField, Range(0f,0.3f)] float pieceStagger=0.12f;
     [SerializeField, Range(0.1f,0.5f)] float baseRevealFraction=0.32f;
@@ -30,6 +33,7 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
     public bool IsVisible => display.gameObject.activeInHierarchy;
     public int PieceCount => active!=null ? active.pieces.Length : 0;
     public QuestMissionType? ActiveType => active!=null ? active.missionType : (QuestMissionType?)null;
+    public bool UsesAuthoredLogo => active!=null && active.authoredLogo;
     public void Initialize(PreMissionStoneBoard owner)
     {
         board=owner;
@@ -47,6 +51,7 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
             bool hasBounds=false;
             foreach(var renderer in renderers)
             {
+                if(variant.authoredLogo && prototypePlinth!=null && renderer.transform.IsChildOf(prototypePlinth.transform)) continue;
                 bool belongs=renderer.transform.IsChildOf(variant.root), shared=true;
                 foreach(var other in variants) if(renderer.transform.IsChildOf(other.root)) { shared=false; break; }
                 if(!belongs && !shared) continue;
@@ -65,6 +70,7 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
             bool match=variant.missionType==stone.Offer.Quest.missionType;
             variant.root.gameObject.SetActive(match); if(match) active=variant;
         }
+        if(prototypePlinth!=null) prototypePlinth.SetActive(active==null || !active.authoredLogo);
         SetProgress(0);
     }
     public void SetProgress(float value)
@@ -85,6 +91,14 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
         float formation=reduced ? 1 : Mathf.Clamp01((Progress-objectiveStart)/Mathf.Max(0.01f,1-objectiveStart));
         for(int i=0;i<active.pieces.Length;i++)
         {
+            if(active.authoredLogo)
+            {
+                // Keep the artist's complete coin intact. The shared display
+                // transform supplies its existing emergence/retraction motion.
+                active.pieces[i].gameObject.SetActive(true);
+                active.pieces[i].localPosition=active.positions[i]; active.pieces[i].localScale=active.scales[i];
+                continue;
+            }
             float part=Mathf.Clamp01(formation*(1+pieceStagger*(active.pieces.Length-1))-pieceStagger*i);
             float eased=part*part*(3-2*part);
             active.pieces[i].gameObject.SetActive(part>0);

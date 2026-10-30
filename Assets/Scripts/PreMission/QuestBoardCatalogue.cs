@@ -15,10 +15,15 @@ public sealed class QuestBoardCatalogue : ScriptableObject
 {
     [Min(1)] public int smallOfferCount = 3;
     [Min(1)] public int smallCompletionsToUnlockBig = 3;
+    [Tooltip("Only these mission types can be offered by this board. An empty list offers no missions.")]
+    public List<QuestMissionType> offeredMissionTypes = new List<QuestMissionType>
+        { QuestMissionType.KingOfTheHill, QuestMissionType.Escort, QuestMissionType.Elimination };
     public List<QuestDefinition> quests = new List<QuestDefinition>();
     [Tooltip("Available starting torsos, using the existing gameplay PartData assets.")]
     public List<PartData> starterTorsos = new List<PartData>();
     public List<StarterTorsoVisual> starterTorsoVisuals = new List<StarterTorsoVisual>();
+
+    public bool AllowsMissionType(QuestMissionType type) => offeredMissionTypes != null && offeredMissionTypes.Contains(type);
 
     public StarterTorsoVisual FindTorsoVisual(PartData torso)
     {

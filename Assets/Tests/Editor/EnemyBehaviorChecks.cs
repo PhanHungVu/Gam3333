@@ -33,6 +33,7 @@ public static partial class EnemyBehaviorChecks
             throw new InvalidOperationException("Disposable project only.");
         EnemyRosterSetup.UpgradeAssets(); EnemyRosterSetup.UpgradeAssets();
         SessionState.SetBool(Pending + ".Arena", false);
+        SessionState.SetBool(Pending + ".Rope", false);
         GraphicsSettings.defaultRenderPipeline = AssetDatabase.LoadAssetAtPath<RenderPipelineAsset>("Assets/Settings/PC_RPAsset.asset"); QualitySettings.renderPipeline = null;
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene); SessionState.SetBool(Pending, true); EditorApplication.EnterPlaymode();
     }
@@ -55,7 +56,7 @@ public static partial class EnemyBehaviorChecks
         if (!SessionState.GetBool(Pending, false) || !EditorApplication.isPlaying || EditorApplication.isCompiling) return;
         try
         {
-            if (!started) { started = true; deadline = EditorApplication.timeSinceStartup + 240; stack.Push(SessionState.GetBool(Pending + ".Arena", false) ? RunArena() : Run()); }
+            if (!started) { started = true; deadline = EditorApplication.timeSinceStartup + 240; stack.Push(SessionState.GetBool(Pending + ".Arena", false) ? RunArena() : SessionState.GetBool(Pending + ".Rope", false) ? RunRope() : Run()); }
             PreMissionReliabilityChecks.AssertNoUnexpectedErrors();
             if (EditorApplication.timeSinceStartup > deadline) throw new Exception("Enemy graph checks timed out");
             while (stack.Count > 0)

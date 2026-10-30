@@ -2,6 +2,22 @@
 
 The pre-mission scene now uses a **horizontal 3D board viewed by a dedicated overhead camera**. Rocky terrain emerges before the quest slabs drop. Six side-quest slabs initially scatter across the whole tabletop, including the center. Only **three successful tracked small missions** are needed to unlock one larger main-quest slab in the middle, making seven available quests in total. Players remain free to select any available small or main rock. M1's progression data, the existing briefing/torso screens and the empty gameplay handoff are reused.
 
+The current catalogue offers **KOTH, Escort and Elimination only**. Its six side quests contain two definitions per type; the larger main quest is Elimination. `PrototypeBoardCatalogue` exposes **Offered Mission Types** in the Inspector, and progression applies this filter to initial offers, replacement offers and main draws. An empty list offers no missions. Retrieval/Defense enum values and legacy previews remain for serialized compatibility but are excluded from the current board. New quest definitions default to Elimination.
+
+## Authored mission logos
+
+The inspected slab's raised preview uses the supplied models and matching textures from `Models/Logos`:
+
+| Mission type | Model | Texture |
+| --- | --- | --- |
+| King of the Hill (KOTH) | `Logo1.glb` | `Logo1Tex.png` |
+| Escort | `Logo2.glb` | `Logo2Tex.png` |
+| Elimination | `Logo3.glb` | `Logo3Tex.png` |
+
+Each logo is centered on the slab, fitted uniformly to 1.15 world units across, and oriented toward the reading view. The complete medallion emerges/retracts as one object using the existing display motion; its own base replaces the prototype plinth. The mapping follows mission type, independent of randomized slab appearance or main/side category.
+
+**Tools > Mech > Pre-Mission > Use Authored Mission Logos** reapplies these references/materials to `StoneBoard/QuestStoneBoard.prefab`; the updated prefab is already included. Owned `Mission Logo 1–3.mat` materials use the supplied textures. Source models, textures and importer settings are unchanged. With the three-type catalogue, **29 data checks and 58 Play Mode inspection checks passed** in isolated Unity 6000.5.8f1. Coverage includes initial/replacement/main filtering across 64 seeds, six side offers and the three-completion unlock, an empty enabled-type list, exact model/texture mappings, repeated logo setup, attachment and framing, reveal/retraction, torso Back and reduced motion. All three rendered previews were reviewed. The source art, scene, quest-slab prefabs and empty mission-start hook are unchanged.
+
 ## HUD asset refresh — 2026-10-30
 
 The current art comes from **Models/PremissionHudAssets**. All seven `Slab1`–`Slab7` meshes are available as quest appearance variants. Each offer chooses one through a stable private hash of the run seed, quest ID and offer occurrence; scene/menu return keeps its shape and recreating the same seeded offers reproduces it. This consumes no gameplay random state. Side quests use the supplied **SlabTex.png**; the larger central main quest uses **BigSlabTex.png**. The board uses that folder's **table.glb / TableTex.png**.

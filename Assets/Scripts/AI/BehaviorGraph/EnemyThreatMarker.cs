@@ -36,8 +36,9 @@ public sealed class EnemyThreatMarker : MonoBehaviour
     public void Disc(Vector3 center, float radius, float progress)
     {
         Ensure();
+        // The caller supplies the sampled landing surface; it can differ from the actor's floor.
         for (int i = 0; i < points.Length; i++)
-        { float angle = i * Mathf.PI * 2 / points.Length; var point = center + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius; point.y = Ground(point); points[i] = point; }
+        { float angle = i * Mathf.PI * 2 / points.Length; points[i] = center + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius; }
         Show(points.Length, progress);
     }
     public void Lane(Vector3 start, Vector3 end, float width, float progress)

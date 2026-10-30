@@ -19896,7 +19896,7 @@ Transform:
   m_Children:
   - {fileID: 7290121294477288052}
   - {fileID: 6168482546724164916}
-  - {fileID: 866946128700371281}
+  - {fileID: 7489217895497006389}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: -180, z: 0}
 --- !u!114 &4915121468743566025
@@ -20178,9 +20178,11 @@ MonoBehaviour:
   damage: 35
   windupSound: {fileID: 0}
   impactSound: {fileID: 0}
-  rock: {fileID: 866946128700371281}
+  rock: {fileID: 7489217895497006389}
+  ropeAnchor: {fileID: 6742908824741027326}
   ropeMaterialTemplate: {fileID: 2100000, guid: 6b923194a9e4eb042925a46803a68143, type: 2}
   handOffset: {x: 0.8, y: 1.6, z: 0.5}
+  heldRockOffset: {x: 0.6, y: -0.25, z: 0.5}
   flightDuration: 0.95
   arcHeight: 5
   impactRadius: 2.5
@@ -55197,6 +55199,38 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
+--- !u!1 &6984993694409402653
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7489217895497006389}
+  m_Layer: 0
+  m_Name: Rope rock pivot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7489217895497006389
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6984993694409402653}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.6666667, y: 0.2857143, z: 0.6666667}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 866946128700371281}
+  m_Father: {fileID: 800271168960389245}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7116324642605378506
 GameObject:
   m_ObjectHideFlags: 0
@@ -75501,7 +75535,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 800271168960389245}
+    m_TransformParent: {fileID: 7489217895497006389}
     m_Modifications:
     - target: {fileID: 1223803026387429671, guid: 5b22f154c852edc4fa91b196bf14ebbf, type: 3}
       propertyPath: m_Enabled
@@ -75521,15 +75555,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6307771904632559746, guid: 5b22f154c852edc4fa91b196bf14ebbf, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -12.125923
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 6307771904632559746, guid: 5b22f154c852edc4fa91b196bf14ebbf, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.00000007262611
+      value: -0.31366205
       objectReference: {fileID: 0}
     - target: {fileID: 6307771904632559746, guid: 5b22f154c852edc4fa91b196bf14ebbf, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 7.136
+      value: 0.000004577637
       objectReference: {fileID: 0}
     - target: {fileID: 6307771904632559746, guid: 5b22f154c852edc4fa91b196bf14ebbf, type: 3}
       propertyPath: m_LocalRotation.w

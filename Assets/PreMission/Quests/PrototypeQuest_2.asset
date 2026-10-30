@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: PrototypeQuest_2
   m_EditorClassIdentifier: Assembly-CSharp::QuestDefinition
   questId: prototype-quest-2
-  title: Recover the Lost Core
+  title: Escort the Core Carrier
   description: 'A notice calls for a golem to answer this request. Inspect the briefing,
     accept the quest, and choose a starting torso.
 
@@ -21,7 +21,7 @@ MonoBehaviour:
     Prototype offer: mission
     gameplay, enemy settings and reward payment are not connected.'
   category: 0
-  missionType: 0
+  missionType: 3
   estimatedMinutes: 10
   gniReward: 125
   available: 1

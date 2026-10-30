@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: PrototypeQuest_1
   m_EditorClassIdentifier: Assembly-CSharp::QuestDefinition
   questId: prototype-quest-1
-  title: The Silent Foundry
+  title: Clear the Silent Foundry
   description: 'A notice calls for a golem to answer this request. Inspect the briefing,
     accept the quest, and choose a starting torso.
 
@@ -21,7 +21,7 @@ MonoBehaviour:
     Prototype offer: mission
     gameplay, enemy settings and reward payment are not connected.'
   category: 1
-  missionType: 0
+  missionType: 1
   estimatedMinutes: 8
   gniReward: 100
   available: 1
