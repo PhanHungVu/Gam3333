@@ -14,7 +14,10 @@ public enum StatType
     Health = 0, MoveSpeed = 1,
     Damage = 2, MagSize = 3, Ammo = 4, Reload = 5, Range = 6,
     ProjectileSpeed = 10, ProjectileSize = 11, SplashRadius = 12,
-    FireRate = 13, SplashDamage = 14
+    FireRate = 13, SplashDamage = 14,
+    // Stored for upcoming features, not used by the game yet: Accuracy (heads); Ability Cooldown and
+    // Ability Duration in seconds (each head, torso and legs for its own ability).
+    Accuracy = 15, AbilityCooldown = 16, AbilityDuration = 17
 }
 
 // How a part attacks, which decides how its damage is checked. None for parts that don't attack

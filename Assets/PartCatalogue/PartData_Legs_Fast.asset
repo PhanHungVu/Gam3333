@@ -19,6 +19,8 @@ MonoBehaviour:
   subtype: 0
   stats:
   - type: 0
-    value: 10
+    value: 50
   - type: 1
     value: 10
+  - type: 16
+    value: 4
