@@ -25,14 +25,14 @@ public static class TestMech
     static readonly MethodInfo TickCombatTimers =
         typeof(MechCombat).GetMethod("TickCooldowns", BindingFlags.Instance | BindingFlags.NonPublic);
 
-    // A ranged part. rangeGolems x 4 m = effective range; maxRange x effective = maximum range.
+    // A ranged part. rangeGolems x 4 m = how far its shots fly (full damage all the way).
     // reload is the wait between shots: Fire Rate = 1 / reload, with no magazine (never reloads).
     public static PartData Ranged(string name, PartType type, PartSubtype subtype, float damage,
-        int ammo, float reload, float rangeGolems, float speed, float size, float splash = 0f, float maxRange = 1.5f)
+        int ammo, float reload, float rangeGolems, float speed, float size, float splash = 0f)
     {
         var data = Data(name, type, subtype);
         Stat(data, StatType.Damage, damage); Stat(data, StatType.Ammo, ammo); Stat(data, StatType.FireRate, 1f / reload);
-        Stat(data, StatType.Range, rangeGolems); Stat(data, StatType.MaxRangeMultiplier, maxRange);
+        Stat(data, StatType.Range, rangeGolems);
         Stat(data, StatType.ProjectileSpeed, speed); Stat(data, StatType.ProjectileSize, size);
         if (splash > 0f) Stat(data, StatType.SplashRadius, splash);
         return data;

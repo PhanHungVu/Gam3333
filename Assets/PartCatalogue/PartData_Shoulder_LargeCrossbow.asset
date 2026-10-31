@@ -36,10 +36,6 @@ MonoBehaviour:
     value: 20
   - type: 12
     value: 0.5
-  - type: 7
-    value: 1
-  - type: 9
-    value: 1.5
   - type: 10
     value: 160
   - type: 11

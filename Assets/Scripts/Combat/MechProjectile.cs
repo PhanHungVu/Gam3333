@@ -27,7 +27,7 @@ public class MechProjectile : MonoBehaviour
     Transform owner;
     Vector3 direction;
     float speed, damage, radius, remainingDistance;
-    float effectiveRange = float.PositiveInfinity, maximumRange, travelled, explosionRadius, splashDamage;
+    float travelled, explosionRadius, splashDamage;
     LayerMask collisionLayers;
     bool live;
     RaycastHit[] hits = new RaycastHit[16];
@@ -62,19 +62,12 @@ public class MechProjectile : MonoBehaviour
         return shot.AddComponent<MechProjectile>();
     }
 
-
-    // effective: full damage up to here, falling off to the maximum range. blastRadius and splash:
-    // a Splash weapon's radius and the damage everything inside it takes (the direct hit takes both).
-    public void ConfigureRangeAndExplosion(float effective, float blastRadius, float splash = 0f)
+    // A Splash weapon's radius and the damage everything inside it takes (the direct hit takes both).
+    public void ConfigureSplash(float blastRadius, float splash)
     {
-        effectiveRange = Mathf.Max(0f, effective);
         explosionRadius = Mathf.Max(0f, blastRadius);
         splashDamage = Mathf.Max(0f, splash);
     }
-
-    public static float RangeMultiplier(float distance, float effective, float maximum)
-        => distance <= effective ? 1f : maximum <= effective ? 0f
-        : Mathf.Clamp01((maximum - distance) / (maximum - effective));
 
     public void Launch(Transform shooter, Vector3 shotDirection, float shotSpeed, float shotDamage,
         float shotRadius, float range, LayerMask layers, Vector3 muzzle)
@@ -86,8 +79,6 @@ public class MechProjectile : MonoBehaviour
         damage = shotDamage;
         radius = Mathf.Max(0.01f, shotRadius);
         remainingDistance = Mathf.Max(0f, range);
-        maximumRange = remainingDistance;
-        effectiveRange = Mathf.Min(effectiveRange, maximumRange);
         travelled = 0f;
         collisionLayers = layers;
         live = true;
@@ -159,12 +150,11 @@ public class MechProjectile : MonoBehaviour
     {
         if (!live) return;
         Vector3 impactPoint = transform.position;
-        float falloff = RangeMultiplier(travelled, effectiveRange, maximumRange);
-        float impactDamage = damage * falloff;
+        float impactDamage = damage;
         // Mark spent first: callbacks and compound colliders cannot cause repeat damage.
         Finish();
         // Teams decide who takes damage (CombatBlast skips the shooter's own team).
-        var result = blast.Resolve(impactPoint, explosionRadius, impactDamage, splashDamage * falloff, owner, collisionLayers, collider);
+        var result = blast.Resolve(impactPoint, explosionRadius, impactDamage, splashDamage, owner, collisionLayers, collider);
         ImpactResolved?.Invoke(new MechProjectileImpact(Source, Subtype, impactPoint, explosionRadius,
             result.Hits, result.Kills, direction: direction));
         ImpactResolved = null;

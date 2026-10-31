@@ -52,8 +52,8 @@ public static class PartSwapSummaryChecks
             Check(PartSwapDisplay.Comparison(current,incoming,out text)==4&&Plain(text).Split('\n').Length==4,"A crowded comparison is capped at four relevant changes");
             Check(PartSwapDisplay.Comparison(null,incoming,out text)==0,"Empty slots do not invent comparison values");
             Check(PartSwapDisplay.BasicStats(incoming,out basic)==4&&basic.Split('\n').Length==4,"Incoming basics also stay capped at four player-facing stats");
-            newData.stats=new List<StatEntry>{Stat(StatType.SingleShot,1),Stat(StatType.AutoAim,1),Stat(StatType.ProjectileSpeed,100)};
-            Check(PartSwapDisplay.BasicStats(incoming,out basic)==0&&basic=="","Technical flags and projectile internals do not fill the incoming header");
+            newData.stats=new List<StatEntry>{Stat(StatType.ProjectileSpeed,100),Stat(StatType.ProjectileSize,0.2f)};
+            Check(PartSwapDisplay.BasicStats(incoming,out basic)==0&&basic=="","Projectile internals do not fill the incoming header");
             oldData.stats=new List<StatEntry>{Stat(StatType.Damage,40)};
             newData.stats=new List<StatEntry>{Stat(StatType.Damage,float.NaN),Stat(StatType.Health,float.PositiveInfinity)};
             Check(PartSwapDisplay.BasicStats(incoming,out basic)==0&&PartSwapDisplay.Comparison(current,incoming,out text)==0,"Non-finite stats never reach either readout");

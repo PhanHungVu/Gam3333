@@ -108,12 +108,12 @@ public class MechCombat : MonoBehaviour
         if (gameplayCamera == null) gameplayCamera = Camera.main;
         if (gameplayCamera == null) return null;
         var stats = part.Stats;
-        float effectiveRange = Mathf.Max(0.01f, stats.GetStat(StatType.Range) * MetresPerGolem);
-        float maximumRange = effectiveRange * Mathf.Max(1f, stats.GetStat(StatType.MaxRangeMultiplier));
+        // Full damage up to Range (golems), where the shot disappears.
+        float range = Mathf.Max(0.01f, stats.GetStat(StatType.Range) * MetresPerGolem);
         Vector3 muzzle = MuzzleOf(part);
-        Vector3 aimPoint = AimSolver.AimPoint(targeting, gameplayCamera, transform, maximumRange, hitLayers);
+        Vector3 aimPoint = AimSolver.AimPoint(targeting, gameplayCamera, transform, range, hitLayers);
         var projectile = RangedAttack.Fire(part, transform, muzzle, aimPoint, gameplayCamera.transform.forward,
-            effectiveRange, maximumRange, hitLayers, combatMaterial, ForwardProjectileImpact);
+            range, hitLayers, combatMaterial, ForwardProjectileImpact);
         lastAttacker = part;
         ShotFired?.Invoke(projectile);
         WeaponAttackStarted?.Invoke(part);

@@ -158,7 +158,7 @@ public sealed class EnemyAttack : MonoBehaviour
         var stats = part.Stats;
         if (forceOverheadMelee || stats.subtype == PartSubtype.Melee)
             return (meleeCenter.z + meleeSize.z * 0.5f) * MeleeAttack.BoxScale(transform.lossyScale, part, MetresPerGolem).z;
-        return stats.GetStat(StatType.Range) * MetresPerGolem * Mathf.Max(1f, stats.GetStat(StatType.MaxRangeMultiplier));
+        return stats.GetStat(StatType.Range) * MetresPerGolem;
     }
 
     void Awake()
@@ -391,10 +391,9 @@ public sealed class EnemyAttack : MonoBehaviour
         var marker = part.muzzle != null ? part.muzzle : muzzle;
         var position = marker != null ? marker.position : transform.position + Vector3.up * 0.5f + transform.forward;
         var stats = part.Stats;
-        float effectiveRange = Mathf.Max(0.01f, stats.GetStat(StatType.Range) * MetresPerGolem);
-        float maximumRange = Mathf.Max(effectiveRange * Mathf.Max(1f, stats.GetStat(StatType.MaxRangeMultiplier)),
-            agent.AttackRange * 2f);
-        RangedAttack.Fire(part, transform, position, lane.aim, transform.forward, effectiveRange, maximumRange,
+        // Full damage all the way; the shot flies its weapon's Range, or at least twice the enemy's Attack Range.
+        float range = Mathf.Max(Mathf.Max(0.01f, stats.GetStat(StatType.Range) * MetresPerGolem), agent.AttackRange * 2f);
+        RangedAttack.Fire(part, transform, position, lane.aim, transform.forward, range,
             hitLayers, projectileMaterial, null, lane.entry.damageMultiplier, lane.entry.projectileSpeedMultiplier);
     }
 }

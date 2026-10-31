@@ -859,7 +859,7 @@ public static class MechFoundationChecks
         Set(combat, "meleeCenter", new Vector3(0f, 0f, 2.25f));
         TestMech.Equip(player, (PartCategory.ArmL, TestMech.Sword(60f, 0.65f)),
             (PartCategory.ArmR, TestMech.Ranged("Fixture axe", PartType.Arm, PartSubtype.Projectile,
-                15f, 30, 0.2f, 15f, 30f, 0.12f, maxRange: 1f)));
+                15f, 30, 0.2f, 15f, 30f, 0.12f)));
         Set(combat, "gameplayCamera", view);
         player.SetActive(true);
         var target = Enemy(origin + Vector3.forward * 12);
@@ -1164,30 +1164,23 @@ public static class MechFoundationChecks
         combat.enabled = false;
         combat.enabled = true;
         Check(combat.AmmoRemaining(PartCategory.ArmR) == 0, "Re-enabling weapons cannot refill ammunition");
-        Check(MechProjectile.RangeMultiplier(5, 5, 10) == 1
-            && MechProjectile.RangeMultiplier(7.5f, 5, 10) == 0.5f
-            && MechProjectile.RangeMultiplier(10, 5, 10) == 0,
-            "Effective range gives full damage, then falloff reaches zero at maximum range");
         var rangeEnemy = Enemy(origin + Vector3.forward * 8);
         var rangeHealth = rangeEnemy.gameObject.AddComponent<CombatHealth>();
         var projectile = new GameObject("Range Test").AddComponent<MechProjectile>();
         projectile.transform.position = origin;
-        projectile.ConfigureRangeAndExplosion(5, 0);
         Physics.SyncTransforms();
-        projectile.Launch(player.transform, Vector3.forward, 100, 100, 0.1f, 10, ~0, origin);
+        projectile.Launch(player.transform, Vector3.forward, 100, 30, 0.1f, 10, ~0, origin);
         Call(projectile, "Step", 1f);
-        Check(rangeHealth.CurrentHealth > 0 && rangeHealth.CurrentHealth < 100,
-            "Physical impact beyond effective range actually receives reduced damage");
+        Check(Mathf.Approximately(rangeHealth.CurrentHealth, 70f), "Shots deal full damage anywhere within their Range");
         rangeEnemy.transform.position = origin + Vector3.forward * 12;
         float previousHealth = rangeHealth.CurrentHealth;
         projectile = new GameObject("Maximum Range Test").AddComponent<MechProjectile>();
         projectile.transform.position = origin;
-        projectile.ConfigureRangeAndExplosion(5, 0);
         Physics.SyncTransforms();
         projectile.Launch(player.transform, Vector3.forward, 100, 100, 0.1f, 10, ~0, origin);
         Call(projectile, "Step", 1f);
         Check(!projectile.IsLive && rangeHealth.CurrentHealth == previousHealth,
-            "Projectile expires at maximum range without damaging enemies beyond it");
+            "Shots disappear at their Range without damaging enemies beyond it");
         rangeEnemy.gameObject.SetActive(false);
         var direct = Enemy(origin + Vector3.forward * 5);
         var directHealth = direct.gameObject.AddComponent<CombatHealth>();
@@ -1204,7 +1197,7 @@ public static class MechFoundationChecks
         player.AddComponent<BoxCollider>();
         projectile = new GameObject("Blast Test").AddComponent<MechProjectile>();
         projectile.transform.position = origin;
-        projectile.ConfigureRangeAndExplosion(10, 6, 20);
+        projectile.ConfigureSplash(6, 20);
         Physics.SyncTransforms();
         projectile.Launch(player.transform, Vector3.forward, 100, 30, 0.1f, 15, ~0, origin);
         Call(projectile, "Step", 1f);

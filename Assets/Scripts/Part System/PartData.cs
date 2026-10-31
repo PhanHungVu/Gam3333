@@ -7,13 +7,14 @@ using UnityEditor;
 // Weapon stats: Damage per hit; Ammo = total shots; MagSize = shots before a reload (0 = never reloads);
 // FireRate = shots or swings per second; Reload = seconds to refill the magazine; Range in golem lengths;
 // SplashRadius and SplashDamage for Splash weapons.
+// Each stat keeps a fixed number, because part assets store the number: never renumber one, and give
+// a new stat the next unused number. Retired, don't reuse: 7 Single Shot, 8 Auto Aim, 9 Max Range Multiplier.
 public enum StatType
 {
-    Health, MoveSpeed,
-    Damage, MagSize, Ammo, Reload, Range, SingleShot, AutoAim,
-    // Appended so stats already saved in part assets keep their meaning.
-    MaxRangeMultiplier, ProjectileSpeed, ProjectileSize, SplashRadius,
-    FireRate, SplashDamage
+    Health = 0, MoveSpeed = 1,
+    Damage = 2, MagSize = 3, Ammo = 4, Reload = 5, Range = 6,
+    ProjectileSpeed = 10, ProjectileSize = 11, SplashRadius = 12,
+    FireRate = 13, SplashDamage = 14
 }
 
 // How a part attacks, which decides how its damage is checked. None for parts that don't attack
@@ -54,7 +55,6 @@ public class PartData : ScriptableObject
         return 0f;
     }
 
-    public bool GetBool(StatType type) => GetStat(type) > 0.5f;
 
     // Seconds between shots or swings: 1 / Fire Rate (1 s if no Fire Rate is set).
     public float ShotInterval { get { float rate = GetStat(StatType.FireRate); return rate > 0f ? 1f / rate : 1f; } }
