@@ -74,17 +74,18 @@ public sealed class SubLevelGenerator : MonoBehaviour
 
     void OnDestroy() => NavTerrain.Unregister(this);
 
-    // Enemy pathing reads the terrain through NavTerrain; regenerating during Play re-bakes it.
+    // Enemy pathing reads the terrain through NavTerrain, on a NavGrid sized to the map (one inside this
+    // prefab first, else the scene's). Regenerating during Play re-bakes it.
     void ShareTerrainWithPathing()
     {
         if (!Application.isPlaying || map == null) return;
         NavTerrain.Register(this, IsWallAt, GroundAt);
-        var grid = FindAnyObjectByType<NavGrid>();
-        if (grid != null && grid.Baked)
-        {
-            grid.Bake();
-            if (FlowField.Instance != null) FlowField.Instance.Rebuild();
-        }
+        var grid = GetComponentInChildren<NavGrid>();
+        if (grid == null) grid = FindAnyObjectByType<NavGrid>();
+        if (grid == null) return;
+        bool wasBaked = grid.Baked;
+        grid.Resize(transform.position, map.Cols * map.CellSize, map.Rows * map.CellSize);
+        if (wasBaked && FlowField.Instance != null) FlowField.Instance.Rebuild();
     }
 
     bool IsWallAt(Vector3 world)

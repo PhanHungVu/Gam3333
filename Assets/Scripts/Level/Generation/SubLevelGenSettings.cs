@@ -50,7 +50,8 @@ public sealed class DecorGroup
 
 // Tuning for sub-level generation, kept in an asset so design can adjust it without code.
 // Terrain, chunk placement, roads and decor; POIs add their settings later.
-[CreateAssetMenu(fileName = "SubLevelGenSettings", menuName = "Mech/Sub-level Generation")]
+// One asset per mission type (SubLevelGen_KOTH, later e.g. SubLevelGen_Elimination), each with its own mission chunk.
+[CreateAssetMenu(fileName = "SubLevelGen_NewMission", menuName = "Mech/Sub-level Generation")]
 public sealed class SubLevelGenSettings : ScriptableObject
 {
     [Header("Map")]
