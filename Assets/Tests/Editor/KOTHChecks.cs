@@ -9,23 +9,23 @@ public static class KOTHChecks
 {
     public static void Run(Action<bool, string> check)
     {
-        var rules = new KOTH_ZoneRules(10f, 5f, 2f);
+        var rules = new HoldZoneRules(10f, 5f, 2f);
         rules.Tick(0.1f, false);
-        bool waits = rules.State == KOTH_ZoneState.Waiting;
+        bool waits = rules.State == HoldZoneState.Waiting;
         rules.Tick(0.1f, true); rules.Tick(4f, true);
-        check(waits && rules.State == KOTH_ZoneState.Holding && Mathf.Approximately(rules.Remaining, 6f),
+        check(waits && rules.State == HoldZoneState.Holding && Mathf.Approximately(rules.Remaining, 6f),
             "The KOTH timer starts when the player enters and counts while they hold");
         rules.Tick(3f, false); rules.Tick(3f, false);
-        bool paused = rules.State == KOTH_ZoneState.Warning && Mathf.Approximately(rules.Remaining, 6f);
+        bool paused = rules.State == HoldZoneState.Warning && Mathf.Approximately(rules.Remaining, 6f);
         rules.Tick(0.1f, true);
-        check(paused && rules.State == KOTH_ZoneState.Holding, "Leaving pauses the timer for the grace period, and returning resumes it");
+        check(paused && rules.State == HoldZoneState.Holding, "Leaving pauses the timer for the grace period, and returning resumes it");
         rules.Tick(0.1f, false); rules.Tick(5f, false);
-        bool failed = rules.State == KOTH_ZoneState.Failed;
+        bool failed = rules.State == HoldZoneState.Failed;
         rules.Tick(2f, false);
-        check(failed && rules.State == KOTH_ZoneState.Waiting && Mathf.Approximately(rules.Remaining, 10f),
+        check(failed && rules.State == HoldZoneState.Waiting && Mathf.Approximately(rules.Remaining, 10f),
             "Staying out past the grace period fails the hold and resets it to the start");
         rules.Tick(0.1f, true); rules.Tick(10f, true); rules.Tick(1f, false);
-        check(rules.State == KOTH_ZoneState.Complete, "Holding for the full time completes KOTH, and it stays complete");
+        check(rules.State == HoldZoneState.Complete, "Holding for the full time completes KOTH, and it stays complete");
 
         var site = new Vector3(94000f, 0f, 0f);
         GameObject gridObject = null;

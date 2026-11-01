@@ -158,15 +158,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 443b2f303e3ec424abfeb74a25a80230, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Survival_Zone
-  holdSeconds: 60
+  holdSeconds: 5
   graceSeconds: 5
   failedSeconds: 2
-  wave: {fileID: 11400000, guid: 0a414f53d3b52f949aa8e27ba59007a4, type: 2}
-  spawnPoints: []
-  spawnDistance: 10
   state: 0
   timeRemaining: 0
   graceRemaining: 0
+  wave: {fileID: 11400000, guid: 0a414f53d3b52f949aa8e27ba59007a4, type: 2}
+  spawnPoints: []
+  spawnDistance: 10
 --- !u!114 &4546550176597622138
 MonoBehaviour:
   m_ObjectHideFlags: 0

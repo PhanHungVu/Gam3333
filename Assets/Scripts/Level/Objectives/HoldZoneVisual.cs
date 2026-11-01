@@ -1,12 +1,12 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 
-// Placeholder look for the KOTH chunk: an outline of the chunk's edge (a ring for a circular chunk),
-// coloured by state. Yellow while waiting, blue while holding, yellow flicker during the grace period,
-// red flash on failure, green once complete. Only reads KOTH_Zone, so real VFX can replace it later.
+// Placeholder look for a hold zone (KOTH, extract): an outline of its chunk's edge (a ring for a circular
+// chunk), coloured by state. By default yellow while waiting, blue while holding, yellow flicker during the
+// grace period, red flash on failure, green once complete; hidden while the zone is closed. Each zone can
+// set its own colours. Only reads HoldZone, so real VFX can replace it later.
 [DisallowMultipleComponent]
-[RequireComponent(typeof(KOTH_Zone))]
-public sealed class KOTH_ZoneVisual : MonoBehaviour
+public sealed class HoldZoneVisual : MonoBehaviour
 {
     [Header("State colours")]
     [SerializeField] Color waitingColor = new Color(1f, 0.85f, 0.2f);
@@ -28,13 +28,14 @@ public sealed class KOTH_ZoneVisual : MonoBehaviour
     [Tooltip("Pull the outline this far in from the footprint edge, in metres.")]
     [SerializeField, Min(0f)] float inset = 0.5f;
 
-    KOTH_Zone zone;
+    HoldZone zone;
     LineRenderer outline;
     bool drawn;
 
     void Awake()
     {
-        zone = GetComponent<KOTH_Zone>();
+        zone = GetComponent<HoldZone>();
+        if (zone == null) { Debug.LogWarning("HoldZoneVisual needs a hold zone (e.g. KOTH_Zone, ExtractZone) on the same object.", this); enabled = false; return; }
         if (lineMaterial == null) lineMaterial = new Material(Shader.Find("Sprites/Default"));
         var child = new GameObject("Chunk Outline");
         child.transform.SetParent(transform, false);
@@ -50,14 +51,16 @@ public sealed class KOTH_ZoneVisual : MonoBehaviour
 
     void LateUpdate()
     {
+        outline.enabled = zone.IsOpen;
+        if (!zone.IsOpen) return;
         if (!drawn) drawn = DrawOutline();
         bool blinkOn = Mathf.Repeat(Time.time * flashRate, 1f) < 0.5f;
         Color color = zone.State switch
         {
-            KOTH_ZoneState.Holding => holdingColor,
-            KOTH_ZoneState.Warning => blinkOn ? waitingColor : offColor,
-            KOTH_ZoneState.Failed => blinkOn ? failedColor : offColor,
-            KOTH_ZoneState.Complete => completeColor,
+            HoldZoneState.Holding => holdingColor,
+            HoldZoneState.Warning => blinkOn ? waitingColor : offColor,
+            HoldZoneState.Failed => blinkOn ? failedColor : offColor,
+            HoldZoneState.Complete => completeColor,
             _ => waitingColor,
         };
         outline.startColor = outline.endColor = color;
