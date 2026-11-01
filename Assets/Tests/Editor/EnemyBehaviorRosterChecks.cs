@@ -78,7 +78,7 @@ public static partial class EnemyBehaviorChecks
         Check(spinner.transform.position.z > 4.7f && charge.Contacts == 0, "Existing collision motor stops the charge at a wall");
         yield return Remove(spinner); Object.Destroy(wall); yield return Frames(2);
 
-        ResetPlayer(); var rope = SpawnRole(7, 18); var thrower = rope.GetComponent<EnemyRopeAttack>();
+        ResetPlayer(); var rope = SpawnRole(8, 18); var thrower = rope.GetComponent<EnemyRopeAttack>();
         yield return Until(() => thrower.CurrentStage == EnemyGraphAttack.Stage.Windup, 4, "Rock throw did not wind up"); hp = health.CurrentHealth;
         yield return Frames(30); Check(thrower.Impacts == 0 && health.CurrentHealth == hp, "Rock elite telegraphs the landing area before damage"); Capture("rope-windup", rope);
         yield return Until(() => thrower.CurrentStage == EnemyGraphAttack.Stage.Attack, 3, "Rock was not thrown");
@@ -94,17 +94,18 @@ public static partial class EnemyBehaviorChecks
         yield return Until(() => thrower.CurrentStage == EnemyGraphAttack.Stage.Recovery, 4, "Rope did not recover");
         Check(Steering.Flat(rope.transform.position-landed).magnitude < 3 && thrower.Impacts == 1, "Pull ends near the rock without another landing hit");
         yield return Remove(rope);
-        ResetPlayer(); rope = SpawnRole(7, 18); thrower = rope.GetComponent<EnemyRopeAttack>();
+        ResetPlayer(); rope = SpawnRole(8, 18); thrower = rope.GetComponent<EnemyRopeAttack>();
         yield return Until(() => thrower.CurrentStage == EnemyGraphAttack.Stage.Attack, 4, "Rope cancellation throw missing"); hp = health.CurrentHealth;
         rope.Graph.enabled = false; yield return Frames(120);
         Check(thrower.Impacts == 0 && health.CurrentHealth == hp && !thrower.IsExecuting, "Stopping the rope graph cancels airborne damage and cleans up its presentation");
         yield return Remove(rope);
+        yield return OrbitCases();
         yield return WaveCases();
         yield return MixedCases();
     }
     static IEnumerator MixedCases()
     {
-        ResetPlayer(); var actors = new EnemyGraphController[8];
+        ResetPlayer(); var actors = new EnemyGraphController[EnemyRosterSetup.Roster.Length];
         for (int i = 0; i < actors.Length; i++)
         {
             actors[i] = SpawnRole(i, 12);
@@ -114,11 +115,11 @@ public static partial class EnemyBehaviorChecks
         }
         Physics.SyncTransforms(); int frames = Time.frameCount; double began = EditorApplication.timeSinceStartup;
         yield return Frames(1200);
-        Check(actors.All(a => a != null && a.IsReady && a.Graph.Graph.IsRunning), "Mixed roster keeps all eight graph instances running for twenty combat seconds");
+        Check(actors.All(a => a != null && a.IsReady && a.Graph.Graph.IsRunning), "Mixed roster keeps all nine graph instances running for twenty combat seconds");
         Check(actors.Where(a => a.SpecialAttack == null).Sum(a => a.Attack.Releases) >= 10,
             "Melee and ranged actors continue releasing attacks in a mixed encounter");
-        Check(actors[7].GetComponent<EnemyRopeAttack>().Impacts > 0 && health.CurrentHealth < health.MaximumHealth,
-            "Elite throw/pull and existing damage remain functional among the small enemies");
+        Check(actors[8].GetComponent<EnemyRopeAttack>().Impacts > 0 && actors[7].GetComponent<EnemyRopeAttack>().OrbitsStarted > 0
+            && health.CurrentHealth < health.MaximumHealth, "Both rope variants and existing damage remain functional among the small enemies");
         Check(actors.All(a => float.IsFinite(a.transform.position.x) && float.IsFinite(a.transform.position.y) && float.IsFinite(a.transform.position.z)),
             "Mixed attack movement produces finite grounded actor positions");
         Debug.Log("ENEMY MIXED SAMPLE: " + (Time.frameCount-frames) + " frames in " + (EditorApplication.timeSinceStartup-began).ToString("0.00") + " editor seconds (not a standalone performance benchmark)");

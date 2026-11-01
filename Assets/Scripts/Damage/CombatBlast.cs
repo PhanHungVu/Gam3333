@@ -50,7 +50,7 @@ public sealed class CombatBlast
     // Damages every target inside an oriented box (melee). Walls are checked along a line
     // from wallOrigin (the attacker) to each target.
     public DamageResult ResolveBox(Vector3 center, Vector3 halfExtents, Quaternion rotation, float damage,
-        Transform owner, LayerMask layers, Vector3 wallOrigin)
+        Transform owner, LayerMask layers, Vector3 wallOrigin, ISet<CombatHealth> hitHistory = null)
     {
         damaged.Clear();
         int hits = 0, kills = 0, count;
@@ -63,8 +63,9 @@ public sealed class CombatBlast
             Collider candidate = overlaps[i];
             if (IsOwner(candidate, owner)) continue;
             var health = candidate.GetComponentInParent<CombatHealth>();
-            if (health == null || damaged.Contains(health) || Blocked(wallOrigin, candidate, owner, layers)) continue;
-            Apply(health, damage, attacker, ref hits, ref kills);
+            if (health == null || damaged.Contains(health) || hitHistory != null && hitHistory.Contains(health)
+                || Blocked(wallOrigin, candidate, owner, layers)) continue;
+            if (Apply(health, damage, attacker, ref hits, ref kills)) hitHistory?.Add(health);
         }
         Array.Clear(overlaps, 0, count);
         damaged.Clear();

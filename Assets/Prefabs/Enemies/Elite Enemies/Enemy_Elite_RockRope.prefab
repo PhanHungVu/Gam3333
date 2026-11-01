@@ -19963,8 +19963,8 @@ MonoBehaviour:
   turnSpeed: 240
   detectRadius: 65
   loseRadius: 85
-  arriveRadius: 24
-  attackRange: 18
+  arriveRadius: 12.5
+  attackRange: 6.5
   perceptionRadius: 10
   separationRadius: 3.5
   separationWeight: 1.5
@@ -19973,7 +19973,7 @@ MonoBehaviour:
   seekWeight: 1
   wanderWeight: 1
   avoidWeight: 2.2
-  pathingMode: 1
+  pathingMode: 0
   zigzagAmplitude: 500
   zigzagNoiseSpeed: 1
   zigzagLookAhead: 20
@@ -20114,10 +20114,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f0038c16c34866b4f9e25c9c0dc0f7e6, type: 3}
   m_Name:
   m_EditorClassIdentifier: Unity.Behavior::Unity.Behavior.BehaviorGraphAgent
-  m_Graph: {fileID: -1066408398162294998, guid: ba67aba2fec367b49830d12a8e266e9a, type: 2}
+  m_Graph: {fileID: 4148002054325098960, guid: d0aec196e425d9d4387861e777ffd701, type: 2}
   m_BlackboardVariableOverridesList:
   - rid: 6080984987399619385
-  m_OriginalGraph: {fileID: -1066408398162294998, guid: ba67aba2fec367b49830d12a8e266e9a, type: 2}
+  m_OriginalGraph: {fileID: 4148002054325098960, guid: d0aec196e425d9d4387861e777ffd701, type: 2}
   m_IsInitialised: 0
   m_IsStarted: 0
   references:
@@ -20145,7 +20145,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyGraphController
   currentAction:
   role: 7
-  minimumRange: 11
+  minimumRange: 4.5
 --- !u!114 &3988591956970449391
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20173,22 +20173,29 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyRopeAttack
   windupDuration: 1.1
-  cooldown: 6
+  cooldown: 7
   recoveryDuration: 0.8
   damage: 35
   windupSound: {fileID: 0}
   impactSound: {fileID: 0}
+  behavior: 1
   rock: {fileID: 7489217895497006389}
   ropeAnchor: {fileID: 6742908824741027326}
   ropeMaterialTemplate: {fileID: 2100000, guid: 6b923194a9e4eb042925a46803a68143, type: 2}
   handOffset: {x: 0.8, y: 1.6, z: 0.5}
   heldRockOffset: {x: 0.6, y: -0.25, z: 0.5}
-  flightDuration: 0.95
-  arcHeight: 5
+  flightDuration: 0.7
+  arcHeight: 2
   impactRadius: 2.5
   rockRadius: 0.6
   pullSpeed: 8
   maximumPullDuration: 2
+  orbitRadius: 6
+  orbitDegreesPerSecond: 180
+  orbitDuration: 3
+  orbitHeight: 1.1
+  orbitAccelerationDuration: 0.4
+  orbitBodyTurnSpeed: 540
 --- !u!1 &4095699344427030363
 GameObject:
   m_ObjectHideFlags: 0

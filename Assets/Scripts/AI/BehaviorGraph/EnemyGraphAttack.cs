@@ -5,7 +5,7 @@ using UnityEngine;
 [RequireComponent(typeof(EnemyAgent), typeof(CombatHealth), typeof(EnemyThreatMarker))]
 public abstract class EnemyGraphAttack : MonoBehaviour
 {
-    public enum Stage { Idle, Windup, Attack, Pull, Recovery }
+    public enum Stage { Idle, Windup, Attack, Pull, Recovery, Orbit }
     [SerializeField, Min(0.1f)] protected float windupDuration = 0.9f;
     [SerializeField, Min(0.1f)] protected float cooldown = 3.5f;
     [SerializeField, Min(0.1f)] protected float recoveryDuration = 0.8f;
@@ -19,7 +19,7 @@ public abstract class EnemyGraphAttack : MonoBehaviour
     protected Vector3 committedTarget;
     AudioSource audioSource;
     public Stage CurrentStage { get; protected set; }
-    public bool IsExecuting => CurrentStage == Stage.Windup || CurrentStage == Stage.Attack || CurrentStage == Stage.Pull;
+    public bool IsExecuting => CurrentStage == Stage.Windup || CurrentStage == Stage.Attack || CurrentStage == Stage.Pull || CurrentStage == Stage.Orbit;
     public float CooldownRemaining => Mathf.Max(0, readyAt - Time.time);
     public float Damage => damage;
     public virtual bool TargetInReach => agent.Target != null && agent.DistanceToTarget <= agent.AttackRange + 0.5f

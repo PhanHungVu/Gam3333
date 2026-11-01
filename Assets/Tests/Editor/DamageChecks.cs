@@ -78,6 +78,17 @@ public static class DamageChecks
             check(melee.Hits == 1 && inside.CurrentHealth == 75f && outside.CurrentHealth == 100f,
                 "The melee box damages each target inside it once");
             check(behind.CurrentHealth == 100f, "Walls block melee damage");
+            var history = new HashSet<CombatHealth>();
+            var first = blast.ResolveBox(boxOrigin + Vector3.forward * 2.5f, new Vector3(2.5f, 1.5f, 2.5f),
+                Quaternion.identity, 10f, attacker.transform, ~0, boxOrigin, history);
+            var repeated = blast.ResolveBox(boxOrigin + Vector3.forward * 2.5f, new Vector3(2.5f, 1.5f, 2.5f),
+                Quaternion.identity, 10f, attacker.transform, ~0, boxOrigin, history);
+            check(first.Hits == 1 && repeated.Hits == 0 && inside.CurrentHealth == 65 && history.SetEquals(new[] { inside }),
+                "A shared damage history prevents repeat sweep hits without recording targets blocked by walls");
+            history.Clear();
+            check(blast.ResolveBox(boxOrigin + Vector3.forward * 2.5f, new Vector3(2.5f, 1.5f, 2.5f),
+                Quaternion.identity, 10f, attacker.transform, ~0, boxOrigin, history).Hits == 1 && inside.CurrentHealth == 55,
+                "A fresh attack's damage history allows the same target to be hit again");
         }
         finally
         {

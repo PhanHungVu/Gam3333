@@ -91,11 +91,11 @@ public static class ZooEnemyChecks
         int stopped = director.TotalSpawned; yield return Frames(150);
         Check(director.CurrentWave == null && director.TotalSpawned == stopped, "Switching the exhibit off stops further spawns");
         elite.SetActive(true); yield return Frames();
-        Check(director.CurrentWave != null && director.CurrentWave.enemies.Length == 2, "Elite switch enables heavy ranged and rock-rope enemies");
-        yield return Collect(2, false);
+        Check(director.CurrentWave != null && director.CurrentWave.enemies.Length == 3, "Elite switch enables heavy ranged, orbiting rock and preserved throw/pull enemies");
+        yield return Collect(3, false);
         director.enabled = true; small.SetActive(true); yield return Frames();
-        Check(director.CurrentWave.enemies.Length == 8 && director.CurrentWave.enemies.All(e => e.prefab.GetComponent<EnemyGraphController>() != null),
-            "Both switches permit the complete eight-enemy Behavior Graph roster");
+        Check(director.CurrentWave.enemies.Length == 9 && director.CurrentWave.enemies.All(e => e.prefab.GetComponent<EnemyGraphController>() != null),
+            "Both switches permit the complete nine-enemy Behavior Graph roster");
         director.enabled = false;
         for (int i = 0; i < 30; i++) director.Tick(3);
         yield return Frames();

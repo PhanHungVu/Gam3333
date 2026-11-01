@@ -1,6 +1,6 @@
 # Small and elite enemy Behavior Graphs
 
-The eight prototype prefabs use Unity Behavior 1.0.16 for decisions. Open `Scenes/EnemyBehaviorPlaytest.unity` for an isolated combat arena. Existing gameplay scenes keep their existing directors, objective logic, navigation and player rig; their references to the upgraded enemy prefabs and wave data pick up the new behavior.
+The nine prototype prefabs use Unity Behavior 1.0.16 for decisions. Open `Scenes/EnemyBehaviorPlaytest.unity` for an isolated combat arena. Existing gameplay scenes keep their existing directors, objective logic, navigation and player rig; their references to the upgraded enemy prefabs and wave data pick up the new behavior.
 
 ## Playtesting
 
@@ -10,11 +10,13 @@ The eight prototype prefabs use Unity Behavior 1.0.16 for decisions. Open `Scene
 4. The arena initially contains one sword enemy and an obstacle to test shared pathfinding. The player uses the existing controls and damage/health systems. Death still deactivates the player; restart Play Mode for another attempt.
 5. Select a running enemy and open its **Behavior Graph Agent** graph to inspect its live branch. **Enemy Graph Controller / Current Action** and the special attack's stage are useful alongside the graph debugger.
 
+The Inspector lists **Rock Rope - Orbit** (the original rope elite, updated) and **Rock Rope - Throw and Pull** (the preserved duplicate). Both are also included in the random-wave presets and Zoo elite switch.
+
 The setup menus are `Tools > Mech > Enemies > Set Up Small and Elite Behavior Roster` and `Create Behavior Playtest Arena`. Assets are already included; these menus are regeneration tools. Roster setup reapplies prototype tuning and wave composition, so commit designer changes first. Existing graph assets and an existing playtest scene are preserved. The editor authoring adapter checks package version because Unity Behavior's graph-authoring API is internal; runtime AI uses public APIs without reflection.
 
 ## Decisions and execution
 
-Graphs are in `AI/Behavior/Graphs`. They share **Acquire and Approach**, **Telegraphed Weapon Attack**, **Recover**, and **Wander Until Detection** subgraphs. Type 1 variants share the same overhead graph. Crossbow and heavy ranged have their own graph assets for later design changes. Spinner and rock-rope graphs explicitly order their separate windup, execution, pull (rope only), and recovery actions.
+Graphs are in `AI/Behavior/Graphs`. They share **Acquire and Approach**, **Telegraphed Weapon Attack**, **Recover**, and **Wander Until Detection** subgraphs. Type 1 variants share the same overhead graph. Crossbow and heavy ranged have their own graph assets for later design changes. Spinner and both rope graphs order windup, execution and recovery; the preserved throw-and-pull graph includes the separate pull action.
 
 `EnemyAgent.ExternalDecisions` disables the legacy state-machine decisions. Graph actions submit a movement intention each frame; a missing/stopped graph holds position rather than reverting to old AI. The existing flow field, separation, obstacle collision, facing and ground following still move the actor. Committed charges and pulls use that same collision motor with a fixed direction and bypass flocking forces for that stage.
 
@@ -33,7 +35,8 @@ The spinner's swept contact box and rope's landing area use `CombatBlast` and `C
 | Spinner | `Small Enemies/Enemy_spinner` | 120 | 4 (12 charging) | 8 | 2 |
 | Crossbow | `Small Enemies/Enemy_crossbow` | 80 | 5 | 5–8 | 2 |
 | Heavy ranged | `Elite Enemies/Enemy_Elite_Cannon` | 320 | 3.5 | 11–18 | 10 |
-| Rock on a rope | `Elite Enemies/Enemy_Elite_RockRope` | 400 | 3 (8 pulling) | 11–18 | 10 provisional |
+| Orbiting rock | `Elite Enemies/Enemy_Elite_RockRope` | 400 | 3 (stationary during orbit) | 4.5–6.5 | 10 provisional |
+| Rock throw and pull | `Elite Enemies/Enemy_Elite_RockRopePull` | 400 | 3 (8 pulling) | 11–18 | 10 provisional |
 
 Distances and speeds are world units. Tune awareness, speed and stop distance on **Enemy Agent**; ranged minimum distance is on **Enemy Graph Controller**. Tune health and cost on their existing components. `EnemyAttack` multipliers scale each equipped weapon's existing `PartData`; changing the global player part assets is unnecessary.
 
@@ -50,7 +53,13 @@ Crossbow uses a 12-degree aim cone and 0.6 projectile-speed multiplier. Heavy ra
 
 Spinner hops its visual root while approaching, visibly accelerates its spin for 0.9 seconds, then charges along the announced direction for up to 0.75 seconds. It stops on a damaging contact, a blocking wall or duration limit, with 18 contact damage, a 3.5-second start-to-start cooldown and at least 0.8 seconds of recovery. The root remains owned by `EnemyAgent`; hopping and spinning affect only its visual child.
 
-**Rock-rope movement follows the chosen design:** snapshot the player's location, show a landing circle during a 1.1-second windup, throw along a 0.95-second arc, apply one 35-damage landing area with radius 2.5, then pull the elite toward the fixed landed rock. Moving the player after landing does not redirect the pull. Pulling stops within 2 units, at a wall, or after 2 seconds. The rock returns to the hand during recovery; cooldown is 6 seconds with at least 0.8 seconds of recovery. Pull movement itself does not apply an additional hit. A wall can intercept the airborne rock early.
+**Orbiting rock (original prefab):** approach using the shared flow field, announce the swing's circular path during a 1.1-second windup, then throw outward toward the player's committed bearing over 0.7 seconds. The enemy holds position while the rock circles its body at a **6-unit radius**, **1.1 units above its starting floor**, for **3 seconds**, accelerating toward **180 degrees/second** over 0.4 seconds. It then reels the rock in over the existing recovery and observes a **7-second start-to-start cooldown**. The rock's swept contact deals **35 damage once per target per attack**, including the outward throw. The rope and circle themselves do not deal damage, and the center is safe from the orbiting rock. A wall intercept ends the swing and begins recovery. Long frames subdivide the circular path to avoid cutting across the center or skipping obstacles. **Behavior**, radius, height, angular speed, acceleration and duration are exposed on **Enemy Rope Attack**.
+
+The orbit graph is **Elite Type 2 - Orbiting Rock**: windup → execute (throw and orbit) → recover. It has no pull action. The original role remains serialized as index 7; the preserved **RockRopePull** role is appended as index 8. Both share the corrected attachment, rock fitting, obstruction and cancellation code.
+
+The body turns in place to keep its rope mount on the rock's side of the swing. **Orbit Body Turn Speed** controls that turn (540 degrees/second by default). This changes facing while the enemy remains the orbit's center; it does not pull the enemy toward the rock.
+
+**Preserved throw-and-pull variant:** snapshot the player's location, show a landing circle during a 1.1-second windup, throw along a 0.95-second arc, apply one 35-damage landing area with radius 2.5, then pull the elite toward the fixed landed rock. Moving the player after landing does not redirect the pull. Pulling stops within 2 units, at a wall, or after 2 seconds. The rock returns to the held position during recovery; cooldown is 6 seconds with at least 0.8 seconds of recovery. Pull movement itself does not apply an additional hit. A wall can intercept the airborne rock early. This duplicate keeps **Elite Type 2 - Rock Rope**, the existing graph containing the pull action.
 
 The rope now attaches to the proxy rig's **right shoulder mount**, with **Rope Anchor** exposed for the art team's eventual hand attachment. It follows the animated rig after pose updates. The centered throwable has a 1.2-unit maximum diameter and cancels the elite root's non-uniform scale; its mesh and rope endpoint therefore follow the same position used by the attack. The rope has light slack while held and becomes taut during the pull. Recovery returns to the held offset beside the mount rather than swallowing the rock into the attachment point. Roster setup reapplies this fitted proxy without changing the source rock model.
 
@@ -62,11 +71,11 @@ The hammer uses two replaceable block heads on the existing animated mace rigs. 
 
 ### ZooScene exhibit
 
-`Scenes/ZooScene.unity` uses its existing two floor switches and spawn-model locations. Step onto a switch and press **F** to toggle **Small Enemies** (sword, mace, hammer, throwing axe, spinner, crossbow) or **Elite Enemies** (heavy ranged, rock on a rope). Both groups start off. Both can be enabled together. The retired `EnemySpawnerManager_Mace` / `EnemySpawnerManager_Crossbow` prefab references have been replaced by scene group objects, preserving the original switch references.
+`Scenes/ZooScene.unity` uses its existing two floor switches and spawn-model locations. Step onto a switch and press **F** to toggle **Small Enemies** (sword, mace, hammer, throwing axe, spinner, crossbow) or **Elite Enemies** (heavy ranged, orbiting rock, rock throw and pull). Both groups start off. Both can be enabled together. The retired `EnemySpawnerManager_Mace` / `EnemySpawnerManager_Crossbow` prefab references have been replaced by scene group objects, preserving the original switch references.
 
 One **SpawnDirector** and **ZooEnemyWaves** component on the **Enemy** object use the shared roster and the zoo's existing navigation/spawn points. The showcase makes a temporary filtered wave: one spawn every 2 seconds, 50 resource per cycle, 15-second refill delay and a scene-wide limit of 8 active enemies. Tune these showcase values on **Zoo Enemy Waves**; the saved Roaming/Survival presets are unchanged. An active group permits its roster and spawn location; with both enabled, the director uses both locations. Turning a switch off stops further spawning from that group; already spawned enemies remain until defeated or the scene is restarted.
 
-`ZooEnemyChecks.RunBatch` passed 15 checks in a disposable copy of the saved scene: no missing prefabs/scripts, intact switch bindings, startup-off state, shared navigation, actual spawns of all six small/two elite roles, running graphs, combined roster, population/resource limits and stopping the wave. The environment, player and camera retain their existing scene setup.
+`ZooEnemyChecks.RunBatch` checks a disposable copy of the saved scene: no missing prefabs/scripts, intact switch bindings, startup-off state, shared navigation, actual spawns of all six small/three elite roles, running graphs, combined roster, population/resource limits and stopping the wave. The environment, player and camera retain their existing scene setup.
 
 ### Roaming and Survival
 
@@ -80,17 +89,19 @@ One **SpawnDirector** and **ZooEnemyWaves** component on the **Enemy** object us
 | Aggregate elite weight | 10% | 30% |
 | Prototype active-enemy cap | 24 | 32 |
 
-`WaveData_KOTH` uses the same Survival settings to fit the existing KOTH objective integration. `WaveType.KOTH` is retained for the standalone Survival preset too; no new mission controller or scene transition was introduced. Within each small group, Type 1 variants split 60% of its weight and spinner/crossbow each receive 20%. Elites split their group's weight equally. Probabilities apply to affordable entries: near the end of a resource cycle, an unaffordable elite is excluded by the existing director.
+`WaveData_KOTH` uses the same Survival settings to fit the existing KOTH objective integration. `WaveType.KOTH` is retained for the standalone Survival preset too; no new mission controller or scene transition was introduced. Within each small group, Type 1 variants split 60% of its weight and spinner/crossbow each receive 20%. The three elites split their group's weight equally, retaining the existing total **10% roaming / 30% survival** elite probability. Probabilities apply to affordable entries: near the end of a resource cycle, an unaffordable elite is excluded by the existing director.
 
 The optional **Max Concurrent Enemies** setting counts active `EnemyAgent` actors, including other loaded scenes. Zero preserves unlimited legacy behavior. While capped, the director waits without spending resource; it resumes when a slot opens. The configured 24/32 caps are initial tuning values, not advanced coordination or limits on simultaneous attackers. Resource and timer ownership remain with `WaveCycle`/`SpawnDirector`. The rope cost was undefined in the plan, so it starts at 10 and can be tuned independently.
 
 ## Validation and remaining review
 
+The nine-enemy rope-variant update passed **185 checks** in isolated Unity 6000.5.8f1: **51** focused rope/shared-damage checks, **109** full roster/integration checks, **10** saved-arena checks and **15** saved-Zoo checks. They cover the preserved throw/pull behavior, a full orbit at fixed radius, stationary center and upright body turn, contact-only damage with per-attack hit history, long-frame wall interception, return/cancellation/death, both Inspector selections, all nine actual wave-spawn roles and unchanged aggregate elite probabilities. Rendered orbit and recovery stages were reviewed. Source rock art, the Zoo scene and empty pre-mission gameplay hook are unchanged.
+
 `Tests/Editor/EnemyBehaviorChecks.RunBatch` runs the real graphs and prefabs in a disposable project. It covers awareness and reacquisition, overhead release/cooldown, disabled graph/death cleanup, separation and obstacle routing, every roster role, crossbow repositioning/inaccuracy, committed spinner dodging and wall contact, rope landing/pull/cancellation, wave budget/refill/caps, and a twenty-second mixed-roster encounter. Rendered captures cover the attack stages. Existing combat and movement regressions run separately. Deterministic damage fixtures turn off the crossbow's random cone only inside those fixtures.
 
 `EnemyBehaviorChecks.RunRopeBatch` isolates the rope regression using the real prefab and graph: centered geometry and attachment while walking/turning, the complete attack, a relocated player during the pull, recovery target loss, interruption in every attack stage, actor reactivation, a high wall interception, raised-floor targeting, death during flight and scenery overlapping the launch point. Like the other runners, it refuses to run outside a disposable temporary project.
 
-The rope follow-up passed **21 focused rope checks and 78 existing roster/integration checks** in isolated Unity 6000.5.8f1. Rendered held, windup, flight, pull, recovery, wall-contact and raised-floor stages were reviewed. The initial-overlap fixture first reproduced the world-origin teleport before the fix; its final run stops at the actual launch position.
+The earlier rope repair passed **21 focused rope checks and 78 existing roster/integration checks** in isolated Unity 6000.5.8f1. Rendered held, windup, flight, pull, recovery, wall-contact and raised-floor stages were reviewed. The initial-overlap fixture first reproduced the world-origin teleport before the fix; its final run stops at the actual launch position. Those pull checks now exercise the preserved duplicate, alongside the new orbit cases.
 
 Validated in Unity 6000.5.8f1: 78 roster/integration checks, 8 saved-arena checks (`EnemyBehaviorChecks.RunArenaBatch`), 933 existing foundation checks, and 9 live Merge Test combat checks passed. Registry resolution of Behavior 1.0.16 was also verified. The mixed encounter's editor timing is diagnostic only; it is not a target-device performance benchmark.
 

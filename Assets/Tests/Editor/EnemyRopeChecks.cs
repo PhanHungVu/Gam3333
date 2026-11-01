@@ -42,7 +42,7 @@ public static partial class EnemyBehaviorChecks
         var navigation = new GameObject("Shared rope navigation"); grid = navigation.AddComponent<NavGrid>(); field = navigation.AddComponent<FlowField>();
         yield return Frames(4); health = player.GetComponent<CombatHealth>(); health.SetMaximum(10000, true);
 
-        var actor = SpawnRole(7, 80); var attack = actor.GetComponent<EnemyRopeAttack>(); yield return Frames(12);
+        var actor = SpawnRole(8, 80); var attack = actor.GetComponent<EnemyRopeAttack>(); yield return Frames(12);
         var rock = RopePart(attack, "rock"); var art = rock.GetComponentInChildren<MeshRenderer>();
         Check(rock.name == "Rope rock pivot" && actor.GetComponentsInChildren<Transform>(true).Count(t => t.name == "Rock art proxy") == 1,
             "Repeated roster setup keeps one centered rope-rock proxy");
@@ -61,7 +61,7 @@ public static partial class EnemyBehaviorChecks
         Check(held, "Walking and turning keep the idle rock and rope attached to the visible rig"); Capture("rope-idle", actor);
         yield return Remove(actor);
 
-        ResetPlayer(); actor = SpawnRole(7, 18); attack = actor.GetComponent<EnemyRopeAttack>();
+        ResetPlayer(); actor = SpawnRole(8, 18); attack = actor.GetComponent<EnemyRopeAttack>();
         yield return Until(() => attack.CurrentStage == EnemyGraphAttack.Stage.Windup, 4, "Rope windup missing");
         yield return Frames(30); Check(TetherAttached(attack) && attack.Impacts == 0, "The windup lifts the rock while its tether remains on the rig"); Capture("rope-windup", actor);
         yield return Until(() => attack.CurrentStage == EnemyGraphAttack.Stage.Attack, 3, "Rope flight missing");
@@ -92,7 +92,7 @@ public static partial class EnemyBehaviorChecks
 
         foreach (var stage in new[] { EnemyGraphAttack.Stage.Windup, EnemyGraphAttack.Stage.Attack, EnemyGraphAttack.Stage.Pull, EnemyGraphAttack.Stage.Recovery })
         {
-            ResetPlayer(); actor = SpawnRole(7, 18); attack = actor.GetComponent<EnemyRopeAttack>();
+            ResetPlayer(); actor = SpawnRole(8, 18); attack = actor.GetComponent<EnemyRopeAttack>();
             yield return Until(() => attack.CurrentStage == stage, 8, "Interruption stage missing: " + stage);
             int impacts = attack.Impacts; hp = health.CurrentHealth; actor.Graph.enabled = false; yield return Frames(70);
             Check(attack.CurrentStage == EnemyGraphAttack.Stage.Idle && attack.Impacts == impacts && health.CurrentHealth == hp
@@ -110,7 +110,7 @@ public static partial class EnemyBehaviorChecks
 
         ResetPlayer();
         var wall = GameObject.CreatePrimitive(PrimitiveType.Cube); wall.transform.position = new Vector3(0, 6, 9); wall.transform.localScale = new Vector3(10, 12, 1);
-        Physics.SyncTransforms(); actor = SpawnRole(7, 18); attack = actor.GetComponent<EnemyRopeAttack>(); hp = health.CurrentHealth;
+        Physics.SyncTransforms(); actor = SpawnRole(8, 18); attack = actor.GetComponent<EnemyRopeAttack>(); hp = health.CurrentHealth;
         yield return Until(() => attack.Impacts == 1, 5, "Wall interception missing");
         Check(attack.LandedPosition.y > 4 && attack.LandedPosition.z > 9.5f && health.CurrentHealth == hp,
             "A wall intercept preserves the airborne contact height and blocks damage through the wall"); Capture("rope-wall-impact", actor);
@@ -120,7 +120,7 @@ public static partial class EnemyBehaviorChecks
 
         ResetPlayer();
         var platform = GameObject.CreatePrimitive(PrimitiveType.Cube); platform.transform.position = new Vector3(0, 1.5f, 0); platform.transform.localScale = new Vector3(8, 3, 8);
-        player.transform.position = new Vector3(0, 4.6f, 0); Physics.SyncTransforms(); actor = SpawnRole(7, 18); actor.transform.position = new Vector3(0, 1, 18); attack = actor.GetComponent<EnemyRopeAttack>();
+        player.transform.position = new Vector3(0, 4.6f, 0); Physics.SyncTransforms(); actor = SpawnRole(8, 18); actor.transform.position = new Vector3(0, 1, 18); attack = actor.GetComponent<EnemyRopeAttack>();
         yield return Until(() => attack.CurrentStage == EnemyGraphAttack.Stage.Windup, 4, "Raised-floor windup missing"); yield return Frames(3);
         var warning = actor.transform.Find("Attack warning").GetComponent<LineRenderer>();
         Check(Mathf.Abs(attack.LandedPosition.y - 3.6f) < .01f && Mathf.Abs(warning.GetPosition(0).y - 3.06f) < .01f,
@@ -129,7 +129,7 @@ public static partial class EnemyBehaviorChecks
         Check(Mathf.Abs(attack.LandedPosition.y - 3.6f) < .05f, "The rock lands on the elevated surface without a vertical snap"); Capture("rope-raised-floor", actor);
         yield return Remove(actor); Object.Destroy(platform); yield return Frames(2);
 
-        ResetPlayer(); actor = SpawnRole(7, 18); attack = actor.GetComponent<EnemyRopeAttack>();
+        ResetPlayer(); actor = SpawnRole(8, 18); attack = actor.GetComponent<EnemyRopeAttack>();
         yield return Until(() => attack.CurrentStage == EnemyGraphAttack.Stage.Attack, 4, "Death cancellation flight missing"); hp = health.CurrentHealth;
         actor.GetComponent<CombatHealth>().ApplyDamage(10000); yield return Frames(90);
         Check(!actor.gameObject.activeSelf && attack.Impacts == 0 && health.CurrentHealth == hp
@@ -138,7 +138,7 @@ public static partial class EnemyBehaviorChecks
         yield return Remove(actor);
 
         ResetPlayer(); player.transform.position += Vector3.right * 30; Physics.SyncTransforms();
-        actor = SpawnRole(7, 18); attack = actor.GetComponent<EnemyRopeAttack>();
+        actor = SpawnRole(8, 18); attack = actor.GetComponent<EnemyRopeAttack>();
         yield return Until(() => attack.CurrentStage == EnemyGraphAttack.Stage.Attack, 4, "Initial-overlap flight missing");
         var launch = RopePart(attack, "rock").position;
         var obstruction = GameObject.CreatePrimitive(PrimitiveType.Cube); obstruction.transform.position = launch; obstruction.transform.localScale = Vector3.one * 4;
@@ -147,5 +147,6 @@ public static partial class EnemyBehaviorChecks
         Check(Vector3.Distance(attack.LandedPosition, launch) < 1,
             "A rock already overlapping scenery stops at its launch point instead of jumping to world origin: " + attack.LandedPosition);
         yield return Remove(actor); Object.Destroy(obstruction); yield return Frames(2);
+        yield return OrbitCases();
     }
 }

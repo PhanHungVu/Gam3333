@@ -132,8 +132,8 @@ public sealed class MechPlayerInput : MonoBehaviour
         if (!gameplay) { attacksArmed = false; return; }
         // A click that captures the mouse must not also attack.
         if (!attacksArmed) { attacksArmed = !Held(leftArm) && !Held(rightArm) && !Held(leftShoulder) && !Held(rightShoulder); return; }
-        Attack(leftArm, PartCategory.ArmL);          // LMB: left arm
-        Attack(rightArm, PartCategory.ArmR);         // RMB: right arm
+        Attack(leftArm, PartCategory.ArmL, repeatWhileHeld: true);  // Hold LMB: left arm
+        Attack(rightArm, PartCategory.ArmR, repeatWhileHeld: true); // Hold RMB: right arm
         Attack(leftShoulder, PartCategory.ShoulderL); // Q: left shoulder
         Attack(rightShoulder, PartCategory.ShoulderR); // E: right shoulder
     }
@@ -146,9 +146,9 @@ public sealed class MechPlayerInput : MonoBehaviour
         int index=right ? 1 : 0;
         if(index<slots.Count) parts.TrySwapSelectedInto(slots[index]);
     }
-    void Attack(InputAction button, PartCategory socket)
+    void Attack(InputAction button, PartCategory socket, bool repeatWhileHeld = false)
     {
-        if (!Pressed(button)) return;
+        if (!(repeatWhileHeld ? Held(button) : Pressed(button))) return;
         Physics.SyncTransforms();
         combat.TryAttack(socket);
     }

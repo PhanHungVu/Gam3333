@@ -1,7 +1,12 @@
 using Unity.Behavior;
 using UnityEngine;
 
-public enum EnemyBehaviorRole { Sword, Mace, Hammer, ThrowingAxe, Spinner, Crossbow, HeavyRanged, RockRope }
+public enum EnemyBehaviorRole
+{
+    Sword, Mace, Hammer, ThrowingAxe, Spinner, Crossbow, HeavyRanged,
+    [InspectorName("Rock Rope - Orbit")] RockRope,
+    [InspectorName("Rock Rope - Throw and Pull")] RockRopePull
+}
 
 // Adapter only. The graph owns decision order; existing systems own execution.
 [RequireComponent(typeof(EnemyAgent), typeof(EnemyAttack), typeof(BehaviorGraphAgent))]

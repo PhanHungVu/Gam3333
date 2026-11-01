@@ -11,6 +11,8 @@ The player and the six weapon part prefabs use separate visual rigs from `Anim/g
 | Left-arm mace | LMB after pickup | MaceArm |
 | Right-arm crossbow | RMB after pickup | CrossBowArm |
 
+Hold **LMB** or **RMB** to repeat the corresponding arm's attack as its existing cooldown finishes. This follows the equipped part, supports both buttons together and stops on release. Ammunition and attack timing remain owned by combat/the part; shoulder Q/E controls remain press-triggered. The cursor-capture click is still suppressed, and pausing or releasing the cursor disarms attack input until the buttons are released.
+
 `Merge Test` includes **Mace Animation Pickup** and **Arm Crossbow Animation Pickup** near the player. Use V to select a nearby part, F to open the swap menu, then choose its socket. The mace deals its existing 50 damage through the shared melee overlap query and uses its 0.7-second cooldown. The arm crossbow now fires the textured CrossbowBolt model using its existing PartData damage, ammunition, range and cooldown. It has separate state from the shoulder crossbow. Arm controls follow the selected socket: LMB for the left arm, RMB for the right arm.
 
 `MechWeaponAnimator` plays Fire → Reload → rest when an attack is accepted. Fire uses its authored duration when the gameplay cooldown permits; Reload fills the remaining cooldown. Rejected attacks do not start an animation. Each part owns its own playback, so shoulder weapons can reload while another weapon attacks, or while legs are swapped and boost is used. Ground pickups have disabled Animators and no running playback graph. Dropping during an action immediately stops it and restores the rest pose; re-equipping starts from rest.
