@@ -1,0 +1,31 @@
+using System;
+
+// Escort payload rules: advance with the player, stop when contested, roll back to the last checkpoint at most.
+public static class EscortPayloadChecks
+{
+    public static void Run(Action<bool, string> check)
+    {
+        var rules = new EscortRules(100f, new[] { 30f, 60f, 100f });
+        rules.Step(1f, false, false, 3f, 1.5f);
+        bool idle = rules.State == EscortState.Idle && rules.Distance == 0f;
+        rules.Step(5f, true, false, 3f, 1.5f);
+        check(idle && rules.State == EscortState.Advancing && Math.Abs(rules.Distance - 15f) < 0.001f,
+            "The payload only moves while the player is near it");
+        rules.Step(5f, true, true, 3f, 1.5f);
+        check(rules.State == EscortState.Contested && Math.Abs(rules.Distance - 15f) < 0.001f, "Player and enemies near: it stops");
+        rules.Step(4f, false, true, 3f, 1.5f);
+        check(rules.State == EscortState.Retreating && Math.Abs(rules.Distance - 9f) < 0.001f, "Enemies alone push it back");
+        rules.Step(100f, false, true, 3f, 1.5f);
+        check(rules.Distance == 0f, "It never rolls back past the start");
+
+        int passed = rules.Step(12f, true, false, 3f, 1.5f);
+        check(passed == 1 && rules.CheckpointsPassed == 1 && rules.Floor == 30f, "Passing a checkpoint records it");
+        rules.Step(100f, false, true, 3f, 1.5f);
+        check(rules.Distance == 30f, "It never rolls back past the last checkpoint reached");
+        rules.Step(5f, true, false, 3f, 1.5f);
+        rules.ReturnToCheckpoint();
+        check(rules.Distance == 30f, "Destroyed, it returns to the last checkpoint reached");
+        rules.Step(100f, true, false, 3f, 1.5f);
+        check(rules.Arrived && rules.Distance == 100f && rules.CheckpointsPassed == 3, "Reaching the end of the route completes the escort");
+    }
+}

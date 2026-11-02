@@ -52,9 +52,11 @@ public sealed class MissionHud : MonoBehaviour
                     HoldZoneState.Holding => $"Extracting... {extract.TimeRemaining:0.0}s",
                     HoldZoneState.Warning => $"Get back to the extract! {extract.GraceRemaining:0.0}s",
                     HoldZoneState.Failed => "Extraction interrupted",
-                    _ => "Extract open: return to the start",
+                    _ => "Extract open: get to the extraction point",
                 };
             default:
+                // A single objective that describes itself (the escort) shows its own progress.
+                if (MissionObjectives.All.Count == 1 && MissionObjectives.All[0] is IMissionStatus status) return status.Status;
                 return $"Objectives {tracker.ObjectivesComplete} / {tracker.ObjectivesTotal}";
         }
     }

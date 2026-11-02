@@ -46,6 +46,7 @@ MonoBehaviour:
   carveIfNoWayRound: 1
   roadCliffCost: 10
   roadSmoothing: 3
+  escortPayload: {fileID: 456191105611842391, guid: 6d61a57407e9fb2469011afab2c89506, type: 3}
   decorGroups:
   - name: Trees
     prefabs:

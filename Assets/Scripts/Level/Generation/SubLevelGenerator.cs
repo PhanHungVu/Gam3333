@@ -49,6 +49,7 @@ public sealed class SubLevelGenerator : MonoBehaviour
     const string TerrainName = "Generated Terrain";
     const string ChunksName = "Generated Chunks";
     const string DecorName = "Generated Decor";
+    const string EscortName = "Generated Escort";
     const string ObstacleTag = "Obstacle";
     TerrainMap map;
     List<ChunkPlacement> placements = new List<ChunkPlacement>();
@@ -185,6 +186,7 @@ public sealed class SubLevelGenerator : MonoBehaviour
             }
 
         PlaceDecor(footprints);
+        PlaceEscort();
         ShareTerrainWithPathing();
     }
 
@@ -215,6 +217,18 @@ public sealed class SubLevelGenerator : MonoBehaviour
             }
             outpostPieces++;
         }
+    }
+
+    // The escort payload at the start of a chain route (only when the settings name one).
+    void PlaceEscort()
+    {
+        var root = Rebuild(EscortName).transform;
+        if (route == null || settings.escortPayload == null || route.X.Count == 0) return;
+        var payload = Instantiate(settings.escortPayload, root);
+        payload.name = settings.escortPayload.name;
+        if (!Application.isPlaying)
+            foreach (var part in payload.GetComponentsInChildren<Transform>(true)) part.gameObject.hideFlags = HideFlags.DontSave;
+        payload.Configure(route, transform);
     }
 
     // Each decor group, seeded separately so adding a group never moves another group's items.

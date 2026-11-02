@@ -139,6 +139,10 @@ public sealed class SubLevelGenSettings : ScriptableObject
     [Tooltip("Cells either side averaged when evening out a road's height. Higher = smoother, flatter roads.")]
     [Range(0, 10)] public int roadSmoothing = 3;
 
+    [Header("Escort")]
+    [Tooltip("Chain routes only: the payload placed at the start of the route (e.g. Payload). Leave empty for other missions.")]
+    public EscortPayload escortPayload;
+
     [Header("Decor")]
     [Tooltip("Things scattered over the map after roads, one group per kind (e.g. Trees). Each group has its own rules.")]
     public DecorGroup[] decorGroups = new DecorGroup[0];

@@ -6,6 +6,12 @@ public interface IMissionObjective
     bool IsComplete { get; }
 }
 
+// An objective that can describe its own progress for the HUD (e.g. the escort's checkpoints).
+public interface IMissionStatus
+{
+    string Status { get; }
+}
+
 // Every mission objective currently in the scene. Objectives add themselves when enabled and remove
 // themselves when disabled, so the mission tracker never needs to know what kinds there are.
 public static class MissionObjectives

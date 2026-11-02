@@ -353,11 +353,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4142279150903042779, guid: cf2aa266ae5bbe040844446d39894bff, type: 3}
       propertyPath: seed
-      value: -1836791862
+      value: 1118759478
       objectReference: {fileID: 0}
     - target: {fileID: 4142279150903042779, guid: cf2aa266ae5bbe040844446d39894bff, type: 3}
       propertyPath: lastSeed
-      value: -1836791862
+      value: 1118759478
       objectReference: {fileID: 0}
     - target: {fileID: 4142279150903042779, guid: cf2aa266ae5bbe040844446d39894bff, type: 3}
       propertyPath: roadsBuilt
@@ -368,12 +368,16 @@ PrefabInstance:
       value: 349
       objectReference: {fileID: 0}
     - target: {fileID: 4142279150903042779, guid: cf2aa266ae5bbe040844446d39894bff, type: 3}
+      propertyPath: roadsCarved
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4142279150903042779, guid: cf2aa266ae5bbe040844446d39894bff, type: 3}
       propertyPath: allConnected
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4142279150903042779, guid: cf2aa266ae5bbe040844446d39894bff, type: 3}
       propertyPath: walkablePercent
-      value: 86.4192
+      value: 82.0224
       objectReference: {fileID: 0}
     - target: {fileID: 4142279150903042779, guid: cf2aa266ae5bbe040844446d39894bff, type: 3}
       propertyPath: escortRouteComplete
