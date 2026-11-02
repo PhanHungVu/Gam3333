@@ -20190,12 +20190,17 @@ MonoBehaviour:
   rockRadius: 0.6
   pullSpeed: 8
   maximumPullDuration: 2
+  orbitGroundPauseDuration: 1.2
+  orbitLiftDuration: 0.35
   orbitRadius: 6
-  orbitDegreesPerSecond: 180
+  orbitDegreesPerSecond: 360
   orbitDuration: 3
   orbitHeight: 1.1
   orbitAccelerationDuration: 0.4
-  orbitBodyTurnSpeed: 540
+  orbitBodyTurnSpeed: 720
+  orbitChaseStopDistance: 2.5
+  orbitChargeSpeed: 9
+  orbitChargeAcceleration: 30
 --- !u!1 &4095699344427030363
 GameObject:
   m_ObjectHideFlags: 0

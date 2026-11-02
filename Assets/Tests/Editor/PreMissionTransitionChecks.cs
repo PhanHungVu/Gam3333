@@ -40,8 +40,8 @@ public sealed class PreMissionTransitionChecks
         originalHook = Field<MissionStartHook>(flow, "missionStartHook");
         var catalogue = Field<QuestBoardCatalogue>(flow, "catalogue");
         check(original != heavy && original.partId != heavy.partId && heavy == AssetDatabase.LoadAssetAtPath<PartData>(PreMissionTransitionSetup.HeavyTorsoPath)
-            && original.GetStat(StatType.Health) == 100 && heavy.GetStat(StatType.Health) == 150,
-            "Authored Original/Heavy torso definitions are distinct with actual 100/150 health contributions");
+            && original.GetStat(StatType.Health) > 0 && Mathf.Approximately(heavy.GetStat(StatType.Health), original.GetStat(StatType.Health) * 1.5f),
+            "Authored Original/Heavy torso definitions are distinct and the development heavy torso retains 1.5 times the base health");
         check(catalogue.FindTorsoVisual(original).model == catalogue.FindTorsoVisual(heavy).model
             && catalogue.FindTorsoVisual(original).rotation == catalogue.FindTorsoVisual(heavy).rotation,
             "Both authored torso choices reference exactly the same existing model and orientation");
@@ -187,9 +187,9 @@ public sealed class PreMissionTransitionChecks
                     return false;
                 }
                 check(sawConfirm && recording.Calls == 2 && recording.Quest == quest && recording.Torso == heavy
-                    && recording.Torso.GetStat(StatType.Health) == 150 && session.LaunchRequested
+                    && recording.Torso.GetStat(StatType.Health) == heavy.GetStat(StatType.Health) && session.LaunchRequested
                     && SceneManager.GetActiveScene().path == PreMissionPrototypeSetup.ScenePath,
-                    "Heavy confirmation pulses, submits the exact 150-health definition once and remains in the UI scene");
+                    "Heavy confirmation pulses, submits the selected definition with its current health once and remains in the UI scene");
                 capture("q53-confirmed"); flow.Back(); break;
             case 13:
                 if (flow.IsTransitioning) return false;

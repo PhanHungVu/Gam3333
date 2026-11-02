@@ -32,8 +32,14 @@ namespace Lithomachia.EnemyBehavior
         protected override void Begin() { completed = false; if (Controller.SpecialAttack != null) Controller.SpecialAttack.BeginAttack(); }
         protected override Status Tick()
         {
-            Controller.Hold(Controller.SpecialAttack != null && Controller.SpecialAttack.CurrentStage == EnemyGraphAttack.Stage.Orbit ? "Orbiting rock" : "Special attack");
             if (Controller.SpecialAttack == null) return Status.Failure;
+            Controller.Hold(Controller.SpecialAttack.CurrentStage switch
+            {
+                EnemyGraphAttack.Stage.Grounded => "Rock resting on ground",
+                EnemyGraphAttack.Stage.OrbitLift => "Lifting rock",
+                EnemyGraphAttack.Stage.Orbit => "Orbiting rock",
+                _ => "Special attack"
+            });
             completed = Controller.SpecialAttack.TickAttack(UnityEngine.Time.deltaTime); return completed ? Status.Success : Status.Running;
         }
         protected override void OnEnd() { if (!completed && Controller != null) Controller.CancelAttack(); }

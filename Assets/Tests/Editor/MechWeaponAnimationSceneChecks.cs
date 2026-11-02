@@ -152,14 +152,18 @@ public static class MechWeaponAnimationSceneChecks
                     originalSword.transform.position += Vector3.right * 100f;
                     var dummy = GameObject.CreatePrimitive(PrimitiveType.Cube);
                     dummy.name = "Mace Damage Check";
-                    dummy.transform.position = motor.transform.position + motor.transform.forward * 3f + motor.transform.right * 2.2f;
+                    var meleeBox = motor.GetComponent<MechCombat>().Melee;
+                    dummy.transform.position = meleeBox.BoxCenter(0f, motor.transform.rotation) + motor.transform.right * meleeBox.BoxSize.x * .3f;
                     dummy.transform.localScale = Vector3.one * 0.3f;
                     maceTarget = dummy.AddComponent<CombatHealth>();
+                    maceTarget.SetMaximum(1000f, true);
                     Physics.SyncTransforms();
                     Keys(); Button(MouseButton.Left); delay = 0.15f; break;
                 case 13:
                     Pose(PartCategory.ArmL, MechWeaponAnimator.PoseState.Fire, "Mace");
-                    Check(maceTarget.CurrentHealth == 50f, "Actual LMB mace swing deals 50 damage inside its enlarged melee hitbox");
+                    float maceDamage = equipment.GetEquipped(PartCategory.ArmL).Stats.GetStat(StatType.Damage);
+                    Check(maceDamage > 0f && Mathf.Abs(maceTarget.CurrentHealth - (1000f - maceDamage)) < .002f,
+                        "Actual LMB mace swing uses its configured damage and current Range-scaled melee hitbox; health=" + maceTarget.CurrentHealth);
                     Object.DestroyImmediate(maceTarget.gameObject);
                     Capture("mace-fire"); Button(); PlacePickup("Arm Crossbow Animation Pickup"); delay = 0.45f; break;
                 case 14:
@@ -198,8 +202,8 @@ public static class MechWeaponAnimationSceneChecks
                     delay = 2.3f; break;
                 case 19:
                     Check(heldLeft.Count >= 2 && heldRight.Count >= 2, "Holding LMB and RMB continuously repeats both equipped arm weapons");
-                    float leftCooldown = equipment.GetEquipped(PartCategory.ArmL).Stats.GetStat(StatType.CooldownReload);
-                    float rightCooldown = equipment.GetEquipped(PartCategory.ArmR).Stats.GetStat(StatType.CooldownReload);
+                    float leftCooldown = equipment.GetEquipped(PartCategory.ArmL).Stats.ShotInterval;
+                    float rightCooldown = equipment.GetEquipped(PartCategory.ArmR).Stats.ShotInterval;
                     Check(heldLeft.Skip(1).Select((time, i) => time - heldLeft[i]).All(gap => gap >= leftCooldown - .002f)
                         && heldRight.Skip(1).Select((time, i) => time - heldRight[i]).All(gap => gap >= rightCooldown - .002f),
                         "Held attacks respect each weapon's independent cooldown");

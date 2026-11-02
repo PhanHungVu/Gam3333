@@ -88,6 +88,7 @@ public sealed class EnemyAgent : MonoBehaviour
     int intentionFrame = -1;
     EnemyMovementIntent intention;
     Vector3 directedVelocity;
+    bool preserveGraphFacing;
     public bool LastMotionBlocked { get; private set; }
 
     // ---- read by Steering and the states ----
@@ -190,7 +191,7 @@ public sealed class EnemyAgent : MonoBehaviour
         if (externalDecisions && intention == EnemyMovementIntent.Directed)
         {
             velocity = directedVelocity;
-            Move(velocity * dt); Face(dt); SnapToGround(dt); return;
+            Move(velocity * dt); if (!preserveGraphFacing) Face(dt); SnapToGround(dt); return;
         }
 
         // 2. crowd + obstacle forces on top, like Flocking.compute_flocking_force
@@ -209,9 +210,10 @@ public sealed class EnemyAgent : MonoBehaviour
 
     public void RefreshTarget() => ResolveTarget();
 
-    public void SetMovementIntent(EnemyMovementIntent next, float dt)
+    public void SetMovementIntent(EnemyMovementIntent next, float dt, bool preserveFacing = false)
     {
         if (!externalDecisions) return;
+        preserveGraphFacing = preserveFacing;
         intention = next; intentionFrame = Time.frameCount;
         switch (next)
         {
@@ -231,9 +233,10 @@ public sealed class EnemyAgent : MonoBehaviour
         InAttackRange = false;
     }
 
-    public void SetDirectedMovement(Vector3 direction, float speed)
+    public void SetDirectedMovement(Vector3 direction, float speed, bool preserveFacing = false)
     {
         if (!externalDecisions) return;
+        preserveGraphFacing = preserveFacing;
         intention = EnemyMovementIntent.Directed; intentionFrame = Time.frameCount;
         directedVelocity = Steering.Flat(direction).normalized * Mathf.Max(0, speed);
         GoalDirection = directedVelocity.normalized; FaceTarget = false; InAttackRange = false;
@@ -267,7 +270,7 @@ public sealed class EnemyAgent : MonoBehaviour
         Move(velocity * dt);
         // A committed graph attack keeps the visual swing aligned to the
         // existing attack's snapshotted strike direction.
-        if (!externalDecisions || intention != EnemyMovementIntent.Hold) Face(dt);
+        if (!externalDecisions || intention != EnemyMovementIntent.Hold && !preserveGraphFacing) Face(dt);
         SnapToGround(dt);
     }
 

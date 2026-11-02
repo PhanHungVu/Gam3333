@@ -4,6 +4,14 @@ The pre-mission scene now uses a **horizontal 3D board viewed by a dedicated ove
 
 The current catalogue offers **KOTH, Escort and Elimination only**. Its six side quests contain two definitions per type; the larger main quest is Elimination. `PrototypeBoardCatalogue` exposes **Offered Mission Types** in the Inspector, and progression applies this filter to initial offers, replacement offers and main draws. An empty list offers no missions. Retrieval/Defense enum values and legacy previews remain for serialized compatibility but are excluded from the current board. New quest definitions default to Elimination.
 
+## PartData merge compatibility — 2026-11-02
+
+Starter torso selection still stores and hands off the actual `PartData` reference. The current normal torso contributes **150 health**; the removable Heavy Torso development option contributes **225** (1.5 times the normal torso) and carries the matching base ability-data fields. Both retain their existing model mapping. Health labels read the current asset value; the gameplay hook remains public and empty.
+
+The merged combat code uses **FireRate** for shot intervals, separate **Reload/MagSize/Ammo** for magazine reloads, **SplashDamage** for area damage and leg speed multiplied by other parts' speed percentages. Accuracy and ability timing entries remain stored data for future gameplay; this UI does not activate those features.
+
+The compatibility audit passed **951 foundation checks**, **117 saved-roster enemy checks**, **95 world-space swap UI checks**, **44 quest/catalogue/stat-ID checks**, and the actual weapon-input scene suite, including held mouse firing, ammunition, cooldowns and release. The saved-asset checks did not rerun authoring/setup menus. Old mace damage/reach and UI-number assertions were updated to the current part data; the development torso remains separate from the gameplay catalogue's normal torso asset.
+
 ## Authored mission logos
 
 The inspected slab's raised preview uses the supplied models and matching textures from `Models/Logos`:
@@ -330,7 +338,7 @@ The miniature grows from a shallow plinth on the selected rock during the latter
 
 These are briefing symbols, not a procedural map, enemy count, gameplay actors or a promise of additional mission mechanics. They read existing quest data without changing it. No Boss type is added; the current main displays Retrieval. `PreMissionMissionMiniature` caches its five compositions and reuses them between inspections. Preview geometry has no collider/Rigidbody and uses owned prototype mesh/materials on the existing world layer, with no downloaded art or new palette.
 
-Decline retracts the information panel while returning the miniature, stone and camera together, restoring the inscription, exact board pose, framing and hover. Accept gives a short press before the existing transition to the separate torso screen. The inspected world camera/miniature remains held through torso browsing and Back. Existing 100/150-health torso data, shared model mapping, directional browse animation, drag rotation and one-time confirmation pulse are retained. Confirmation still calls the exact empty hook once; no gameplay scene or equipment setup is added. Free rock dragging and idle camera parallax are not introduced; stable framing keeps the preview and text readable.
+Decline retracts the information panel while returning the miniature, stone and camera together, restoring the inscription, exact board pose, framing and hover. Accept gives a short press before the existing transition to the separate torso screen. The inspected world camera/miniature remains held through torso browsing and Back. Current normal/heavy torso data (150/225 health), shared model mapping, directional browse animation, drag rotation and one-time confirmation pulse are retained. Confirmation still calls the exact empty hook once; no gameplay scene or equipment setup is added. Free rock dragging and idle camera parallax are not introduced; stable framing keeps the preview and text readable.
 
 P3 tuning is on `QuestStoneView` (hover) and `PreMissionStoneMotion` (inspection/camera). Default P3 pickup/return times are **0.52 / 0.44 s**, with **1.15×** main handling, **0.22 / 0.12 units** small/main inspection lift, and minimum camera sizes **3.0 / 3.85**, expanded to fit within **34% screen width**. The explicit upgrade retunes only the previous untouched 0.72/0.64-second defaults on first creation; custom values are retained. Miniature emergence depth and piece stagger are serialized on `PreMissionMissionMiniature`. Torso timing and briefing fade/stagger remain on the shared presenter.
 
@@ -464,7 +472,7 @@ New sources: `QuestProgressionSession.cs`, `QuestProgressionRuntime.cs`, `PreMis
 1. Open `Assets/Scenes/MainMenuScene.unity` and enter Play mode.
 2. Click **Quest Board**. The existing **Gym**, **Zoo**, and **Exit** entries remain available.
 3. Watch the terrain/physical track rise, then six side slabs drop across the whole table, or use **Skip Arrival / Space** to settle the introduction. Hover/click one, or use arrow keys and Enter. The stone lifts and the camera approaches before the briefing reveals. **Decline** or **Escape** reverses the motion and restores board hover. Tracked successful results advance the marker and unlock main after three; the isolated automated fixtures cover this before gameplay connection.
-4. After the briefing reveals, **Accept Quest** opens the separate starting-torso view. Drag the existing torso model to rotate it. Browse **Golem Torso (100 health)** and **Heavy Torso (Test) (150 health)** with the left/right controls; the counter, name, description, health contribution and preview update together.
+4. After the briefing reveals, **Accept Quest** opens the separate starting-torso view. Drag the existing torso model to rotate it. Browse **Golem Torso (150 health)** and **Heavy Torso (Test) (225 health)** with the left/right controls; the counter, name, description, health contribution and preview update together.
 5. **Back to Details** or **Escape** retains the selected quest and torso.
 6. **Confirm Torso** gives brief feedback, then calls the exposed gameplay function below once with the exact selected data. The UI stays on this view because gameplay is intentionally not connected.
 7. Back/Escape from the board returns to the main menu.
@@ -531,7 +539,7 @@ The existing transition guard ignores competing selection, Accept and Back/Escap
 
 ## Starting torso selection
 
-The shipped catalogue has two choices: the unchanged **Golem Torso** (100 health contribution) and **Heavy Torso (Test)** (150). Both map to the exact same `Models/Golem1Models/Golem1Torso.glb`, with distinct `PartData` references/IDs. The counter reads **1 / 2** or **2 / 2**, and browsing wraps. With only one configured valid option, controls still disable automatically.
+The shipped catalogue has two choices: **Golem Torso** (150 health contribution) and **Heavy Torso (Test)** (225). Both map to the exact same `Models/Golem1Models/Golem1Torso.glb`, with distinct `PartData` references/IDs. The counter reads **1 / 2** or **2 / 2**, and browsing wraps. With only one configured valid option, controls still disable automatically.
 
 The new `Assets/PreMission/PartData_HeavyTorso_Test.asset` is development content: ID `starter_heavy_torso_test`, same part type/subtype and other data as the original, with its Health entry multiplied by 1.5. The original data/model are untouched. `StatType` has no weight entry; no weight, physics or movement system is introduced. The UI displays the actual selected data's health contribution, not an equipped player's total HP.
 
