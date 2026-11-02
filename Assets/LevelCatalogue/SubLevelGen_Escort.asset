@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 46fdc2de161b5ce45a9fb6393a4e834d, type: 3}
-  m_Name: SubLevelGenSettings
+  m_Name: SubLevelGen_Escort
   m_EditorClassIdentifier: Assembly-CSharp::SubLevelGenSettings
   mapSize: 500
   cellSize: 4
@@ -28,7 +28,8 @@ MonoBehaviour:
   smoothAreaTerracing: 0.4
   maxWalkableSlope: 35
   startChunk: {fileID: 2121723537569621097, guid: 5ca732db150bf2f4e9fef87b4ed55b9a, type: 3}
-  missionChunk: {fileID: 5514633955760966115, guid: 5109d7bb88dd5d848900d25d76d6867d, type: 3}
+  missionChunk: {fileID: 8261678895509779393, guid: 743a8168ca0667c46af19f7ba5668814, type: 3}
+  endChunk: {fileID: 2121723537569621097, guid: bed7b43f04173b24493e6465e114dba8, type: 3}
   missionChunkMin: 3
   missionChunkMax: 4
   minSpacing: 50
@@ -37,6 +38,7 @@ MonoBehaviour:
   placementCandidates: 300
   flatnessWeight: 10
   extraLinks: 1
+  routeMode: 1
   roadWidth: 12
   maxRoadSlope: 20
   roadBlend: 8

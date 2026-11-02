@@ -4,16 +4,26 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
+// Weapon stats: Damage per hit; Ammo = total shots; MagSize = shots before a reload (0 = never reloads);
+// FireRate = shots or swings per second; Reload = seconds to refill the magazine; Range in golem lengths;
+// SplashRadius and SplashDamage for Splash weapons.
+// Each stat keeps a fixed number, because part assets store the number: never renumber one, and give
+// a new stat the next unused number. Retired, don't reuse: 7 Single Shot, 8 Auto Aim, 9 Max Range Multiplier.
 public enum StatType
 {
-    Health, MoveSpeed,
-    Damage, MagSize, Ammo, CooldownReload, Range, SingleShot, AutoAim,
-    // Appended so stats already saved in part assets keep their meaning.
-    MaxRangeMultiplier, ProjectileSpeed, ProjectileSize, SplashRadius
+    Health = 0, MoveSpeed = 1,
+    Damage = 2, MagSize = 3, Ammo = 4, Reload = 5, Range = 6,
+    ProjectileSpeed = 10, ProjectileSize = 11, SplashRadius = 12,
+    FireRate = 13, SplashDamage = 14,
+    // Stored for upcoming features, not used by the game yet: Accuracy (heads); Ability Cooldown and
+    // Ability Duration in seconds (each head, torso and legs for its own ability).
+    Accuracy = 15, AbilityCooldown = 16, AbilityDuration = 17
 }
 
-// How a part attacks. None for parts that don't attack (head, legs, torso).
-public enum PartSubtype { None, Projectile, Explosive, Melee }
+// How a part attacks, which decides how its damage is checked. None for parts that don't attack
+// (head, legs, torso). Melee: a hit box. Projectile: a shot that hits what it touches. Splash: a shot
+// that also damages everything within its Splash Radius.
+public enum PartSubtype { None, Projectile, Splash, Melee }
 
 
 [System.Serializable]
@@ -48,7 +58,11 @@ public class PartData : ScriptableObject
         return 0f;
     }
 
-    public bool GetBool(StatType type) => GetStat(type) > 0.5f;
+
+    // Seconds between shots or swings: 1 / Fire Rate (1 s if no Fire Rate is set).
+    public float ShotInterval { get { float rate = GetStat(StatType.FireRate); return rate > 0f ? 1f / rate : 1f; } }
+    // Shots per magazine; 0 means the weapon never needs reloading.
+    public int MagazineSize => Mathf.Max(0, Mathf.RoundToInt(GetStat(StatType.MagSize)));
 
 #if UNITY_EDITOR
     void OnValidate()

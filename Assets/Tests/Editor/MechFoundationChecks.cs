@@ -76,6 +76,7 @@ public static class MechFoundationChecks
             CheckCombat(view);
             CheckMeleeFramingAndAssist(view);
             CheckWeaponLoadout(view);
+            CheckMagazine(view);
             CheckInputIsolation();
             CombatFeedbackChecks.Run(Check);
             MechPartsChecks.Run(Check);
@@ -94,7 +95,10 @@ public static class MechFoundationChecks
             DecorChecks.Run(Check);
             NavTerrainChecks.Run(Check);
             KOTHChecks.Run(Check);
+            MissionChecks.Run(Check);
+            EscortRouteChecks.Run(Check);
             OutpostChecks.Run(Check);
+            SpeedChecks.Run(Check);
             MechProjectileModelChecks.Run(Check);
             MechSfxChecks.Run(Check);
             MechDashMeleeChecks.Run(Check);
@@ -857,7 +861,7 @@ public static class MechFoundationChecks
         Set(combat, "meleeCenter", new Vector3(0f, 0f, 2.25f));
         TestMech.Equip(player, (PartCategory.ArmL, TestMech.Sword(60f, 0.65f)),
             (PartCategory.ArmR, TestMech.Ranged("Fixture axe", PartType.Arm, PartSubtype.Projectile,
-                15f, 30, 0.2f, 15f, 30f, 0.12f, maxRange: 1f)));
+                15f, 30, 0.2f, 15f, 30f, 0.12f)));
         Set(combat, "gameplayCamera", view);
         player.SetActive(true);
         var target = Enemy(origin + Vector3.forward * 12);
@@ -1097,6 +1101,34 @@ public static class MechFoundationChecks
         view.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
     }
 
+    // Fire Rate, magazine and reload: a 2-round magazine, 5 rounds in all, 0.5 s between shots, 3 s reload.
+    static void CheckMagazine(Camera view)
+    {
+        Vector3 origin = new Vector3(6100, 2, 0);
+        var player = new GameObject("Magazine Player");
+        player.SetActive(false);
+        player.transform.position = origin;
+        var combat = player.AddComponent<MechCombat>();
+        Set(combat, "gameplayCamera", view);
+        var gun = TestMech.WithMagazine(TestMech.Ranged("Magazine gun", PartType.Arm, PartSubtype.Projectile, 10, 5, 0.5f, 3, 100, 0.1f), 2, 3f);
+        TestMech.Equip(player, (PartCategory.ArmR, gun));
+        player.SetActive(true);
+        view.transform.SetPositionAndRotation(origin, Quaternion.identity);
+        var part = combat.GetPart(PartCategory.ArmR);
+        void Shoot() { var shot = combat.TryAttack(PartCategory.ArmR).Projectile; if (shot != null) Object.DestroyImmediate(shot.gameObject); }
+        Shoot();
+        Check(part.MagazineRounds == 1 && part.RemainingAmmo == 4 && !part.IsReloading
+            && TestMech.Near(combat.ReloadRemaining(PartCategory.ArmR), 0.5f), "A magazine fires at its Fire Rate until it is empty");
+        TestMech.Advance(player, 0.5f); Shoot();
+        Check(part.IsReloading && part.MagazineRounds == 2 && part.RemainingAmmo == 3
+            && TestMech.Near(combat.ReloadRemaining(PartCategory.ArmR), 3f) && combat.TryAttack(PartCategory.ArmR).Projectile == null,
+            "An emptied magazine reloads by itself for its Reload time, refilling from the ammo left");
+        for (int i = 0; i < 3; i++) { TestMech.Advance(player, 3f); Shoot(); }
+        Check(part.RemainingAmmo == 0 && part.MagazineRounds == 0 && !part.IsReloading && combat.TryAttack(PartCategory.ArmR).Projectile == null,
+            "The last magazine holds only the ammo left, and an empty weapon stops without reloading");
+        Object.DestroyImmediate(player);
+    }
+
     static void CheckWeaponLoadout(Camera view)
     {
         Vector3 origin = new Vector3(6000, 2, 0);
@@ -1134,30 +1166,23 @@ public static class MechFoundationChecks
         combat.enabled = false;
         combat.enabled = true;
         Check(combat.AmmoRemaining(PartCategory.ArmR) == 0, "Re-enabling weapons cannot refill ammunition");
-        Check(MechProjectile.RangeMultiplier(5, 5, 10) == 1
-            && MechProjectile.RangeMultiplier(7.5f, 5, 10) == 0.5f
-            && MechProjectile.RangeMultiplier(10, 5, 10) == 0,
-            "Effective range gives full damage, then falloff reaches zero at maximum range");
         var rangeEnemy = Enemy(origin + Vector3.forward * 8);
         var rangeHealth = rangeEnemy.gameObject.AddComponent<CombatHealth>();
         var projectile = new GameObject("Range Test").AddComponent<MechProjectile>();
         projectile.transform.position = origin;
-        projectile.ConfigureRangeAndExplosion(5, 0);
         Physics.SyncTransforms();
-        projectile.Launch(player.transform, Vector3.forward, 100, 100, 0.1f, 10, ~0, origin);
+        projectile.Launch(player.transform, Vector3.forward, 100, 30, 0.1f, 10, ~0, origin);
         Call(projectile, "Step", 1f);
-        Check(rangeHealth.CurrentHealth > 0 && rangeHealth.CurrentHealth < 100,
-            "Physical impact beyond effective range actually receives reduced damage");
+        Check(Mathf.Approximately(rangeHealth.CurrentHealth, 70f), "Shots deal full damage anywhere within their Range");
         rangeEnemy.transform.position = origin + Vector3.forward * 12;
         float previousHealth = rangeHealth.CurrentHealth;
         projectile = new GameObject("Maximum Range Test").AddComponent<MechProjectile>();
         projectile.transform.position = origin;
-        projectile.ConfigureRangeAndExplosion(5, 0);
         Physics.SyncTransforms();
         projectile.Launch(player.transform, Vector3.forward, 100, 100, 0.1f, 10, ~0, origin);
         Call(projectile, "Step", 1f);
         Check(!projectile.IsLive && rangeHealth.CurrentHealth == previousHealth,
-            "Projectile expires at maximum range without damaging enemies beyond it");
+            "Shots disappear at their Range without damaging enemies beyond it");
         rangeEnemy.gameObject.SetActive(false);
         var direct = Enemy(origin + Vector3.forward * 5);
         var directHealth = direct.gameObject.AddComponent<CombatHealth>();
@@ -1174,12 +1199,12 @@ public static class MechFoundationChecks
         player.AddComponent<BoxCollider>();
         projectile = new GameObject("Blast Test").AddComponent<MechProjectile>();
         projectile.transform.position = origin;
-        projectile.ConfigureRangeAndExplosion(10, 6);
+        projectile.ConfigureSplash(6, 20);
         Physics.SyncTransforms();
         projectile.Launch(player.transform, Vector3.forward, 100, 30, 0.1f, 15, ~0, origin);
         Call(projectile, "Step", 1f);
-        Check(directHealth.CurrentHealth == 70 && nearbyHealth.CurrentHealth == 70,
-            "Cannon damages its direct victim and nearby compound enemy exactly once each");
+        Check(directHealth.CurrentHealth == 50 && nearbyHealth.CurrentHealth == 80,
+            "Splash shot: the direct victim takes damage + splash damage, the nearby compound enemy splash damage, once each");
         Check(shieldedHealth.CurrentHealth == 100 && ownerHealth.CurrentHealth == 100,
             "Cannon splash is blocked by walls and excludes the shooter");
         foreach (var obj in new[] { player, direct.gameObject, nearby.gameObject, shielded.gameObject, wall }) obj.SetActive(false);

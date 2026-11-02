@@ -65,20 +65,21 @@ public static class MechEnemyCombatChecks
             check(health.CurrentHealth == before && mace.Weapon.NormalizedTime > 0f,
                 "Mace damage waits for its configured animation release frame");
             Step(mace, 0.25f);
-            check(health.CurrentHealth == before - maceHit && mace.Releases == 1,
-                "Mace release damages player exactly once");
+            check(Mathf.Abs(health.CurrentHealth - (before - maceHit)) < 0.002f && mace.Releases == 1,
+                "Mace release damages player exactly once; before=" + before + "; after=" + health.CurrentHealth
+                + "; hit=" + maceHit + "; releases=" + mace.Releases + "; distance=" + Vector3.Distance(mace.transform.position, player.transform.position));
             Step(mace, 0.3f);
-            check(health.CurrentHealth == before - maceHit && !mace.TryAttack() && mace.transform.position == root,
+            check(Mathf.Abs(health.CurrentHealth - (before - maceHit)) < 0.002f && !mace.TryAttack() && mace.transform.position == root,
                 "Mace cooldown prevents repeat hits and root motion never moves the enemy");
             Step(mace, 2f);
             check(mace.TryAttack() && mace.Weapon != first, "Dual mace enemy alternates its equipped arms");
             player.transform.position += Vector3.right * 10f; Physics.SyncTransforms();
             Step(mace, 0.8f);
-            check(health.CurrentHealth == before - maceHit, "Player can dodge a mace swing during windup");
+            check(Mathf.Abs(health.CurrentHealth - (before - maceHit)) < 0.002f, "Player can dodge a mace swing during windup");
             player.transform.position -= Vector3.right * 10f; Physics.SyncTransforms(); Step(mace, 2f);
             check(mace.TryAttack(), "Mace can start another admitted swing after cooldown");
             wall = Wall(player, 1f); Step(mace, 0.8f);
-            check(health.CurrentHealth == before - maceHit, "Wall appearing during windup blocks melee damage");
+            check(Mathf.Abs(health.CurrentHealth - (before - maceHit)) < 0.002f, "Wall appearing during windup blocks melee damage");
             Step(mace, 2f);
             check(!mace.TryAttack(), "Mace does not begin attacks through walls");
             Object.DestroyImmediate(wall); wall = null; Physics.SyncTransforms();
@@ -87,12 +88,12 @@ public static class MechEnemyCombatChecks
             ally.transform.position = player.transform.position - Vector3.forward * 1f;
             var allyHealth = ally.AddComponent<CombatHealth>(); allyHealth.Team = CombatTeam.Enemy; Physics.SyncTransforms();
             Step(mace, 0.8f);
-            check(health.CurrentHealth == before - 2f * maceHit && allyHealth.CurrentHealth == allyHealth.MaximumHealth,
+            check(Mathf.Abs(health.CurrentHealth - (before - 2f * maceHit)) < 0.002f && allyHealth.CurrentHealth == allyHealth.MaximumHealth,
                 "Another enemy in between neither blocks the mace swing nor takes damage");
             Object.DestroyImmediate(ally); Physics.SyncTransforms(); before -= maceHit;
             Step(mace, 2f); mace.TryAttack();
             mace.GetComponent<CombatHealth>().ApplyDamage(1000f); Step(mace, 1f);
-            check(health.CurrentHealth == before - maceHit && !mace.gameObject.activeSelf,
+            check(Mathf.Abs(health.CurrentHealth - (before - maceHit)) < 0.002f && !mace.gameObject.activeSelf,
                 "Killing an enemy cancels its pending animation damage");
             Object.DestroyImmediate(mace.gameObject); mace = null;
             crossbow = Enemy("crossbow", player, 8f);
@@ -109,7 +110,7 @@ public static class MechEnemyCombatChecks
             check(bolt.GetComponentInChildren<MeshFilter>().sharedMesh.name == "CrossbowBoltMesh",
                 "Enemy crossbow launches the same authored bolt model as the player");
             Fly(bolt, 1f);
-            check(health.CurrentHealth == before - crossbow.DamageOf(crossbow.Weapon) && !bolt.IsLive,
+            check(Mathf.Abs(health.CurrentHealth - (before - crossbow.DamageOf(crossbow.Weapon))) < 0.002f && !bolt.IsLive,
                 "Enemy bolt uses swept collision to damage player once");
             Object.DestroyImmediate(bolt.gameObject);
             check(!crossbow.TryAttack(), "Crossbow cannot restart before its weapon cooldown expires");
@@ -152,7 +153,7 @@ public static class MechEnemyCombatChecks
             check(dual.TryAttack() && arms.All(w => w.CurrentPose == MechWeaponAnimator.PoseState.Fire),
                 "Independent weapons start every ready weapon at once");
             Step(dual, 0.45f);
-            check(health.CurrentHealth == before - firstHit - secondHit && dual.Releases == 2,
+            check(Mathf.Abs(health.CurrentHealth - (before - firstHit - secondHit)) < 0.002f && dual.Releases == 2,
                 "Each independent weapon lands its own hit with its own damage");
             check(!dual.TryAttack(), "Independent weapons each wait out their own cooldown");
             Object.DestroyImmediate(dual.gameObject); dual = null;

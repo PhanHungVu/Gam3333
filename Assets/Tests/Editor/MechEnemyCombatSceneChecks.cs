@@ -58,7 +58,7 @@ public static class MechEnemyCombatSceneChecks
                     Capture("enemy-mace-fire"); break;
                 case 3:
                     if (health.CurrentHealth >= before) { next = Time.time + 0.05f; return; }
-                    Check(health.CurrentHealth == before - enemy.DamageOf(enemy.Weapon), "Live enemy swing damages player at its release frame");
+                    Check(Mathf.Abs(health.CurrentHealth - (before - enemy.DamageOf(enemy.Weapon))) < 0.002f, "Live enemy swing damages player at its release frame");
                     enemy.GetComponent<CombatHealth>().ApplyDamage(1000f);
                     Spawn("crossbow", 8f); break;
                 case 4:
@@ -68,7 +68,7 @@ public static class MechEnemyCombatSceneChecks
                     Capture("enemy-crossbow-fire"); break;
                 case 5:
                     if (health.CurrentHealth >= before) { next = Time.time + 0.05f; return; }
-                    Check(health.CurrentHealth == before - enemy.DamageOf(enemy.Weapon), "Live enemy bolt travels to and damages the player");
+                    Check(Mathf.Abs(health.CurrentHealth - (before - enemy.DamageOf(enemy.Weapon))) < 0.002f, "Live enemy bolt travels to and damages the player");
                     break;
                 case 6:
                     // A fast bolt can connect while Fire is still playing; Reload follows Fire.

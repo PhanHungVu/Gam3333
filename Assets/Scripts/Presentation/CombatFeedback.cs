@@ -167,7 +167,7 @@ public sealed class CombatFeedback : MonoBehaviour
 
     void OnShot(MechProjectile shot)
     {
-        if (!presentationEnabled || shot.Subtype != PartSubtype.Explosive) return;
+        if (!presentationEnabled || shot.Subtype != PartSubtype.Splash) return;
         if (muzzleFlash) PlayEffect(CombatFeedbackEffect.Kind.Muzzle, combat.MuzzlePosition, muzzleSize, muzzleDuration, explosionColor, true, false, false);
         if (visualRecoil)
         {
@@ -182,7 +182,7 @@ public sealed class CombatFeedback : MonoBehaviour
 
     void OnImpact(MechProjectileImpact result)
     {
-        if (!presentationEnabled || result.Subtype != PartSubtype.Explosive) return;
+        if (!presentationEnabled || result.Subtype != PartSubtype.Splash) return;
         PlayImpact(result);
         if (result.Kills <= 0) return;
         ConfirmKills(result.Kills);

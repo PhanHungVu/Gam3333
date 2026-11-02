@@ -48,6 +48,11 @@ public static class NavTerrainChecks
             check(Mathf.Approximately(EnemyAgent.SpawnGroundY(site + new Vector3(0f, 50f, 10f), 0f), 20f),
                 "Enemies start on the terrain's height, not the fixed Ground Y");
 
+            // A generated map sizes the grid: it then covers exactly the new area.
+            grid.Resize(site + new Vector3(-100f, 0f, 0f), 20f, 20f);
+            check(grid.Baked && !grid.IsBlockedWorld(site + new Vector3(-95f, 0f, 0f)) && grid.IsBlockedWorld(site + new Vector3(-85f, 0f, 0f)),
+                "NavGrid resizes to a new area and re-bakes, so it fits a generated map");
+
             var map = new TerrainMap(2, 2, 4f, -4f, -4f);
             map.Walkable[0] = true; map.Walkable[1] = false; map.Walkable[2] = true; map.Walkable[3] = true;
             check(!map.WallAt(-2f, -2f) && map.WallAt(2f, -2f) && map.WallAt(10f, 0f),

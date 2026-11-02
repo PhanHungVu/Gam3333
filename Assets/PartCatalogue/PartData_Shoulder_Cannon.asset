@@ -16,26 +16,28 @@ MonoBehaviour:
   partName: Cannon
   description: 'single shot med range, aoe '
   partType: 4
-  subtype: 2
+  subtype: 2
   stats:
+  - type: 1
+    value: -4
   - type: 2
     value: 100
+  - type: 14
+    value: 50
+  - type: 4
+    value: 30
   - type: 3
     value: 1
-  - type: 4
-    value: 20
+  - type: 13
+    value: 1
   - type: 5
     value: 3
   - type: 6
-    value: 5
-  - type: 7
-    value: 1
-  - type: 9
-    value: 1.5
+    value: 10
+  - type: 12
+    value: 3
   - type: 10
     value: 100
   - type: 11
     value: 0.3
-  - type: 12
-    value: 6
   projectileColor: {r: 1, g: 0.5, b: 0.15, a: 1}

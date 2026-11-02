@@ -97,7 +97,8 @@ public static class CombatFeedbackSceneChecks
             {
                 Check(feedback.ActiveEffects == 0 && feedback.PoolSize == initialPoolSize,
                     "Scene effects finish and reuse the prewarmed pool without growth");
-                Check(combat.AmmoRemaining(PartCategory.ShoulderL) == 19, "Presentation consumes only the original single cannon round");
+                Check(combat.AmmoRemaining(PartCategory.ShoulderL) == (int)combat.GetPart(PartCategory.ShoulderL).Stats.GetStat(StatType.Ammo) - 1,
+                    "Presentation consumes only the original single cannon round");
                 Capture("settled");
                 Debug.Log("COMBAT FEEL SCENE CHECKS COMPLETE");
                 SessionState.SetBool(Key, false);

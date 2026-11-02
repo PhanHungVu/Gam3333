@@ -60395,12 +60395,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAttack
   weapons:
   - weapon: {fileID: 392894552036990723}
-    damageMultiplier: 0.35
-    cooldownMultiplier: 2
+    damageMultiplier: 0.25
+    cooldownMultiplier: 1.4
     projectileSpeedMultiplier: 1
   - weapon: {fileID: 5992641173762555105}
-    damageMultiplier: 0.35
-    cooldownMultiplier: 2
+    damageMultiplier: 0.25
+    cooldownMultiplier: 1.4
     projectileSpeedMultiplier: 1
   independentWeapons: 0
   externalRequests: 1

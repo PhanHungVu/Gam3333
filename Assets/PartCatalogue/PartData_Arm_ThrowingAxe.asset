@@ -16,22 +16,22 @@ MonoBehaviour:
   partName: Throwing Axe
   description: ranged weapon, unable to melee attack with it.
   partType: 1
-  subtype: 1
+  subtype: 1
   stats:
+  - type: 1
+    value: -2.5
   - type: 2
+    value: 50
+  - type: 4
     value: 50
   - type: 3
     value: 1
-  - type: 4
-    value: 30
-  - type: 5
+  - type: 13
     value: 0.5
-  - type: 6
-    value: 3
-  - type: 7
+  - type: 5
     value: 1
-  - type: 9
-    value: 1.5
+  - type: 6
+    value: 8
   - type: 10
     value: 100
   - type: 11

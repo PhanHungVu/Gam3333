@@ -25,6 +25,8 @@ public sealed class RoadSettings
     public bool carveIfNoWayRound = true; // when no route avoids cliffs, carve a ramp through instead of skipping the road
     public int smoothing = 3;          // cells either side averaged when evening out the road
     public float maxWalkableSlope = 35f;
+    public bool chain;              // one route start -> nearest -> next nearest ... -> end, instead of a network
+    public bool lastIsEnd;          // with chain: the last footprint (the end chunk) is visited last
 }
 
 // One road between two placed chunks: its centre line, as world points with heights.
@@ -55,7 +57,10 @@ public static class RoadBuilder
         float leadOut = halfWidth + map.CellSize;
         var blocked = FootprintCells(map, placed, footprints, halfWidth);
 
-        foreach (var link in Links(placed, s.extraLinks))
+        int end = -1;
+        if (s.chain && s.lastIsEnd)
+            for (int i = 0; i < placed.Count; i++) if (placed[i].Footprint == footprints.Count - 1 && i > 0) end = i;
+        foreach (var link in s.chain ? Chain(placed, end) : Links(placed, s.extraLinks))
         {
             var a = placed[link.Item1]; var b = placed[link.Item2];
             PickConnectors(a, b, footprints, connectors, out var ca, out var cb);
@@ -96,6 +101,29 @@ public static class RoadBuilder
             }
         }
         return count == placedCount;
+    }
+
+    // One ordered route from the start (placement 0): always on to the nearest unvisited chunk, with the
+    // end chunk (if given) saved for last. Links run in route order, each From the earlier chunk.
+    public static List<Tuple<int, int>> Chain(IReadOnlyList<ChunkPlacement> placed, int end)
+    {
+        var links = new List<Tuple<int, int>>();
+        var visited = new bool[placed.Count];
+        int current = 0; visited[0] = true;
+        for (int step = 1; step < placed.Count; step++)
+        {
+            int next = -1; float best = float.PositiveInfinity;
+            for (int i = 0; i < placed.Count; i++)
+            {
+                if (visited[i] || (i == end && step < placed.Count - 1)) continue;
+                float d = Distance(placed[current], placed[i]);
+                if (d < best) { best = d; next = i; }
+            }
+            visited[next] = true;
+            links.Add(Tuple.Create(current, next));
+            current = next;
+        }
+        return links;
     }
 
     // Minimum spanning tree over chunk centres (Prim's), then the shortest unused links as loops.

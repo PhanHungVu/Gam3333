@@ -30,13 +30,50 @@ public sealed class MechStats : MonoBehaviour
         }
     }
 
+    // Mech speed = the legs' Speed (metres per second) x every other equipped part's Speed as a
+    // percentage: -20 is x0.8, +10 is x1.1. The percentages multiply, so the speed never reaches zero.
+    public float BaseSpeed
+    {
+        get
+        {
+            if (equipment == null) equipment = GetComponent<EquipManager>();
+            var legs = equipment.GetEquipped(PartCategory.Legs);
+            return legs != null && legs.isEquipped && legs.Stats != null ? Mathf.Max(0f, legs.Stats.GetStat(StatType.MoveSpeed)) : 0f;
+        }
+    }
+
+    public float SpeedMultiplier
+    {
+        get
+        {
+            if (equipment == null) equipment = GetComponent<EquipManager>();
+            float multiplier = 1f;
+            foreach (var slot in Slots)
+            {
+                if (slot == PartCategory.Legs) continue;
+                var part = equipment.GetEquipped(slot);
+                if (part != null && part.isEquipped && part.Stats != null)
+                    multiplier *= Mathf.Max(0f, 1f + part.Stats.GetStat(StatType.MoveSpeed) / 100f);
+            }
+            return multiplier;
+        }
+    }
+
+    [Header("Speed (read-only)")]
+    [Tooltip("The legs' Speed in metres per second.")]
+    [SerializeField] float baseSpeed;
+    [Tooltip("Every other part's Speed percentage, multiplied together.")]
+    [SerializeField] float speedMultiplier = 1f;
+
     void Awake()
     {
         equipment = GetComponent<EquipManager>();
         health = GetComponent<CombatHealth>();
         health.SetMaximum(MaxHealth, refill: true);
+        RefreshSpeed();
     }
     void OnEnable() => equipment.EquipmentChanged += Refresh;
     void OnDisable() => equipment.EquipmentChanged -= Refresh;
-    void Refresh() => health.SetMaximum(MaxHealth, refill: false);
+    void Refresh() { health.SetMaximum(MaxHealth, refill: false); RefreshSpeed(); }
+    void RefreshSpeed() { baseSpeed = BaseSpeed; speedMultiplier = SpeedMultiplier; }
 }

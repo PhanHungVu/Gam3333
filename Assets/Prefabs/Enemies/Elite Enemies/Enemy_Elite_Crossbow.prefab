@@ -60615,11 +60615,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAttack
   weapons:
   - weapon: {fileID: 7508888232129397708}
-    damageMultiplier: 0.4
+    damageMultiplier: 0.109091
     cooldownMultiplier: 1
     projectileSpeedMultiplier: 0.7
   - weapon: {fileID: 7551524468581405611}
-    damageMultiplier: 0.4
+    damageMultiplier: 0.109091
     cooldownMultiplier: 1
     projectileSpeedMultiplier: 0.7
   independentWeapons: 0

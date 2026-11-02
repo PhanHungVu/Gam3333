@@ -58,6 +58,7 @@ public sealed class ChunkPlacementSettings
     public float levelHeight = 12f;     // flattened chunks snap to a terrace level
     public int terraceLevels = 4;
     public float maxWalkableSlope = 35f;
+    public bool lastIsEnd;              // the last footprint is an end chunk: placed as far from the start as it can
 }
 
 // Places chunks on a TerrainMap and flattens the ground under them, in plain code (portable).
@@ -82,6 +83,7 @@ public static class ChunkPlacer
             float loZ = minZ + s.edgeMargin + size.Depth * 0.5f, hiZ = maxZ - s.edgeMargin - size.Depth * 0.5f;
             if (loX > hiX || loZ > hiZ) continue;
             bool isStart = f == 0;
+            bool isEnd = s.lastIsEnd && f == footprints.Count - 1 && f > 0 && placed.Count > 0;
             ChunkPlacement best = null;
             float bestScore = float.NegativeInfinity;
             for (int c = 0; c < Math.Max(1, s.candidates); c++)
@@ -98,7 +100,8 @@ public static class ChunkPlacer
                 if (Overlaps(x, z, size, placed, footprints, s.minSpacing)) continue;
                 Range(map, x, z, size, out float low, out float high);
                 float score = -(high - low) * s.flatnessWeight;
-                if (!isStart) score += NearestDistance(x, z, placed);
+                if (isEnd) score += (float)Math.Sqrt((x - placed[0].X) * (x - placed[0].X) + (z - placed[0].Z) * (z - placed[0].Z));
+                else if (!isStart) score += NearestDistance(x, z, placed);
                 if (score > bestScore) { bestScore = score; best = new ChunkPlacement { X = x, Z = z, Footprint = f }; }
             }
             if (best == null) continue;

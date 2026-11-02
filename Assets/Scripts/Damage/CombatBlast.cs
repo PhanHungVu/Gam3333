@@ -18,14 +18,16 @@ public sealed class CombatBlast
     RaycastHit[] blockers = new RaycastHit[16];
     readonly HashSet<CombatHealth> damaged = new HashSet<CombatHealth>();
 
-    public DamageResult Resolve(Vector3 origin, float radius, float damage,
+    // A hit at origin. The target struck directly takes damage, plus splashDamage when there is a radius
+    // (rewarding direct hits); everyone else within radius takes splashDamage. Walls block the splash.
+    public DamageResult Resolve(Vector3 origin, float radius, float damage, float splashDamage,
         Transform owner, LayerMask layers, Collider direct = null)
     {
         damaged.Clear();
         int hits = 0, kills = 0;
         CombatTeam attacker = CombatTeams.Of(owner);
         if (direct != null && !IsOwner(direct, owner))
-            Apply(direct.GetComponentInParent<CombatHealth>(), damage, attacker, ref hits, ref kills);
+            Apply(direct.GetComponentInParent<CombatHealth>(), damage + (radius > 0f ? splashDamage : 0f), attacker, ref hits, ref kills);
         if (radius > 0)
         {
             int count;
@@ -39,7 +41,7 @@ public sealed class CombatBlast
                 var health = candidate.GetComponentInParent<CombatHealth>();
                 if (health == null || damaged.Contains(health)) continue;
                 if (Blocked(origin, candidate, owner, layers)) continue;
-                Apply(health, damage, attacker, ref hits, ref kills);
+                Apply(health, splashDamage, attacker, ref hits, ref kills);
             }
             Array.Clear(overlaps, 0, count);
         }

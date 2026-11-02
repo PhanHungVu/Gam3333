@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46fdc2de161b5ce45a9fb6393a4e834d, type: 3}
+  m_Name: SubLevelGen_KOTH
+  m_EditorClassIdentifier: Assembly-CSharp::SubLevelGenSettings
+  mapSize: 500
+  cellSize: 4
+  hillSize: 160
+  noiseLayers: 4
+  layerStrength: 0.5
+  layerDetail: 2
+  heightSpread: 2.2
+  terraceLevels: 4
+  levelHeight: 12
+  terraceSharpness: 0.75
+  cliffCoverage: 0.75
+  variationSize: 350
+  regionBlend: 0.25
+  smoothAreaTerracing: 0.4
+  maxWalkableSlope: 35
+  startChunk: {fileID: 2121723537569621097, guid: 5ca732db150bf2f4e9fef87b4ed55b9a, type: 3}
+  missionChunk: {fileID: 5514633955760966115, guid: 5109d7bb88dd5d848900d25d76d6867d, type: 3}
+  endChunk: {fileID: 2121723537569621097, guid: bed7b43f04173b24493e6465e114dba8, type: 3}
+  missionChunkMin: 3
+  missionChunkMax: 4
+  minSpacing: 50
+  edgeMargin: 20
+  blendDistance: 24
+  placementCandidates: 300
+  flatnessWeight: 10
+  extraLinks: 1
+  routeMode: 0
+  roadWidth: 12
+  maxRoadSlope: 20
+  roadBlend: 8
+  roadSlopeCost: 4
+  carveIfNoWayRound: 1
+  roadCliffCost: 10
+  roadSmoothing: 3
+  decorGroups:
+  - name: Trees
+    prefabs:
+    - prefab: {fileID: 8758049249749649652, guid: 46ec93bee1b04294f9a9b5b2697c50e6, type: 3}
+      weight: 0.7
+    - prefab: {fileID: 2598977150594171762, guid: 182152baecb3f304a83d39d0f0306314, type: 3}
+      weight: 0.3
+    spacing: 6
+    density: 0.15
+    clusterStrength: 0.85
+    clusterSize: 120
+    roadClearance: 4
+    chunkClearance: 6
+    startClearance: 30
+    maxSlope: 30
+    minScale: 0.8
+    maxScale: 1.3
+    blocksPathing: 1

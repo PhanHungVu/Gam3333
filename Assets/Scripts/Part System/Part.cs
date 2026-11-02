@@ -21,8 +21,11 @@ public class Part : MonoBehaviour
     public bool isStartingPart = true;
     public bool isEquipped = false;
     public EquipManager EquippedBy { get; internal set; }
-    public int RemainingAmmo { get; private set; }
-    public float ReadyAt { get; private set; }
+    public int RemainingAmmo { get; private set; }   // total shots left; at 0 the weapon is empty
+    public int MagazineRounds { get; private set; }  // shots left before the next reload
+    public float ReadyAt { get; private set; }       // next shot or swing allowed (fire rate and reload)
+    public bool IsReloading => reloadEndsAt > Time.time;
+    float reloadEndsAt;
     bool initialized;
     Collider[] colliders;
     bool[] colliderStates;
@@ -30,15 +33,29 @@ public class Part : MonoBehaviour
     void Awake() { if (EquippedBy == null && !isEquipped) SetEquippedPhysics(false); }
 
     // State belongs to this physical part, not the shared PartData asset.
-    internal void InitializeAmmo(int ammunition)
+    internal void InitializeAmmo(int ammunition, int magazine)
     {
         if (initialized) return;
-        RemainingAmmo = ammunition; initialized = true;
+        RemainingAmmo = ammunition;
+        MagazineRounds = magazine > 0 ? Mathf.Min(magazine, ammunition) : ammunition;
+        initialized = true;
     }
-    internal void Consume(float cooldown, bool ammunition)
+
+    // One shot or swing: the next is allowed after interval (1 / Fire Rate). A shot also uses a round;
+    // when that empties the magazine and ammo remains, the reload starts by itself, and the next shot
+    // waits for both the interval and the reload. A magazine of 0 never reloads.
+    internal void Consume(float interval, bool ammunition, float reload = 0f, int magazine = 0)
     {
-        if (ammunition) RemainingAmmo = Mathf.Max(0, RemainingAmmo - 1);
-        ReadyAt = Time.time + cooldown;
+        ReadyAt = Time.time + interval;
+        if (!ammunition) return;
+        RemainingAmmo = Mathf.Max(0, RemainingAmmo - 1);
+        MagazineRounds = Mathf.Max(0, MagazineRounds - 1);
+        if (RemainingAmmo <= 0) { reloadEndsAt = 0f; return; } // empty: nothing left to reload
+        if (MagazineRounds > 0) return;
+        MagazineRounds = magazine > 0 ? Mathf.Min(magazine, RemainingAmmo) : RemainingAmmo;
+        if (magazine <= 0) return;
+        reloadEndsAt = Time.time + Mathf.Max(0f, reload);
+        ReadyAt = Mathf.Max(ReadyAt, reloadEndsAt);
     }
     internal void SetEquippedPhysics(bool equipped)
     {

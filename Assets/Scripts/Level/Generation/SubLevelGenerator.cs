@@ -39,6 +39,7 @@ public sealed class SubLevelGenerator : MonoBehaviour
     [SerializeField] int lastSeed;
     [SerializeField] float walkablePercent;
     [SerializeField] int missionChunksPlaced;
+    [SerializeField] bool escortRouteComplete;
     [SerializeField] int roadsBuilt;
     [SerializeField] int roadsCarved;
     [SerializeField] bool allConnected;
@@ -52,11 +53,17 @@ public sealed class SubLevelGenerator : MonoBehaviour
     TerrainMap map;
     List<ChunkPlacement> placements = new List<ChunkPlacement>();
     List<Road> roads = new List<Road>();
+    EscortRoute route;
+    Transform endInstance;
     Transform startInstance;
 
     public TerrainMap Map => map;
     public IReadOnlyList<ChunkPlacement> Placements => placements;
     public IReadOnlyList<Road> Roads => roads;
+    // The escort route along a Chain of roads (null for Network maps), in this generator's space.
+    public EscortRoute Route => route;
+    public Transform StartInstance => startInstance;
+    public Transform EndInstance => endInstance;
     public int Seed => seed;
 
     void Awake()
@@ -74,17 +81,18 @@ public sealed class SubLevelGenerator : MonoBehaviour
 
     void OnDestroy() => NavTerrain.Unregister(this);
 
-    // Enemy pathing reads the terrain through NavTerrain; regenerating during Play re-bakes it.
+    // Enemy pathing reads the terrain through NavTerrain, on a NavGrid sized to the map (one inside this
+    // prefab first, else the scene's). Regenerating during Play re-bakes it.
     void ShareTerrainWithPathing()
     {
         if (!Application.isPlaying || map == null) return;
         NavTerrain.Register(this, IsWallAt, GroundAt);
-        var grid = FindAnyObjectByType<NavGrid>();
-        if (grid != null && grid.Baked)
-        {
-            grid.Bake();
-            if (FlowField.Instance != null) FlowField.Instance.Rebuild();
-        }
+        var grid = GetComponentInChildren<NavGrid>();
+        if (grid == null) grid = FindAnyObjectByType<NavGrid>();
+        if (grid == null) return;
+        bool wasBaked = grid.Baked;
+        grid.Resize(transform.position, map.Cols * map.CellSize, map.Rows * map.CellSize);
+        if (wasBaked && FlowField.Instance != null) FlowField.Instance.Rebuild();
     }
 
     bool IsWallAt(Vector3 world)
@@ -119,6 +127,10 @@ public sealed class SubLevelGenerator : MonoBehaviour
         placements = ChunkPlacer.Place(map, seed, footprints, placement);
         ChunkPlacer.Flatten(map, placements, footprints, placement);
         roads = RoadBuilder.Build(map, placements, footprints, Connectors(footprints.Count), settings.ToRoadSettings());
+        route = settings.routeMode == RouteMode.Chain ? EscortRoute.Build(placements, roads) : null;
+        escortRouteComplete = route != null && route.Complete;
+        if (route != null && !route.Complete)
+            Debug.LogWarning($"SubLevelGenerator: on seed {seed} the escort route doesn't reach every chunk.", this);
         roadsBuilt = roads.Count;
         roadsCarved = 0;
         foreach (var r in roads) if (r.Carved) roadsCarved++;
@@ -131,7 +143,7 @@ public sealed class SubLevelGenerator : MonoBehaviour
             Debug.LogWarning($"SubLevelGenerator: on seed {seed} not every chunk is joined to the start by road.", this);
         walkablePercent = 100f * map.WalkableCount / Mathf.Max(1, map.Cols * map.Rows);
         missionChunksPlaced = 0;
-        foreach (var p in placements) if (!(settings.startChunk != null && p.Footprint == 0)) missionChunksPlaced++;
+        foreach (var p in placements) if (!IsStart(p) && !IsEnd(p, footprints.Count)) missionChunksPlaced++;
         if (missionChunksPlaced < requested)
             Debug.LogWarning($"SubLevelGenerator: only {missionChunksPlaced} of {requested} mission chunks fit on seed {seed}.", this);
 
@@ -148,20 +160,29 @@ public sealed class SubLevelGenerator : MonoBehaviour
 
         var chunks = Rebuild(ChunksName).transform;
         startInstance = null;
+        endInstance = null;
         outpostPieces = 0;
         for (int index = 0; index < placements.Count; index++)
         {
             var p = placements[index];
-            bool isStart = settings.startChunk != null && p.Footprint == 0;
-            var prefab = isStart ? settings.startChunk : settings.missionChunk;
+            bool isStart = IsStart(p), isEnd = IsEnd(p, footprints.Count);
+            var prefab = isStart ? settings.startChunk : isEnd ? settings.endChunk : settings.missionChunk;
             if (prefab == null) continue;
             var chunk = Instantiate(prefab.gameObject, transform.TransformPoint(new Vector3(p.X, p.Height, p.Z)), transform.rotation, chunks);
             chunk.name = prefab.name;
             if (!Application.isPlaying)
                 foreach (var part in chunk.GetComponentsInChildren<Transform>(true)) part.gameObject.hideFlags = HideFlags.DontSave;
             if (isStart) startInstance = chunk.transform;
+            if (isEnd) endInstance = chunk.transform;
             BuildOutpost(index, p, prefab, footprints[p.Footprint], chunk.transform);
         }
+
+        // With an end chunk the extract is there, so the start's own extract is removed from this map.
+        if (endInstance != null && startInstance != null)
+            foreach (var extract in startInstance.GetComponentsInChildren<ExtractZone>(true))
+            {
+                if (Application.isPlaying) Destroy(extract.gameObject); else DestroyImmediate(extract.gameObject);
+            }
 
         PlaceDecor(footprints);
         ShareTerrainWithPathing();
@@ -238,8 +259,12 @@ public sealed class SubLevelGenerator : MonoBehaviour
         int lo = Mathf.Min(settings.missionChunkMin, settings.missionChunkMax), hi = Mathf.Max(settings.missionChunkMin, settings.missionChunkMax);
         missionCount = settings.missionChunk != null ? new System.Random(seed ^ 0x6a09e667).Next(lo, hi + 1) : 0;
         for (int i = 0; i < missionCount; i++) list.Add(FootprintOf(settings.missionChunk));
+        if (settings.endChunk != null) list.Add(FootprintOf(settings.endChunk));
         return list;
     }
+
+    bool IsStart(ChunkPlacement p) => settings.startChunk != null && p.Footprint == 0;
+    bool IsEnd(ChunkPlacement p, int footprintCount) => settings.endChunk != null && p.Footprint == footprintCount - 1 && p.Footprint > 0;
 
     static ChunkFootprint FootprintOf(ChunkDefinition chunk) =>
         new ChunkFootprint(chunk.SizeMetres.x, chunk.SizeMetres.y, chunk.IsCircle, chunk.Interior);
@@ -250,7 +275,9 @@ public sealed class SubLevelGenerator : MonoBehaviour
         var list = new List<IReadOnlyList<ChunkConnector>>();
         if (settings.startChunk != null) list.Add(ConnectorsOf(settings.startChunk));
         var mission = settings.missionChunk != null ? ConnectorsOf(settings.missionChunk) : new List<ChunkConnector>();
-        while (list.Count < footprintCount) list.Add(mission);
+        int missions = footprintCount - (settings.endChunk != null ? 1 : 0);
+        while (list.Count < missions) list.Add(mission);
+        if (settings.endChunk != null) list.Add(ConnectorsOf(settings.endChunk));
         return list;
     }
 
@@ -315,6 +342,18 @@ public sealed class SubLevelGenerator : MonoBehaviour
 
     void OnDrawGizmosSelected()
     {
+        if (route != null)
+        {
+            Gizmos.color = new Color(1f, 0.85f, 0.1f);
+            for (int i = 1; i < route.X.Count; i++)
+                Gizmos.DrawLine(transform.TransformPoint(new Vector3(route.X[i - 1], route.Y[i - 1] + 1f, route.Z[i - 1])),
+                    transform.TransformPoint(new Vector3(route.X[i], route.Y[i] + 1f, route.Z[i])));
+            foreach (float d in route.CheckpointDistances)
+            {
+                route.Sample(d, out float cx, out float cy, out float cz, out _, out _);
+                Gizmos.DrawWireSphere(transform.TransformPoint(new Vector3(cx, cy + 1f, cz)), 3f);
+            }
+        }
         if (!drawWalls || map == null) return;
         Gizmos.color = new Color(1f, 0.15f, 0.1f, 0.6f);
         var size = new Vector3(map.CellSize * 0.8f, 0.2f, map.CellSize * 0.8f);

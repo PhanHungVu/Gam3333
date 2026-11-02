@@ -119,6 +119,15 @@ public sealed class NavGrid : MonoBehaviour
     public float CellSize => cellSize;
     public bool Baked => baked;
 
+    // Covers a new area (centre and size in metres), e.g. a generated map. Re-bakes if already baked.
+    public void Resize(Vector3 centre, float newWidth, float newDepth)
+    {
+        origin = centre;
+        width = Mathf.Max(cellSize, newWidth);
+        depth = Mathf.Max(cellSize, newDepth);
+        if (baked) Bake();
+    }
+
     public bool IsBlocked(int col, int row)
     {
         if (col < 0 || col >= cols || row < 0 || row >= rows) return true; // outside the grid counts as blocked

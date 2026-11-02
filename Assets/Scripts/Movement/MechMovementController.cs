@@ -11,7 +11,11 @@ public class MechMovementController : MonoBehaviour
     [SerializeField] Camera gameplayCamera;
     [SerializeField] MechEnergyController energy;
     [Header("Ground Locomotion")]
+    [Tooltip("Walking speed used only when the equipped legs have no Speed stat (legs' Speed sets it otherwise).")]
     [SerializeField] float moveSpeed = 6f;
+    [Tooltip("Read-only: the walking speed right now, after legs and part Speed modifiers.")]
+    [SerializeField] float currentWalkSpeed;
+    MechStats stats;
     [SerializeField] float sprintSpeed = 12f;
     [SerializeField] float acceleration = 20f;
     [SerializeField] float deceleration = 32f;
@@ -86,9 +90,30 @@ public class MechMovementController : MonoBehaviour
                 deceleration = deceleration, boostAcceleration = boostAcceleration,
                 rotationSharpness = rotationSharpness, gravity = gravity, jumpHeight = jumpHeight
             };
-            return CurrentModule != null ? CurrentModule.Configure(defaults) : defaults;
+            var configured = CurrentModule != null ? CurrentModule.Configure(defaults) : defaults;
+            return ApplyPartSpeed(configured);
         }
     }
+
+    // Walking speed from the equipped parts (MechStats): the legs' Speed in m/s, or this Move Speed
+    // when the legs have none, times every other part's Speed percentage. Sprint scales the same way.
+    MechLocomotionSettings ApplyPartSpeed(MechLocomotionSettings settings)
+    {
+        if (stats == null) stats = GetComponent<MechStats>();
+        if (stats != null)
+        {
+            float baseSpeed = stats.BaseSpeed > 0f ? stats.BaseSpeed : settings.moveSpeed;
+            float target = baseSpeed * stats.SpeedMultiplier;
+            float scale = settings.moveSpeed > 0f ? target / settings.moveSpeed : 1f;
+            settings.moveSpeed = target;
+            settings.sprintSpeed *= scale;
+        }
+        currentWalkSpeed = settings.moveSpeed;
+        return settings;
+    }
+
+    // The walking speed the mech moves at right now, after legs and part modifiers.
+    public float WalkSpeed => Settings.moveSpeed;
 
     public MovementState State { get; private set; } = MovementState.Airborne;
     public Vector3 Velocity { get; private set; }
