@@ -29,6 +29,7 @@ MonoBehaviour:
   maxWalkableSlope: 35
   startChunk: {fileID: 2121723537569621097, guid: 5ca732db150bf2f4e9fef87b4ed55b9a, type: 3}
   missionChunk: {fileID: 5514633955760966115, guid: 5109d7bb88dd5d848900d25d76d6867d, type: 3}
+  endChunk: {fileID: 2121723537569621097, guid: bed7b43f04173b24493e6465e114dba8, type: 3}
   missionChunkMin: 3
   missionChunkMax: 4
   minSpacing: 50
@@ -37,6 +38,7 @@ MonoBehaviour:
   placementCandidates: 300
   flatnessWeight: 10
   extraLinks: 1
+  routeMode: 0
   roadWidth: 12
   maxRoadSlope: 20
   roadBlend: 8

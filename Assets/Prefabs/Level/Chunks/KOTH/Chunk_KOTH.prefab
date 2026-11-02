@@ -158,7 +158,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 443b2f303e3ec424abfeb74a25a80230, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Survival_Zone
-  holdSeconds: 5
+  holdSeconds: 60
   graceSeconds: 5
   failedSeconds: 2
   state: 0

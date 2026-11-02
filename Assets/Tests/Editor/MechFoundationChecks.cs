@@ -96,6 +96,7 @@ public static class MechFoundationChecks
             NavTerrainChecks.Run(Check);
             KOTHChecks.Run(Check);
             MissionChecks.Run(Check);
+            EscortRouteChecks.Run(Check);
             OutpostChecks.Run(Check);
             SpeedChecks.Run(Check);
             MechProjectileModelChecks.Run(Check);

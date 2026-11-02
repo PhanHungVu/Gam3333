@@ -1,5 +1,9 @@
 using UnityEngine;
 
+// How roads join the chunks: a Network (every chunk reachable, with loops) or one Chain route
+// start -> checkpoint -> ... -> end (escort).
+public enum RouteMode { Network, Chain }
+
 // One prefab a decor group can place, with its chance relative to the group's other prefabs.
 [System.Serializable]
 public sealed class DecorPrefab
@@ -99,6 +103,8 @@ public sealed class SubLevelGenSettings : ScriptableObject
     public ChunkDefinition startChunk;
     [Tooltip("The mission's chunk (e.g. Chunk_KOTH), repeated across the map.")]
     public ChunkDefinition missionChunk;
+    [Tooltip("Optional end chunk (e.g. Chunk_End), placed as far from the start as it can. When set, the extract is there instead of at the start.")]
+    public ChunkDefinition endChunk;
     [Tooltip("How many mission chunks to place; the seed picks a number in this range.")]
     [Min(0)] public int missionChunkMin = 3;
     [Min(0)] public int missionChunkMax = 4;
@@ -116,6 +122,8 @@ public sealed class SubLevelGenSettings : ScriptableObject
     [Header("Roads")]
     [Tooltip("Extra road links beyond the shortest network joining every chunk, so there are loops and route choices.")]
     [Range(0, 6)] public int extraLinks = 1;
+    [Tooltip("Network: roads join every chunk, with Extra Links as loops (KOTH). Chain: one route start -> nearest checkpoint -> ... -> end (escort); Extra Links are ignored.")]
+    public RouteMode routeMode = RouteMode.Network;
     [Tooltip("Road width in metres (12 = three golems).")]
     [Min(1f)] public float roadWidth = 12f;
     [Tooltip("Roads are evened out to stay under this slope (degrees), carving ramps through cliffs where needed.")]
@@ -139,13 +147,14 @@ public sealed class SubLevelGenSettings : ScriptableObject
     {
         extraLinks = extraLinks, roadWidth = roadWidth, maxRoadSlope = maxRoadSlope, roadBlend = roadBlend,
         slopeCost = roadSlopeCost, cliffCost = roadCliffCost, smoothing = roadSmoothing, maxWalkableSlope = maxWalkableSlope,
-        carveIfNoWayRound = carveIfNoWayRound,
+        carveIfNoWayRound = carveIfNoWayRound, chain = routeMode == RouteMode.Chain, lastIsEnd = endChunk != null,
     };
 
     public ChunkPlacementSettings ToPlacementSettings() => new ChunkPlacementSettings
     {
         minSpacing = minSpacing, edgeMargin = edgeMargin, blendDistance = blendDistance, candidates = placementCandidates,
         flatnessWeight = flatnessWeight, levelHeight = levelHeight, terraceLevels = terraceLevels, maxWalkableSlope = maxWalkableSlope,
+        lastIsEnd = endChunk != null,
     };
 
     public TerrainSettings ToTerrainSettings() => new TerrainSettings
