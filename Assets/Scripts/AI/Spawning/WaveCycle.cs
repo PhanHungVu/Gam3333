@@ -8,7 +8,8 @@ public sealed class WaveCycle
 {
     public float SpawnInterval { get; }
     public float TimerReset { get; }
-    public int ResourceTotal { get; }
+    public int ResourceTotal { get; private set; }
+    readonly int baseResourceTotal;
     public int Resource { get; private set; }
     public bool Refilling { get; private set; }
     public float ResetRemaining { get; private set; }
@@ -18,9 +19,12 @@ public sealed class WaveCycle
     {
         SpawnInterval = Math.Max(0.01f, spawnInterval);
         TimerReset = Math.Max(0f, timerReset);
-        ResourceTotal = Math.Max(1, resourceTotal);
+        ResourceTotal = baseResourceTotal = Math.Max(1, resourceTotal);
         Restart();
     }
+
+    // Scales the wave's resource (e.g. 1.25 = 25% more enemies) from its next refill on.
+    public void ScaleTotal(float scale) => ResourceTotal = Math.Max(1, (int)Math.Round(baseResourceTotal * Math.Max(0f, scale)));
 
     // Full resource, first spawn straight away.
     public void Restart()
@@ -54,6 +58,9 @@ public sealed class WaveCycle
     }
 
     public void Skipped() => untilNextSpawn = SpawnInterval;
+
+    // Gives back a culled member's cost (never above the total), so it can be spent again.
+    public void Refund(int cost) => Resource = Math.Min(ResourceTotal, Resource + Math.Max(0, cost));
 
     public void OutOfResource()
     {

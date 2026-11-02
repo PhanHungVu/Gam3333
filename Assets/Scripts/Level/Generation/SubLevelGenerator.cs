@@ -93,7 +93,7 @@ public sealed class SubLevelGenerator : MonoBehaviour
         if (grid == null) return;
         bool wasBaked = grid.Baked;
         grid.Resize(transform.position, map.Cols * map.CellSize, map.Rows * map.CellSize);
-        if (wasBaked && FlowField.Instance != null) FlowField.Instance.Rebuild();
+        if (wasBaked) FlowField.RebuildAll();
     }
 
     bool IsWallAt(Vector3 world)
@@ -219,7 +219,7 @@ public sealed class SubLevelGenerator : MonoBehaviour
         }
     }
 
-    // The escort payload at the start of a chain route (only when the settings name one).
+    // The escort payload at the first checkpoint of a chain route (only when the settings name one).
     void PlaceEscort()
     {
         var root = Rebuild(EscortName).transform;
@@ -228,7 +228,7 @@ public sealed class SubLevelGenerator : MonoBehaviour
         payload.name = settings.escortPayload.name;
         if (!Application.isPlaying)
             foreach (var part in payload.GetComponentsInChildren<Transform>(true)) part.gameObject.hideFlags = HideFlags.DontSave;
-        payload.Configure(route, transform);
+        payload.Configure(route, transform, settings.endChunk != null);
     }
 
     // Each decor group, seeded separately so adding a group never moves another group's items.

@@ -111,6 +111,9 @@ public sealed class EnemyAgent : MonoBehaviour
     public float ZigzagLookAhead => zigzagLookAhead;
 
     public bool HasTarget => target != null;
+    // Something this enemy goes for instead of the player while it exists (e.g. the escort payload).
+    // When it's gone or switched off, the enemy falls back to the player.
+    public Transform PreferredTarget { get; set; }
     public Transform Target => target != null && target.gameObject.activeInHierarchy ? target : null;
     public Vector3 TargetPosition => target != null ? target.position : transform.position;
     public float DistanceToTarget { get; private set; } = float.PositiveInfinity;
@@ -241,6 +244,8 @@ public sealed class EnemyAgent : MonoBehaviour
 
     void ResolveTarget()
     {
+        if (PreferredTarget != null && PreferredTarget.gameObject.activeInHierarchy) target = PreferredTarget;
+        else if (target != null && target == PreferredTarget) target = null; // preferred target gone: back to the player
         if (target == null || !target.gameObject.activeInHierarchy)
         {
             target = null;

@@ -98,6 +98,7 @@ public static class MechFoundationChecks
             MissionChecks.Run(Check);
             EscortRouteChecks.Run(Check);
             EscortPayloadChecks.Run(Check);
+            WaveRosterChecks.Run(Check);
             OutpostChecks.Run(Check);
             SpeedChecks.Run(Check);
             MechProjectileModelChecks.Run(Check);

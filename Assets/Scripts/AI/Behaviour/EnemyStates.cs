@@ -107,7 +107,8 @@ public sealed class ChaseState : EnemyState
     // line, so an unreachable or off-grid cell never freezes the enemy in place.
     Vector3 FieldOrDirect()
     {
-        var field = FlowField.Instance;
+        // The field leading to whatever this enemy targets: the player's, or e.g. the escort payload's.
+        var field = FlowField.For(agent.Target);
         if (field != null && field.HasDirection)
         {
             Vector3 fieldDir = field.SampleDirection(agent.Position);

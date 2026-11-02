@@ -10,7 +10,7 @@ using UnityEngine;
 // wave is running and the player isn't inside an area that pauses roaming (objective chunks). A paused
 // roaming wave keeps its place in its cycle and carries on when it resumes.
 [DisallowMultipleComponent]
-public sealed class SpawnDirector : MonoBehaviour
+public sealed class SpawnDirector : MonoBehaviour, IWaveAnchor
 {
     [Header("Roaming")]
     [Tooltip("Wave run around the player whenever no other wave is running. Left empty, there is no roaming.")]
@@ -24,6 +24,8 @@ public sealed class SpawnDirector : MonoBehaviour
     [SerializeField] int resourceLeft;
     [SerializeField] float resetRemaining;
     [SerializeField] int totalSpawned;
+    [Tooltip("Enemies removed for straying beyond their wave's Leash Distance (refunded to the wave).")]
+    [SerializeField] int totalLeashed;
 
     sealed class ActiveWave
     {
@@ -33,10 +35,14 @@ public sealed class SpawnDirector : MonoBehaviour
         public Object owner;
         public int[] costs;
         public float[] weights;
+        public readonly WaveRoster<GameObject> roster = new WaveRoster<GameObject>();
     }
 
+    const float LeashCheckInterval = 0.5f;
+    float untilLeashCheck;
+
     static SpawnDirector instance;
-    ActiveWave objective;  // started by another script; pauses roaming while it runs
+    ActiveWave objective;  // started by another script; pauses roaming while it runs if its wave says so
     ActiveWave roaming;
 
     // The scene's director (found on first use if no one has asked yet).
@@ -55,6 +61,9 @@ public sealed class SpawnDirector : MonoBehaviour
     public int ResourceLeft => Current != null ? Current.cycle.Resource : 0;
     public bool RoamingPaused => roamingPaused;
     public int TotalSpawned => totalSpawned;
+    public int TotalLeashed => totalLeashed;
+    // The roaming wave's anchor: the player its spawner follows (used only if the roaming wave has a leash).
+    public Vector3 WaveAnchor => roamingSpawner != null && roamingSpawner.Target != null ? roamingSpawner.Target.position : transform.position;
 
     void OnEnable() { if (instance == null) instance = this; }
     void OnDisable() { if (instance == this) instance = null; }
@@ -74,6 +83,15 @@ public sealed class SpawnDirector : MonoBehaviour
     }
 
     // Stops the owner's wave. Enemies it already spawned stay until killed.
+    // Every enemy a wave spawns, with the wave's owner (e.g. the escort payload gives its enemies a target).
+    public event System.Action<Object, GameObject> Spawned;
+
+    // Scales a running objective wave's resource from its next refill (e.g. 1.25 = 25% more enemies).
+    public void ScaleWave(Object owner, float scale)
+    {
+        if (objective != null && objective.owner == owner) objective.cycle.ScaleTotal(scale);
+    }
+
     public void StopWave(Object owner)
     {
         if (objective != null && objective.owner == owner) objective = null;
@@ -104,7 +122,7 @@ public sealed class SpawnDirector : MonoBehaviour
     // Roaming runs only when no other wave is, and not while the player is in a pausing area.
     bool RoamingActive()
     {
-        if (objective != null || roamingWave == null) return false;
+        if ((objective != null && objective.data.pausesRoaming) || roamingWave == null) return false;
         if (roamingSpawner == null) roamingSpawner = FindAnyObjectByType<RoamingSpawner>();
         if (roamingSpawner == null) return false;
         var player = roamingSpawner.Target;
@@ -118,8 +136,17 @@ public sealed class SpawnDirector : MonoBehaviour
     public void Tick(float deltaTime)
     {
         bool roamingNow = RoamingActive();
+        // An objective wave and roaming can run side by side when the objective wave doesn't pause roaming.
+        if (objective != null && objective.cycle.Tick(deltaTime)) TrySpawn(objective);
+        if (roamingNow && roaming.cycle.Tick(deltaTime)) TrySpawn(roaming);
+        untilLeashCheck -= deltaTime;
+        if (untilLeashCheck <= 0f)
+        {
+            untilLeashCheck = LeashCheckInterval;
+            ApplyLeash(objective);
+            ApplyLeash(roaming);
+        }
         var active = objective ?? (roamingNow ? roaming : null);
-        if (active != null && active.cycle.Tick(deltaTime)) TrySpawn(active);
         roamingPaused = roamingWave != null && !roamingNow;
         currentWave = active != null ? active.data.name : "";
         resourceLeft = active != null ? active.cycle.Resource : 0;
@@ -128,14 +155,35 @@ public sealed class SpawnDirector : MonoBehaviour
 
     void TrySpawn(ActiveWave active)
     {
-        if (active.data.maxConcurrentEnemies > 0 && EnemyAgent.All.Count >= active.data.maxConcurrentEnemies)
+        active.roster.Prune(Alive);
+        if (active.data.maxConcurrentEnemies > 0 && active.roster.Count >= active.data.maxConcurrentEnemies)
         { active.cycle.Skipped(); return; }
         int pick = WaveCycle.Pick(active.costs, active.weights, active.cycle.Resource, Random.value);
         if (pick < 0) { active.cycle.OutOfResource(); return; }
         if (!TryPickPose(active.points, out var position, out var rotation)) { active.cycle.Skipped(); return; }
-        Instantiate(active.data.enemies[pick].prefab, position, rotation);
+        var enemy = Instantiate(active.data.enemies[pick].prefab, position, rotation);
         active.cycle.Spent(active.costs[pick]);
+        active.roster.Add(enemy, active.costs[pick]);
+        Spawned?.Invoke(active.owner, enemy);
         totalSpawned++;
+    }
+
+    static bool Alive(GameObject member) => member != null && member.activeInHierarchy;
+
+    // Removes a wave's members that strayed beyond its Leash Distance from its owner's anchor, refunding
+    // their cost. Removal isn't a death: no drops, no kill.
+    void ApplyLeash(ActiveWave active)
+    {
+        if (active == null || active.data.leashDistance <= 0f || !(active.owner is IWaveAnchor anchor)) return;
+        active.roster.Prune(Alive);
+        Vector3 centre = anchor.WaveAnchor;
+        float leash = active.data.leashDistance;
+        foreach (var (member, cost) in active.roster.Cull(m => WaveLeash.Beyond(m.transform.position.x - centre.x, m.transform.position.z - centre.z, leash)))
+        {
+            Destroy(member);
+            active.cycle.Refund(cost);
+            totalLeashed++;
+        }
     }
 
     // A random usable point from the wave's list (destroyed or blocked points are skipped).

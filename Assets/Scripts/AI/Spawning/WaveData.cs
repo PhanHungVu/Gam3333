@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public enum WaveType { Roaming, KOTH, POI }
+public enum WaveType { Roaming, KOTH, POI, Escort }
 
 // One enemy a wave can pick, with its chance relative to the others in the list.
 [System.Serializable]
@@ -26,8 +26,11 @@ public sealed class WaveData : ScriptableObject
     [Min(0f)] public float timerReset = 120f;
     [Tooltip("Resource at full; each enemy spawned spends its Spawn Cost from it.")]
     [Min(1)] public int resourceTotal = 50;
-    [Tooltip("Optional scene-wide active enemy limit. Zero retains the legacy unlimited behavior. At the limit, spawning waits without spending resource.")]
+    [Tooltip("Objective waves only: pause the roaming wave while this wave runs (KOTH: on). Off keeps roaming enemies coming too (Escort).")]
+    public bool pausesRoaming = true;    [Tooltip("How many of this wave's own enemies may be alive at once; at the limit it waits without spending resource. 0 = no limit.")]
     [Min(0)] public int maxConcurrentEnemies;
+    [Tooltip("Enemies of this wave further than this (metres) from where the wave's owner says to stay (e.g. the escort payload) are removed, and their cost refunded so fresh ones spawn nearer. 0 = off.")]
+    [Min(0f)] public float leashDistance;
     [Tooltip("Enemies this wave can spawn, each with its chance. Enemies it can't afford are skipped.")]
     public WaveEnemy[] enemies = new WaveEnemy[0];
 }

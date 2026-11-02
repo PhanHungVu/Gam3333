@@ -5,7 +5,7 @@ public static class EscortPayloadChecks
 {
     public static void Run(Action<bool, string> check)
     {
-        var rules = new EscortRules(100f, new[] { 30f, 60f, 100f });
+        var rules = new EscortRules(0f, 100f, new[] { 30f, 60f, 100f });
         rules.Step(1f, false, false, 3f, 1.5f);
         bool idle = rules.State == EscortState.Idle && rules.Distance == 0f;
         rules.Step(5f, true, false, 3f, 1.5f);
@@ -27,5 +27,30 @@ public static class EscortPayloadChecks
         check(rules.Distance == 30f, "Destroyed, it returns to the last checkpoint reached");
         rules.Step(100f, true, false, 3f, 1.5f);
         check(rules.Arrived && rules.Distance == 100f && rules.CheckpointsPassed == 3, "Reaching the end of the route completes the escort");
+
+        // Starting at the first checkpoint: it begins there and never rolls back behind it.
+        var fromCheckpoint = new EscortRules(40f, 120f, new[] { 40f, 80f, 120f });
+        fromCheckpoint.Step(100f, false, true, 3f, 1.5f);
+        check(fromCheckpoint.Distance == 40f && fromCheckpoint.CheckpointCount == 2,
+            "The escort starts at the first checkpoint, never rolls back behind it, and counts only the checkpoints after it");
+
+        var cycle = new WaveCycle(0.5f, 10f, 100);
+        cycle.ScaleTotal(1.5f);
+        check(cycle.ResourceTotal == 150, "Escort waves can grow: the resource scales for each checkpoint passed");
+
+        var agentObject = new UnityEngine.GameObject("Escort Target Check");
+        var payloadBody = new UnityEngine.GameObject("Escort Target Body");
+        try
+        {
+            var agent = agentObject.AddComponent<EnemyAgent>();
+            agent.PreferredTarget = payloadBody.transform;
+            agent.RefreshTarget();
+            bool preferred = agent.Target == payloadBody.transform;
+            payloadBody.SetActive(false);
+            agent.RefreshTarget();
+            check(preferred && agent.Target != payloadBody.transform,
+                "Escort enemies go for the payload, and fall back to the player when it is destroyed");
+        }
+        finally { UnityEngine.Object.DestroyImmediate(agentObject); UnityEngine.Object.DestroyImmediate(payloadBody); }
     }
 }

@@ -16,7 +16,9 @@ using UnityEngine;
 // This is Phase 5 only: build + arrow gizmos. Nothing reads from this yet - that's
 // Phase 6, when ChaseState swaps from seeking the player directly to seeking
 // whatever direction is sampled here.
-[RequireComponent(typeof(NavGrid))]
+// Several fields can exist, one per goal: the shared one on the NavGrid follows the player (Instance);
+// others follow a set goal (e.g. the escort payload carries one). Enemies use the field leading to their
+// current target (For). A field uses the NavGrid on its own object, else the scene's.
 public sealed class FlowField : MonoBehaviour
 {
     [Header("Goal")]
@@ -60,11 +62,39 @@ public sealed class FlowField : MonoBehaviour
     // reference to it.
     public static FlowField Instance { get; private set; }
 
+    static readonly List<FlowField> all = new List<FlowField>();
+    bool followsPlayer;
+    public Transform Goal => goal;
+
+    // The field leading to this target (or to an object it belongs to), else the player's field.
+    public static FlowField For(Transform target)
+    {
+        if (target != null)
+            foreach (var field in all)
+                if (field.goal != null && !field.followsPlayer && (target == field.goal || target.IsChildOf(field.goal))) return field;
+        return Instance;
+    }
+
+    public static void RebuildAll() { foreach (var field in all) field.Rebuild(); }
+
+    // For a field made at runtime on an inactive object: point it at a goal before it wakes up.
+    public void Configure(Transform newGoal, float flood, float rebuildEvery, float minInterval, bool arrows)
+    {
+        goal = newGoal; floodRadius = Mathf.Max(0f, flood); rebuildDistance = Mathf.Max(0.1f, rebuildEvery);
+        minRebuildInterval = Mathf.Max(0f, minInterval); drawArrows = arrows;
+    }
+
     void Awake()
     {
         grid = GetComponent<NavGrid>();
-        Instance = this;
+        if (grid == null) grid = FindAnyObjectByType<NavGrid>();
+        // Only a field without a set goal follows the player, and that one is the shared Instance.
+        followsPlayer = goal == null;
+        if (followsPlayer) Instance = this;
     }
+
+    void OnEnable() { if (!all.Contains(this)) all.Add(this); }
+    void OnDisable() => all.Remove(this);
 
     void OnDestroy()
     {
@@ -92,7 +122,7 @@ public sealed class FlowField : MonoBehaviour
 
     void TryBuild(bool force)
     {
-        if (!grid.Baked) return; // NavGrid hasn't baked yet this frame - wait
+        if (grid == null || !grid.Baked) return; // NavGrid hasn't baked yet this frame - wait
         if (goal == null) return;
 
         if (!force && built && Vector3.Distance(goal.position, lastGoalPos) < rebuildDistance) return;
@@ -101,8 +131,8 @@ public sealed class FlowField : MonoBehaviour
         Build(goal.position, force);
         lastGoalPos = goal.position;
         lastBuildTime = Time.time;
+        if (!built) Debug.Log($"[FlowField] First build towards {goal.name} at {goal.position}. Grid is {grid.Cols}x{grid.Rows}.");
         built = true;
-        Debug.Log($"[FlowField] Built from goal at {goal.position}. Grid is {grid.Cols}x{grid.Rows}.");
     }
 
     void Build(Vector3 goalWorldPos, bool force)
