@@ -79,7 +79,7 @@ public static class PreMissionArtTableSetup
         }
         finally { PrefabUtility.UnloadPrefabContents(root); }
     }
-    static Mesh FittedMesh(GameObject source)
+    internal static Mesh FittedMesh(GameObject source)
     {
         var original=source.GetComponentInChildren<MeshFilter>().sharedMesh;
         var copy=UnityEngine.Object.Instantiate(original); copy.name="HUD "+source.name+" - Fitted";

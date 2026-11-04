@@ -27,6 +27,16 @@ public static partial class EnemyBehaviorChecks
         arena.ClearEnemies(); yield return Frames(3); Check(EnemyAgent.All.Count == 0, "Inspector clear removes arena enemies");
         arena.SpawnSelected(); yield return Frames(3); Check(EnemyAgent.All.Count == 1, "Inspector single-enemy control instantiates its selected role");
         arena.ClearEnemies(); yield return Frames(3);
+        var selection = new UnityEditor.SerializedObject(arena);
+        foreach (int role in new[] { 7, 8 })
+        {
+            selection.FindProperty("selectedRole").enumValueIndex = role; selection.ApplyModifiedPropertiesWithoutUndo();
+            arena.SpawnSelected(); yield return Frames(3);
+            Check(EnemyAgent.All.Count == 1 && EnemyAgent.All[0].GetComponent<EnemyGraphController>().Role == (EnemyBehaviorRole)role
+                && EnemyAgent.All[0].GetComponent<EnemyRopeAttack>().Behavior == (role == 7 ? EnemyRopeAttack.RopeBehavior.Orbit : EnemyRopeAttack.RopeBehavior.ThrowAndPull),
+                "Saved arena Inspector can spawn the requested rope variant: " + (EnemyBehaviorRole)role);
+            arena.ClearEnemies(); yield return Frames(3);
+        }
         arena.StartRoaming(); yield return Frames(90);
         Check(director.CurrentWave == AssetDatabase.LoadAssetAtPath<WaveData>(EnemyRosterSetup.Roaming) && EnemyAgent.All.Count >= 2,
             "Saved arena runs the configured roaming wave through its actual navigation and spawn ring");

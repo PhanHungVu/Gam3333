@@ -52,6 +52,7 @@ public sealed class EnemyAttack : MonoBehaviour
     [SerializeField] bool respectAttackRangeAtRelease;
     [SerializeField, Range(0, 20)] float aimSpreadDegrees;
     public bool IsTelegraphing => PendingLane() != null;
+    public float AttackDuration => fireDuration;
     public Vector3 CommittedAim => PendingLane() != null ? PendingLane().aim : transform.position + transform.forward;
     public float TelegraphProgress => PendingLane() != null ? Mathf.Clamp01(PendingLane().age / Mathf.Max(0.01f, fireDuration * releaseFrame)) : 0;
     public bool CurrentAttackIsMelee => forceOverheadMelee || (PartOf(Weapon) != null && PartOf(Weapon).Stats.subtype == PartSubtype.Melee);
@@ -86,6 +87,7 @@ public sealed class EnemyAttack : MonoBehaviour
     EnemyAgent agent;
     CombatHealth self;
     readonly CombatBlast blast = new CombatBlast();
+    RaycastHit[] firingLineHits = new RaycastHit[16];
     readonly Lane turnLane = new Lane();
     Lane[] weaponLanes = new Lane[0];
     MechWeaponAnimator[] animators = new MechWeaponAnimator[0];
@@ -364,16 +366,34 @@ public sealed class EnemyAttack : MonoBehaviour
     // don't count as blocking - only walls and props do. Checked to the centre, not the target's
     // nearest collider, so a part poking through a thin wall can't be hit through it.
     bool ClearPath(CombatHealth target, Vector3 point, bool wallsOnly)
+        => ClearPathFrom(transform.position, target, point, wallsOnly);
+
+    // Position planning uses precisely the same firing-line rules as TryAttack.
+    public bool HasClearRangedPathFrom(Vector3 position)
     {
-        var origin = transform.position + Vector3.up * meleeWallHeight;
+        if (agent == null) return false;
+        var target = agent.Target != null ? agent.Target.GetComponentInParent<CombatHealth>() : null;
+        return target != null && target.isActiveAndEnabled && !target.IsDead
+            && ClearPathFrom(position, target, AimPoint(target), false);
+    }
+    bool ClearPathFrom(Vector3 position, CombatHealth target, Vector3 point, bool wallsOnly)
+    {
+        var origin = position + Vector3.up * meleeWallHeight;
         var offset = point - origin;
-        foreach (var hit in Physics.RaycastAll(origin, offset.normalized, offset.magnitude, hitLayers, QueryTriggerInteraction.Ignore))
+        int count;
+        while ((count = Physics.RaycastNonAlloc(origin, offset.normalized, firingLineHits, offset.magnitude,
+            hitLayers, QueryTriggerInteraction.Ignore)) == firingLineHits.Length)
+            System.Array.Resize(ref firingLineHits, firingLineHits.Length * 2);
+        bool clear = true;
+        for (int i = 0; i < count; i++)
         {
+            var hit = firingLineHits[i];
             if (hit.transform.IsChildOf(transform) || hit.transform.IsChildOf(target.transform)) continue;
             if (wallsOnly && hit.collider.GetComponentInParent<CombatHealth>() != null) continue;
-            return false;
+            clear = false; break;
         }
-        return true;
+        System.Array.Clear(firingLineHits, 0, count);
+        return clear;
     }
     // Same hit as the player's melee: a box in front, depth scaled by the part's Range, resolved by
     // CombatBlast. Walls block it (see ClearPath); other bodies don't, and teams stop it hurting other enemies.

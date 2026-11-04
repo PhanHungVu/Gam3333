@@ -64,6 +64,9 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
     public void Bind(QuestStoneView selected)
     {
         Clear(); stone=selected;
+        // Authored slabs already carry their complete category/type/logo layout.
+        // Inspection brings that same object closer instead of replacing it.
+        if(selected!=null && selected.HasBoardInscription) { SetProgress(0); return; }
         if(stone==null) return;
         foreach(var variant in variants)
         {
@@ -78,11 +81,12 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
         Progress=Mathf.Clamp01(value);
         display.gameObject.SetActive(stone!=null && active!=null && Progress>0.001f);
         if(stone==null) return;
-        stone.SetInscriptionVisibility(active!=null ? 1-Progress : 1);
         // Attach to the actual slab plane; an axis-aligned bounding-box maximum
         // floats above the highest corner as a slab turns during inspection.
         transform.SetPositionAndRotation(stone.SurfacePoint+stone.SurfaceRotation*Vector3.up*0.015f,stone.SurfaceRotation);
         transform.localScale=Vector3.one*(stone.IsMain ? 1.18f : 1f);
+        if(stone.HasBoardInscription) { stone.SetInscriptionVisibility(1); return; }
+        stone.SetInscriptionVisibility(active!=null ? 1-Progress : 1);
         if(active==null) return;
         bool reduced=board!=null && board.Motion!=null && board.Motion.Feedback!=null && board.Motion.Feedback.ReducedMotion;
         float foundation=reduced ? 1 : Mathf.SmoothStep(0,1,Mathf.Clamp01(Progress/Mathf.Max(0.01f,baseRevealFraction)));
@@ -118,13 +122,14 @@ public sealed class PreMissionMissionMiniature : MonoBehaviour
     }
     void LateUpdate()
     {
-        if(stone==null || !IsVisible) return;
+        if(stone==null || (!IsVisible && !stone.HasBoardInscription)) return;
         // Preference changes must update a held pose too, not just the next
         // coroutine sample. Refresh the slab first so the preview cannot lag it.
         stone.RefreshMotionPreference(); SetProgress(Progress);
     }
     public Bounds InspectionBounds(QuestStoneView selected,Vector3 offset,Vector3 angles,Vector3 scale,float motionAmount)
     {
+        if(selected.HasBoardInscription) return selected.MotionBounds(offset,angles,scale,motionAmount);
         foreach(var variant in variants)
         {
             if(variant.missionType!=selected.Offer.Quest.missionType) continue;

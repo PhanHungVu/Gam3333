@@ -78,9 +78,26 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
     public bool IsPosting { get; private set; }
     public bool IsTransitioning { get; private set; }
     QuestBoardImpactFeedback feedback;
+    PreMissionQuestDetailsSlab questDetailsSlab;
+    Graphic[] legacyDetailsGraphics;
+    bool[] legacyDetailsEnabled;
     bool ReducedMotion => feedback!=null && feedback.ReducedMotion;
     float MotionScale => ReducedMotion ? 0 : 1;
     public void ConfigureFeedback(QuestBoardImpactFeedback value) => feedback=value;
+    public void ConfigureQuestDetailsSlab(PreMissionQuestDetailsSlab value)
+    {
+        questDetailsSlab = value;
+        // Preserve the legacy hierarchy and references for scenes without the
+        // physical prefab, but never draw it over the new 3D briefing.
+        briefingPaper.gameObject.SetActive(value == null);
+        if (legacyDetailsGraphics == null)
+        {
+            legacyDetailsGraphics = details.GetComponentsInChildren<Graphic>(true);
+            legacyDetailsEnabled = legacyDetailsGraphics.Select(g => g.enabled).ToArray();
+        }
+        for (int i = 0; i < legacyDetailsGraphics.Length; i++)
+            legacyDetailsGraphics[i].enabled = value == null && legacyDetailsEnabled[i];
+    }
 
     public void ConfigureTabletopBriefing(bool enabled,Button accept,Button decline,TMP_Text title)
     {
@@ -135,6 +152,7 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
     }
     public void LockInput()
     {
+        questDetailsSlab?.SetInteractive(false);
         foreach (var group in new[] { board, details, torso })
             if (group != null) group.interactable = group.blocksRaycasts = false;
     }
@@ -145,6 +163,7 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
         ReleaseNotice();
         ResetMotion(); SetBriefingReveal(1f);
         IsPosting = IsTransitioning = false;
+        questDetailsSlab?.Hide();
         HideTravel();
     }
     public void BeginBoard(IReadOnlyList<QuestNoticeView> papers, int seed, Action ready,
@@ -219,6 +238,12 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
         HideTravel(); RememberPoses();
         float boardStart = board.alpha;
         SetGroup(board, true, false); SetGroup(details, true, false); board.alpha = boardStart;
+        if (questDetailsSlab != null)
+        {
+            if (entering) yield return questDetailsSlab.Enter();
+            else questDetailsSlab.Hide(); // The supplied PreFall pose is under the table.
+            IsTransitioning = false; ready(); yield break;
+        }
         if (entering) SetBriefingReveal(0f);
         float revealDuration=entering ? BriefingRevealDuration() : 0f;
         float duration=Mathf.Max(viewFadeDuration,revealDuration);
@@ -315,6 +340,11 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
         SetGroup(board, view == PreMissionView.Board);
         SetGroup(details, view == PreMissionView.Details);
         SetGroup(torso, view == PreMissionView.Torso);
+        if (questDetailsSlab != null)
+        {
+            questDetailsSlab.Settle(view == PreMissionView.Details);
+            questDetailsSlab.SetInteractive(view == PreMissionView.Details);
+        }
         foreach (var notice in notices) notice.SetPaperVisible(view == PreMissionView.Board || notice.Quest != selectedQuest);
         HideTravel();
     }
@@ -414,6 +444,7 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
     IEnumerator Fade(PreMissionView from, PreMissionView to, Action ready)
     {
         RememberPoses();
+        if (from == PreMissionView.Details) questDetailsSlab?.Hide();
         var old = Group(from); var next = Group(to);
         SetGroup(old, true, false); SetGroup(next, true, false); next.alpha = 0f;
         bool accepting=tabletopBriefing && to==PreMissionView.Torso;
@@ -433,6 +464,7 @@ public sealed class PreMissionPaperPresentation : MonoBehaviour
             nextRect.anchoredPosition = nextHome + Vector2.right * (direction * viewTravel * (1f - eased)*MotionScale);
         });
         ResetMotion();
+        if (to == PreMissionView.Details && questDetailsSlab != null) yield return questDetailsSlab.Enter();
         IsTransitioning = false; ready();
     }
     void RememberPoses()

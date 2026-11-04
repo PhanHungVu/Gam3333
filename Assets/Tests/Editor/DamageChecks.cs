@@ -78,6 +78,45 @@ public static class DamageChecks
             check(melee.Hits == 1 && inside.CurrentHealth == 75f && outside.CurrentHealth == 100f,
                 "The melee box damages each target inside it once");
             check(behind.CurrentHealth == 100f, "Walls block melee damage");
+            var history = new HashSet<CombatHealth>();
+            var first = blast.ResolveBox(boxOrigin + Vector3.forward * 2.5f, new Vector3(2.5f, 1.5f, 2.5f),
+                Quaternion.identity, 10f, attacker.transform, ~0, boxOrigin, history);
+            var repeated = blast.ResolveBox(boxOrigin + Vector3.forward * 2.5f, new Vector3(2.5f, 1.5f, 2.5f),
+                Quaternion.identity, 10f, attacker.transform, ~0, boxOrigin, history);
+            check(first.Hits == 1 && repeated.Hits == 0 && inside.CurrentHealth == 65 && history.SetEquals(new[] { inside }),
+                "A shared damage history prevents repeat sweep hits without recording targets blocked by walls");
+            history.Clear();
+            check(blast.ResolveBox(boxOrigin + Vector3.forward * 2.5f, new Vector3(2.5f, 1.5f, 2.5f),
+                Quaternion.identity, 10f, attacker.transform, ~0, boxOrigin, history).Hits == 1 && inside.CurrentHealth == 55,
+                "A fresh attack's damage history allows the same target to be hit again");
+
+            // Filled spin area: circular footprint, finite height and shared hit rules.
+            var circle = origin + Vector3.right * 80;
+            var spinner = Target(circle, 100); spinner.Team = CombatTeam.Enemy;
+            var inner = Target(circle + Vector3.right * 1.5f, 100);
+            var rim = Target(circle + Vector3.right * 4.1f, 100);
+            var corner = Target(circle + new Vector3(3.5f, 0, 3.5f), 100);
+            var high = Target(circle + Vector3.up * 4, 100);
+            var shielded = Target(circle + Vector3.forward * 3, 100);
+            var friendly = Target(circle + Vector3.back * 2, 100); friendly.Team = CombatTeam.Enemy;
+            var duplicate = new GameObject("Area extra collider"); duplicate.transform.SetParent(inner.transform, false);
+            duplicate.AddComponent<BoxCollider>();
+            Wall(circle + Vector3.forward * 1.5f, new Vector3(1, 3, .2f));
+            Physics.SyncTransforms(); history.Clear();
+            var filled = blast.ResolveCylinder(circle, 4, 1.5f, 35, spinner.transform, ~0, history);
+            check(filled.Hits == 2 && inner.CurrentHealth == 65 && rim.CurrentHealth == 65,
+                "Filled spin area damages its interior and colliders intersecting the circle's edge");
+            check(corner.CurrentHealth == 100 && high.CurrentHealth == 100,
+                "Spin area excludes the broad-phase square corners and targets above its height band");
+            check(spinner.CurrentHealth == 100 && friendly.CurrentHealth == 100 && shielded.CurrentHealth == 100,
+                "Spin area retains owner exclusion, enemy teams and wall blocking");
+            check(blast.ResolveCylinder(circle, 4, 1.5f, 35, spinner.transform, ~0, history).Hits == 0
+                && inner.CurrentHealth == 65 && history.SetEquals(new[] { inner, rim }),
+                "Spin area and compound colliders respect one shared hit per target per attack");
+            history.Clear();
+            check(blast.ResolveCylinder(circle, 4, 1.5f, 35, spinner.transform, ~0, history).Hits == 2
+                && inner.CurrentHealth == 30 && rim.CurrentHealth == 30,
+                "A later spin can damage the same targets again");
         }
         finally
         {

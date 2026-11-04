@@ -30,6 +30,8 @@ public sealed class PreMissionFlowController : MonoBehaviour
     [Tooltip("Scene-owned 3D board. Unassigned prefabs retain the legacy paper preview.")]
     [SerializeField] PreMissionStoneBoard stoneBoard;
     [Header("Details")]
+    [Tooltip("Scene-owned animated 3D briefing. Leave empty to retain the paper fallback.")]
+    [SerializeField] PreMissionQuestDetailsSlab questDetailsSlab;
     [SerializeField] TMP_Text detailsTitle;
     [SerializeField] TMP_Text detailsBody;
     [SerializeField] TMP_Text detailsType;
@@ -61,10 +63,13 @@ public sealed class PreMissionFlowController : MonoBehaviour
     bool confirmationPending;
     bool initialized;
     int skippedPostingFrame = -1;
-    bool CanInteract => isActiveAndEnabled && presentation != null && presentation.isActiveAndEnabled && (stoneBoard == null || stoneBoard.IsOperational);
+    bool CanInteract => isActiveAndEnabled && presentation != null && presentation.isActiveAndEnabled
+        && (stoneBoard == null || stoneBoard.IsOperational) && (questDetailsSlab == null || questDetailsSlab.isActiveAndEnabled);
 
     void Awake()
     {
+        if (questDetailsSlab != null) questDetailsSlab.Bind(this, stoneBoard);
+        presentation.ConfigureQuestDetailsSlab(stoneBoard != null ? questDetailsSlab : null);
         exitButton.onClick.AddListener(Back);
         declineButton.onClick.AddListener(Back);
         torsoBackButton.onClick.AddListener(Back);
@@ -73,6 +78,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
         nextTorsoButton.onClick.AddListener(NextTorso);
         confirmTorsoButton.onClick.AddListener(ConfirmTorso);
         if (skipPostingButton != null) skipPostingButton.onClick.AddListener(SkipPosting);
+        exitButton.GetComponent<PreMissionSlabButton>()?.BindCamera(stoneBoard != null ? stoneBoard.BoardCamera : null);
         initialized = true;
         OpenBoard(false);
         if (!CanInteract && presentation != null) presentation.LockInput();
@@ -416,7 +422,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
             detailsBody.text = quest.description;
             detailsReward.text = "Reward: " + quest.gniReward + " Gni";
             var body = new StringBuilder();
-            body.Append("Estimated duration: ~").Append(quest.estimatedMinutes).Append(" minutes\n\nAvailable parts: ");
+            body.Append("Available parts: ");
             var partNames = new List<string>();
             if (quest.availableParts != null)
                 foreach (var part in quest.availableParts) if (part != null) partNames.Add(part.partName);
@@ -424,8 +430,9 @@ public sealed class PreMissionFlowController : MonoBehaviour
             var enemies = new List<string>();
             if (quest.availableEnemies != null)
                 foreach (var enemy in quest.availableEnemies) if (enemy != null) enemies.Add(enemy.name);
-            body.Append("\nAvailable enemies: ").Append(enemies.Count > 0 ? string.Join(", ", enemies) : "Not specified");
+            body.Append("\nEnemies spawned: ").Append(enemies.Count > 0 ? string.Join(", ", enemies) : "Not specified");
             detailsInfo.text = body.ToString();
+            questDetailsSlab?.SetContent(detailsTitle.text, detailsType.text, detailsBody.text, detailsInfo.text, detailsReward.text);
             torsoQuestTitle.text = "Selected quest: " + quest.title;
         }
         var torso = Session.SelectedTorso;
@@ -446,6 +453,8 @@ public sealed class PreMissionFlowController : MonoBehaviour
             {
                 EventSystem.current.SetSelectedGameObject(null); stoneBoard.FocusFirst(); return;
             }
+            if (Session.View == PreMissionView.Details && questDetailsSlab != null)
+            { EventSystem.current.SetSelectedGameObject(null); return; }
             var target = Session.View == PreMissionView.Board ? (notices.Count > 0 ? notices[0].Button : exitButton)
                 : Session.View == PreMissionView.Details ? acceptButton : confirmTorsoButton.interactable ? confirmTorsoButton : torsoBackButton;
             EventSystem.current.SetSelectedGameObject(null);
@@ -463,4 +472,5 @@ public sealed class PreMissionFlowController : MonoBehaviour
     static void Unbind(Button button, UnityAction action) { if (button != null) button.onClick.RemoveListener(action); }
 
     public static string MissionTypeName(QuestMissionType type) => type == QuestMissionType.KingOfTheHill ? "King of the Hill" : type.ToString();
+    public static string MissionTypeShortName(QuestMissionType type) => type == QuestMissionType.KingOfTheHill ? "KOTH" : type.ToString().ToUpperInvariant();
 }

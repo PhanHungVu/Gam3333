@@ -11,10 +11,9 @@ public class MechTargetLockController : MonoBehaviour
     [SerializeField, Range(0f, 0.49f)] float screenPadding = 0.04f;
     [Tooltip("Aim-point tolerance as a fraction of the camera's smaller screen dimension.")]
     [SerializeField, Range(0f, 0.25f)] float targetSwitchRadius = 0.025f;
+    [Tooltip("Automatic weapon-aim radius around screen center, as a fraction of the smaller screen dimension. Free-camera aiming never steers the camera.")]
+    [SerializeField, Range(0.01f, 0.5f)] float autoAimRadius = .18f;
     [SerializeField] Camera gameplayCamera;
-
-    [Header("Lock Mode Controls")]
-    [SerializeField, Min(0.1f)] float freeAimHoldDuration = 1.2f;
 
     [Header("Hard Lock Target Switching")]
     [Tooltip("Mouse travel required within the gesture window to switch targets.")]
@@ -31,9 +30,6 @@ public class MechTargetLockController : MonoBehaviour
     bool hardLockEnabled;
     bool targetingEnabled;
     bool rememberedHardLock;
-    bool lockButtonTracking;
-    bool lockButtonConsumed;
-    float lockButtonTime;
     bool switchLatched;
     Vector2 switchTravel;
     float gestureTime;
@@ -43,6 +39,7 @@ public class MechTargetLockController : MonoBehaviour
     public MechTargetable CurrentTarget => currentTarget;
     public Camera GameplayCamera => gameplayCamera;
     public bool IsFreeAim => !targetingEnabled;
+    public bool IsFreeCamera => !IsHardLockMode;
     public bool IsHardLockMode => isActiveAndEnabled && targetingEnabled && hardLockEnabled;
     public bool IsHardLocked => isActiveAndEnabled && targetingEnabled && hardLockEnabled && IsTargetInRange(currentTarget);
     public event Action<MechTargetable, MechTargetable> TargetChanged;
@@ -67,47 +64,25 @@ public class MechTargetLockController : MonoBehaviour
         SetHardLock(rememberedHardLock);
     }
 
-    // A short click commits on release, so starting a long hold never changes mode.
-    // A press from free aim restores immediately and consumes that whole gesture.
+    // F toggles camera lock immediately on press. Weapon auto-aim stays enabled
+    // in both camera modes; no hold gesture changes aim mode.
     public void ProcessLockButton(bool pressed, bool held, bool released, float deltaTime)
     {
         if (!isActiveAndEnabled || deltaTime <= 0f) return;
-        if (pressed)
-        {
-            lockButtonTracking = true;
-            lockButtonConsumed = IsFreeAim;
-            lockButtonTime = 0f;
-            if (IsFreeAim) ResumeTargeting();
-        }
-        if (!lockButtonTracking) return;
-        if (!lockButtonConsumed)
-        {
-            lockButtonTime += deltaTime;
-            if (lockButtonTime >= freeAimHoldDuration)
-            {
-                EnterFreeAim();
-                lockButtonConsumed = true;
-            }
-            else if (released)
-                ToggleHardLock();
-        }
-        if (released || !held) CancelLockButtonInput();
+        if (pressed) ToggleHardLock();
     }
 
     public void CancelLockButtonInput()
     {
-        lockButtonTracking = lockButtonConsumed = false;
-        lockButtonTime = 0f;
+        switchTravel = Vector2.zero; gestureTime = quietTime = 0;
+        switchLatched = false;
     }
 
     public void ToggleHardLock()
     {
         if (!isActiveAndEnabled) return;
         if (IsFreeAim)
-        {
             ResumeTargeting();
-            return;
-        }
         if (hardLockEnabled)
         {
             SetHardLock(false);
@@ -115,9 +90,8 @@ public class MechTargetLockController : MonoBehaviour
         }
         if (gameplayCamera == null) gameplayCamera = Camera.main;
         // Toggling follows the visible selection; it must not silently choose another enemy.
-        if (gameplayCamera == null || !IsValidTarget(currentTarget, gameplayCamera))
-            SelectTarget(gameplayCamera);
         SetHardLock(true);
+        if (gameplayCamera == null || !IsValidTarget(currentTarget, gameplayCamera)) SelectTarget(gameplayCamera);
     }
 
     // Called once per frame by the camera input owner, before movement and camera updates.
@@ -204,6 +178,7 @@ public class MechTargetLockController : MonoBehaviour
         CancelLockButtonInput();
         EnterFreeAim();
     }
+    void OnEnable() => ResumeTargeting();
 
     // Hard lock re-targets at the start of the frame, before the camera frames it.
     void Update()
@@ -258,6 +233,7 @@ public class MechTargetLockController : MonoBehaviour
         bool keepCurrentTarget = false;
         Vector2 screenCenter = viewCamera.pixelRect.center;
         float switchRadius = targetSwitchRadius * Mathf.Min(viewCamera.pixelWidth, viewCamera.pixelHeight);
+        float acquisitionRadius = autoAimRadius * Mathf.Min(viewCamera.pixelWidth, viewCamera.pixelHeight);
         Ray centerRay = viewCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         int candidateCount = QueryCandidates();
 
@@ -268,9 +244,11 @@ public class MechTargetLockController : MonoBehaviour
             if (!IsValidTarget(targetable, viewCamera))
                 continue;
 
-            keepCurrentTarget |= targetable == currentTarget;
             Vector2 screenPoint = viewCamera.WorldToScreenPoint(targetable.AimPosition);
             float score = (screenPoint - screenCenter).sqrMagnitude;
+            bool crossed = candidate.Raycast(centerRay, out RaycastHit hit, Mathf.Infinity);
+            if (!hardLockEnabled && !crossed && score > acquisitionRadius * acquisitionRadius) continue;
+            keepCurrentTarget |= targetable == currentTarget;
             // Soft acquisition follows hidden aim, including when no collider is
             // directly under it. Hard-lock recovery keeps its world-distance rule.
             float distance = hardLockEnabled
@@ -288,8 +266,7 @@ public class MechTargetLockController : MonoBehaviour
             }
 
             // Crossing any part of an enemy's collider counts, not just its aim point.
-            if (candidate.Raycast(centerRay, out RaycastHit hit, Mathf.Infinity)
-                && hit.distance < rayDistance)
+            if (crossed && hit.distance < rayDistance)
             {
                 rayDistance = hit.distance;
                 rayTarget = targetable;
@@ -331,7 +308,7 @@ public class MechTargetLockController : MonoBehaviour
     void OnValidate()
     {
         lockRange = Mathf.Max(0.01f, lockRange);
-        freeAimHoldDuration = Mathf.Max(0.1f, freeAimHoldDuration);
+        autoAimRadius = Mathf.Clamp(autoAimRadius, .01f, .5f);
         screenPadding = Mathf.Clamp(screenPadding, 0f, 0.49f);
         targetSwitchRadius = Mathf.Clamp(targetSwitchRadius, 0f, 0.25f);
         switchFlickDistance = Mathf.Max(1f, switchFlickDistance);

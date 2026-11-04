@@ -6,6 +6,11 @@ using UnityEngine;
 public static class EnemyBehaviorArenaSetup
 {
     public const string ScenePath = "Assets/Scenes/EnemyBehaviorPlaytest.unity";
+    public static readonly string[] EncounterPaths = {
+        "Assets/AI/Behavior/Encounters/A_BasicSwarm.asset", "Assets/AI/Behavior/Encounters/B_MeleeAndCrossbows.asset",
+        "Assets/AI/Behavior/Encounters/C_SpinnerPressure.asset", "Assets/AI/Behavior/Encounters/D_HeavyRanged.asset",
+        "Assets/AI/Behavior/Encounters/E_LargeMixedHorde.asset", "Assets/AI/Behavior/Encounters/F_OrbitElite.asset",
+        "Assets/AI/Behavior/Encounters/G_ThrowPullElite.asset" };
     [MenuItem("Tools/Mech/Enemies/Create Behavior Playtest Arena")]
     public static void CreateScene()
     {
@@ -24,12 +29,18 @@ public static class EnemyBehaviorArenaSetup
         var wall = GameObject.CreatePrimitive(PrimitiveType.Cube); wall.name = "Pathfinding obstacle"; wall.tag = "Obstacle"; wall.transform.position = new Vector3(0,1,8); wall.transform.localScale = new Vector3(6,2,1);
         var sword = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(EnemyRosterSetup.Roster[0])); sword.transform.position = new Vector3(0,1,16); sword.transform.rotation = Quaternion.LookRotation(Vector3.back);
         var controls = new GameObject("Enemy Behavior Playtest"); var director = controls.AddComponent<SpawnDirector>(); var spawn = controls.AddComponent<RoamingSpawner>();
+        var coordinator = controls.AddComponent<EnemyHordeCoordinator>();
+        var specialCoordinator = controls.AddComponent<EnemySpecialCoordinator>();
         var fields = new SerializedObject(controls.AddComponent<EnemyBehaviorPlaytest>());
         fields.FindProperty("player").objectReferenceValue = player.transform; fields.FindProperty("director").objectReferenceValue = director;
+        fields.FindProperty("coordinator").objectReferenceValue = coordinator;
+        fields.FindProperty("specialCoordinator").objectReferenceValue = specialCoordinator;
         fields.FindProperty("spawnPoint").objectReferenceValue = spawn; fields.FindProperty("roaming").objectReferenceValue = AssetDatabase.LoadAssetAtPath<WaveData>(EnemyRosterSetup.Roaming);
         fields.FindProperty("survival").objectReferenceValue = AssetDatabase.LoadAssetAtPath<WaveData>(EnemyRosterSetup.Survival);
         var roster = fields.FindProperty("roster"); roster.arraySize = EnemyRosterSetup.Roster.Length;
         for (int i=0;i<roster.arraySize;i++) roster.GetArrayElementAtIndex(i).objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>(EnemyRosterSetup.Roster[i]);
+        var encounters = fields.FindProperty("encounterPresets"); encounters.arraySize = EncounterPaths.Length;
+        for (int i = 0; i < encounters.arraySize; i++) encounters.GetArrayElementAtIndex(i).objectReferenceValue = AssetDatabase.LoadAssetAtPath<EnemyEncounterPreset>(EncounterPaths[i]);
         fields.ApplyModifiedPropertiesWithoutUndo(); EditorSceneManager.SaveScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene(),ScenePath);
         AssetDatabase.SaveAssets(); Debug.Log("ENEMY BEHAVIOR PLAYTEST ARENA READY: " + ScenePath);
     }

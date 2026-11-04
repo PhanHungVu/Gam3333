@@ -56,7 +56,7 @@ public static partial class EnemyBehaviorChecks
         if (!SessionState.GetBool(Pending, false) || !EditorApplication.isPlaying || EditorApplication.isCompiling) return;
         try
         {
-            if (!started) { started = true; deadline = EditorApplication.timeSinceStartup + 240; stack.Push(SessionState.GetBool(Pending + ".Arena", false) ? RunArena() : SessionState.GetBool(Pending + ".Rope", false) ? RunRope() : Run()); }
+            if (!started) { started = true; bool melee = SessionState.GetBool(Pending + ".AttackCoordination", false); bool pressure = SessionState.GetBool(Pending + ".Pressure", false); bool ranged = SessionState.GetBool(Pending + ".Ranged", false); bool special = SessionState.GetBool(Pending + ".Special", false); bool encounters = SessionState.GetBool(Pending + ".Encounters", false); bool refinement = SessionState.GetBool(Pending + ".Refinement", false); deadline = EditorApplication.timeSinceStartup + (melee || pressure || ranged || special || encounters || refinement ? 480 : 240); stack.Push(refinement ? RunCombatRefinement() : encounters ? RunEncounters() : special ? RunSpecialCoordination() : ranged ? RunRanged() : pressure ? RunPressure() : melee ? RunAttackCoordination() : SessionState.GetBool(Pending + ".Coordination", false) ? RunCoordination() : SessionState.GetBool(Pending + ".Arena", false) ? RunArena() : SessionState.GetBool(Pending + ".Rope", false) ? RunRope() : Run()); }
             PreMissionReliabilityChecks.AssertNoUnexpectedErrors();
             if (EditorApplication.timeSinceStartup > deadline) throw new Exception("Enemy graph checks timed out");
             while (stack.Count > 0)
@@ -71,7 +71,7 @@ public static partial class EnemyBehaviorChecks
     static void Finish(Exception error)
     {
         PreMissionReliabilityChecks.EndLogAudit(); Time.captureFramerate = 0; Time.timeScale = 1;
-        SessionState.SetBool(Pending, false); if (error != null) Debug.LogException(error);
+        SessionState.SetBool(Pending, false); SessionState.SetBool(Pending + ".Coordination", false); SessionState.SetBool(Pending + ".AttackCoordination", false); SessionState.SetBool(Pending + ".Pressure", false); SessionState.SetBool(Pending + ".Ranged", false); SessionState.SetBool(Pending + ".Special", false); SessionState.SetBool(Pending + ".Encounters", false); SessionState.SetBool(Pending + ".Refinement", false); if (error != null) Debug.LogException(error);
         Debug.Log("ENEMY BEHAVIOR CHECKS " + (error == null ? "COMPLETE: " : "FAILED: ") + checks);
         EditorApplication.Exit(error == null ? 0 : 1);
     }

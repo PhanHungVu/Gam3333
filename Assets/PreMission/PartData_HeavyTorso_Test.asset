@@ -19,6 +19,10 @@ MonoBehaviour:
   subtype: 0
   stats:
   - type: 0
-    value: 150
+    value: 225
+  - type: 16
+    value: 30
+  - type: 17
+    value: 20
   projectilePrefab: {fileID: 0}
   projectileColor: {r: 1, g: 1, b: 1, a: 1}

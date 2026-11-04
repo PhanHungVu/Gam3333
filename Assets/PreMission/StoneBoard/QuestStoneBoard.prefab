@@ -12090,7 +12090,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  - {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -12138,8 +12138,8 @@ MonoBehaviour:
 
     PROGRESS'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -17887,49 +17887,49 @@ MonoBehaviour:
   compositions:
   - name: Surround
     smallSlots:
-    - {x: -5.3, y: 2.05}
-    - {x: 5.3, y: 2.05}
-    - {x: 0, y: -3.15}
-    - {x: -5.3, y: -2.05}
-    - {x: 5.3, y: -2.05}
-    - {x: 0, y: 3.2}
+    - {x: -6.8, y: 0}
+    - {x: -3.6, y: 2.2}
+    - {x: -3.6, y: -2.2}
+    - {x: 6.8, y: 0}
+    - {x: 3.6, y: 2.2}
+    - {x: 3.6, y: -2.2}
     angles:
-    - -4
-    - 4
-    - -4
-    - 4
-    - -4
-    - 4
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
   - name: Wide
     smallSlots:
-    - {x: -5.7, y: 1.9}
-    - {x: 5.7, y: 1.9}
-    - {x: 0, y: -3.15}
-    - {x: -5.4, y: -2.05}
-    - {x: 5.4, y: -2.05}
-    - {x: 0, y: 3.2}
+    - {x: -6.8, y: 0}
+    - {x: -3.6, y: 2.2}
+    - {x: -3.6, y: -2.2}
+    - {x: 6.8, y: 0}
+    - {x: 3.6, y: 2.2}
+    - {x: 3.6, y: -2.2}
     angles:
-    - -4
-    - 4
-    - -4
-    - 4
-    - -4
-    - 4
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
   - name: Crown
     smallSlots:
-    - {x: -5.5, y: 2.15}
-    - {x: 5.5, y: 2.15}
-    - {x: 0, y: -3.15}
-    - {x: -5.6, y: -2.05}
-    - {x: 5.6, y: -2.05}
-    - {x: 0, y: 3.2}
+    - {x: -6.8, y: 0}
+    - {x: -3.6, y: 2.2}
+    - {x: -3.6, y: -2.2}
+    - {x: 6.8, y: 0}
+    - {x: 3.6, y: 2.2}
+    - {x: 3.6, y: -2.2}
     angles:
-    - -4
-    - 4
-    - -4
-    - 4
-    - -4
-    - 4
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
   wholeTableLayout: 1
   freePlacementBounds:
     serializedVersion: 2
@@ -17987,7 +17987,7 @@ MonoBehaviour:
   smallBounce: 0.045
   smallTilt: 7
   mainAnticipationDuration: 0.32
-  mainClearanceDuration: 0.65
+  mainClearanceDuration: 0.85
   mainFocusZoom: 0.045
   reactionRadius: 12
   reactionTilt: 8
@@ -18008,7 +18008,7 @@ MonoBehaviour:
   mainHandlingTimeMultiplier: 1.15
   inspectionViewport: {x: 0.25, y: 0.5}
   inspectionWidth: 0.34
-  smallInspectionSize: 3
+  smallInspectionSize: 2.7
   mainInspectionSize: 3.85
 --- !u!114 &6122998821435740188
 MonoBehaviour:
@@ -23475,7 +23475,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  - {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -23521,8 +23521,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 0 / 3
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

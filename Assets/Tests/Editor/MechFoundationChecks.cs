@@ -69,6 +69,7 @@ public static class MechFoundationChecks
             CheckSoftLockCameraAim();
             CheckFreeAimModes(view);
             CheckLockVerticalLook(view);
+            MechCameraStabilityChecks.Run(Check);
             CheckMovement(view);
             CheckEnemyIndependentMovement(view);
             CheckGroundFeatures(view);
@@ -675,7 +676,7 @@ public static class MechFoundationChecks
         cameraRoot.SetActive(true);
         var rig = (CinemachineCamera)Get(cameraControl, "cinemachineCamera");
         var follow = rig.GetComponent<CinemachineThirdPersonFollow>();
-        Check(follow.AvoidObstacles.Enabled && follow.AvoidObstacles.IgnoreTag == "Player",
+        Check(cameraControl.ObstacleAvoidanceEnabled && follow.AvoidObstacles.IgnoreTag == "Player",
             "Camera avoids obstacles and ignores the player");
         Set(motor, "quickBoostTimer", 0.24f);
         Call(cameraControl, "UpdateMovementFeedback", 0.1f);

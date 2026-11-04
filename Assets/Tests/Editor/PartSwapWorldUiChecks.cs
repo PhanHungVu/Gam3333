@@ -146,10 +146,12 @@ public static class PartSwapWorldUiChecks
             &&hud.View.Card(1).binding.text.Contains(input.SwapBindingLabel(PartCategory.ShoulderR)),"Shoulder prompts show the actual 1/2 actions");
         var basic=hud.View.transform.Find("New Part/Stats Right").GetComponent<TMP_Text>();
         Check(!hud.View.transform.Find("New Part/Stats Left").gameObject.activeSelf&&basic.gameObject.activeSelf
-            &&basic.text=="Damage 100\nFire rate 0.33/s\nRange 5\nAmmo 20","The new cannon's four basic numeric stats appear on the upper card's right side");
+            &&basic.text=="Damage 100\nFire rate 1/s\nMovement -4\nRange 10","The updated cannon's four basic numeric stats appear on the upper card's right side");
         Check(basic.rectTransform.anchoredPosition.x>=338&&basic.fontSizeMax<=22
-            &&hud.View.Card(1).comparison.text.Contains("+70")&&hud.View.Card(1).comparison.text.Contains("-0.67/s")
-            &&hud.View.Card(1).comparison.text.Contains("-30"),"New stats use a smaller font beside the name; the old crossbow shows actual damage, fire-rate and ammo differences");
+            &&hud.View.Card(1).comparison.text.Contains("Movement <color=#8FD6A2>+1</color>")
+            &&hud.View.Card(1).comparison.text.Contains("Range <color=#ED9990>-10</color>")
+            &&hud.View.Card(1).comparison.text.Contains("Blast size <color=#8FD6A2>+2.5</color>"),
+            "New stats use a smaller font beside the name; comparison with the current crossbow uses the updated part values and signs");
         Capture("shoulders",1280,720);
         yield return PlacementFlow(cannon,arm);
         var head=Drop("head_base",new Vector3(0.6f,0.3f,1)); Target(head); yield return Visible(head);
@@ -227,10 +229,10 @@ public static class PartSwapWorldUiChecks
         Check(hud.View.DisplayedSlots.SequenceEqual(new[]{PartCategory.ArmL,PartCategory.ArmR}),"Arm-compatible parts display the real left/right sockets");
         Check(hud.View.Card(0).binding.text=="[1] Left"&&hud.View.Card(1).binding.text=="[2] Right","Arm prompts show only 1/2 and left/right");
         string plain=System.Text.RegularExpressions.Regex.Replace(hud.View.Card(0).comparison.text,"<[^>]+>","");
-        Check(plain.Contains("Damage -50")&&plain.Contains("Fire rate +0.57/s")&&!plain.Contains("++")&&!plain.Contains("--")&&plain.Split('\n').Length<=4,
-            "Comparisons show actual numeric changes; lower cooldown correctly improves fire rate");
+        Check(plain.Contains("Damage -50")&&plain.Contains("Fire rate -0.2/s")&&!plain.Contains("++")&&!plain.Contains("--")&&plain.Split('\n').Length<=4,
+            "Comparisons show actual numeric changes from the updated Damage and FireRate stats");
         var basic=hud.View.transform.Find("New Part/Stats Right").GetComponent<TMP_Text>();
-        Check(basic.gameObject.activeSelf&&basic.text=="Damage 50\nFire rate 2/s\nRange 3\nAmmo 30",
+        Check(basic.gameObject.activeSelf&&basic.text=="Damage 50\nFire rate 0.5/s\nMovement -2.5\nRange 8",
             "The selected throwing axe shows its own values above the two equipped-part comparisons");
         Check(hud.View.Card(1).comparison.text=="—","Identical equipped/incoming stats do not create repeated unchanged rows");
     }

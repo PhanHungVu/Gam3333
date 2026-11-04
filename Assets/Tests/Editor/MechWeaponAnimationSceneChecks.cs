@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
@@ -20,6 +21,8 @@ public static class MechWeaponAnimationSceneChecks
     static float next = -1f, deadline;
     static int phase = -2, shots;
     static bool cycleHeld;
+    static readonly List<float> heldLeft = new List<float>(), heldRight = new List<float>();
+    static int leftAfterHold, rightAfterHold, shotsAfterHold, ammoBeforeHold;
     [InitializeOnLoadMethod]
     static void Register() => EditorApplication.update += Update;
 
@@ -55,7 +58,7 @@ public static class MechWeaponAnimationSceneChecks
     static void Update()
     {
         if (!SessionState.GetBool(Pending, false) || !EditorApplication.isPlaying || EditorApplication.isCompiling) return;
-        if (next < 0f) { next = Time.time + 1.2f; deadline = Time.time + 30f; }
+        if (next < 0f) { next = Time.time + 1.2f; deadline = Time.time + 45f; }
         if (Time.time < next) return;
         try
         {
@@ -149,14 +152,18 @@ public static class MechWeaponAnimationSceneChecks
                     originalSword.transform.position += Vector3.right * 100f;
                     var dummy = GameObject.CreatePrimitive(PrimitiveType.Cube);
                     dummy.name = "Mace Damage Check";
-                    dummy.transform.position = motor.transform.position + motor.transform.forward * 3f + motor.transform.right * 2.2f;
+                    var meleeBox = motor.GetComponent<MechCombat>().Melee;
+                    dummy.transform.position = meleeBox.BoxCenter(0f, motor.transform.rotation) + motor.transform.right * meleeBox.BoxSize.x * .3f;
                     dummy.transform.localScale = Vector3.one * 0.3f;
                     maceTarget = dummy.AddComponent<CombatHealth>();
+                    maceTarget.SetMaximum(1000f, true);
                     Physics.SyncTransforms();
                     Keys(); Button(MouseButton.Left); delay = 0.15f; break;
                 case 13:
                     Pose(PartCategory.ArmL, MechWeaponAnimator.PoseState.Fire, "Mace");
-                    Check(maceTarget.CurrentHealth == 50f, "Actual LMB mace swing deals 50 damage inside its enlarged melee hitbox");
+                    float maceDamage = equipment.GetEquipped(PartCategory.ArmL).Stats.GetStat(StatType.Damage);
+                    Check(maceDamage > 0f && Mathf.Abs(maceTarget.CurrentHealth - (1000f - maceDamage)) < .002f,
+                        "Actual LMB mace swing uses its configured damage and current Range-scaled melee hitbox; health=" + maceTarget.CurrentHealth);
                     Object.DestroyImmediate(maceTarget.gameObject);
                     Capture("mace-fire"); Button(); PlacePickup("Arm Crossbow Animation Pickup"); delay = 0.45f; break;
                 case 14:
@@ -175,7 +182,7 @@ public static class MechWeaponAnimationSceneChecks
                 case 17:
                     Pose(PartCategory.ArmR, MechWeaponAnimator.PoseState.Reload, "ArmCrossbow");
                     Capture("arm-crossbow-reload"); delay = 2.2f; break;
-                default:
+                case 18:
                     Pose(PartCategory.ArmL, MechWeaponAnimator.PoseState.Neutral, "Mace");
                     Pose(PartCategory.ArmR, MechWeaponAnimator.PoseState.Neutral, "ArmCrossbow");
                     Check(shots == 4, "Shoulder weapons, throwing axe and arm crossbow each fire once; mace adds no projectile");
@@ -185,6 +192,28 @@ public static class MechWeaponAnimationSceneChecks
                     Check(Object.FindObjectsByType<MechMovementController>().Length == 1
                         && Camera.main.GetComponent<CameraControlThirdPerson>().Target == motor.transform,
                         "Weapon pickup and firing retain one player and its camera");
+                    motor.GetComponent<MechCombat>().WeaponAttackStarted += part =>
+                    {
+                        if (part == equipment.GetEquipped(PartCategory.ArmL)) heldLeft.Add(Time.time);
+                        if (part == equipment.GetEquipped(PartCategory.ArmR)) heldRight.Add(Time.time);
+                    };
+                    ammoBeforeHold = equipment.GetEquipped(PartCategory.ArmR).RemainingAmmo;
+                    InputSystem.QueueStateEvent(mouse, new MouseState().WithButton(MouseButton.Left).WithButton(MouseButton.Right));
+                    delay = 2.3f; break;
+                case 19:
+                    Check(heldLeft.Count >= 2 && heldRight.Count >= 2, "Holding LMB and RMB continuously repeats both equipped arm weapons");
+                    float leftCooldown = equipment.GetEquipped(PartCategory.ArmL).Stats.ShotInterval;
+                    float rightCooldown = equipment.GetEquipped(PartCategory.ArmR).Stats.ShotInterval;
+                    Check(heldLeft.Skip(1).Select((time, i) => time - heldLeft[i]).All(gap => gap >= leftCooldown - .002f)
+                        && heldRight.Skip(1).Select((time, i) => time - heldRight[i]).All(gap => gap >= rightCooldown - .002f),
+                        "Held attacks respect each weapon's independent cooldown");
+                    Check(equipment.GetEquipped(PartCategory.ArmR).RemainingAmmo == ammoBeforeHold - heldRight.Count,
+                        "Held ranged attacks consume exactly one round per accepted shot");
+                    leftAfterHold = heldLeft.Count; rightAfterHold = heldRight.Count; shotsAfterHold = shots;
+                    Button(); delay = Mathf.Max(leftCooldown, rightCooldown) + .2f; break;
+                case 20:
+                    Check(heldLeft.Count == leftAfterHold && heldRight.Count == rightAfterHold && shots == shotsAfterHold,
+                        "Releasing the mouse buttons stops repeating attacks even after cooldowns expire");
                     InputSystem.RemoveDevice(keyboard); InputSystem.RemoveDevice(mouse);
                     SessionState.SetBool(Pending, false);
                     Debug.Log("WEAPON SCENE CHECKS COMPLETE"); EditorApplication.Exit(0); return;

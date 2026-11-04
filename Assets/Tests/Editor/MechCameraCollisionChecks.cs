@@ -46,6 +46,15 @@ public static class MechCameraCollisionChecks
         var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
         var box = wall.GetComponent<BoxCollider>();
         var platform = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Map Elements/platform.prefab"));
+        var crowd = new GameObject("Camera crowd fixture");
+        crowd.AddComponent<EnemyAgent>().enabled = false;
+        var rearWall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        rearWall.transform.position = player.transform.position + Vector3.back * 7f;
+        rearWall.transform.localScale = new Vector3(20, 20, .15f);
+        rearWall.SetActive(false);
+        var replacementPlayer = new GameObject("Rebound camera player");
+        replacementPlayer.transform.position = player.transform.position;
+        replacementPlayer.tag = "Player";
         try
         {
             void Configure()
@@ -94,6 +103,56 @@ public static class MechCameraCollisionChecks
             check(Vector3.Distance(Evaluate(), anchor.position + Vector3.back * 10f) < 0.05f,
                 "Player-tagged colliders are excluded from camera obstruction");
             wall.tag = "Untagged";
+            wall.transform.SetParent(player.transform, true);
+            check(Vector3.Distance(Evaluate(), anchor.position + Vector3.back * 10f) < 0.05f,
+                "Untagged colliders inside the followed player hierarchy do not collapse the camera");
+            wall.transform.SetParent(replacementPlayer.transform, true);
+            control.BindTarget(replacementPlayer.transform);
+            anchor.SetPositionAndRotation(replacementPlayer.transform.position, Quaternion.identity);
+            check(Vector3.Distance(Evaluate(), anchor.position + Vector3.back * 10f) < .05f,
+                "Rebinding immediately filters the new player's children before another camera settings update");
+            control.BindTarget(player.transform);
+            anchor.SetPositionAndRotation(player.transform.position, Quaternion.identity);
+            wall.transform.SetParent(crowd.transform, true);
+            check(Vector3.Distance(Evaluate(), anchor.position + Vector3.back * 10f) < 0.05f,
+                "Default-layer enemy limbs are filtered without changing their colliders or layers");
+            Set(control, "obstacleLayers", (LayerMask)~0); Configure();
+            check(Vector3.Distance(Evaluate(), anchor.position + Vector3.back * 10f) < 0.05f && wall.layer == 0 && box.enabled,
+                "Character filtering also works with a custom all-layer structure mask");
+
+            rearWall.SetActive(true);
+            Vector3 rearBlocked = Evaluate();
+            check(follow.CurrentObstacle == rearWall.GetComponent<Collider>() && rearBlocked.z > rearWall.GetComponent<Collider>().bounds.max.z,
+                "A world wall behind an ignored enemy still obstructs the camera");
+            for (int i = 0; i < 80; i++)
+            {
+                var limb = GameObject.CreatePrimitive(PrimitiveType.Cube); limb.transform.SetParent(crowd.transform);
+                limb.transform.position = anchor.position + Vector3.back * (2 + i * .04f);
+                limb.transform.localScale = Vector3.one * .1f;
+            }
+            check(Evaluate().z > rearWall.GetComponent<Collider>().bounds.max.z && follow.CurrentObstacle == rearWall.GetComponent<Collider>(),
+                "A saturated crowd query grows its hit buffer and still finds the world wall");
+            rearWall.SetActive(false);
+            wall.transform.SetParent(null, true);
+            crowd.SetActive(false);
+            var destructible = wall.AddComponent<CombatHealth>(); destructible.Team = CombatTeam.Neutral;
+            Set(control, "obstacleLayers", (LayerMask)1); Configure();
+            check(Evaluate().z >= safeZ - .03f && follow.CurrentObstacle == box,
+                "Health-bearing scenery remains a camera obstacle");
+            Object.DestroyImmediate(destructible);
+
+            Vector3 wallPosition = wall.transform.position;
+            wall.transform.position = anchor.position + Vector3.back * .2f;
+            Vector3 initialOverlap = Evaluate();
+            check(initialOverlap.z >= box.bounds.max.z + follow.AvoidObstacles.CameraRadius - .03f,
+                "A camera probe initially touching a wall resolves to the safe side (position " + initialOverlap
+                    + ", wall front " + box.bounds.max.z + ", radius " + follow.AvoidObstacles.CameraRadius + ")");
+            wall.transform.position = wallPosition;
+
+            Set(control, "avoidObstacles", false); Configure();
+            check(!control.ObstacleAvoidanceEnabled && Vector3.Distance(Evaluate(), anchor.position + Vector3.back * 10) < .05f,
+                "The existing avoidance toggle still disables world obstruction handling");
+            Set(control, "avoidObstacles", true); Configure();
             // Layer 8 is now reserved for loose parts, which must not obstruct
             // the camera. Use another user layer to exercise structure masks.
             wall.layer = 9;
@@ -137,6 +196,9 @@ public static class MechCameraCollisionChecks
         }
         finally
         {
+            Object.DestroyImmediate(crowd);
+            Object.DestroyImmediate(rearWall);
+            Object.DestroyImmediate(replacementPlayer);
             Object.DestroyImmediate(platform);
             Object.DestroyImmediate(wall);
             Object.DestroyImmediate(cameraObject);

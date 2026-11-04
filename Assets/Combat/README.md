@@ -1,5 +1,7 @@
 # Combat presentation slice
 
+Current player bindings, automatic running, reload and ability-input connections are documented in [Player controls](ControlScheme.md). The HUD is being revamped separately; this control revision does not edit its files.
+
 `Prefab/Mech.prefab` has `CombatFeedback`, using the existing `Prototype Combat.mat` and the mesh-only `VisualMech/Body` for recoil. `Prefab/Enemy.prefab` and the unpacked enemies in `Scenes/A33.unity` have `EnemyCombatFeedback`. No extra scene setup is required.
 
 ## Events and gameplay boundary

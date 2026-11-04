@@ -55071,7 +55071,7 @@ MonoBehaviour:
   detectRadius: 40
   loseRadius: 60
   arriveRadius: 12
-  attackRange: 2.2
+  attackRange: 3.2
   perceptionRadius: 10
   separationRadius: 3.5
   separationWeight: 1.5

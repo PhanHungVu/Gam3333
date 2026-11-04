@@ -79,7 +79,7 @@ public static class MechCameraCollisionSceneChecks
             else if (phase == 1)
             {
                 var obstacle = follow.CurrentObstacle;
-                Check(follow.AvoidObstacles.Enabled && obstacle != null
+                Check(control.ObstacleAvoidanceEnabled && obstacle != null
                     && Vector3.Distance(view.transform.position, control.Target.position) < follow.CameraDistance - 1f,
                     "Live scene camera pulls forward when its normal position lies behind a platform");
                 probe.radius = follow.AvoidObstacles.CameraRadius - 0.02f;

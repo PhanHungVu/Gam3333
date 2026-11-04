@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Events;
+using System;
 
 // The one place that reads the player's devices. Each frame it turns input into actions for the
 // other systems: movement (move, jump, boosts), the camera (look), targeting (lock-on, switching),
@@ -12,11 +14,18 @@ public sealed class MechPlayerInput : MonoBehaviour
 {
     [SerializeField] InputActionAsset inputActions;
     [SerializeField] bool lockCursorOnPlay = true;
+    [Header("Part ability requests — gameplay supplies head/torso effects")]
+    [SerializeField] UnityEvent<Part> headAbilityRequested = new UnityEvent<Part>();
+    [SerializeField] UnityEvent<Part> torsoAbilityRequested = new UnityEvent<Part>();
+    [SerializeField] UnityEvent<Part> legAbilityRequested = new UnityEvent<Part>();
+    [Tooltip("Preserve the existing jump/hover lift until a custom legs ability supplies its own movement.")]
+    [SerializeField] bool useBuiltInLegMovement = true;
+    public event Action<PartCategory, Part> AbilityRequested;
     // Batch Unity cannot capture a native cursor; tests set this to run the real input path.
     public bool AssumeCursorCaptured { get; set; }
 
     InputActionAsset runtimeInputActions;
-    InputAction move, jump, quickBoost, assaultBoost, look, lockOn;
+    InputAction move, jump, quickBoost, look, lockOn, reload, headAbility, torsoAbility;
     InputAction leftArm, rightArm, leftShoulder, rightShoulder, swapLeft, swapRight, cyclePart;
     MechMovementController movement;
     MechCombat combat;
@@ -62,7 +71,8 @@ public sealed class MechPlayerInput : MonoBehaviour
         runtimeInputActions = MechInputActions.Create(inputActions);
         if (runtimeInputActions == null) { Debug.LogWarning("MechPlayerInput has no input actions assigned.", this); return; }
         move = Enable("Player/Move"); jump = Enable("Player/Jump");
-        quickBoost = Enable("Player/QuickBoost"); assaultBoost = Enable("Player/AssaultBoost");
+        quickBoost = Enable("Player/QuickBoost");
+        reload = Enable("Player/Reload"); headAbility = Enable("Player/HeadAbility"); torsoAbility = Enable("Player/TorsoAbility");
         look = Enable("Player/Look"); lockOn = Enable("Player/LockOn");
         leftArm = Enable("Player/Melee"); rightArm = Enable("Player/Attack");
         leftShoulder = Enable("Player/Cannon"); rightShoulder = Enable("Player/Crossbow");
@@ -81,7 +91,7 @@ public sealed class MechPlayerInput : MonoBehaviour
     void OnDisable()
     {
         MechInputActions.Release(ref runtimeInputActions);
-        move = jump = quickBoost = assaultBoost = look = lockOn = null;
+        move = jump = quickBoost = look = lockOn = reload = headAbility = torsoAbility = null;
         leftArm = rightArm = leftShoulder = rightShoulder = swapLeft = swapRight = cyclePart = null;
         targeting?.CancelLockButtonInput();
         attacksArmed = false;
@@ -96,17 +106,7 @@ public sealed class MechPlayerInput : MonoBehaviour
         else if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) SetCursorLocked(true);
         bool gameplay = (AssumeCursorCaptured || Cursor.lockState == CursorLockMode.Locked) && Time.timeScale > 0f;
 
-        if (movement != null && movement.isActiveAndEnabled)
-            movement.Tick(new MechLocomotionInput
-            {
-                move = Vector2.ClampMagnitude(Read(move), 1f),
-                jump = Pressed(jump),
-                jumpHeld = Held(jump),
-                quickBoost = Pressed(quickBoost),
-                assaultBoost = Held(assaultBoost)
-            }, Time.deltaTime);
-
-        if (cyclePart != null && pickup != null && Pressed(cyclePart)) pickup.CycleSelection();
+        if (gameplay && cyclePart != null && pickup != null && Pressed(cyclePart)) pickup.CycleSelection();
 
         Vector2 lookDelta = gameplay ? Read(look) : Vector2.zero;
         if (cameraControl == null) cameraControl = FindCamera();
@@ -127,15 +127,46 @@ public sealed class MechPlayerInput : MonoBehaviour
         {
             if(Pressed(swapLeft)) SwapSelected(false);
             else if(Pressed(swapRight)) SwapSelected(true);
+            if (Pressed(reload) && combat != null) combat.ReloadWeapons();
+            if (Pressed(headAbility)) RequestHeadAbility();
+            if (Pressed(torsoAbility)) RequestTorsoAbility();
+            if (Pressed(jump)) RequestLegAbility();
         }
-        if (combat == null) return;
-        if (!gameplay) { attacksArmed = false; return; }
-        // A click that captures the mouse must not also attack.
-        if (!attacksArmed) { attacksArmed = !Held(leftArm) && !Held(rightArm) && !Held(leftShoulder) && !Held(rightShoulder); return; }
-        Attack(leftArm, PartCategory.ArmL);          // LMB: left arm
-        Attack(rightArm, PartCategory.ArmR);         // RMB: right arm
-        Attack(leftShoulder, PartCategory.ShoulderL); // Q: left shoulder
-        Attack(rightShoulder, PartCategory.ShoulderR); // E: right shoulder
+        if (!gameplay) attacksArmed = false;
+        else if (!attacksArmed)
+            // A click that captures the mouse must not also attack.
+            attacksArmed = !Held(leftArm) && !Held(rightArm) && !Held(leftShoulder) && !Held(rightShoulder);
+        else if (combat != null)
+        {
+            Attack(leftArm, PartCategory.ArmL, repeatWhileHeld: true);
+            Attack(rightArm, PartCategory.ArmR, repeatWhileHeld: true);
+            Attack(leftShoulder, PartCategory.ShoulderL);
+            Attack(rightShoulder, PartCategory.ShoulderR);
+        }
+        // Attacks run first so a successful attack cancels running before this
+        // frame's movement, including when the attack came from another caller.
+        if (movement != null && movement.isActiveAndEnabled)
+            movement.Tick(new MechLocomotionInput
+            {
+                move = gameplay ? Vector2.ClampMagnitude(Read(move), 1f) : Vector2.zero,
+                jump = gameplay && useBuiltInLegMovement && Pressed(jump),
+                jumpHeld = gameplay && useBuiltInLegMovement && Held(jump),
+                quickBoost = gameplay && Pressed(quickBoost)
+            }, Time.deltaTime);
+    }
+
+    // Public connection points. Effects remain unassigned until gameplay wires
+    // the Inspector events or subscribes to AbilityRequested.
+    public void RequestHeadAbility() => RequestAbility(PartCategory.Head, headAbilityRequested);
+    public void RequestTorsoAbility() => RequestAbility(PartCategory.Torso, torsoAbilityRequested);
+    public void RequestLegAbility() => RequestAbility(PartCategory.Legs, legAbilityRequested);
+
+    void RequestAbility(PartCategory socket, UnityEvent<Part> callback)
+    {
+        if (!isActiveAndEnabled || Time.timeScale <= 0f) return;
+        var part = parts != null ? parts.GetEquipped(socket) : null;
+        if (part == null || part.Stats == null || !part.isActiveAndEnabled || !part.isEquipped) return;
+        callback?.Invoke(part); AbilityRequested?.Invoke(socket, part);
     }
 
     void SwapSelected(bool right)
@@ -146,9 +177,9 @@ public sealed class MechPlayerInput : MonoBehaviour
         int index=right ? 1 : 0;
         if(index<slots.Count) parts.TrySwapSelectedInto(slots[index]);
     }
-    void Attack(InputAction button, PartCategory socket)
+    void Attack(InputAction button, PartCategory socket, bool repeatWhileHeld = false)
     {
-        if (!Pressed(button)) return;
+        if (!(repeatWhileHeld ? Held(button) : Pressed(button))) return;
         Physics.SyncTransforms();
         combat.TryAttack(socket);
     }

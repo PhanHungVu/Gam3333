@@ -64,10 +64,25 @@ namespace Lithomachia.EnemyBehavior
         protected override Status Tick()
         {
             Controller.Hold("Request attack");
-            if (!Controller.SensePlayer() || !Controller.TargetInReach) return Status.Failure;
+            if (!Controller.SensePlayer()) return Status.Failure;
+            if (Controller.ContinuousMeleePressure || Controller.UsesRangedPositioning)
+            {
+                bool inRange = Controller.Approach();
+                if (!inRange || Controller.CooldownRemaining > 0) return Status.Running;
+                return Controller.RequestAttack() ? Status.Success : Status.Running;
+            }
+            if (Controller.UsesMeleeAttackCoordination)
+            {
+                Controller.Approach();
+                if (Controller.CooldownRemaining > 0) Controller.CancelQueuedAttackRequest();
+                else if (Controller.RequestAttack()) return Status.Success;
+                Controller.RepositionWhileWaitingForAttack(); return Status.Running;
+            }
+            if (!Controller.TargetInReach) return Status.Failure;
             if (Controller.CooldownRemaining > 0) return Status.Running;
             return Controller.RequestAttack() ? Status.Success : Status.Failure;
         }
+        protected override void OnEnd() { if (Controller != null) Controller.CancelQueuedAttackRequest(); }
     }
 
     [Serializable, GeneratePropertyBag]

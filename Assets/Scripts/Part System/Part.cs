@@ -57,6 +57,19 @@ public class Part : MonoBehaviour
         reloadEndsAt = Time.time + Mathf.Max(0f, reload);
         ReadyAt = Mathf.Max(ReadyAt, reloadEndsAt);
     }
+    // RemainingAmmo includes the loaded rounds. Reloading moves existing rounds
+    // into the magazine; it neither consumes nor creates ammunition.
+    public bool TryReload()
+    {
+        if (!initialized || Stats == null || IsReloading) return false;
+        int capacity = Stats.MagazineSize;
+        int loaded = Mathf.Min(capacity, RemainingAmmo);
+        if (capacity <= 0 || MagazineRounds >= loaded) return false;
+        MagazineRounds = loaded;
+        reloadEndsAt = Time.time + Mathf.Max(0f, Stats.GetStat(StatType.Reload));
+        ReadyAt = Mathf.Max(ReadyAt, reloadEndsAt);
+        return true;
+    }
     internal void SetEquippedPhysics(bool equipped)
     {
         if (colliders == null)

@@ -13,7 +13,7 @@ public static class EnemyRosterSetup
     public const string Graphs = "Assets/AI/Behavior/Graphs/";
     public const string Roaming = "Assets/LevelCatalogue/WaveData_Roaming.asset";
     public const string Survival = "Assets/LevelCatalogue/WaveData_Survival.asset";
-    public static readonly string[] Roster = { Small+"Enemy_sword.prefab", Small+"Enemy_mace.prefab", Small+"Enemy_hammer.prefab", Small+"Enemy_throwingAxe.prefab", Small+"Enemy_spinner.prefab", Small+"Enemy_crossbow.prefab", Elite+"Enemy_Elite_Cannon.prefab", Elite+"Enemy_Elite_RockRope.prefab" };
+    public static readonly string[] Roster = { Small+"Enemy_sword.prefab", Small+"Enemy_mace.prefab", Small+"Enemy_hammer.prefab", Small+"Enemy_throwingAxe.prefab", Small+"Enemy_spinner.prefab", Small+"Enemy_crossbow.prefab", Elite+"Enemy_Elite_Cannon.prefab", Elite+"Enemy_Elite_RockRope.prefab", Elite+"Enemy_Elite_RockRopePull.prefab" };
     static void Value(SerializedObject owner, string name, float value) => owner.FindProperty(name).floatValue = value;
     static void Flag(SerializedObject owner, string name, bool value) => owner.FindProperty(name).boolValue = value;
     static T Add<T>(GameObject root) where T : Component => root.GetComponent<T>() ?? root.AddComponent<T>();
@@ -48,25 +48,29 @@ public static class EnemyRosterSetup
         var heavy = Main("Elite Type 1 - Heavy Ranged", false, false);
         var spinner = Main("Small Type 2 - Spinner", true, false);
         var rope = Main("Elite Type 2 - Rock Rope", true, true);
+        var orbit = Main("Elite Type 2 - Orbiting Rock", true, false);
         CloneIfMissing(Roster[1], Roster[2]); CloneIfMissing(Roster[1], Roster[4]); CloneIfMissing(Roster[6], Roster[7]);
+        // Preserve the previous throw-and-pull actor before converting the original.
+        CloneIfMissing(Roster[7], Roster[8]);
         for (int i = 0; i < Roster.Length; i++)
         {
             var root = PrefabUtility.LoadPrefabContents(Roster[i]);
             try
             {
                 var role = (EnemyBehaviorRole)i;
-                bool custom = role == EnemyBehaviorRole.Spinner || role == EnemyBehaviorRole.RockRope;
+                bool custom = role == EnemyBehaviorRole.Spinner || role == EnemyBehaviorRole.RockRope || role == EnemyBehaviorRole.RockRopePull;
                 var agent = new SerializedObject(root.GetComponent<EnemyAgent>()); Flag(agent, "externalDecisions", true);
-                float[] speed = { 6, 6, 4.5f, 6, 4, 5, 3.5f, 3 };
-                float[] range = { 2, 2.2f, 2.3f, 2.2f, 8, 8, 18, 18 };
+                float[] speed = { 6, 6, 4.5f, 6, 4, 5, 3.5f, 3, 3 };
+                float[] range = { 2, 2.2f, 2.3f, 3.2f, 8, 8, 18, 6.5f, 18 };
                 Value(agent, "maxSpeed", speed[i]); Value(agent, "attackRange", range[i]); Value(agent, "arriveRadius", Mathf.Max(12, range[i]+6));
+                if (i == 7) agent.FindProperty("pathingMode").enumValueIndex = (int)PathingMode.FlowField;
                 Value(agent, "detectRadius", i >= 6 ? 65 : 40); Value(agent, "loseRadius", i >= 6 ? 85 : 60); agent.ApplyModifiedPropertiesWithoutUndo();
                 var attackComponent = root.GetComponent<EnemyAttack>(); var attack = new SerializedObject(attackComponent);
                 Flag(attack, "externalRequests", true); Flag(attack, "independentWeapons", false);
                 Flag(attack, "forceOverheadMelee", role == EnemyBehaviorRole.ThrowingAxe); Flag(attack, "respectAttackRangeAtRelease", i < 4);
                 Value(attack, "aimSpreadDegrees", role == EnemyBehaviorRole.Crossbow ? 12 : 0);
-                Value(attack, "fireDuration", role == EnemyBehaviorRole.HeavyRanged ? 1.4f : role == EnemyBehaviorRole.Hammer ? 1.1f : 0.7f);
-                Value(attack, "releaseFrame", i == 2 || i == 6 ? 0.7f : 0.6f);
+                Value(attack, "fireDuration", role == EnemyBehaviorRole.HeavyRanged ? 1.4f : role == EnemyBehaviorRole.Hammer ? 1.1f : role == EnemyBehaviorRole.Crossbow ? 1f : 0.7f);
+                Value(attack, "releaseFrame", i == 2 || i == 5 || i == 6 ? 0.7f : 0.6f);
                 var weapons = attack.FindProperty("weapons");
                 if (custom) weapons.arraySize = 0;
                 else if (role == EnemyBehaviorRole.HeavyRanged)
@@ -77,18 +81,18 @@ public static class EnemyRosterSetup
                     weapons.arraySize = cannons.Length;
                     for (int n = 0; n < cannons.Length; n++) weapons.GetArrayElementAtIndex(n).FindPropertyRelative("weapon").objectReferenceValue = cannons[n];
                 }
-                float[] damage = { .15f, .25f, .35f, .3f, 0, .2f, .45f, 0 };
-                float[] cooldown = { 1.5f, 1.5f, 2, 3, 1, 2, 1.5f, 1 };
+                float[] damage = { .15f, .25f, .35f, .3f, 0, .2f, .45f, 0, 0 };
+                float[] cooldown = { 1.5f, 1.5f, 2, 3, 1, 3.2f, 1.5f, 1, 1 };
                 for (int n = 0; n < weapons.arraySize; n++)
                 {
                     var entry = weapons.GetArrayElementAtIndex(n); entry.FindPropertyRelative("damageMultiplier").floatValue = damage[i];
                     entry.FindPropertyRelative("cooldownMultiplier").floatValue = cooldown[i];
-                    entry.FindPropertyRelative("projectileSpeedMultiplier").floatValue = role == EnemyBehaviorRole.Crossbow ? .6f : role == EnemyBehaviorRole.HeavyRanged ? .5f : 1;
+                    entry.FindPropertyRelative("projectileSpeedMultiplier").floatValue = role == EnemyBehaviorRole.Crossbow ? .45f : role == EnemyBehaviorRole.HeavyRanged ? .5f : 1;
                 }
                 attack.ApplyModifiedPropertiesWithoutUndo();
-                var brain = Add<BehaviorGraphAgent>(root); brain.Graph = i < 4 ? melee : i == 4 ? spinner : i == 5 ? ranged : i == 6 ? heavy : rope;
+                var brain = Add<BehaviorGraphAgent>(root); brain.Graph = i < 4 ? melee : i == 4 ? spinner : i == 5 ? ranged : i == 6 ? heavy : i == 7 ? orbit : rope;
                 var controller = new SerializedObject(Add<EnemyGraphController>(root)); controller.FindProperty("role").enumValueIndex = i;
-                Value(controller, "minimumRange", i == 5 ? 5 : i >= 6 ? 11 : 0); controller.ApplyModifiedPropertiesWithoutUndo();
+                Value(controller, "minimumRange", i == 7 ? 4.5f : i == 5 ? 5 : i >= 6 ? 11 : 0); controller.ApplyModifiedPropertiesWithoutUndo();
                 var threat = new SerializedObject(Add<EnemyThreatMarker>(root)); threat.FindProperty("material").objectReferenceValue = warningMaterial; threat.ApplyModifiedPropertiesWithoutUndo();
                 var visual = root.GetComponentsInChildren<Transform>(true).First(t => t.name == "VisualMech");
                 if (custom)
@@ -106,12 +110,14 @@ public static class EnemyRosterSetup
                         var special = new SerializedObject(Add<EnemyRopeAttack>(root)); special.FindProperty("rock").objectReferenceValue = held;
                         special.FindProperty("ropeAnchor").objectReferenceValue = visual.GetComponentsInChildren<Transform>(true).First(t => t.name == "shoulder_socket_r");
                         special.FindProperty("ropeMaterialTemplate").objectReferenceValue = ropeMaterial;
-                        Value(special, "damage", 35); Value(special, "windupDuration", 1.1f); Value(special, "cooldown", 6); special.ApplyModifiedPropertiesWithoutUndo();
+                        special.FindProperty("behavior").enumValueIndex = i == 7 ? 1 : 0;
+                        Value(special, "flightDuration", i == 7 ? .7f : .95f); Value(special, "arcHeight", i == 7 ? 2 : 5);
+                        Value(special, "damage", 35); Value(special, "windupDuration", 1.1f); Value(special, "cooldown", i == 7 ? 7 : 6); special.ApplyModifiedPropertiesWithoutUndo();
                     }
                 }
                 else Add<EnemyWeaponTelegraph>(root);
                 if (role == EnemyBehaviorRole.Hammer) HammerProxy(root);
-                var health = new SerializedObject(root.GetComponent<CombatHealth>()); float[] hp = { 100, 120, 160, 90, 120, 80, 320, 400 };
+                var health = new SerializedObject(root.GetComponent<CombatHealth>()); float[] hp = { 100, 120, 160, 90, 120, 80, 320, 400, 400 };
                 Value(health, "maximumHealth", hp[i]); health.ApplyModifiedPropertiesWithoutUndo();
                 var cost = new SerializedObject(root.GetComponent<EnemySpawnCost>()); cost.FindProperty("cost").intValue = i < 4 ? 1 : i < 6 ? 2 : 10; cost.ApplyModifiedPropertiesWithoutUndo();
                 PrefabUtility.SaveAsPrefabAsset(root, Roster[i]);
@@ -119,7 +125,32 @@ public static class EnemyRosterSetup
             finally { PrefabUtility.UnloadPrefabContents(root); }
         }
         Wave(Roaming, false); Wave(Survival, true); Wave("Assets/LevelCatalogue/WaveData_KOTH.asset", true);
-        AssetDatabase.SaveAssets(); Debug.Log("SMALL AND ELITE BEHAVIOR ROSTER READY: 8 prefabs, reusable subgraphs, roaming/survival presets");
+        UpdateSavedArenaRoster();
+        AssetDatabase.SaveAssets(); Debug.Log("SMALL AND ELITE BEHAVIOR ROSTER READY: 9 prefabs, reusable subgraphs, roaming/survival presets");
+    }
+    static void UpdateSavedArenaRoster()
+    {
+        // Refresh only the Inspector roster, preserving the authored scene setup.
+        if (AssetDatabase.LoadAssetAtPath<SceneAsset>(EnemyBehaviorArenaSetup.ScenePath) == null) return;
+        var scene = UnityEngine.SceneManagement.SceneManager.GetSceneByPath(EnemyBehaviorArenaSetup.ScenePath);
+        bool opened = !scene.IsValid() || !scene.isLoaded;
+        if (opened) scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(EnemyBehaviorArenaSetup.ScenePath, UnityEditor.SceneManagement.OpenSceneMode.Additive);
+        bool preserveUnsaved = scene.isDirty;
+        try
+        {
+            foreach (var root in scene.GetRootGameObjects()) foreach (var controls in root.GetComponentsInChildren<EnemyBehaviorPlaytest>(true))
+            {
+                var fields = new SerializedObject(controls); var roster = fields.FindProperty("roster"); roster.arraySize = Roster.Length;
+                for (int i = 0; i < roster.arraySize; i++) roster.GetArrayElementAtIndex(i).objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>(Roster[i]);
+                fields.ApplyModifiedPropertiesWithoutUndo();
+            }
+            // An open, dirty scene belongs to the designer: keep its edits in
+            // memory and let their normal save include this roster update.
+            if (preserveUnsaved) UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+            else if (!UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, EnemyBehaviorArenaSetup.ScenePath))
+                throw new InvalidOperationException("Could not update the saved arena's enemy roster.");
+        }
+        finally { if (opened) UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true); }
     }
     static BehaviorGraph Chain(string name, params Type[] actions) => EnemyGraphAuthoring.Ensure(Graphs+"Shared/"+name+".asset", false, g =>
     { object previous = g.Start; for (int i = 0; i < actions.Length; i++) { var node = g.Node(actions[i], 0, 140*(i+1)); g.Link(previous, node); previous = node; } });
@@ -199,7 +230,7 @@ public static class EnemyRosterSetup
         if (data == null) { data = ScriptableObject.CreateInstance<WaveData>(); AssetDatabase.CreateAsset(data, path); }
         data.type = survival ? WaveType.KOTH : WaveType.Roaming; data.spawnInterval = survival ? .2f : .5f;
         data.timerReset = survival ? 30 : 120; data.resourceTotal = survival ? 100 : 50; data.maxConcurrentEnemies = survival ? 32 : 24;
-        float basic = survival ? 10.5f : 13.5f, otherSmall = survival ? 14 : 18, elite = survival ? 15 : 5;
+        float basic = survival ? 10.5f : 13.5f, otherSmall = survival ? 14 : 18, elite = (survival ? 30f : 10f) / (Roster.Length - 6);
         data.enemies = Roster.Select((path, i) => new WaveEnemy { prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path), weight = i < 4 ? basic : i < 6 ? otherSmall : elite }).ToArray();
         EditorUtility.SetDirty(data);
     }
