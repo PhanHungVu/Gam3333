@@ -215,6 +215,9 @@ MonoBehaviour:
   healthyColor: {r: 0.3, g: 0.95, b: 0.5, a: 1}
   lowHealthColor: {r: 1, g: 0.3, b: 0.25, a: 1}
   lowHealthThreshold: 0.25
+  whiteBar: {fileID: 4251923730453877312}
+  whiteBarDelay: 0.5
+  whiteBarDrainSpeed: 0.4
 --- !u!225 &5359805179854769789
 CanvasGroup:
   m_ObjectHideFlags: 0

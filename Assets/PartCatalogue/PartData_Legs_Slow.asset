@@ -22,3 +22,5 @@ MonoBehaviour:
     value: 50
   - type: 1
     value: 5
+  - type: 16
+    value: 5
