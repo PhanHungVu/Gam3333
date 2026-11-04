@@ -97,6 +97,11 @@ public static class QuestLabelReadabilityChecks
         var names=new[]{"run","slotPositions","slotAngles","landingPositions","impactPositions","projectedFootprints","tabletopCorners","projectedX","projectedZ","footprintCacheValid"};
         var saved=names.Select(n=>Get<object>(board,n)).ToArray(); bool radial=true,stationary=true,paths=true,central=false,table=true,cleared=true;
         var mainPrefab=Get<QuestStoneView>(board,"mainStonePrefab");
+        int fallbacks=0,centerLayouts=0; bool repeatable=true;
+        var leftCounts=new HashSet<int>(); var layouts=new HashSet<string>();
+        var timer=System.Diagnostics.Stopwatch.StartNew();
+        Application.LogCallback audit=(message,stack,type)=> { if(message.Contains("using the authored safe layout")) fallbacks++; };
+        Application.logMessageReceived+=audit;
         try
         {
             for(int seed=0;seed<64;seed++)
@@ -105,6 +110,15 @@ public static class QuestLabelReadabilityChecks
                 typeof(PreMissionStoneBoard).GetMethod("PreparePlacementData",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(board,null);
                 var starts=Get<Vector2[]>(board,"slotPositions"); var landings=Get<Vector2[]>(board,"landingPositions");
                 var targets=Get<Vector2[]>(board,"impactPositions"); var angles=Get<float[]>(board,"slotAngles");
+                layouts.Add(string.Join(";",starts.Select(p=>$"{p.x:F3},{p.y:F3}")));
+                leftCounts.Add(starts.Count(p=>p.x<0));
+                if(seed==0)
+                {
+                    typeof(PreMissionStoneBoard).GetMethod("PreparePlacementData",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(board,null);
+                    repeatable=starts.SequenceEqual(Get<Vector2[]>(board,"slotPositions"))
+                        && targets.SequenceEqual(Get<Vector2[]>(board,"impactPositions"))
+                        && angles.SequenceEqual(Get<float[]>(board,"slotAngles"));
+                }
                 var first=new Rect[stones.Length]; var last=new Rect[stones.Length];
                 for(int stage=0;stage<3;stage++)
                 {
@@ -151,10 +165,12 @@ public static class QuestLabelReadabilityChecks
                     }
                 }
                 central|=hasCenter;
+                if(hasCenter) centerLayouts++;
             }
         }
         finally
         {
+            Application.logMessageReceived-=audit;
             for(int i=0;i<names.Length;i++) Set(board,names[i],saved[i]);
             for(int i=0;i<stones.Length;i++) {stones[i].transform.localPosition=poses[i];stones[i].transform.localRotation=rotations[i];}
             Physics.SyncTransforms();
@@ -164,6 +180,10 @@ public static class QuestLabelReadabilityChecks
         Check(paths,"64 layouts keep entire rendered collider travel corridors separate, covering every animation timing");
         Check(cleared&&table,"64 layouts clear the main landing footprint and remain on the tabletop");
         Check(central,"Side quests can still occupy the center before main unlock");
+        Debug.Log($"QUEST SCATTER RESULTS: fallbacks={fallbacks}; unique={layouts.Count}; centerLayouts={centerLayouts}; leftCounts={string.Join(",",leftCounts.OrderBy(n=>n))}; elapsedMs={timer.ElapsedMilliseconds}");
+        Check(fallbacks==0 && centerLayouts==64,"All 64 normal-sized layouts scatter across the table instead of using the authored fallback");
+        Check(layouts.Count==64 && leftCounts.Count>1,"New seeds vary both slab locations and the number on each side of the table");
+        Check(repeatable,"The same run seed retains its positions, rotations and permanent impact destinations");
     }
     static IEnumerator ObserveMainArrival(Dictionary<int,Vector2> initial)
     {

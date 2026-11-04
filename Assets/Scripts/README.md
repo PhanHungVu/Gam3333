@@ -1,5 +1,9 @@
 # Mech controller foundation
 
+**Current controls — 2026-11-04:** see [Player controls](../Combat/ControlScheme.md). F now toggles camera lock on press; free camera keeps automatic weapon aim within a configurable center radius. R reloads partial magazines, Shift dodges without energy, and five seconds of uninterrupted walking starts automatic running. Tab/Ctrl expose head/torso ability requests; Space retains the existing leg jump/hover lift. MMB manual aiming is deferred. The old gesture and energy descriptions below are historical.
+
+## Historical targeting gestures (superseded)
+
 The game starts in free aim: the existing cursor stays at screen center and no enemy is acquired automatically, including when aiming at one. Press middle mouse to resume targeting in the last used soft/hard mode (soft on the first use). While targeting is active, hold middle mouse for 1.2 seconds to return to free aim. Releasing that hold does not turn targeting back on. Mode memory lasts for the current controller instance; it is not saved between game sessions.
 
 In soft lock, mouse input controls camera rotation independently of enemy selection. Every frame, selection follows the invisible screen-center aim: an enemy collider under the aim wins, followed by an aim point inside Target Switch Radius (default 2.5% of the smaller screen dimension). No mouse flick, minimum speed, accumulated travel, or fresh mouse input is required. An enemy crossing stationary aim can be selected. Looking between enemies keeps a valid selection; initial acquisition or loss falls back to the visible enemy nearest the aim in screen space. The visible cursor marks the selected enemy. Selection is enabled only after the player explicitly leaves free aim.
@@ -12,12 +16,13 @@ WASD movement is always camera-relative. Hard lock rotates that camera, so the m
 
 ## Responsibilities
 
-- `MechMovementController`: reads movement input once per frame, calculates direction, advances the motor, resolves CharacterController movement, and publishes state/telemetry. Separate methods handle planar motion, vertical motion, and facing.
-- `CameraControlThirdPerson`: owns the player anchor and Cinemachine rig, mouse look, lock input, framing, and Quick Boost follow damping. Both lock modes share orbit framing and centered composition. Hard lock normally looks at the selected aim point; committed close melee briefly biases the look-at point toward the space between player and enemy.
+- `MechPlayerInput`: owns device input, gameplay cursor/pause gating, weapon and reload commands, part swaps, ability requests and the movement tick.
+- `MechMovementController`: consumes device-independent commands, calculates direction, advances automatic running and dodge timers, resolves CharacterController movement, and publishes state/telemetry. Successful attacks and actual damage reset running.
+- `CameraControlThirdPerson`: owns the player anchor and Cinemachine rig, free mouse look, framing and Quick Boost follow damping. Automatic aim selection does not steer free camera. Hard lock normally looks at the selected aim point; committed close melee briefly biases the look-at point toward the space between player and enemy.
 - `MechTargetLockController`: owns selection, optional hard-lock state, and directional flick recognition; publishes target and mode changes. Collider storage grows to accommodate crowds and is reused after that. It does not create or modify UI.
 - `LockOnCursor`: projects the selected aim point through the gameplay camera into its actual UI parent. `A33` explicitly assigns its cursor, canvas, camera, and targeting controller. Dynamically spawned HUDs can call `Bind`.
 - `MechTargetable`: supplies an enemy aim position. `AutoMoveTarget` remains an active test-scene helper.
-- `MechEnergyController`: boost costs, delayed recovery, and the energy change signal. The motor advances its recovery exactly once per movement tick.
+- `MechEnergyController`: legacy resource API retained for HUD/serialized compatibility. Player movement no longer spends or requires energy.
 - `MechBoostPresentation`: leans only `VisualMech` and manages exhaust/trails. The ignition audio slot is intentionally empty, so dashing is silent. Assign a clip later to enable boost audio; there is no generated fallback sound.
 - `MechEquipmentLocomotion` / `MechLegAnimator`: bind the equipped locomotion strategy and its part-owned animation rig. Fast/heavy legs use the real imported clips without root motion.
 - `MechUpperBodyAnimation`: carries the module's authored body/head pose to the existing visible parts after Animator evaluation. `MechAnimationPoseSource` isolates bone references; `MechPartPoseReceiver` moves upper visuals/sockets without moving the leg socket or gameplay root.

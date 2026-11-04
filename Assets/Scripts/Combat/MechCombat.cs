@@ -95,11 +95,29 @@ public class MechCombat : MonoBehaviour
     {
         if (!isActiveAndEnabled) return default;
         var part = GetPart(socket);
-        if (part != null && IsRanged(part)) { var shot = Fire(part); return new AttackResult(shot != null, shot); }
-        if (part != null && part.Stats.subtype == PartSubtype.Melee) return new AttackResult(melee.TryStart(part, socket), null);
+        AttackResult result;
+        if (part != null && IsRanged(part)) { var shot = Fire(part); result = new AttackResult(shot != null, shot); }
+        else if (part != null && part.Stats.subtype == PartSubtype.Melee) result = new AttackResult(melee.TryStart(part, socket), null);
         // No weapon: an arm's animation-only attack.
-        bool arm = socket == PartCategory.ArmL || socket == PartCategory.ArmR;
-        return new AttackResult(arm && TryAnimationOnlyAttack(part), null);
+        else
+        {
+            bool arm = socket == PartCategory.ArmL || socket == PartCategory.ArmR;
+            result = new AttackResult(arm && TryAnimationOnlyAttack(part), null);
+        }
+        if (result.Started && movement != null) movement.NotifyCombatAction();
+        return result;
+    }
+
+    public bool TryReload(PartCategory socket)
+    {
+        var part = isActiveAndEnabled ? GetPart(socket) : null;
+        return part != null && IsRanged(part) && part.TryReload();
+    }
+    public int ReloadWeapons()
+    {
+        int count = 0;
+        foreach (var socket in Sockets) if (TryReload(socket)) count++;
+        return count;
     }
 
     MechProjectile Fire(Part part)

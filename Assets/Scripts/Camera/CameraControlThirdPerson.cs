@@ -223,20 +223,9 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     void ApplySettings()
     {
-        bool targetingActive = targetingController != null && targetingController.isActiveAndEnabled && !targetingController.IsFreeAim;
+        bool targetingActive = targetingController != null && targetingController.IsHardLocked;
         bool hardLocked = targetingController != null && targetingController.IsHardLocked;
         cinemachineCamera.LookAt = hardLocked ? targetingController.CurrentTarget.AimTransform : cameraTarget;
-        if (targetingActive && !targetingController.IsHardLockMode && softLockFocus != null)
-        {
-            // Looking at the raised player pivot puts the hidden center ray through
-            // the mech and into the ground before it can reach enemies. Aim ahead
-            // along the player's manual yaw instead; enemy selection never steers it.
-            Vector3 forward = Quaternion.Euler(0f, cameraYaw, 0f) * Vector3.forward;
-            float aimHeight = -Mathf.Tan(lockPitchAdjustment * Mathf.Deg2Rad)
-                * (softLockAimDistance + normalProfile.distance);
-            softLockFocus.position = target.position + forward * softLockAimDistance + Vector3.up * aimHeight;
-            cinemachineCamera.LookAt = softLockFocus;
-        }
         if (hardLocked && meleeFraming > 0.001f && meleeFocus != null)
         {
             Vector3 enemyFocus = targetingController.CurrentTarget.AimPosition;
@@ -318,8 +307,7 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     void UpdateCameraOrbit(Vector2 lookInput, float deltaTime)
     {
-        bool targetingActive = targetingController != null && targetingController.isActiveAndEnabled
-            && !targetingController.IsFreeAim;
+        bool targetingActive = targetingController != null && targetingController.IsHardLocked;
         bool hardLocked = targetingActive && targetingController.IsHardLocked;
         bool hardMode = targetingActive && targetingController.IsHardLockMode;
         MechTargetable enemy = targetingActive ? targetingController.CurrentTarget : null;

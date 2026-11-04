@@ -17,6 +17,8 @@ public class MechMovementController : MonoBehaviour
     [SerializeField] float currentWalkSpeed;
     MechStats stats;
     [SerializeField] float sprintSpeed = 12f;
+    [Header("Automatic Run")]
+    [SerializeField, Min(0f)] float autoRunDelay = 5f;
     [SerializeField] float acceleration = 20f;
     [SerializeField] float deceleration = 32f;
     [SerializeField] float boostAcceleration = 28f;
@@ -65,6 +67,8 @@ public class MechMovementController : MonoBehaviour
     bool hasGroundSample;
     bool locomotionBoostActive;
     LocomotionModule locomotionModule;
+    CombatHealth health;
+    float uninterruptedMoveTime;
     RaycastHit[] groundHits = new RaycastHit[16];
 
     public LocomotionModule CurrentModule => locomotionModule != null && locomotionModule.isActiveAndEnabled
@@ -126,9 +130,25 @@ public class MechMovementController : MonoBehaviour
     // Includes the active boost: this is time until another boost may start.
     public float QuickBoostCooldownRemaining => quickBoostRecoveryTimer;
     public bool CanQuickBoost => isActiveAndEnabled && (CurrentModule != null ? CurrentModule.CanQuickBoost(IsGrounded) : IsGrounded)
-        && !IsQuickBoosting && quickBoostRecoveryTimer <= 0f
-        && (energy == null || energy.CanSpend(quickBoostEnergyCost));
+        && !IsQuickBoosting && quickBoostRecoveryTimer <= 0f;
     public bool IsAssaultBoosting => assaultBoostActive;
+    public bool IsAutoRunning { get; private set; }
+    public float AutoRunProgress => autoRunDelay > 0 ? Mathf.Clamp01(uninterruptedMoveTime / autoRunDelay) : IsAutoRunning ? 1 : 0;
+
+    // Successful attacks and incoming damage both end the uninterrupted walk.
+    public void NotifyCombatAction()
+    {
+        uninterruptedMoveTime = 0; IsAutoRunning = false;
+        if (!IsQuickBoosting && !assaultBoostActive)
+            planarVelocity = Vector3.ClampMagnitude(planarVelocity, WalkSpeed);
+        if (State == MovementState.GroundBoost) SetState(IsGrounded ? MovementState.Grounded : MovementState.Airborne, 0, AnimationData.AimDirection);
+    }
+    void OnDamaged(float damage) => NotifyCombatAction();
+    void OnEnable()
+    {
+        health = GetComponent<CombatHealth>();
+        if (health != null) health.Damaged += OnDamaged;
+    }
 
     public event Action<MovementState, MovementState> StateChanged;
     public event Action<Vector3> QuickBoostStarted;
@@ -154,6 +174,8 @@ public class MechMovementController : MonoBehaviour
 
     void OnDisable()
     {
+        if (health != null) health.Damaged -= OnDamaged;
+        uninterruptedMoveTime = 0; IsAutoRunning = false;
         bool wasAssaultBoosting = assaultBoostActive;
         assaultBoostActive = false;
         assaultBoostRequiresRelease = false;
@@ -187,21 +209,27 @@ public class MechMovementController : MonoBehaviour
         if (deltaTime <= 0f || !isActiveAndEnabled || !characterController.enabled)
             return;
 
-        // Retain the command field for existing replay/AI callers, but sprint
-        // no longer changes speed or state. Dash is a separate pressed action.
-        input.sprint = false;
         input.move = Vector2.ClampMagnitude(input.move, 1f);
         MechLocomotionSettings settings = Settings;
         bool wasGrounded = IsGrounded;
         float previousYaw = transform.eulerAngles.y;
         Vector3 movementDirection = GetCameraRelativeDirection(input.move, cameraTransform);
         MoveDirection = movementDirection;
+        bool walking = movementDirection.sqrMagnitude > .001f && CanAssaultBoostHere()
+            && !IsQuickBoosting && !assaultBoostActive && !input.quickBoost && !input.assaultBoost;
+        bool wasRunning = IsAutoRunning;
+        if (!walking || Vector3.ProjectOnPlane(Velocity, Vector3.up).sqrMagnitude < .01f)
+        { uninterruptedMoveTime = 0; IsAutoRunning = false; }
+        else
+        { uninterruptedMoveTime += deltaTime; IsAutoRunning = uninterruptedMoveTime >= autoRunDelay; }
+        if (wasRunning && !IsAutoRunning && !IsQuickBoosting && !assaultBoostActive)
+            planarVelocity = Vector3.ClampMagnitude(planarVelocity, settings.moveSpeed);
+        input.sprint = IsAutoRunning;
         bool boostEnded = UpdateQuickBoostTimers(deltaTime);
         bool boostStarted = input.quickBoost && CanQuickBoost;
         bool wasAssaultBoosting = assaultBoostActive;
         if (boostStarted)
         {
-            energy?.TrySpend(quickBoostEnergyCost);
             StartQuickBoost(movementDirection, cameraTransform);
         }
         UpdateAssaultBoost(input, movementDirection, cameraTransform, deltaTime);
@@ -233,7 +261,6 @@ public class MechMovementController : MonoBehaviour
             assaultBoostRequiresRelease = true;
             brakingAfterBoost = true;
         }
-        energy?.TickRecovery(deltaTime, !IsQuickBoosting && !assaultBoostActive);
 
         locomotionBoostActive = input.sprint && movementDirection.sqrMagnitude > 0.001f && CanAssaultBoostHere();
         SetState(IsQuickBoosting ? MovementState.QuickBoost
@@ -347,20 +374,9 @@ public class MechMovementController : MonoBehaviour
             return;
         if (!assaultBoostActive)
         {
-            if (energy != null && !energy.CanSpend(assaultBoostMinimumEnergy))
-            {
-                assaultBoostRequiresRelease = true;
-                return;
-            }
             assaultBoostDirection = movementDirection.sqrMagnitude > 0.001f
                 ? movementDirection.normalized : GetCameraForward(cameraTransform);
             assaultBoostActive = true;
-        }
-        if (energy != null && !energy.TrySpend(assaultBoostEnergyPerSecond * deltaTime))
-        {
-            assaultBoostActive = false;
-            assaultBoostRequiresRelease = true;
-            return;
         }
         Vector3 steering = movementDirection.sqrMagnitude > 0.001f
             ? movementDirection.normalized : GetCameraForward(cameraTransform);
@@ -400,6 +416,7 @@ public class MechMovementController : MonoBehaviour
 
     void OnValidate()
     {
+        autoRunDelay = Mathf.Max(0f, autoRunDelay);
         moveSpeed = Mathf.Max(0f, moveSpeed);
         sprintSpeed = Mathf.Max(0f, sprintSpeed);
         acceleration = Mathf.Max(0f, acceleration);

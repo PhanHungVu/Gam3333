@@ -1,5 +1,7 @@
 # Swappable mech combat and abilities
 
+**Current input revision:** [Player controls](ControlScheme.md) supersedes older binding/ability notes below. The current branch has no head or torso ability-effect implementation; Tab/Ctrl now expose equipped-part requests for gameplay to connect. Space retains the locomotion module's existing jump/hover lift.
+
 Lower-body swapping and movement are covered in [modular locomotion milestones 1-3](../GroundMovement/Locomotion.md). Legs use the same equipment system as weapons.
 
 ## Player setup

@@ -15,7 +15,16 @@ public static class PreMissionPortraitSlabSetup
     const string Folder = PreMissionStoneBoardSetup.DirectoryPath;
     public const string FontPath = "Assets/Fonts/medieval_sharp/MedievalSharp Quest SDF.asset";
     public const string BackPath = Folder + "/BackSlab.prefab";
+    public const string BigSlabPath = "Assets/PreMission/BigSlab.glb";
     static readonly QuestMissionType[] Types = { QuestMissionType.KingOfTheHill, QuestMissionType.Escort, QuestMissionType.Elimination };
+    [MenuItem("Tools/Mech/Pre-Mission/Use Big Slab and Larger Side Slabs")]
+    public static void UpgradeQuestModelsOnly()
+    {
+        if (Application.isPlaying) throw new InvalidOperationException("Stop Play Mode before updating quest models.");
+        var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontPath);
+        if (font == null) throw new InvalidOperationException("The existing quest font is required.");
+        UpgradeStone(false, font); UpgradeStone(true, font); AssetDatabase.SaveAssets();
+    }
     [MenuItem("Tools/Mech/Pre-Mission/Use Portrait Quest Slabs and Medieval Font")]
     public static void UpgradeAssets()
     {
@@ -102,15 +111,34 @@ public static class PreMissionPortraitSlabSetup
             var fields = new SerializedObject(root.GetComponent<QuestStoneView>());
             var visual = (Transform)fields.FindProperty("visual").objectReferenceValue;
             var rock = (MeshRenderer)fields.FindProperty("rock").objectReferenceValue;
-            var size = main ? new Vector3(3.2f, .65f, 4.1f) : new Vector3(1.55f, .36f, 2.35f);
-            rock.transform.localScale = size;
+            var meshSize = main ? new Vector3(3.2f, .65f, 4.1f) : new Vector3(1.705f, .396f, 2.585f);
+            rock.transform.localScale = meshSize;
+            // Rotate only the main stone mesh; inscriptions keep their reading direction.
+            rock.transform.localRotation = Quaternion.Euler(0, main ? 90 : 0, 0);
+            var size = main ? new Vector3(meshSize.z, meshSize.y, meshSize.x) : meshSize;
+            float mainTextDepth = main ? size.z / 4.1f : 1;
             rock.sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>(Folder + (main ? "/Art Main Slab.mat" : "/Art Slab.mat"));
             if(main)
             {
-                rock.sharedMaterial.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(PreMissionArtTableSetup.SourceDirectory + "/BigSlabTex.png"));
+                var model = AssetDatabase.LoadAssetAtPath<GameObject>(BigSlabPath);
+                if (model == null) throw new InvalidOperationException("Import Assets/PreMission/BigSlab.glb first.");
+                var mesh = PreMissionArtTableSetup.FittedMesh(model);
+                rock.GetComponent<MeshFilter>().sharedMesh = mesh;
                 var variants = fields.FindProperty("slabVariants");
-                var meshes = Enumerable.Range(0, variants.arraySize).Select(i => (Mesh)variants.GetArrayElementAtIndex(i).objectReferenceValue);
-                FitPaintedAtlasRegion(rock.sharedMaterial, new Rect(.82f, .12f, .12f, .65f), meshes);
+                variants.arraySize = 1; variants.GetArrayElementAtIndex(0).objectReferenceValue = mesh;
+                // This model includes its own painted texture/UVs. The old slab
+                // atlas cropping is deliberately not applied to the new art.
+                var authored = model.GetComponentInChildren<MeshRenderer>(true).sharedMaterial;
+                var texture = authored.mainTexture;
+                if (texture == null)
+                    foreach (var property in authored.GetTexturePropertyNames())
+                        if (property.IndexOf("base", StringComparison.OrdinalIgnoreCase) >= 0 && authored.GetTexture(property) != null)
+                        { texture = authored.GetTexture(property); break; }
+                if (texture == null) throw new InvalidOperationException("BigSlab requires its supplied base-color texture.");
+                rock.sharedMaterial.SetTexture("_BaseMap", texture); rock.sharedMaterial.SetTexture("_MainTex", texture);
+                rock.sharedMaterial.SetTextureScale("_BaseMap", Vector2.one); rock.sharedMaterial.SetTextureOffset("_BaseMap", Vector2.zero);
+                rock.sharedMaterial.SetTextureScale("_MainTex", Vector2.one); rock.sharedMaterial.SetTextureOffset("_MainTex", Vector2.zero);
+                EditorUtility.SetDirty(rock.sharedMaterial);
             }
             var collider = root.GetComponent<BoxCollider>();
             collider.size = new Vector3(size.x + .18f, main ? 1.2f : .78f, size.z + .18f);
@@ -120,16 +148,18 @@ public static class PreMissionPortraitSlabSetup
             var label = (TMP_Text)fields.FindProperty("label").objectReferenceValue;
             label.font = font; label.fontSharedMaterial = font.material; label.text = main ? "ELIMINATION" : "KOTH";
             label.transform.localRotation = Quaternion.Euler(90, 0, 0);
-            label.transform.localPosition = new Vector3(0, size.y + .025f, main ? .48f : .24f);
-            label.rectTransform.sizeDelta = new Vector2(size.x * .85f, main ? .48f : .32f);
-            label.fontSize = label.fontSizeMax = main ? 3.1f : 2f; label.fontSizeMin = main ? 2.3f : 1.2f;
+            label.transform.localPosition = new Vector3(0, size.y + .025f, main ? .48f * mainTextDepth : .24f);
+            label.rectTransform.sizeDelta = new Vector2(size.x * .85f, main ? .4f : .32f);
+            label.fontSize = label.fontSizeMax = main ? 2.4f : 2f; label.fontSizeMin = main ? 1.7f : 1.2f;
             label.enableAutoSizing = true; label.textWrappingMode = TextWrappingModes.NoWrap;
             label.alignment = TextAlignmentOptions.Center; label.color = new Color(.9f, .87f, .76f);
             var old = visual.Find("Category Lettering"); if (old != null) Object.DestroyImmediate(old.gameObject);
             var source = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/PreMission/New Quest Stone/" + (main ? "mainQuestText.glb" : "sideQuestText.glb"));
             if (source == null) throw new InvalidOperationException("Import the supplied quest lettering first.");
-            var heading = FittedModel(source, visual, "Category Lettering", main ? 2.35f : 1.25f,
-                new Vector3(0, size.y + .025f, main ? 1.35f : .78f), FadeMaterial("Slab Lettering", null, new Color(.95f, .93f, .87f)));
+            // Keep the main inscription on the broad central face of the star.
+            // Halve its former gap to the mission type without moving that line.
+            var heading = FittedModel(source, visual, "Category Lettering", main ? 2.35f : 1.125f,
+                new Vector3(0, size.y + .025f, main ? .915f * mainTextDepth : .51f), FadeMaterial("Slab Lettering", null, new Color(.95f, .93f, .87f)));
             fields.FindProperty("categoryInscription").objectReferenceValue = heading.gameObject;
             var logosRoot = visual.Find("Mission Logos"); if (logosRoot != null) Object.DestroyImmediate(logosRoot.gameObject);
             logosRoot = new GameObject("Mission Logos").transform; logosRoot.SetParent(visual, false);
@@ -138,8 +168,8 @@ public static class PreMissionPortraitSlabSetup
             {
                 var logoSource = AssetDatabase.LoadAssetAtPath<GameObject>(PreMissionMissionLogoSetup.SourceDirectory + "/Logo" + (i + 1) + ".glb");
                 var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(PreMissionMissionLogoSetup.SourceDirectory + "/Logo" + (i + 1) + "Tex.png");
-                var logo = FittedModel(logoSource, logosRoot, Types[i] + " Logo", main ? 1.45f : .83f,
-                    new Vector3(0, size.y + .025f, main ? -.78f : -.5f), FadeMaterial("Slab Mission Logo " + (i + 1), texture, Color.white));
+                var logo = FittedModel(logoSource, logosRoot, Types[i] + " Logo", main ? 1.05f : .83f,
+                    new Vector3(0, size.y + .025f, main ? -.58f * mainTextDepth : -.5f), FadeMaterial("Slab Mission Logo " + (i + 1), texture, Color.white));
                 var entry = logos.GetArrayElementAtIndex(i); entry.FindPropertyRelative("missionType").enumValueIndex = (int)Types[i];
                 entry.FindPropertyRelative("root").objectReferenceValue = logo.gameObject; logo.gameObject.SetActive(i == (main ? 2 : 0));
             }
