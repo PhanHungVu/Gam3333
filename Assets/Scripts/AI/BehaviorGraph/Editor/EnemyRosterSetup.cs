@@ -61,7 +61,7 @@ public static class EnemyRosterSetup
                 bool custom = role == EnemyBehaviorRole.Spinner || role == EnemyBehaviorRole.RockRope || role == EnemyBehaviorRole.RockRopePull;
                 var agent = new SerializedObject(root.GetComponent<EnemyAgent>()); Flag(agent, "externalDecisions", true);
                 float[] speed = { 6, 6, 4.5f, 6, 4, 5, 3.5f, 3, 3 };
-                float[] range = { 2, 2.2f, 2.3f, 2.2f, 8, 8, 18, 6.5f, 18 };
+                float[] range = { 2, 2.2f, 2.3f, 3.2f, 8, 8, 18, 6.5f, 18 };
                 Value(agent, "maxSpeed", speed[i]); Value(agent, "attackRange", range[i]); Value(agent, "arriveRadius", Mathf.Max(12, range[i]+6));
                 if (i == 7) agent.FindProperty("pathingMode").enumValueIndex = (int)PathingMode.FlowField;
                 Value(agent, "detectRadius", i >= 6 ? 65 : 40); Value(agent, "loseRadius", i >= 6 ? 85 : 60); agent.ApplyModifiedPropertiesWithoutUndo();
@@ -69,8 +69,8 @@ public static class EnemyRosterSetup
                 Flag(attack, "externalRequests", true); Flag(attack, "independentWeapons", false);
                 Flag(attack, "forceOverheadMelee", role == EnemyBehaviorRole.ThrowingAxe); Flag(attack, "respectAttackRangeAtRelease", i < 4);
                 Value(attack, "aimSpreadDegrees", role == EnemyBehaviorRole.Crossbow ? 12 : 0);
-                Value(attack, "fireDuration", role == EnemyBehaviorRole.HeavyRanged ? 1.4f : role == EnemyBehaviorRole.Hammer ? 1.1f : 0.7f);
-                Value(attack, "releaseFrame", i == 2 || i == 6 ? 0.7f : 0.6f);
+                Value(attack, "fireDuration", role == EnemyBehaviorRole.HeavyRanged ? 1.4f : role == EnemyBehaviorRole.Hammer ? 1.1f : role == EnemyBehaviorRole.Crossbow ? 1f : 0.7f);
+                Value(attack, "releaseFrame", i == 2 || i == 5 || i == 6 ? 0.7f : 0.6f);
                 var weapons = attack.FindProperty("weapons");
                 if (custom) weapons.arraySize = 0;
                 else if (role == EnemyBehaviorRole.HeavyRanged)
@@ -82,12 +82,12 @@ public static class EnemyRosterSetup
                     for (int n = 0; n < cannons.Length; n++) weapons.GetArrayElementAtIndex(n).FindPropertyRelative("weapon").objectReferenceValue = cannons[n];
                 }
                 float[] damage = { .15f, .25f, .35f, .3f, 0, .2f, .45f, 0, 0 };
-                float[] cooldown = { 1.5f, 1.5f, 2, 3, 1, 2, 1.5f, 1, 1 };
+                float[] cooldown = { 1.5f, 1.5f, 2, 3, 1, 3.2f, 1.5f, 1, 1 };
                 for (int n = 0; n < weapons.arraySize; n++)
                 {
                     var entry = weapons.GetArrayElementAtIndex(n); entry.FindPropertyRelative("damageMultiplier").floatValue = damage[i];
                     entry.FindPropertyRelative("cooldownMultiplier").floatValue = cooldown[i];
-                    entry.FindPropertyRelative("projectileSpeedMultiplier").floatValue = role == EnemyBehaviorRole.Crossbow ? .6f : role == EnemyBehaviorRole.HeavyRanged ? .5f : 1;
+                    entry.FindPropertyRelative("projectileSpeedMultiplier").floatValue = role == EnemyBehaviorRole.Crossbow ? .45f : role == EnemyBehaviorRole.HeavyRanged ? .5f : 1;
                 }
                 attack.ApplyModifiedPropertiesWithoutUndo();
                 var brain = Add<BehaviorGraphAgent>(root); brain.Graph = i < 4 ? melee : i == 4 ? spinner : i == 5 ? ranged : i == 6 ? heavy : i == 7 ? orbit : rope;

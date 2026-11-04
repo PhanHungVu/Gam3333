@@ -72,7 +72,7 @@ public static class MechEquipCameraSceneChecks
         var follow = rig.GetComponent<CinemachineThirdPersonFollow>();
         for (int i = 0; i < 40; i++) yield return null;
         float baseline = Vector3.Distance(view.transform.position, player.transform.position);
-        Check(baseline > 12.5f && follow.AvoidObstacles.Enabled, "Live camera starts at normal third-person distance with avoidance enabled");
+        Check(baseline > 12.5f && control.ObstacleAvoidanceEnabled, "Live camera starts at normal third-person distance with avoidance enabled");
         Check((follow.AvoidObstacles.CollisionFilter.value & (1 << layer)) == 0, "Camera excludes only the pickup layer from its configured mask");
         string[] names = { "head_base", "arm_throwingaxe", "arm_sword", "Old/torso_base", "Old/legs_base" };
         PartCategory[] slots = { PartCategory.Head, PartCategory.ArmL, PartCategory.ArmR, PartCategory.Torso, PartCategory.Legs };

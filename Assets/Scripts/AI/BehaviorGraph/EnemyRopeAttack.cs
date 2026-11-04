@@ -146,7 +146,8 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
         ResolveOrbitContact(airbornePosition, next);
         rock.position = airbornePosition = next; DrawRope(); ShowWarning(1);
         if (t < 1) return false;
-        CurrentStage = Stage.Orbit; age = 0; OrbitsStarted++; return false;
+        CurrentStage = Stage.Orbit; age = 0; OrbitsStarted++;
+        ResolveOrbitArea(); return false;
     }
     bool SweepRock(Vector3 from, ref Vector3 next)
     {
@@ -174,11 +175,18 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
         OrbitContacts += result.Hits;
         if (result.Hits > 0) ImpactSound();
     }
+    void ResolveOrbitArea()
+    {
+        // The active spin threatens the whole warning circle, including the
+        // space beside the charging enemy, rather than only the rock's rim.
+        var result = blast.ResolveCylinder(OrbitCenter, orbitRadius, rockRadius, damage, transform, ~0, orbitVictims);
+        OrbitContacts += result.Hits;
+        if (result.Hits > 0) ImpactSound();
+    }
     bool TickOrbit(float dt)
     {
         ChargeDuringOrbit(dt);
-        // Subdivide the circular path: a long frame must not turn the sweep into
-        // a chord cutting through the safe center or skipping targets.
+        // Preserve the spin's acceleration and timing even on long frames.
         float remaining = Mathf.Min(Mathf.Max(0, dt), Mathf.Max(0, orbitDuration - age));
         float maximumStep = 8 / Mathf.Max(1, orbitDegreesPerSecond);
         while (remaining > 0.00001f)
@@ -188,9 +196,9 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
             float speed = Mathf.Lerp(0.4f, 1, Mathf.Clamp01(age / orbitAccelerationDuration));
             orbitAngle += orbitDegreesPerSecond * Mathf.Deg2Rad * step * speed;
             var next = OrbitPoint(orbitAngle);
-            ResolveOrbitContact(airbornePosition, next);
             rock.position = airbornePosition = next;
         }
+        ResolveOrbitArea();
         DrawRope(); ShowWarning(1);
         if (age < orbitDuration - 0.00001f) return false;
         agent.SetMovementIntent(EnemyMovementIntent.Hold, dt);
@@ -250,8 +258,7 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
                 // The shared motor may move after the graph ticks. Follow its
                 // final position so the moving enemy remains the orbit's center.
                 var next = OrbitPoint(orbitAngle);
-                if (Time.deltaTime > 0 && (next - airbornePosition).sqrMagnitude > .000001f)
-                    ResolveOrbitContact(airbornePosition, next);
+                if (Time.deltaTime > 0) ResolveOrbitArea();
                 AlignOrbitMount(next, Time.deltaTime);
                 rock.position = airbornePosition = next;
                 ShowWarning(1);

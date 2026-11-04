@@ -104,19 +104,53 @@ public static partial class EnemyBehaviorChecks
         }
         Check(constantRadius && turned > 720 && noPull && attack.IsExecuting,
             "The faster rock completes over two revolutions at fixed radius while its target is inside the pursuit stopping distance");
-        Check(attached && health.CurrentHealth == hp && attack.OrbitContacts == 0,
-            "The taut rope stays attached and the safe center takes no circular-area damage");
+        Check(attached && health.CurrentHealth == hp - attack.Damage && attack.OrbitContacts == 1,
+            "The full spin circle damages the center once even though the rock never touches it");
         Check(mountFollows, "The body stays upright and turns its attachment toward the rock as it swings");
         MovePlayer(AheadOfRock(attack, 25));
-        yield return Until(() => attack.OrbitContacts == 1, 1, "Moving into the orbiting rock did not cause contact damage");
+        yield return Frames(2);
         yield return Until(() => attack.CurrentStage == EnemyGraphAttack.Stage.Recovery, 2, "Orbit did not stop after its duration");
         Check(health.CurrentHealth == hp - attack.Damage && attack.Impacts == 0 && Vector3.Distance(actor.transform.position, center) < .05f,
-            "Entering the rock's path causes one shared-rule hit without a landing blast or enemy lunge");
+            "Moving from the interior to the rock's path cannot duplicate the attack's one hit");
         yield return Until(() => Vector3.Distance(RopePart(attack, "rock").position, HeldRock(attack)) < .005f,
             2, "Orbit recovery did not reel the rock back to its mount");
         Check(Vector3.Distance(RopePart(attack, "rock").position, HeldRock(attack)) < .005f && TetherAttached(attack),
             "The orbiting variant reels the rock back to its held position during recovery; stage=" + attack.CurrentStage
             + "; error=" + Vector3.Distance(RopePart(attack, "rock").position, HeldRock(attack))); Capture("orbit-recovered", actor);
+        yield return Remove(actor);
+
+        ResetPlayer(); actor = SpawnOrbit(); attack = actor.GetComponent<EnemyRopeAttack>();
+        yield return Until(() => attack.CurrentStage == EnemyGraphAttack.Stage.Windup, 4, "Area-entry windup missing");
+        MovePlayer(actor.transform.position + Vector3.right * 30); hp = health.CurrentHealth;
+        yield return Until(() => attack.CurrentStage == EnemyGraphAttack.Stage.Orbit, 5, "Area-entry spin missing");
+        MovePlayer(actor.transform.position + Vector3.right * (attack.OrbitRadius + 2)); yield return Frames(8);
+        Check(health.CurrentHealth == hp && attack.OrbitContacts == 0, "Standing outside the spin circle remains safe");
+        // Opposite the rock and well inside the rim: no rock contact can explain this hit.
+        MovePlayer(actor.transform.position - RockDirection(attack).normalized * 2.5f); yield return Frames(2);
+        Check(health.CurrentHealth == hp - attack.Damage && attack.OrbitContacts == 1,
+            "Entering the active circle away from the rock applies damage immediately");
+        MovePlayer(actor.transform.position + Vector3.right * 30); yield return Frames(2);
+        MovePlayer(actor.transform.position); yield return Frames(2);
+        Check(health.CurrentHealth == hp - attack.Damage && attack.OrbitContacts == 1,
+            "Leaving and re-entering the same spin cannot duplicate its damage");
+        yield return Until(() => attack.CurrentStage == EnemyGraphAttack.Stage.Recovery, 4, "Area-entry recovery missing");
+        hp = health.CurrentHealth; yield return Frames(20);
+        Check(health.CurrentHealth == hp, "The full circle stops dealing damage during recovery");
+        yield return Remove(actor);
+
+        ResetPlayer(); actor = SpawnOrbit(); attack = actor.GetComponent<EnemyRopeAttack>();
+        yield return Until(() => attack.CurrentStage == EnemyGraphAttack.Stage.Windup, 4, "Area-wall windup missing");
+        MovePlayer(actor.transform.position + Vector3.right * 30);
+        yield return Until(() => attack.CurrentStage == EnemyGraphAttack.Stage.Orbit, 5, "Area-wall spin missing");
+        var cover = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        cover.transform.position = actor.transform.position + Vector3.right * 1.5f;
+        cover.transform.position = new Vector3(cover.transform.position.x, 3, cover.transform.position.z);
+        cover.transform.localScale = new Vector3(.3f, 6, 6);
+        MovePlayer(actor.transform.position + Vector3.right * 3); hp = health.CurrentHealth; yield return Frames(8);
+        Check(health.CurrentHealth == hp && attack.OrbitContacts == 0, "Cover still blocks the filled spin area");
+        Object.Destroy(cover); yield return Frames(2);
+        Check(health.CurrentHealth == hp - attack.Damage && attack.OrbitContacts == 1,
+            "An unhit player inside the circle takes damage when cover is removed");
         yield return Remove(actor);
 
         ResetPlayer(); actor = SpawnOrbit(); attack = actor.GetComponent<EnemyRopeAttack>(); hp = health.CurrentHealth;
@@ -137,7 +171,7 @@ public static partial class EnemyBehaviorChecks
         Check(!stopped && attack.CurrentStage == EnemyGraphAttack.Stage.Orbit && health.CurrentHealth == hp
             && Vector3.Distance(actor.transform.position, center) < .005f
             && Mathf.Abs(RockDirection(attack).magnitude - attack.OrbitRadius) < .005f,
-            "A fast long-frame orbit passes through scenery without ending the spin or cutting through the safe center");
+            "A fast long-frame orbit passes through scenery without ending the spin or repeating its area hit");
         actor.Graph.enabled = false;
         yield return Remove(actor); Object.Destroy(wall); yield return Frames(2);
 
@@ -204,7 +238,7 @@ public static partial class EnemyBehaviorChecks
         yield return Until(() => attack.CurrentStage == EnemyGraphAttack.Stage.Windup, 4, "Charge-braking windup missing");
         MovePlayer(actor.transform.position + Vector3.forward * 18);
         yield return Until(() => attack.CurrentStage == EnemyGraphAttack.Stage.Orbit, 5, "Charge-braking orbit missing");
-        center = actor.transform.position; MovePlayer(center + Vector3.forward * 4);
+        center = actor.transform.position; hp = health.CurrentHealth; MovePlayer(center + Vector3.forward * 4);
         float stoppingDistance = new SerializedObject(attack).FindProperty("orbitChaseStopDistance").floatValue;
         bool keptClearance = true;
         for (int i = 0; i < 45; i++)
@@ -215,6 +249,8 @@ public static partial class EnemyBehaviorChecks
         Check(attack.CurrentStage == EnemyGraphAttack.Stage.Orbit && keptClearance && actor.Agent.Velocity.magnitude < .1f
             && Steering.Flat(actor.transform.position - center).magnitude > .5f,
             "The fast orbit charge brakes at its player clearance instead of overshooting or sliding through the target");
+        Check(health.CurrentHealth == hp - attack.Damage && attack.OrbitContacts == 1,
+            "The moving spin circle damages a player inside the charge's stopping distance");
         yield return Remove(actor);
 
         foreach (var stage in new[] { EnemyGraphAttack.Stage.Windup, EnemyGraphAttack.Stage.Attack,

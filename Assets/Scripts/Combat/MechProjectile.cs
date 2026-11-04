@@ -35,6 +35,7 @@ public class MechProjectile : MonoBehaviour
     readonly CombatBlast blast = new CombatBlast();
     public Vector3 Direction => direction;
     public bool IsLive => live;
+    public CombatTeam OwnerTeam { get; private set; }
     // The part that fired this shot (null for enemy shots) and how it attacks.
     public Part Source { get; set; }
     public PartSubtype Subtype { get; set; }
@@ -73,6 +74,7 @@ public class MechProjectile : MonoBehaviour
         float shotRadius, float range, LayerMask layers, Vector3 muzzle)
     {
         owner = shooter;
+        OwnerTeam = CombatTeams.Of(shooter);
         direction = shotDirection.normalized;
         if (direction.sqrMagnitude > 0f) transform.rotation = Quaternion.LookRotation(direction);
         speed = Mathf.Max(0.01f, shotSpeed);

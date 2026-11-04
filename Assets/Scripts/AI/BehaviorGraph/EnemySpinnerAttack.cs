@@ -8,7 +8,51 @@ public sealed class EnemySpinnerAttack : EnemyGraphAttack
     [SerializeField, Min(0.1f)] float contactRadius = 0.8f;
     Vector3 direction, previous;
     Quaternion restRotation;
+    readonly RaycastHit[] laneHits = new RaycastHit[48];
+    readonly Collider[] laneOverlaps = new Collider[32];
     public int Contacts { get; private set; }
+    public Vector3 ChargeDirection => direction;
+    public override bool TargetInReach => base.TargetInReach && CanChargeFrom(transform.position);
+    public bool CanChargeFrom(Vector3 position)
+    {
+        if (agent == null || agent.Target == null) return false;
+        Vector3 delta = Steering.Flat(agent.TargetPosition - position);
+        float length = Mathf.Min(delta.magnitude, chargeSpeed * chargeDuration);
+        if (length < .01f) return true;
+        Vector3 heading = delta.normalized;
+        int count = Physics.OverlapSphereNonAlloc(position + Vector3.up * .7f, Mathf.Max(contactRadius, agent.BodyRadius),
+            laneOverlaps, ~0, QueryTriggerInteraction.Ignore);
+        if (count == laneOverlaps.Length) return false;
+        for (int i = 0; i < count; i++) if (laneOverlaps[i].GetComponentInParent<CombatHealth>() == null) return false;
+        count = Physics.SphereCastNonAlloc(position + Vector3.up * .7f, Mathf.Max(contactRadius, agent.BodyRadius),
+            heading, laneHits, length, ~0, QueryTriggerInteraction.Ignore);
+        if (count == laneHits.Length) return false;
+        for (int i = 0; i < count; i++)
+        {
+            var hit = laneHits[i];
+            if (hit.collider.GetComponentInParent<CombatHealth>() != null || hit.normal.y > .7f) continue;
+            return false;
+        }
+        // A straight charge needs walkable support, including at the target.
+        float feet = position.y - agent.PivotHeight;
+        int steps = Mathf.Max(1, Mathf.CeilToInt(length));
+        for (int i = 0; i <= steps; i++)
+        {
+            Vector3 sample = position + heading * length * i / steps;
+            count = Physics.RaycastNonAlloc(new Vector3(sample.x, feet + 2, sample.z), Vector3.down,
+                laneHits, 4, ~0, QueryTriggerInteraction.Ignore);
+            if (count == laneHits.Length) return false;
+            bool grounded = false;
+            for (int h = 0; h < count; h++)
+            {
+                var hit = laneHits[h];
+                if (hit.collider.GetComponentInParent<CombatHealth>() == null && hit.normal.y >= .7f
+                    && Mathf.Abs(hit.point.y - feet) <= 1.5f) { grounded = true; break; }
+            }
+            if (!grounded) return false;
+        }
+        return true;
+    }
     protected override void Awake() { base.Awake(); if (visualRoot != null) restRotation = visualRoot.localRotation; }
     public override bool BeginWindup()
     {

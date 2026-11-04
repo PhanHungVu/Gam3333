@@ -16,8 +16,16 @@ namespace Lithomachia.EnemyBehavior
             if (Controller.SpecialAttack == null || !Controller.SensePlayer()) return Status.Failure;
             if (!began)
             {
-                if (Controller.CooldownRemaining > 0) return Status.Running;
-                if (!Controller.SpecialAttack.BeginWindup()) return Status.Failure; began = true;
+                if (Controller.UsesSpecialCoordination)
+                {
+                    if (!Controller.TryBeginSpecial()) { Controller.RepositionSpecial(); return Status.Running; }
+                    began = true;
+                }
+                else
+                {
+                    if (Controller.CooldownRemaining > 0) return Status.Running;
+                    if (!Controller.SpecialAttack.BeginWindup()) return Status.Failure; began = true;
+                }
             }
             completed = Controller.SpecialAttack.TickWindup(UnityEngine.Time.deltaTime);
             return completed ? Status.Success : Status.Running;
@@ -32,7 +40,7 @@ namespace Lithomachia.EnemyBehavior
         protected override void Begin() { completed = false; if (Controller.SpecialAttack != null) Controller.SpecialAttack.BeginAttack(); }
         protected override Status Tick()
         {
-            if (Controller.SpecialAttack == null) return Status.Failure;
+            if (Controller.SpecialAttack == null || !Controller.SensePlayer()) { Controller.CancelAttack(); return Status.Failure; }
             Controller.Hold(Controller.SpecialAttack.CurrentStage switch
             {
                 EnemyGraphAttack.Stage.Grounded => "Rock resting on ground",
@@ -53,7 +61,7 @@ namespace Lithomachia.EnemyBehavior
         protected override Status Tick()
         {
             Controller.Hold("Pull toward landed rock");
-            if (Controller.SpecialAttack == null) return Status.Failure;
+            if (Controller.SpecialAttack == null || !Controller.SensePlayer()) { Controller.CancelAttack(); return Status.Failure; }
             completed = Controller.SpecialAttack.TickPull(UnityEngine.Time.deltaTime); return completed ? Status.Success : Status.Running;
         }
         protected override void OnEnd() { if (!completed && Controller != null) Controller.CancelAttack(); }

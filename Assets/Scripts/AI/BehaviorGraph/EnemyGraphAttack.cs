@@ -23,6 +23,7 @@ public abstract class EnemyGraphAttack : MonoBehaviour
         || CurrentStage == Stage.Orbit || CurrentStage == Stage.Grounded || CurrentStage == Stage.OrbitLift;
     public float CooldownRemaining => Mathf.Max(0, readyAt - Time.time);
     public float Damage => damage;
+    public bool RecoveryPoseComplete => CurrentStage == Stage.Recovery && age >= recoveryDuration;
     public virtual bool TargetInReach => agent.Target != null && agent.DistanceToTarget <= agent.AttackRange + 0.5f
         && Vector3.Angle(transform.forward, Steering.Flat(agent.TargetPosition - transform.position)) <= 60;
     protected virtual void Awake() { agent = GetComponent<EnemyAgent>(); marker = GetComponent<EnemyThreatMarker>(); }

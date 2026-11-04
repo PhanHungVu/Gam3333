@@ -105,6 +105,8 @@ public static partial class EnemyBehaviorChecks
     }
     static IEnumerator MixedCases()
     {
+        var previousRandom = UnityEngine.Random.state;
+        UnityEngine.Random.InitState(91731); // repeatable steering, not startup-dependent crowd congestion
         ResetPlayer(); var actors = new EnemyGraphController[EnemyRosterSetup.Roster.Length];
         for (int i = 0; i < actors.Length; i++)
         {
@@ -118,6 +120,11 @@ public static partial class EnemyBehaviorChecks
         Check(actors.All(a => a != null && a.IsReady && a.Graph.Graph.IsRunning), "Mixed roster keeps all nine graph instances running for twenty combat seconds");
         Check(actors.Where(a => a.SpecialAttack == null).Sum(a => a.Attack.Releases) >= 10,
             "Melee and ranged actors continue releasing attacks in a mixed encounter");
+        Debug.Log("ENEMY MIXED DETAILS: " + string.Join("; ", actors.Select(a => a.Role + " action=" + a.CurrentAction
+            + " pos=" + a.transform.position + " distance=" + a.Agent.DistanceToTarget.ToString("F2")
+            + " releases=" + a.Attack.Releases + (a.SpecialAttack != null ? " stage=" + a.SpecialAttack.CurrentStage : "")
+            + (a.GetComponent<EnemyRopeAttack>() != null ? " impacts=" + a.GetComponent<EnemyRopeAttack>().Impacts
+                + " orbits=" + a.GetComponent<EnemyRopeAttack>().OrbitsStarted : ""))) + "; player HP=" + health.CurrentHealth);
         Check(actors[8].GetComponent<EnemyRopeAttack>().Impacts > 0 && actors[7].GetComponent<EnemyRopeAttack>().OrbitsStarted > 0
             && health.CurrentHealth < health.MaximumHealth, "Both rope variants and existing damage remain functional among the small enemies");
         Check(actors.All(a => float.IsFinite(a.transform.position.x) && float.IsFinite(a.transform.position.y) && float.IsFinite(a.transform.position.z)),
@@ -126,6 +133,7 @@ public static partial class EnemyBehaviorChecks
         Capture("mixed-roster", actors[7]);
         foreach (var actor in actors) Object.Destroy(actor.gameObject);
         ClearShots(); yield return Frames(2);
+        UnityEngine.Random.state = previousRandom;
     }
     static IEnumerator WaveCases()
     {

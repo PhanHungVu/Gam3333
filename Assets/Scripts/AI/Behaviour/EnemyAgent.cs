@@ -14,7 +14,7 @@ public enum PathingMode
 }
 
 // Movement intentions only; the existing agent still owns steering and motion.
-public enum EnemyMovementIntent { Hold, Wander, Chase, Arrive, Retreat, Directed }
+public enum EnemyMovementIntent { Hold, Wander, Chase, Arrive, Retreat, Directed, Position }
 
 public sealed class EnemyAgent : MonoBehaviour
 {
@@ -88,6 +88,7 @@ public sealed class EnemyAgent : MonoBehaviour
     int intentionFrame = -1;
     EnemyMovementIntent intention;
     Vector3 directedVelocity;
+    float positionClearance;
     bool preserveGraphFacing;
     public bool LastMotionBlocked { get; private set; }
 
@@ -98,7 +99,11 @@ public sealed class EnemyAgent : MonoBehaviour
     public float MaxSpeed => maxSpeed;
     public float MaxForce => maxForce;
     public float WanderSpeed => maxSpeed * wanderSpeedFraction;
-    public float SeparationRadius => separationRadius;
+    public float SeparationRadius => externalDecisions && positionClearance > 0
+        ? Mathf.Min(separationRadius, positionClearance) : separationRadius;
+    public float BodyRadius => bodyRadius;
+    public float PivotHeight => pivotHeight;
+    public float ProbeHeight => probeHeight;
     public float ProbeDistance => probeDistance;
     public float DetectRadius => detectRadius;
     public float LoseRadius => loseRadius;
@@ -144,6 +149,7 @@ public sealed class EnemyAgent : MonoBehaviour
         All.Add(this);
         WanderAngle = UnityEngine.Random.value * Mathf.PI * 2f;
         velocity = Vector3.zero;
+        EndPositioning();
         intentionFrame = -1;
         if (!externalDecisions) Fsm.Transition(Wander);
     }
@@ -152,6 +158,13 @@ public sealed class EnemyAgent : MonoBehaviour
 
     // The ground an enemy starts on: generated terrain's height there if there is terrain, else the fallback.
     public static float SpawnGroundY(Vector3 position, float fallback) => NavTerrain.GroundHeight(position, fallback);
+
+    // A spawner that sampled a physical floor can supply its height before Start.
+    // Generated terrain still supplies its own ground through SpawnGroundY.
+    public void SetSpawnGroundFallback(float height)
+    {
+        if (!float.IsNaN(height) && !float.IsInfinity(height)) groundY = height;
+    }
 
     void Start()
     {
@@ -213,6 +226,7 @@ public sealed class EnemyAgent : MonoBehaviour
     public void SetMovementIntent(EnemyMovementIntent next, float dt, bool preserveFacing = false)
     {
         if (!externalDecisions) return;
+        if (next != EnemyMovementIntent.Hold) EndPositioning();
         preserveGraphFacing = preserveFacing;
         intention = next; intentionFrame = Time.frameCount;
         switch (next)
@@ -236,11 +250,35 @@ public sealed class EnemyAgent : MonoBehaviour
     public void SetDirectedMovement(Vector3 direction, float speed, bool preserveFacing = false)
     {
         if (!externalDecisions) return;
+        EndPositioning();
         preserveGraphFacing = preserveFacing;
         intention = EnemyMovementIntent.Directed; intentionFrame = Time.frameCount;
         directedVelocity = Steering.Flat(direction).normalized * Mathf.Max(0, speed);
         GoalDirection = directedVelocity.normalized; FaceTarget = false; InAttackRange = false;
     }
+
+    // Local positioning uses the ordinary force integration, separation, avoidance,
+    // collision and ground following. It is deliberately not a Directed charge.
+    public void SetPositionGoal(Vector3 goal, float dt, float stopRadius = 0.15f)
+    {
+        if (!externalDecisions) return;
+        intention = EnemyMovementIntent.Position; intentionFrame = Time.frameCount;
+        preserveGraphFacing = false; FaceTarget = true; InAttackRange = false;
+        positionClearance = bodyRadius * 2f + 0.8f;
+        GoalDirection = Steering.Flat(goal - Position).normalized;
+        BehaviourForce = Steering.Arrive(this, goal, 1.6f, stopRadius) * seekWeight;
+    }
+    public void EndPositioning() => positionClearance = 0;
+    // Explicit aiming hold for uncommitted ranged approach/recovery. Ordinary
+    // Hold still preserves a committed melee/special attack's facing.
+    public void HoldFacingTarget(float dt)
+    {
+        if (!externalDecisions) return;
+        SetMovementIntent(EnemyMovementIntent.Hold, dt); FaceTarget = true; Face(dt);
+    }
+    // Dense melee pressure keeps body clearance without the wide flocking ring.
+    // The same swept crowd check still prevents actors passing through each other.
+    public void UseMeleeCrowdClearance() => positionClearance = bodyRadius * 2f + 0.25f;
 
     void ResolveTarget()
     {
@@ -267,11 +305,40 @@ public sealed class EnemyAgent : MonoBehaviour
         velocity.y = 0f;
         velocity = Vector3.ClampMagnitude(velocity, maxSpeed);
 
-        Move(velocity * dt);
+        Vector3 motion = velocity * dt;
+        if (externalDecisions && positionClearance > 0)
+        {
+            motion = ClampLocalCrowdMotion(motion);
+            velocity = motion / Mathf.Max(0.001f, dt);
+        }
+        Move(motion);
         // A committed graph attack keeps the visual swing aligned to the
         // existing attack's snapshotted strike direction.
         if (!externalDecisions || intention != EnemyMovementIntent.Hold && !preserveGraphFacing) Face(dt);
         SnapToGround(dt);
+    }
+
+    // Separation steers the local group apart; this swept XZ clearance also stops
+    // two exchanging members crossing between frames. It does not push/teleport
+    // actors or affect legacy movement and committed Directed attacks.
+    Vector3 ClampLocalCrowdMotion(Vector3 motion)
+    {
+        float distance = motion.magnitude;
+        if (distance < 0.00001f) return motion;
+        Vector3 direction = motion / distance;
+        foreach (var other in neighbors)
+        {
+            if (other == null || !other.isActiveAndEnabled || Mathf.Abs(other.Position.y - Position.y) > 1.5f) continue;
+            Vector3 offset = Steering.Flat(other.Position - Position);
+            float along = Vector3.Dot(offset, direction);
+            if (along <= 0) continue;
+            float radius = bodyRadius + other.BodyRadius + 0.05f;
+            float outside = offset.sqrMagnitude - radius * radius;
+            if (outside <= 0) { distance = 0; break; }
+            float discriminant = along * along - outside;
+            if (discriminant > 0) distance = Mathf.Min(distance, Mathf.Max(0, along - Mathf.Sqrt(discriminant) - 0.01f));
+        }
+        return direction * distance;
     }
 
     // Port of fish._move_with_collision: hard collision the steering can't overpower.

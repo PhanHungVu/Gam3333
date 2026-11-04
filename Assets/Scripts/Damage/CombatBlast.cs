@@ -9,7 +9,7 @@ public readonly struct DamageResult
     public DamageResult(int hits, int kills) { Hits = hits; Kills = kills; }
 }
 
-// Shared damage rules for every attack: a direct hit plus area damage, or a box (melee).
+// Shared damage rules: direct/splash hits, melee boxes and filled circular areas.
 // Never hits the owner, walls block it, and each target is hit once even with several colliders.
 // Presentation never applies damage.
 public sealed class CombatBlast
@@ -67,6 +67,33 @@ public sealed class CombatBlast
             var health = candidate.GetComponentInParent<CombatHealth>();
             if (health == null || damaged.Contains(health) || hitHistory != null && hitHistory.Contains(health)
                 || Blocked(wallOrigin, candidate, owner, layers)) continue;
+            if (Apply(health, damage, attacker, ref hits, ref kills)) hitHistory?.Add(health);
+        }
+        Array.Clear(overlaps, 0, count);
+        damaged.Clear();
+        return new DamageResult(hits, kills);
+    }
+
+    // A filled horizontal circle with a bounded height, for ground-area attacks.
+    // The box is only a broad phase; its corners must not extend the circular warning.
+    public DamageResult ResolveCylinder(Vector3 center, float radius, float halfHeight, float damage,
+        Transform owner, LayerMask layers, ISet<CombatHealth> hitHistory = null)
+    {
+        damaged.Clear();
+        int hits = 0, kills = 0, count;
+        CombatTeam attacker = CombatTeams.Of(owner);
+        while ((count = Physics.OverlapBoxNonAlloc(center, new Vector3(radius, halfHeight, radius), overlaps,
+            Quaternion.identity, layers, QueryTriggerInteraction.Ignore)) == overlaps.Length)
+            Array.Resize(ref overlaps, overlaps.Length * 2);
+        for (int i = 0; i < count; i++)
+        {
+            Collider candidate = overlaps[i];
+            if (IsOwner(candidate, owner)) continue;
+            Vector3 offset = ClosestPoint(candidate, center) - center;
+            if (offset.x * offset.x + offset.z * offset.z > radius * radius) continue;
+            var health = candidate.GetComponentInParent<CombatHealth>();
+            if (health == null || damaged.Contains(health) || hitHistory != null && hitHistory.Contains(health)
+                || Blocked(center, candidate, owner, layers)) continue;
             if (Apply(health, damage, attacker, ref hits, ref kills)) hitHistory?.Add(health);
         }
         Array.Clear(overlaps, 0, count);

@@ -32,7 +32,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     [SerializeField, Range(0f, 1f)] float lockOnVerticalSensitivity = 0.25f;
     [Tooltip("How quickly the camera moves behind the mech when following a locked enemy.")]
     [SerializeField, Min(0.01f)] float hardLockOrbitResponse = 0.12f;
-    [Tooltip("Minimum downward orbit angle while locked. Close, low targets use a steeper view to clear the mech.")]
+    [Tooltip("Base targeting pitch. Hard lock raises the view for nearby low targets; soft lock keeps the player's manual framing.")]
     [SerializeField, Range(5f, 60f)] float hardLockPitch = 20f;
     [Tooltip("Shared height above the player root for both lock modes.")]
     [SerializeField, Min(0f)] float hardLockHeight = 1.5f;
@@ -40,6 +40,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     [SerializeField, Min(1f)] float softLockAimDistance = 20f;
 
     [Header("Melee Framing")]
+    [Tooltip("Extra downward pitch for committed hard-lock melee. Soft lock retains manual framing.")]
     [SerializeField, Range(0f, 10f)] float meleePitchOffset = 7f;
     [SerializeField, Min(0.1f)] float meleeFramingRange = 6f;
     [SerializeField, Range(0f, 1f)] float meleeShoulderCentering = 0.75f;
@@ -71,7 +72,7 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     [Header("Obstacle Avoidance")]
     [SerializeField] bool avoidObstacles = true;
-    [Tooltip("Solid structures must have colliders on these layers. Triggers and loose MechPart pickups are ignored.")]
+    [Tooltip("Solid structures must have colliders on these layers. Character hierarchies, triggers and loose MechPart pickups are ignored.")]
     [SerializeField] LayerMask obstacleLayers = 1;
     [Tooltip("Minimum clearance. Automatically enlarged when needed to protect the camera's near clip plane.")]
     [SerializeField, Range(0.05f, 1f)] float cameraRadius = 0.35f;
@@ -92,6 +93,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     Camera outputCamera;
     GameObject cameraRigObject;
     CinemachineThirdPersonFollow thirdPersonFollow;
+    MechCameraObstacles obstacleResolver;
     CinemachineRotationComposer rotationComposer;
     Transform cameraTarget;
     Transform meleeFocus;
@@ -131,6 +133,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     }
 
     public Transform Target => target;
+    public bool ObstacleAvoidanceEnabled => avoidObstacles && obstacleResolver != null && obstacleResolver.isActiveAndEnabled;
     public void BindTarget(Transform player)
     {
         target = player;
@@ -146,6 +149,7 @@ public class CameraControlThirdPerson : MonoBehaviour
         wasHardLocked = wasTargeting = false;
         currentLateralOffset = meleeFraming = 0;
         cinemachineCamera.PreviousStateIsValid = false;
+        obstacleResolver.Configure(player, avoidObstacles);
     }
 
     void Awake()
@@ -161,6 +165,7 @@ public class CameraControlThirdPerson : MonoBehaviour
         cameraRigObject = new GameObject("Mech Cinemachine Camera");
         cinemachineCamera = cameraRigObject.AddComponent<CinemachineCamera>();
         thirdPersonFollow = cameraRigObject.AddComponent<CinemachineThirdPersonFollow>();
+        obstacleResolver = cameraRigObject.AddComponent<MechCameraObstacles>();
         rotationComposer = cameraRigObject.AddComponent<CinemachineRotationComposer>();
 
         cameraTarget = new GameObject("CameraTarget").transform;
@@ -252,13 +257,16 @@ public class CameraControlThirdPerson : MonoBehaviour
         if (loosePartLayer >= 0) cameraObstacles &= ~(1 << loosePartLayer);
         thirdPersonFollow.AvoidObstacles = new CinemachineThirdPersonFollow.ObstacleSettings
         {
-            Enabled = avoidObstacles,
+            // The camera-only resolver filters whole actor hierarchies. The built-in
+            // tag filter cannot exclude untagged enemy heads and weapon colliders.
+            Enabled = false,
             CollisionFilter = cameraObstacles,
             IgnoreTag = "Player",
             CameraRadius = CameraCollisionRadius(lens),
             DampingIntoCollision = 0f,
             DampingFromCollision = obstacleReturnDamping
         };
+        obstacleResolver.Configure(target, avoidObstacles);
         thirdPersonFollow.CameraSide = 0.5f;
         thirdPersonFollow.VerticalArmLength = shoulderHeight;
         thirdPersonFollow.Damping = movementController != null && movementController.IsQuickBoosting
@@ -318,10 +326,8 @@ public class CameraControlThirdPerson : MonoBehaviour
         Vector3 direction = enemy != null ? enemy.AimPosition - target.position : Vector3.zero;
         float planarDistance = new Vector2(direction.x, direction.z).magnitude;
         float response = 1f - Mathf.Exp(-deltaTime / Mathf.Max(0.01f, hardLockOrbitResponse));
-        Vector3 cameraForward = Quaternion.Euler(0f, cameraYaw, 0f) * Vector3.forward;
-        bool closeMelee = targetingActive && enemy != null && combatController != null && combatController.MeleeCameraActive
-            && planarDistance <= meleeFramingRange && Mathf.Abs(direction.y) <= 2.5f
-            && Vector3.Dot(cameraForward, Vector3.ProjectOnPlane(direction, Vector3.up).normalized) > 0.5f;
+        bool closeMelee = hardLocked && enemy != null && combatController != null && combatController.MeleeCameraActive
+            && planarDistance <= meleeFramingRange && Mathf.Abs(direction.y) <= 2.5f;
         meleeFraming = Mathf.Lerp(meleeFraming, closeMelee ? 1f : 0f,
             1f - Mathf.Exp(-deltaTime / Mathf.Max(0.01f, meleeFramingResponse)));
 
@@ -346,8 +352,10 @@ public class CameraControlThirdPerson : MonoBehaviour
                 lockPitchAdjustment = Mathf.Clamp(lockPitchAdjustment - lookInput.y * lookSensitivity * lockOnVerticalSensitivity,
                     -lockOnVerticalRange, lockOnVerticalRange);
             float desiredPitch = hardLockPitch + lockPitchAdjustment;
-            // Both modes share the same clearance, height, and pitch calculations.
-            if (enemy != null && Vector3.Dot(cameraForward, Vector3.ProjectOnPlane(direction, Vector3.up).normalized) > 0.5f)
+            // Soft selection must not steer the manual camera vertically. In
+            // hard lock, clearance is independent of bearing so a target moving
+            // past the player's side cannot toggle a steep pitch on and off.
+            if (hardLocked && enemy != null)
             {
                 float bodyRadius = movementCapsule != null
                     ? Mathf.Max(movementCapsule.bounds.extents.x, movementCapsule.bounds.extents.z) : 1f;

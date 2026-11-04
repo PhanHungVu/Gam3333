@@ -709,6 +709,7 @@ GameObject:
   - component: {fileID: 1947333374}
   - component: {fileID: 1947333373}
   - component: {fileID: 1947333372}
+  - component: {fileID: 1947333376}
   m_Layer: 0
   m_Name: Enemy Behavior Playtest
   m_TagString: Untagged
@@ -745,6 +746,52 @@ MonoBehaviour:
   - {fileID: 5975402536664257169, guid: de108a0c8c7136241b3ac67cd6eac677, type: 3}
   selectedRole: 0
   spawnDistance: 16
+  coordinator: {fileID: 1947333376}
+  swarmCount: 10
+  encounterSeed: 4711
+  spawnArc: 210
+  resetPlayerPosition: 1
+  useCoordination: 1
+  enableKeyboardShortcuts: 1
+  encounterPresets:
+  - {fileID: 11400000, guid: 0431fabef7a74d6f803cad59021ae001, type: 2}
+  - {fileID: 11400000, guid: 0431fabef7a74d6f803cad59021ae002, type: 2}
+  - {fileID: 11400000, guid: 0431fabef7a74d6f803cad59021ae003, type: 2}
+  - {fileID: 11400000, guid: 0431fabef7a74d6f803cad59021ae004, type: 2}
+  - {fileID: 11400000, guid: 0431fabef7a74d6f803cad59021ae005, type: 2}
+  - {fileID: 11400000, guid: 0431fabef7a74d6f803cad59021ae006, type: 2}
+  - {fileID: 11400000, guid: 0431fabef7a74d6f803cad59021ae007, type: 2}
+  selectedEncounter: 0
+  disablePresetDrops: 1
+  drawPresetSpawns: 1
+--- !u!114 &1947333376
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1947333371}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e760e06946844758a21d19f2388e02a9, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyHordeCoordinator
+  grid: {fileID: 0}
+  meleeStyle: 0
+  attackPositions: 4
+  waitingPositions: 8
+  waitingRadius: 5.2
+  localRadius: 10
+  planningInterval: 0.2
+  positionLease: 4
+  innerReuseDelay: 2
+  stalledAfter: 2.5
+  drawGizmos: 1
+  useAttackPermissions: 0
+  maximumMeleeAttacks: 2
+  meleeStartSpacing: 0.18
+  unstartedGrantLifetime: 0.5
+  maximumReservationHold: 4
 --- !u!114 &1947333373
 MonoBehaviour:
   m_ObjectHideFlags: 0
