@@ -30,6 +30,8 @@ public sealed class PreMissionFlowController : MonoBehaviour
     [Tooltip("Scene-owned 3D board. Unassigned prefabs retain the legacy paper preview.")]
     [SerializeField] PreMissionStoneBoard stoneBoard;
     [Header("Details")]
+    [Tooltip("Scene-owned animated 3D briefing. Leave empty to retain the paper fallback.")]
+    [SerializeField] PreMissionQuestDetailsSlab questDetailsSlab;
     [SerializeField] TMP_Text detailsTitle;
     [SerializeField] TMP_Text detailsBody;
     [SerializeField] TMP_Text detailsType;
@@ -61,10 +63,13 @@ public sealed class PreMissionFlowController : MonoBehaviour
     bool confirmationPending;
     bool initialized;
     int skippedPostingFrame = -1;
-    bool CanInteract => isActiveAndEnabled && presentation != null && presentation.isActiveAndEnabled && (stoneBoard == null || stoneBoard.IsOperational);
+    bool CanInteract => isActiveAndEnabled && presentation != null && presentation.isActiveAndEnabled
+        && (stoneBoard == null || stoneBoard.IsOperational) && (questDetailsSlab == null || questDetailsSlab.isActiveAndEnabled);
 
     void Awake()
     {
+        if (questDetailsSlab != null) questDetailsSlab.Bind(this, stoneBoard);
+        presentation.ConfigureQuestDetailsSlab(stoneBoard != null ? questDetailsSlab : null);
         exitButton.onClick.AddListener(Back);
         declineButton.onClick.AddListener(Back);
         torsoBackButton.onClick.AddListener(Back);
@@ -427,6 +432,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
                 foreach (var enemy in quest.availableEnemies) if (enemy != null) enemies.Add(enemy.name);
             body.Append("\nEnemies spawned: ").Append(enemies.Count > 0 ? string.Join(", ", enemies) : "Not specified");
             detailsInfo.text = body.ToString();
+            questDetailsSlab?.SetContent(detailsTitle.text, detailsType.text, detailsBody.text, detailsInfo.text, detailsReward.text);
             torsoQuestTitle.text = "Selected quest: " + quest.title;
         }
         var torso = Session.SelectedTorso;
@@ -447,6 +453,8 @@ public sealed class PreMissionFlowController : MonoBehaviour
             {
                 EventSystem.current.SetSelectedGameObject(null); stoneBoard.FocusFirst(); return;
             }
+            if (Session.View == PreMissionView.Details && questDetailsSlab != null)
+            { EventSystem.current.SetSelectedGameObject(null); return; }
             var target = Session.View == PreMissionView.Board ? (notices.Count > 0 ? notices[0].Button : exitButton)
                 : Session.View == PreMissionView.Details ? acceptButton : confirmTorsoButton.interactable ? confirmTorsoButton : torsoBackButton;
             EventSystem.current.SetSelectedGameObject(null);
