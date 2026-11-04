@@ -309,6 +309,89 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1006241939
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2309507493089692816, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 7.16
+      objectReference: {fileID: 0}
+    - target: {fileID: 2309507493089692816, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2309507493089692816, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2309507493089692816, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2309507493089692816, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2309507493089692816, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2309507493089692816, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2309507493089692816, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2309507493089692816, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2309507493089692816, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5809421625436699948, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      propertyPath: m_Name
+      value: QuestDescSlabP
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6250649828547420719, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
+    - targetCorrespondingSourceObject: {fileID: 4122288398332662479, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
+    - targetCorrespondingSourceObject: {fileID: 3299061505940090102, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
+    - targetCorrespondingSourceObject: {fileID: 4959034515463644867, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
+    - targetCorrespondingSourceObject: {fileID: 5105595553353015990, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
+  m_SourcePrefab: {fileID: 100100000, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+--- !u!114 &1006241940 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7640217370547168475, guid: 19fd01634f7463847a798e73505472e2, type: 3}
+  m_PrefabInstance: {fileID: 1006241939}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c13b86972b040509ba26b928d3739bf, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PreMissionQuestDetailsSlab
 --- !u!1001 &1201561615
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -341,6 +424,10 @@ PrefabInstance:
       propertyPath: stoneBoard
       value:
       objectReference: {fileID: 1585285868}
+    - target: {fileID: 3491011285539150172, guid: e42e7f9d757cd444a817b9da255b1cf9, type: 3}
+      propertyPath: questDetailsSlab
+      value:
+      objectReference: {fileID: 1006241940}
     - target: {fileID: 3529705971370282316, guid: e42e7f9d757cd444a817b9da255b1cf9, type: 3}
       propertyPath: m_text
       value: Choose a stone.  Arrow keys to browse, Enter to inspect.
@@ -547,7 +634,16 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7661258473515207233, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1585285870}
+    - targetCorrespondingSourceObject: {fileID: 6412160822443671976, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
+    - targetCorrespondingSourceObject: {fileID: 9084952268721328133, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
 --- !u!114 &1585285868 stripped
 MonoBehaviour:
@@ -560,6 +656,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0ce486294594dc58aa577f88eb030d6, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::PreMissionStoneBoard
+--- !u!1 &1585285869 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7661258473515207233, guid: 6f2f319fc42fa064e99a59d4fcb50e54, type: 3}
+  m_PrefabInstance: {fileID: 1585285867}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1585285870
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1585285869}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c49b4cc203aa6414fae5c798d1d0e7d6, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.PhysicsRaycaster
+  m_EventMask:
+    serializedVersion: 2
+    m_Bits: 67108864
+  m_MaxRayIntersections: 16
 --- !u!114 &1690196945
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -638,3 +755,4 @@ SceneRoots:
   - {fileID: 773917583}
   - {fileID: 1201561615}
   - {fileID: 1585285867}
+  - {fileID: 1006241939}
