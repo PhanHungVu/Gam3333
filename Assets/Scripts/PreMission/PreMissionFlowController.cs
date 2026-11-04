@@ -73,6 +73,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
         nextTorsoButton.onClick.AddListener(NextTorso);
         confirmTorsoButton.onClick.AddListener(ConfirmTorso);
         if (skipPostingButton != null) skipPostingButton.onClick.AddListener(SkipPosting);
+        exitButton.GetComponent<PreMissionSlabButton>()?.BindCamera(stoneBoard != null ? stoneBoard.BoardCamera : null);
         initialized = true;
         OpenBoard(false);
         if (!CanInteract && presentation != null) presentation.LockInput();
@@ -416,7 +417,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
             detailsBody.text = quest.description;
             detailsReward.text = "Reward: " + quest.gniReward + " Gni";
             var body = new StringBuilder();
-            body.Append("Estimated duration: ~").Append(quest.estimatedMinutes).Append(" minutes\n\nAvailable parts: ");
+            body.Append("Available parts: ");
             var partNames = new List<string>();
             if (quest.availableParts != null)
                 foreach (var part in quest.availableParts) if (part != null) partNames.Add(part.partName);
@@ -424,7 +425,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
             var enemies = new List<string>();
             if (quest.availableEnemies != null)
                 foreach (var enemy in quest.availableEnemies) if (enemy != null) enemies.Add(enemy.name);
-            body.Append("\nAvailable enemies: ").Append(enemies.Count > 0 ? string.Join(", ", enemies) : "Not specified");
+            body.Append("\nEnemies spawned: ").Append(enemies.Count > 0 ? string.Join(", ", enemies) : "Not specified");
             detailsInfo.text = body.ToString();
             torsoQuestTitle.text = "Selected quest: " + quest.title;
         }
@@ -463,4 +464,5 @@ public sealed class PreMissionFlowController : MonoBehaviour
     static void Unbind(Button button, UnityAction action) { if (button != null) button.onClick.RemoveListener(action); }
 
     public static string MissionTypeName(QuestMissionType type) => type == QuestMissionType.KingOfTheHill ? "King of the Hill" : type.ToString();
+    public static string MissionTypeShortName(QuestMissionType type) => type == QuestMissionType.KingOfTheHill ? "KOTH" : type.ToString().ToUpperInvariant();
 }

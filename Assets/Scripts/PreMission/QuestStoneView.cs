@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -5,12 +7,23 @@ using UnityEngine;
 [DisallowMultipleComponent, RequireComponent(typeof(BoxCollider))]
 public sealed class QuestStoneView : MonoBehaviour
 {
+    [Serializable] public sealed class MissionLogo
+    {
+        public QuestMissionType missionType;
+        public GameObject root;
+    }
     [SerializeField] Transform visual;
     [SerializeField] MeshRenderer rock;
     [Tooltip("Fitted render meshes from the supplied HUD slabs; logical footprints stay unchanged.")]
     [SerializeField] Mesh[] slabVariants;
     [SerializeField] GameObject selectionRing;
     [SerializeField] TMP_Text label;
+    [Tooltip("Supplied SIDE QUEST or MAIN QUEST lettering above the mission type.")]
+    [SerializeField] GameObject categoryInscription;
+    [SerializeField] MissionLogo[] missionLogos;
+    Renderer[] inscriptionRenderers;
+    Color[] inscriptionColors;
+    MaterialPropertyBlock inscriptionProperties;
     [SerializeField, Min(0.01f)] float hoverDuration = 0.12f;
     [SerializeField, Min(0.01f)] float mainHoverDuration = 0.18f;
     [SerializeField, Min(0f)] float hoverLift = 0.06f;
@@ -21,6 +34,7 @@ public sealed class QuestStoneView : MonoBehaviour
     Vector3 visualPosition, visualScale;
     Matrix4x4 rockFromVisual;
     Bounds rockLocalBounds;
+    Bounds contentLocalBounds;
     Quaternion visualRotation;
     Color baseColor;
     QuestBoardImpactFeedback feedback;
@@ -48,6 +62,7 @@ public sealed class QuestStoneView : MonoBehaviour
     public Vector3 SurfacePoint => rock.transform.TransformPoint(LocalSurfacePoint);
     public Quaternion SurfaceRotation => visual.rotation;
     public float InscriptionOpacity => label.alpha;
+    public bool HasBoardInscription => categoryInscription != null;
     public Vector3 CurrentAngles
     {
         get
@@ -78,8 +93,26 @@ public sealed class QuestStoneView : MonoBehaviour
         rockLocalBounds=rock.localBounds;
         restCenter = transform.InverseTransformPoint(rock.bounds.center);
         baseColor = rock.sharedMaterial.color;
-        label.text = "<size=65%>" + (offer.Quest.category == QuestCategory.Main ? "MAIN QUEST" : "SMALL QUEST") + "</size>\n" + offer.Quest.title;
+        label.text = categoryInscription != null ? PreMissionFlowController.MissionTypeShortName(offer.Quest.missionType)
+            : "<size=65%>" + (offer.Quest.category == QuestCategory.Main ? "MAIN QUEST" : "SMALL QUEST") + "</size>\n" + offer.Quest.title;
+        if (missionLogos != null) foreach (var logo in missionLogos)
+            if (logo.root != null) logo.root.SetActive(logo.missionType == offer.Quest.missionType);
+        CacheInscriptions();
+        contentLocalBounds=TransformBounds(rockLocalBounds,rockFromVisual);
+        foreach(var renderer in inscriptionRenderers)
+            if(renderer.gameObject.activeInHierarchy) contentLocalBounds.Encapsulate(TransformBounds(renderer.localBounds,visual.worldToLocalMatrix*renderer.localToWorldMatrix));
         RestoreRest();
+    }
+    void CacheInscriptions()
+    {
+        if (inscriptionRenderers != null) return;
+        var renderers = new List<Renderer>();
+        if (categoryInscription != null) renderers.AddRange(categoryInscription.GetComponentsInChildren<Renderer>(true));
+        if (missionLogos != null) foreach (var logo in missionLogos)
+            if (logo.root != null) renderers.AddRange(logo.root.GetComponentsInChildren<Renderer>(true));
+        inscriptionRenderers = renderers.ToArray(); inscriptionColors = new Color[renderers.Count];
+        inscriptionProperties = new MaterialPropertyBlock();
+        for (int i = 0; i < renderers.Count; i++) inscriptionColors[i] = renderers[i].sharedMaterial.color;
     }
     public void SetHighlighted(bool highlighted)
     {
@@ -148,7 +181,7 @@ public sealed class QuestStoneView : MonoBehaviour
     }
     public void RestoreRest()
     {
-        label.alpha=1;
+        SetInscriptionVisibility(1);
         IsReady = true; IsMoving = false; IsHighlighted = false;
         hasRequestedPose=false;
         hoverAmount = hoverFrom = hoverTarget = hoverAge = 0;
@@ -156,13 +189,24 @@ public sealed class QuestStoneView : MonoBehaviour
         visual.gameObject.SetActive(true); visual.localRotation = visualRotation;
         selectionRing.SetActive(false); HitCollider.enabled = true; ApplyHover();
     }
-    public void SetInscriptionVisibility(float value) => label.alpha=Mathf.Clamp01(value);
+    public void SetInscriptionVisibility(float value)
+    {
+        float alpha = Mathf.Clamp01(value); label.alpha = alpha;
+        if (inscriptionRenderers == null) return;
+        for (int i = 0; i < inscriptionRenderers.Length; i++)
+        {
+            var renderer = inscriptionRenderers[i]; if (renderer == null) continue;
+            var color = inscriptionColors[i]; color.a *= alpha;
+            inscriptionProperties.Clear(); inscriptionProperties.SetColor("_BaseColor", color); inscriptionProperties.SetColor("_Color", color);
+            renderer.SetPropertyBlock(inscriptionProperties); renderer.enabled = alpha > .001f;
+        }
+    }
     public Vector3 CurrentOffset => visual.localPosition - visualPosition;
     public Vector3 CurrentScale => new Vector3(visual.localScale.x / visualScale.x, visual.localScale.y / visualScale.y, visual.localScale.z / visualScale.z);
     // Predict the final inspection bounds without temporarily moving visible geometry.
     public Bounds MotionBounds(Vector3 offset,Vector3 angles,Vector3 scale,float motionAmount)
     {
-        return TransformBounds(rockLocalBounds,MotionMatrix(offset,angles,scale,motionAmount)*rockFromVisual);
+        return TransformBounds(contentLocalBounds,MotionMatrix(offset,angles,scale,motionAmount));
     }
     Matrix4x4 MotionMatrix(Vector3 offset,Vector3 angles,Vector3 scale,float motionAmount) =>
         visual.parent.localToWorldMatrix*Matrix4x4.TRS(visualPosition+offset*motionAmount,

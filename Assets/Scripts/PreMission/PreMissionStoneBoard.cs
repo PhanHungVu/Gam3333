@@ -137,10 +137,12 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
         PrepareAuthoredPlacements();
         footprintCacheValid=false;
         landingPositions=(Vector2[])slotPositions.Clone(); impactPositions=null;
-    }
-    sealed class PlacementPair
-    {
-        public Vector2 landing,impact; public Rect landingArea,impactArea; public float cost;
+        if(wholeTableLayout)
+        {
+            CacheFootprints(slotPositions.Length);
+            if(!PrepareLandingPairs(Padded(ProjectedHitArea(mainStonePrefab,Vector2.zero,0),slabSpacing),slotPositions.Length))
+                impactPositions=(Vector2[])slotPositions.Clone();
+        }
     }
     bool PrepareWholeTablePlacements()
     {
@@ -153,7 +155,7 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
         var main=Padded(center,slabSpacing);
         // Restart bounded dart throwing instead of falling back to an overlapping
         // final sample. No future main footprint is excluded from this first view.
-        for(int restart=0;restart<64;restart++)
+        for(int restart=0;restart<128;restart++)
         {
             var occupied=new List<Rect>(); bool complete=true,usesCenter=false;
             for(int slot=0;slot<count;slot++)
@@ -168,7 +170,7 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
                 }
                 if(!placed) { complete=false; break; }
             }
-            if(complete && usesCenter && PrepareLandingPairs(random,main,count)) return true;
+            if(complete && usesCenter && PrepareLandingPairs(main,count)) return true;
         }
         Debug.LogWarning("Quest layout settings are too crowded; using the authored safe layout.");
         return false;
@@ -176,61 +178,55 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
     Vector2 RandomTablePoint(System.Random random) => new Vector2(
         Mathf.Lerp(freePlacementBounds.xMin,freePlacementBounds.xMax,(float)random.NextDouble()),
         Mathf.Lerp(freePlacementBounds.yMin,freePlacementBounds.yMax,(float)random.NextDouble()));
-    bool PrepareLandingPairs(System.Random random,Rect main,int count)
+    bool PrepareLandingPairs(Rect main,int count)
     {
         float preferred=motion!=null && motion.Shockwave!=null ? motion.Shockwave.SlideDistance : 0.85f;
-        var candidates=new List<PlacementPair>[count]; var order=new List<int>();
+        const float minimumPush=0.2f;
+        var landing=new Vector2[count]; var impact=new Vector2[count]; var sweeps=new Rect[count];
         for(int slot=0;slot<count;slot++)
         {
-            var options=candidates[slot]=new List<PlacementPair>(); order.Add(slot);
-            for(int sample=0;sample<640;sample++)
+            var start=slotPositions[slot];
+            var direction=start.sqrMagnitude>0.0001f ? start.normalized : Vector2.right;
+            var point=start; bool cleared=false;
+            // Only slide away from the center. A slab already outside the main
+            // footprint stays where it is until the impact reaches it.
+            for(int step=0;step<=100;step++)
             {
-                var point=sample==0 ? slotPositions[slot] : RandomTablePoint(random);
+                point=start+direction*(step*0.06f);
                 if(!FitsTable(point,slot,0.12f)) continue;
                 var area=Padded(SlotArea(slot,point),slabSpacing);
-                if(area.Overlaps(main)) continue;
-                for(int step=0;step<6;step++)
-                {
-                    float distance=Mathf.Lerp(preferred,0.35f,step/5f);
-                    var target=point+point.normalized*distance;
-                    if(!FitsTable(target,slot,0)) continue;
-                    var targetArea=Padded(SlotArea(slot,target),slabSpacing);
-                    if(targetArea.Overlaps(main)) continue;
-                    options.Add(new PlacementPair { landing=point,impact=target,landingArea=area,impactArea=targetArea,
-                        cost=(point-slotPositions[slot]).sqrMagnitude+(float)random.NextDouble()*0.025f }); break;
-                }
+                if(!area.Overlaps(main)) { cleared=true; break; }
             }
-            options.Sort((a,b)=>a.cost.CompareTo(b.cost));
-            if(options.Count>180) options.RemoveRange(180,options.Count-180);
-            if(options.Count==0) return false;
+            if(!cleared) return false;
+            landing[slot]=point; impact[slot]=point+direction*minimumPush;
+            if(!FitsTable(impact[slot],slot,0)) return false;
+            sweeps[slot]=Padded(SweptSlotArea(slot,start,impact[slot]),slabSpacing);
+            // Entire corridors, rather than just endpoints, must be separate.
+            // This also covers the shockwave's independently delayed responses.
+            for(int other=0;other<slot;other++) if(sweeps[slot].Overlaps(sweeps[other])) return false;
         }
-        // Outer slabs have fewer choices, so resolve them before relocating the
-        // central ones. Backtracking can move an outer slab when keeping it would
-        // prevent a complete, readable six-offer arrangement.
-        order.Sort((a,b)=>slotPositions[b].sqrMagnitude.CompareTo(slotPositions[a].sqrMagnitude));
-        var chosen=new PlacementPair[count]; int budget=24000;
-        bool Search(int at)
+        // Use the stronger impact push where the same outward corridor has room.
+        for(int slot=0;slot<count;slot++)
         {
-            if(at==count) return true;
-            int slot=order[at];
-            foreach(var option in candidates[slot])
+            var direction=slotPositions[slot].sqrMagnitude>0.0001f ? slotPositions[slot].normalized : Vector2.right;
+            for(int step=0;step<=12;step++)
             {
-                if(--budget<0) return false;
-                bool clear=true;
-                for(int i=0;i<at;i++)
-                {
-                    var other=chosen[order[i]];
-                    if(option.landingArea.Overlaps(other.landingArea)||option.impactArea.Overlaps(other.impactArea)) { clear=false; break; }
-                }
+                float distance=Mathf.Lerp(preferred,minimumPush,step/12f);
+                var target=landing[slot]+direction*distance;
+                if(!FitsTable(target,slot,0)) continue;
+                var sweep=Padded(SweptSlotArea(slot,slotPositions[slot],target),slabSpacing); bool clear=true;
+                for(int other=0;other<count;other++) if(other!=slot && sweep.Overlaps(sweeps[other])) { clear=false; break; }
                 if(!clear) continue;
-                chosen[slot]=option; if(Search(at+1)) return true;
+                impact[slot]=target; sweeps[slot]=sweep; break;
             }
-            return false;
         }
-        if(!Search(0)) return false;
-        landingPositions=new Vector2[count]; impactPositions=new Vector2[count];
-        for(int i=0;i<count;i++) { landingPositions[i]=chosen[i].landing; impactPositions[i]=chosen[i].impact; }
+        landingPositions=landing; impactPositions=impact;
         return true;
+    }
+    Rect SweptSlotArea(int slot,Vector2 from,Vector2 to)
+    {
+        var a=SlotArea(slot,from); var b=SlotArea(slot,to);
+        return Rect.MinMaxRect(Mathf.Min(a.xMin,b.xMin),Mathf.Min(a.yMin,b.yMin),Mathf.Max(a.xMax,b.xMax),Mathf.Max(a.yMax,b.yMax));
     }
     void CacheFootprints(int count)
     {
@@ -342,7 +338,8 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
     {
         var result=new List<Rect> { Padded(ProjectedHitArea(mainStonePrefab,Vector2.zero,0),clearance) };
         var positions=impactPositions ?? slotPositions;
-        for(int slot=0;slot<positions.Length;slot++) result.Add(Padded(SlotArea(slot,positions[slot]),clearance));
+        for(int slot=0;slot<positions.Length;slot++)
+            result.Add(Padded(wholeTableLayout ? SweptSlotArea(slot,slotPositions[slot],positions[slot]) : SlotArea(slot,positions[slot]),clearance));
         return result;
     }
     public Dictionary<int,Vector2> PlanShockwaveSlides(float distance,IReadOnlyList<Bounds> obstacles)
@@ -388,8 +385,7 @@ public sealed class PreMissionStoneBoard : MonoBehaviour
             result.Add(Padded(SlotArea(i,slotPositions[i]),clearance));
             if(wholeTableLayout && impactPositions!=null)
             {
-                result.Add(Padded(SlotArea(i,landingPositions[i]),clearance));
-                result.Add(Padded(SlotArea(i,impactPositions[i]),clearance));
+                result.Add(Padded(SweptSlotArea(i,slotPositions[i],impactPositions[i]),clearance));
             }
         }
         return result;

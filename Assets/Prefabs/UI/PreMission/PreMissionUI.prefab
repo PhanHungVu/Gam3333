@@ -57,7 +57,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -84,7 +84,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d62f415448d441229395f2f0ffefeac5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::StarterTorsoPreview
   image: {fileID: 6373147153020061536}
   fallback: {fileID: 6200499618404308350}
@@ -148,7 +148,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -160,8 +160,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: <
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -285,7 +285,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -295,10 +295,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text:
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -422,7 +422,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -434,8 +434,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: MISSION BRIEFING
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -521,7 +521,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2324541047149400198
 RectTransform:
   m_ObjectHideFlags: 0
@@ -559,7 +559,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -569,10 +569,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text:
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -698,7 +698,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.34, g: 0.39, b: 0.32, a: 1}
@@ -728,7 +728,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -823,7 +823,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.84, g: 0.79, b: 0.66, a: 1}
@@ -853,7 +853,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cfabb0440166ab443bba8876756fdfa9, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Shadow
   m_EffectColor: {r: 0, g: 0, b: 0, a: 0.4}
   m_EffectDistance: {x: 9, y: -10}
@@ -868,7 +868,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
   m_EffectColor: {r: 0.3, g: 0.24, b: 0.15, a: 0.5}
   m_EffectDistance: {x: 1, y: -1}
@@ -910,6 +910,7 @@ RectTransform:
   - {fileID: 2231315762851034095}
   - {fileID: 3414864708997797645}
   - {fileID: 2565720880512775768}
+  - {fileID: 2407935326576560675}
   m_Father: {fileID: 4935329679329786573}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.04, y: 0.06}
@@ -935,7 +936,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.19, g: 0.18, b: 0.15, a: 1}
@@ -1024,7 +1025,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.34, g: 0.39, b: 0.32, a: 1}
@@ -1054,7 +1055,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -1143,7 +1144,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1155,8 +1156,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Quest details
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1281,7 +1282,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1291,10 +1292,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text:
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1430,7 +1431,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1442,8 +1443,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Select a notice to read its briefing.
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1567,7 +1568,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1577,10 +1578,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text:
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1717,8 +1718,8 @@ MonoBehaviour:
       m_Calls: []
   m_text:
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1799,6 +1800,143 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!1 &2571436204187823592
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2407935326576560675}
+  - component: {fileID: 2979593138122985986}
+  - component: {fileID: 6466661249462702051}
+  - component: {fileID: 7322487044909317784}
+  - component: {fileID: 8700692385770992707}
+  m_Layer: 5
+  m_Name: TEMP - Advance Quest Progress
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &2407935326576560675
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2571436204187823592}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7542269701031233135}
+  m_Father: {fileID: 2276121717484550195}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.73, y: 0.88}
+  m_AnchorMax: {x: 0.98, y: 0.97}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &2979593138122985986
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2571436204187823592}
+  m_CullTransparentMesh: 1
+--- !u!114 &6466661249462702051
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2571436204187823592}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.24, g: 0.29, b: 0.25, a: 0.96}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!114 &7322487044909317784
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2571436204187823592}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 1
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 6466661249462702051}
+  m_OnClick:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &8700692385770992707
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2571436204187823592}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60e4fc5e95e3458e9e03322ffa99110a, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PreMissionQuestTestButton
+  flow: {fileID: 3491011285539150172}
+  button: {fileID: 7322487044909317784}
+  label: {fileID: 6254053462129980213}
 --- !u!1 &2610034689006405885
 GameObject:
   m_ObjectHideFlags: 0
@@ -1856,7 +1994,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.34, g: 0.39, b: 0.32, a: 1}
@@ -1886,7 +2024,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -2027,7 +2165,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -2039,8 +2177,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Decline / Back
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2165,7 +2303,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 1}
@@ -2252,7 +2390,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -2264,8 +2402,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Back to Details
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2389,7 +2527,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -2399,10 +2537,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text:
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2709,8 +2847,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Accept Quest
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2834,7 +2972,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -2849,8 +2987,8 @@ MonoBehaviour:
 
     Preview placeholder'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2931,6 +3069,7 @@ GameObject:
   - component: {fileID: 5366681843941699876}
   - component: {fileID: 2715698603701288559}
   - component: {fileID: 5045283819886120146}
+  - component: {fileID: 3072223122702152217}
   m_Layer: 0
   m_Name: Back to Main Menu
   m_TagString: Untagged
@@ -2954,7 +3093,7 @@ RectTransform:
   m_Father: {fileID: 2276121717484550195}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.04, y: 0.05}
-  m_AnchorMax: {x: 0.29, y: 0.14}
+  m_AnchorMax: {x: 0.22, y: 0.17}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -2976,7 +3115,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.34, g: 0.39, b: 0.32, a: 1}
@@ -3006,7 +3145,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -3040,6 +3179,20 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &3072223122702152217
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4284733469474141427}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65e57194dbcc4785a1136774e2af67c1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PreMissionSlabButton
+  modelPrefab: {fileID: 2493105556748624122, guid: dab67bafc958fe74b8b490c7c2f5edf3, type: 3}
+  modelFootprint: {x: 3, y: 1.1}
 --- !u!1 &5880691790957784354
 GameObject:
   m_ObjectHideFlags: 0
@@ -3098,7 +3251,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 0.08}
@@ -3128,7 +3281,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3312d7739989d2b4e91e6319e9a96d76, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RectMask2D
   m_Padding: {x: 0, y: 0, z: 0, w: 0}
   m_Softness: {x: 0, y: 0}
@@ -3142,7 +3295,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1aa08ab6e0800fa44ae55d278d1423e3, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ScrollRect
   m_Content: {fileID: 8222576178210737531}
   m_Horizontal: 0
@@ -3218,7 +3371,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.64, g: 0.68, b: 0.62, a: 1}
@@ -3302,7 +3455,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.78, g: 0.81, b: 0.75, a: 1}
@@ -3415,7 +3568,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
   m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
@@ -3438,7 +3591,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
   m_IgnoreReversedGraphics: 1
   m_BlockingObjects: 0
@@ -3455,7 +3608,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0024b7509264ecbb57d25fc46bc0dfa, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::MissionStartHook
 --- !u!114 &6110116358446650629
 MonoBehaviour:
@@ -3467,7 +3620,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a227eca4bfc104649a1ca011301c827e, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::SceneManagerScript
 --- !u!114 &3491011285539150172
 MonoBehaviour:
@@ -3479,7 +3632,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8f6536ec9aaa44559d206eb4d65fb0ca, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::PreMissionFlowController
   catalogue: {fileID: 11400000, guid: 266ad70c641610746a56ff5b15c6bcd2, type: 2}
   missionStartHook: {fileID: 690751869192781926}
@@ -3492,7 +3645,7 @@ MonoBehaviour:
         m_Mode: 5
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
+          m_ObjectArgumentAssemblyTypeName:
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: MainMenuScene
@@ -3508,6 +3661,7 @@ MonoBehaviour:
   skipPostingButton: {fileID: 6058868614191001434}
   boardHint: {fileID: 3529705971370282316}
   presentation: {fileID: 6087910927876979628}
+  stoneBoard: {fileID: 0}
   detailsTitle: {fileID: 7979552752819117097}
   detailsBody: {fileID: 6666318375899652448}
   detailsType: {fileID: 5460380425244084643}
@@ -3535,7 +3689,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: db8249d94d0b4c59b0daaddd8648fae2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::PreMissionPaperPresentation
   board: {fileID: 1513464005758504799}
   details: {fileID: 4690989009476539452}
@@ -3638,7 +3792,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -3648,10 +3802,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Back to Main Menu
+  m_text: BACK
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3787,8 +3941,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Skip Posting (Space)
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3993,7 +4147,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -4005,8 +4159,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Confirm Torso
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4182,7 +4336,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.34, g: 0.39, b: 0.32, a: 1}
@@ -4212,7 +4366,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -4303,7 +4457,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 0}
@@ -4392,7 +4546,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.34, g: 0.39, b: 0.32, a: 1}
@@ -4422,7 +4576,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -4511,7 +4665,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -4521,10 +4675,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text:
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4648,7 +4802,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -4658,10 +4812,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text:
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4747,7 +4901,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2358932573375406811
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4785,7 +4939,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -4797,8 +4951,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: QUEST BOARD
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4934,8 +5088,8 @@ MonoBehaviour:
       m_Calls: []
   m_text:
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5054,7 +5208,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.VerticalLayoutGroup
   m_Padding:
     m_Left: 12
@@ -5080,7 +5234,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3245ec927659c4140ac4f8d17403cc18, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ContentSizeFitter
   m_HorizontalFit: 0
   m_VerticalFit: 2
@@ -5139,7 +5293,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -5151,8 +5305,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: STARTING TORSO
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5289,8 +5443,8 @@ MonoBehaviour:
       m_Calls: []
   m_text:
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5371,6 +5525,143 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!1 &8774302597572569319
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7542269701031233135}
+  - component: {fileID: 5124165978168981338}
+  - component: {fileID: 6254053462129980213}
+  m_Layer: 5
+  m_Name: Progress Label
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &7542269701031233135
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8774302597572569319}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2407935326576560675}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: -16, y: -8}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &5124165978168981338
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8774302597572569319}
+  m_CullTransparentMesh: 1
+--- !u!114 &6254053462129980213
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8774302597572569319}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: 'TEST: +1 Quest (0/3)'
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontColor: {r: 0.96, g: 0.93, b: 0.84, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: 0
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 22
+  m_fontSizeBase: 22
+  m_fontWeight: 400
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 14
+  m_fontSizeMax: 22
+  m_fontStyle: 0
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 1
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656b
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &8925303571116799659
 GameObject:
   m_ObjectHideFlags: 0
@@ -5428,7 +5719,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.34, g: 0.39, b: 0.32, a: 1}
@@ -5458,7 +5749,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -5547,7 +5838,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -5559,8 +5850,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: '>'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
-  m_sharedMaterial: {fileID: -3551195069841032008, guid: 79c1e84a46f6fa34b9ecbdc1bc08c762, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+  m_sharedMaterial: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5717,6 +6008,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6586185324773775113, guid: 592a2ae20a8a9fb4bb803ca7a27f23f2, type: 3}
+      propertyPath: m_fontAsset
+      value:
+      objectReference: {fileID: 11400000, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
+    - target: {fileID: 6586185324773775113, guid: 592a2ae20a8a9fb4bb803ca7a27f23f2, type: 3}
+      propertyPath: m_sharedMaterial
+      value:
+      objectReference: {fileID: -3922465365653132237, guid: 3885147c67a46404cb2e1c46a6e33efa, type: 2}
     - target: {fileID: 8222646324329807333, guid: 592a2ae20a8a9fb4bb803ca7a27f23f2, type: 3}
       propertyPath: m_Name
       value: Travelling Notice
@@ -5744,5 +6043,5 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 209800d2f3854f678d9a48e5d728e438, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::QuestNoticeView

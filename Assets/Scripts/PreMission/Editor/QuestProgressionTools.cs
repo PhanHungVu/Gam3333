@@ -2,8 +2,8 @@ using UnityEditor;
 using UnityEngine;
 using System.Linq;
 
-// Editor-only automated-test utilities and progression reset menu. P4 retired
-// the visible completion Inspector; no completion button is shipped.
+// Editor-only test utilities and reset menu. The temporary visible scene control
+// is implemented separately by PreMissionQuestTestButton.
 public static class QuestProgressionTools
 {
     const string Menu = "Tools/Mech/Pre-Mission/Development/";
