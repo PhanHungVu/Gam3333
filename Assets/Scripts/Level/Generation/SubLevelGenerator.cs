@@ -198,7 +198,7 @@ public sealed class SubLevelGenerator : MonoBehaviour
         if (outpost == null || !footprint.Circle) return;
         var interior = footprint.Interior ?? new ChunkInteriorSettings();
         var items = OutpostPlanner.Plan(map, seed ^ (0x2545f491 * (index + 1)), p, footprint,
-            ChunkInterior.Entrances(index, p, roads), interior.laneWidth, interior.stepHeight, outpost.ToSettings());
+            ChunkInterior.Entrances(index, p, roads), interior.laneWidth, interior.stepHeight, outpost.ToSettings(), interior.holdArea);
         var parent = new GameObject("Outpost").transform;
         parent.SetParent(chunk, true);
         if (!Application.isPlaying) parent.gameObject.hideFlags = HideFlags.DontSave;

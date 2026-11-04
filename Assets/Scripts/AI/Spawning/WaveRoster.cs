@@ -10,6 +10,7 @@ public sealed class WaveRoster<T> where T : class
     readonly List<int> costs = new List<int>();
 
     public int Count => members.Count;
+    public int TotalCost { get { int t = 0; foreach (int c in costs) t += c; return t; } }
 
     public void Add(T member, int cost) { members.Add(member); costs.Add(Math.Max(0, cost)); }
 

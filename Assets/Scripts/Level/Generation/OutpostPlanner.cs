@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-public enum OutpostSlot { Centre, Flat, WallEdge, High }
+public enum OutpostSlot { Centre, Flat, WallEdge, High, Camp }
 
 // One slot type's rules: how many pieces, and each piece prefab's chance.
 public sealed class OutpostSlotSettings
@@ -17,6 +17,7 @@ public sealed class OutpostSettings
     public OutpostSlotSettings flat = new OutpostSlotSettings { min = 3, max = 6 };
     public OutpostSlotSettings wallEdge = new OutpostSlotSettings { min = 4, max = 8 };
     public OutpostSlotSettings high = new OutpostSlotSettings { min = 1, max = 3 };
+    public OutpostSlotSettings camp = new OutpostSlotSettings { min = 0, max = 0 }; // on the flat hold area in the middle
     public float spacing = 6f;          // metres between pieces
     public float laneClearance = 2f;    // metres kept clear either side of each entry lane
     public float minScale = 0.9f, maxScale = 1.2f;
@@ -29,14 +30,15 @@ public sealed class OutpostItem
     public int Prefab;
 }
 
-// Plans the pieces of a KOTH chunk's outpost in plain code (portable), from its generated interior.
+// Plans the pieces of a circular chunk's outpost in plain code (portable), from its generated interior.
 // Each walkable cell inside the circle is a wall edge (next to a wall), high (on top of a block) or
-// flat; entry lanes (plus clearance) stay clear. A centre piece goes in the middle, then each slot
-// type gets a seeded number of pieces on its cells, never closer than Spacing.
+// flat; flat cells inside the hold area also count as camp; entry lanes (plus clearance) stay clear.
+// A centre piece goes in the middle, then camp, then each other slot type gets a seeded number of pieces
+// on its cells, never closer than Spacing.
 public static class OutpostPlanner
 {
     public static List<OutpostItem> Plan(TerrainMap map, int seed, ChunkPlacement p, ChunkFootprint size,
-        List<Tuple<float, float>> entrances, float laneWidth, float stepHeight, OutpostSettings s)
+        List<Tuple<float, float>> entrances, float laneWidth, float stepHeight, OutpostSettings s, float holdArea = 0.3f)
     {
         var items = new List<OutpostItem>();
         if (!size.Circle) return items;
@@ -44,6 +46,7 @@ public static class OutpostPlanner
         var cells = new Dictionary<OutpostSlot, List<int>>
         {
             { OutpostSlot.Flat, new List<int>() }, { OutpostSlot.WallEdge, new List<int>() }, { OutpostSlot.High, new List<int>() },
+            { OutpostSlot.Camp, new List<int>() },
         };
         float r = size.Radius * 0.9f, clearHalf = laneWidth * 0.5f + Math.Max(0f, s.laneClearance);
         for (int row = 0; row < map.Rows; row++)
@@ -56,6 +59,8 @@ public static class OutpostPlanner
                     : Rise(map, col, row, p.Height) >= stepHeight - 0.25f && Flat(map, col, row) ? OutpostSlot.High
                     : Flat(map, col, row) ? OutpostSlot.Flat : (OutpostSlot)(-1);
                 if ((int)slot >= 0) cells[slot].Add(row * map.Cols + col);
+                float camp = size.Radius * Math.Max(0f, holdArea);
+                if (slot == OutpostSlot.Flat && dx * dx + dz * dz <= camp * camp) cells[OutpostSlot.Camp].Add(row * map.Cols + col);
             }
 
         // The centre piece sits in the middle of the hold area.
@@ -63,9 +68,9 @@ public static class OutpostPlanner
         if (centreCount > 0 && Total(s.centre) > 0f)
             items.Add(Make(p.X, p.Z, map, OutpostSlot.Centre, s.centre, s, random));
 
-        foreach (var slot in new[] { OutpostSlot.WallEdge, OutpostSlot.High, OutpostSlot.Flat })
+        foreach (var slot in new[] { OutpostSlot.Camp, OutpostSlot.WallEdge, OutpostSlot.High, OutpostSlot.Flat })
         {
-            var rules = slot == OutpostSlot.WallEdge ? s.wallEdge : slot == OutpostSlot.High ? s.high : s.flat;
+            var rules = slot == OutpostSlot.Camp ? s.camp : slot == OutpostSlot.WallEdge ? s.wallEdge : slot == OutpostSlot.High ? s.high : s.flat;
             int want = Count(rules, random);
             if (want <= 0 || Total(rules) <= 0f) continue;
             var pool = cells[slot];

@@ -67,6 +67,7 @@ public sealed class EscortPayload : MonoBehaviour, IMissionObjective, IMissionSt
     public float Radius => radius;
     public event Action<int> CheckpointReached; // the number of checkpoints passed so far
 
+    public bool ShowStatus => rules != null && !rules.Arrived;
     public string Status
     {
         get

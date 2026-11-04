@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 
-// Placeholder look for a hold zone (KOTH, extract): an outline of its chunk's edge (a ring for a circular
+// Placeholder look for a zone (KOTH, extract, elimination camp): an outline of its chunk's edge (a ring for a circular
 // chunk), coloured by state. By default yellow while waiting, blue while holding, yellow flicker during the
 // grace period, red flash on failure, green once complete; hidden while the zone is closed. Each zone can
 // set its own colours. Only reads HoldZone, so real VFX can replace it later.
@@ -28,14 +28,14 @@ public sealed class HoldZoneVisual : MonoBehaviour
     [Tooltip("Pull the outline this far in from the footprint edge, in metres.")]
     [SerializeField, Min(0f)] float inset = 0.5f;
 
-    HoldZone zone;
+    IZoneDisplay zone;
     LineRenderer outline;
     bool drawn;
 
     void Awake()
     {
-        zone = GetComponent<HoldZone>();
-        if (zone == null) { Debug.LogWarning("HoldZoneVisual needs a hold zone (e.g. KOTH_Zone, ExtractZone) on the same object.", this); enabled = false; return; }
+        zone = GetComponent<IZoneDisplay>();
+        if (zone == null) { Debug.LogWarning("HoldZoneVisual needs a zone (KOTH_Zone, ExtractZone, EliminationZone) on the same object.", this); enabled = false; return; }
         if (lineMaterial == null) lineMaterial = new Material(Shader.Find("Sprites/Default"));
         var child = new GameObject("Chunk Outline");
         child.transform.SetParent(transform, false);

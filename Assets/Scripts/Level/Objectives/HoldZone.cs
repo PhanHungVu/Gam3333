@@ -4,6 +4,15 @@ using UnityEngine.Serialization;
 
 public enum HoldZoneState { Waiting, Holding, Warning, Failed, Complete }
 
+// What a zone outline needs to know (HoldZoneVisual): its state, whether it's open, and its chunk.
+// Hold zones (KOTH, extract) and the elimination camp provide it.
+public interface IZoneDisplay
+{
+    HoldZoneState State { get; }
+    bool IsOpen { get; }
+    ChunkDefinition Chunk { get; }
+}
+
 // Hold rules (King of the Hill, extraction) as a plain class (no Unity types), so they port to the custom engine as-is.
 // Waiting -> player enters -> Holding (timer counts). Leaving starts a grace period (Warning) with
 // the timer paused; re-entering resumes it. If the grace runs out the hold Fails, shows that for a
@@ -60,7 +69,7 @@ public sealed class HoldZoneRules
 // A zone the player must stand inside for a set time: the chunk's footprint (box or circle, from
 // ChunkDefinition), timed by HoldZoneRules. KOTH_Zone and ExtractZone build on it. A closed zone (IsOpen
 // false) does nothing until opened. Put it on a child of the chunk. Visuals listen to State.
-public abstract class HoldZone : MonoBehaviour
+public abstract class HoldZone : MonoBehaviour, IZoneDisplay
 {
     [Tooltip("Seconds to hold inside the chunk.")]
     [FormerlySerializedAs("surviveSeconds")]

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public enum WaveType { Roaming, KOTH, POI, Escort }
+public enum WaveType { Roaming, KOTH, POI, Escort, Elimination }
 
 // One enemy a wave can pick, with its chance relative to the others in the list.
 [System.Serializable]

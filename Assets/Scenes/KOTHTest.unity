@@ -357,11 +357,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4718579317391381003, guid: cf75ab300c7322640a882fb6ab7a4d7e, type: 3}
       propertyPath: seed
-      value: 830755170
+      value: -459845792
       objectReference: {fileID: 0}
     - target: {fileID: 4718579317391381003, guid: cf75ab300c7322640a882fb6ab7a4d7e, type: 3}
       propertyPath: lastSeed
-      value: 830755170
+      value: -459845792
       objectReference: {fileID: 0}
     - target: {fileID: 4718579317391381003, guid: cf75ab300c7322640a882fb6ab7a4d7e, type: 3}
       propertyPath: roadsBuilt
@@ -369,7 +369,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4718579317391381003, guid: cf75ab300c7322640a882fb6ab7a4d7e, type: 3}
       propertyPath: decorPlaced
-      value: 336
+      value: 263
       objectReference: {fileID: 0}
     - target: {fileID: 4718579317391381003, guid: cf75ab300c7322640a882fb6ab7a4d7e, type: 3}
       propertyPath: roadsCarved
@@ -381,15 +381,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4718579317391381003, guid: cf75ab300c7322640a882fb6ab7a4d7e, type: 3}
       propertyPath: outpostPieces
-      value: 39
+      value: 28
       objectReference: {fileID: 0}
     - target: {fileID: 4718579317391381003, guid: cf75ab300c7322640a882fb6ab7a4d7e, type: 3}
       propertyPath: walkablePercent
-      value: 78.656
+      value: 78.8992
       objectReference: {fileID: 0}
     - target: {fileID: 4718579317391381003, guid: cf75ab300c7322640a882fb6ab7a4d7e, type: 3}
       propertyPath: missionChunksPlaced
-      value: 4
+      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

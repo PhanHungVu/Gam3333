@@ -15,7 +15,7 @@ MonoBehaviour:
   type: 3
   spawnInterval: 0.8
   timerReset: 100
-  resourceTotal: 100
+  resourceTotal: 50
   pausesRoaming: 1
   maxConcurrentEnemies: 32
   leashDistance: 90

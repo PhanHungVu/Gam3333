@@ -55,8 +55,9 @@ public sealed class MissionHud : MonoBehaviour
                     _ => "Extract open: get to the extraction point",
                 };
             default:
-                // A single objective that describes itself (the escort) shows its own progress.
-                if (MissionObjectives.All.Count == 1 && MissionObjectives.All[0] is IMissionStatus status) return status.Status;
+                // An objective in progress that describes itself (the escort, a camp being fought) shows its own status.
+                foreach (var objective in MissionObjectives.All)
+                    if (objective is IMissionStatus status && status.ShowStatus) return status.Status;
                 return $"Objectives {tracker.ObjectivesComplete} / {tracker.ObjectivesTotal}";
         }
     }

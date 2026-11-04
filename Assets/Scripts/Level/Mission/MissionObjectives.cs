@@ -6,9 +6,11 @@ public interface IMissionObjective
     bool IsComplete { get; }
 }
 
-// An objective that can describe its own progress for the HUD (e.g. the escort's checkpoints).
+// An objective that can describe its own progress for the HUD (e.g. the escort's checkpoints, a camp's
+// percentage cleared). The HUD shows the first one whose ShowStatus is true, else the objectives count.
 public interface IMissionStatus
 {
+    bool ShowStatus { get; }
     string Status { get; }
 }
 

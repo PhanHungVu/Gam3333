@@ -36,6 +36,7 @@ public sealed class SpawnDirector : MonoBehaviour, IWaveAnchor
         public int[] costs;
         public float[] weights;
         public readonly WaveRoster<GameObject> roster = new WaveRoster<GameObject>();
+        public int budget = -1; // most spawn cost it may have alive at once (-1 = no limit), set by its owner
     }
 
     const float LeashCheckInterval = 0.5f;
@@ -85,6 +86,13 @@ public sealed class SpawnDirector : MonoBehaviour, IWaveAnchor
     // Stops the owner's wave. Enemies it already spawned stay until killed.
     // Every enemy a wave spawns, with the wave's owner (e.g. the escort payload gives its enemies a target).
     public event System.Action<Object, GameObject> Spawned;
+
+    // Limits a running objective wave to this much spawn cost alive at once (e.g. an elimination camp: never
+    // more out than is left to kill). Negative removes the limit.
+    public void SetBudget(Object owner, int budget)
+    {
+        if (objective != null && objective.owner == owner) objective.budget = budget;
+    }
 
     // Scales a running objective wave's resource from its next refill (e.g. 1.25 = 25% more enemies).
     public void ScaleWave(Object owner, float scale)
@@ -161,6 +169,8 @@ public sealed class SpawnDirector : MonoBehaviour, IWaveAnchor
         int pick = WaveCycle.Pick(active.costs, active.weights, active.cycle.Resource, Random.value);
         if (pick < 0) { active.cycle.OutOfResource(); return; }
         if (!TryPickPose(active.points, out var position, out var rotation)) { active.cycle.Skipped(); return; }
+        if (active.budget >= 0 && active.roster.TotalCost + active.costs[pick] > active.budget)
+        { active.cycle.Skipped(); return; } // its owner allows no more out right now
         var enemy = Instantiate(active.data.enemies[pick].prefab, position, rotation);
         active.cycle.Spent(active.costs[pick]);
         active.roster.Add(enemy, active.costs[pick]);
