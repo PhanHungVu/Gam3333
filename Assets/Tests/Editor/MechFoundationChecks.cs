@@ -114,6 +114,7 @@ public static class MechFoundationChecks
             Section("WaveRosterChecks", () => WaveRosterChecks.Run(Check));
             Section("EliminationChecks", () => EliminationChecks.Run(Check));
             Section("PartIconChecks", () => PartIconChecks.Run(Check));
+            Section("QuestLaunchChecks", () => QuestLaunchChecks.Run(Check));
             Section("OutpostChecks", () => OutpostChecks.Run(Check));
             Section("SpeedChecks", () => SpeedChecks.Run(Check));
             Section("MechProjectileModelChecks", () => MechProjectileModelChecks.Run(Check));

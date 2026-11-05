@@ -17,6 +17,15 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/PreMissionScene.unity
     guid: 060b9369b2211634b8501fa510f7fd2a
+  - enabled: 1
+    path: Assets/Scenes/KOTHTest.unity
+    guid: 272328016fd96e348bd083656d388920
+  - enabled: 1
+    path: Assets/Scenes/EscortTest.unity
+    guid: e585539e0b47cbe4bbf5243a3cb53659
+  - enabled: 1
+    path: Assets/Scenes/EliminationTest.unity
+    guid: 7f3f6fb3ea76fa6479aaf1d2425f0b65
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

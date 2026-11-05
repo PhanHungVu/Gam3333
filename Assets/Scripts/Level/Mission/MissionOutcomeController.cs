@@ -30,6 +30,12 @@ public sealed class MissionOutcomeController : MonoBehaviour
     public IReadOnlyList<Participant> Participants => participants;
     public MissionResultsView View => view;
     public event Action<MissionOutcome> Finished;
+    // Raised just before Return leaves the scene (e.g. a quest-board launch reports its result first).
+    public event Action Returning;
+    // Where Return goes: the main menu unless whoever launched the mission set somewhere else
+    // (e.g. back to the quest board).
+    public string ReturnScene { get => string.IsNullOrEmpty(returnScene) ? mainMenuScene : returnScene; set => returnScene = value; }
+    string returnScene;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void Reset() => scenes.Clear();
     public static MissionOutcomeController Find(Scene scene) => scenes.TryGetValue(scene, out var result) && result != null ? result : null;
@@ -90,7 +96,7 @@ public sealed class MissionOutcomeController : MonoBehaviour
         return true;
     }
     public void Retry() => Load(gameObject.scene.path);
-    public void ReturnToMenu() => Load(mainMenuScene);
+    public void ReturnToMenu() { Returning?.Invoke(); Load(ReturnScene); }
     void Load(string path)
     {
         if (string.IsNullOrEmpty(path)) return;

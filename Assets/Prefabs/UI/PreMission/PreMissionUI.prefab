@@ -3607,9 +3607,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 6175718123400853761}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0024b7509264ecbb57d25fc46bc0dfa, type: 3}
+  m_Script: {fileID: 11500000, guid: 5400b025fce56ee4fb7c1e48d59ecbc2, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::MissionStartHook
+  m_EditorClassIdentifier: Assembly-CSharp::SceneMissionStartHook
+  missionScenes:
+  - missionType: 2
+    scenePath: Assets/Scenes/KOTHTest.unity
+  - missionType: 3
+    scenePath: Assets/Scenes/EscortTest.unity
+  - missionType: 1
+    scenePath: Assets/Scenes/EliminationTest.unity
 --- !u!114 &6110116358446650629
 MonoBehaviour:
   m_ObjectHideFlags: 0
