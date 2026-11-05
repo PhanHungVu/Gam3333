@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PartData
   partId: Torso
   partName: Golem Torso
+  icon: {fileID: 21300000, guid: b45b73273f85a6246858f84ac0a86185, type: 3}
+  abilityIcon: {fileID: 21300000, guid: 6e34e78e53a93214fb0e04e3b7b1f46f, type: 3}
   description: 
   partType: 6
   subtype: 0

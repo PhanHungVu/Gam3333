@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PartData
   partId: Legs
   partName: Golem Legs
+  icon: {fileID: 21300000, guid: 1786663a2db121142a632f896aa6af51, type: 3}
+  abilityIcon: {fileID: 21300000, guid: 2c942fb2e1a3f9c47972db2e967686de, type: 3}
   description: 
   partType: 3
   subtype: 0
