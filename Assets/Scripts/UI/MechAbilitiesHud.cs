@@ -105,6 +105,15 @@ public sealed class MechAbilitiesHud : MonoBehaviour
         return PartAbilityCooldown.For(part).ConfirmActivation(Mathf.Max(0, part.Stats.GetStat(StatType.AbilityCooldown)));
     }
 
+    // Inspector debug helper: confirms every ability slot through the same path gameplay uses, so a
+    // cooldown can be started without an ability system. Returns how many cooldowns started.
+    public int ActivateAll()
+    {
+        int started = 0;
+        foreach (var slot in AbilitySlots) if (Activate(slot)) started++;
+        return started;
+    }
+
     // Pods sit next to the weapons HUD and grow leftwards, so the row keeps its right edge and
     // reads Head, Torso, Legs from left to right whichever parts are equipped.
     void Layout()
