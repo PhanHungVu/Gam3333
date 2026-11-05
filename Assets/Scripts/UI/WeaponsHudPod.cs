@@ -5,8 +5,8 @@ using UnityEngine.UI;
 
 // One row of the weapons HUD: the weapon's name above a coloured panel that holds its sprite and
 // ammunition. Ammo reads [rounds in the magazine / rounds left in total], or N/A for weapons that
-// carry no ammunition (melee). While the weapon reloads the sprite and the ammo count dim by 25%,
-// then come back to full when the magazine is replenished.
+// carry no ammunition (melee). The icon and ammo dim while an attack/reload cooldown runs;
+// a bottom-to-top sweep follows the physical part's actual time until it can attack again.
 [DisallowMultipleComponent]
 public sealed class WeaponsHudPod : MonoBehaviour
 {
@@ -24,39 +24,50 @@ public sealed class WeaponsHudPod : MonoBehaviour
     [SerializeField] TextMeshProUGUI ammoLabel;
     [Tooltip("Every sprite in Assets/Sprites/PartIcons. A part picks its icon by name: <partName>_Icon.")]
     [SerializeField] Sprite[] partIcons;
-    [Header("Reload")]
-    [Tooltip("Multiplier applied to the sprite and the ammo count while the weapon reloads.")]
+    [Header("Unavailable appearance")]
+    [Tooltip("Multiplier applied to the sprite and ammo during cooldown, reload, or when out of ammo.")]
     [SerializeField, Range(0f, 1f)] float reloadDim = 0.75f;
+    [Header("Cooldown sweep")]
+    [SerializeField] Image cooldownLine;
+    [SerializeField, Min(.5f)] float cooldownLineThickness = 2f;
+    [SerializeField] Color cooldownLineColor = new Color(1f,.93f,.6f,1f);
+    [Header("Cooldown ready effect")]
+    [SerializeField] AbilityReadyVfx readyVfx;
 
     Part weapon;
     Color iconBase = Color.white;
     Color placeholder = Color.white;
     Color ammoColour = Color.white;
     float appliedDim = -1f;
+    uint firstObservedReadyCycle = 1;
 
     public Part Weapon => weapon;
     public Image Background => background;
     public Sprite CurrentIcon => icon != null ? icon.sprite : null;
+    public float CooldownProgress => weapon != null ? weapon.CooldownProgress : 1;
+    public bool IsCoolingDown => weapon != null && weapon.CooldownRemaining > 0;
 
     void Awake()
     {
         if (icon != null) placeholder = icon.color;
         if (ammoLabel != null) ammoColour = ammoLabel.color;
+        ConfigureCooldownLine();
+        ConfigureReadyVfx();
     }
 
-    // Reload is read straight from the part, so the row follows the real magazine without events.
+    // Read directly from the part so swaps, reloads and attack cooldowns use the same gameplay clock.
     void LateUpdate()
     {
-        if (weapon == null || weapon.Stats == null) return;
-        if (ammoLabel != null) ammoLabel.text = AmmoText(weapon, ammoDenominator);
-        ApplyDim(weapon.IsReloading);
+        Refresh();
     }
 
     // Shows one equipped weapon: the sprite comes from the part's icon in Assets/Sprites/PartIcons,
     // the row is titled with the part's own name, and the ammo is read from the live part.
     public void Bind(Part part)
     {
+        if (readyVfx != null) readyVfx.Stop();
         weapon = part;
+        PrimeReadyCue();
         var stats = part != null ? part.Stats : null;
         if (nameLabel != null) nameLabel.text = stats != null ? stats.partName.ToUpperInvariant() : string.Empty;
         if (icon != null)
@@ -66,10 +77,31 @@ public sealed class WeaponsHudPod : MonoBehaviour
             // Without art the row keeps the faint empty slot the prefab was authored with.
             iconBase = sprite != null ? Color.white : placeholder;
         }
-        if (ammoLabel != null) ammoLabel.text = AmmoText(part, ammoDenominator);
         appliedDim = -1f;
-        ApplyDim(part != null && part.IsReloading);
+        Refresh();
     }
+
+    void Refresh()
+    {
+        if(ammoLabel!=null) ammoLabel.text=AmmoText(weapon,ammoDenominator);
+        bool empty=weapon!=null && HasAmmo(weapon.Stats) && weapon.RemainingAmmo<=0;
+        ApplyDim(IsCoolingDown || empty);
+        HudCooldownSweep.Refresh(icon,cooldownLine,CooldownProgress,IsCoolingDown,cooldownLineThickness);
+        if (weapon != null && weapon.TryConsumeWeaponReadyCue(firstObservedReadyCycle)) readyVfx?.Play();
+    }
+    public void ConfigureCooldownLine()
+    {
+        cooldownLine=HudCooldownSweep.Configure(icon,cooldownLine,cooldownLineColor,cooldownLineThickness);
+        HudCooldownSweep.Refresh(icon,cooldownLine,CooldownProgress,IsCoolingDown,cooldownLineThickness);
+    }
+    public void ConfigureReadyVfx()
+    {
+        if (readyVfx == null) readyVfx = GetComponent<AbilityReadyVfx>() ?? gameObject.AddComponent<AbilityReadyVfx>();
+        readyVfx.Configure(icon);
+    }
+    void PrimeReadyCue() => firstObservedReadyCycle = weapon != null ? weapon.WeaponCooldownCycle + (IsCoolingDown ? 0u : 1u) : 1u;
+    void OnEnable() => PrimeReadyCue();
+    void OnDisable() { if (readyVfx != null) readyVfx.Stop(); }
 
     // Part icons live in Assets/Sprites/PartIcons and follow the part name: "Cannon" -> "Cannon_Icon".
     // A build cannot read a folder by path, so the folder's sprites are listed on this prefab, and a

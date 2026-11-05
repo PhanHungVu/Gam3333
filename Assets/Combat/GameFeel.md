@@ -2,6 +2,8 @@
 
 The later hit-confirm shake and stronger incoming damage feedback are documented in [Hit feedback](HitFeedback.md). That pass also adds bounded actor-local hitstop; the numbers below describe the original presentation pass.
 
+The later weapon cooldown sweep, 10m Spinner knockback and longer projectile aftermath passed **238 isolated Unity checks**; see [the current integration notes](RemainingMilestones.md#weapon-sweep-stronger-knockback-and-lingering-trails--2026-11-05) for tuning, verification and the ability preview steps.
+
 This document records the original tasks 1–3 pass and the subsequent merge audit. Milestones 4–7 have since been implemented for the current local game; see [Remaining milestones](RemainingMilestones.md) for their behavior, verification and exposed gameplay connections. The deferred statuses below describe the earlier audit.
 
 This pass extends existing presentation. Ammunition, fire rate, reload timing, damage, enemy coordination, player movement and mission loading retain their gameplay rules. Task 4's weapon/ability HUD, Spinner knockback, result screens and ragdolls are deferred. Existing authored animation clips and audio assignments are preserved.
@@ -12,6 +14,8 @@ This pass extends existing presentation. Ammunition, fire rate, reload timing, d
 
 - Crossbow arms, shoulder crossbows and cannons have successful-shot flashes and short smoke puffs at their muzzle markers. Throwing axes omit those firing puffs.
 - Bolts, axes and cannon projectiles leave configurable trails. `CombatProjectileTrail` is owned by the feedback pool, independently of the projectile. Both impact and range expiry stop emission and let the existing tail finish; reused trails clear their old vertices. The trail pool is capped, and saturation skips a new trail without truncating another live shot.
+
+  Projectile trails now retain their last short flight path and fade after impact/range expiry: **bolts 0.9s, throwing axe 1.1s, cannon 1.3s**. `WeaponVisualSettings.Projectile Trail Linger` tunes this separately from the in-flight **Trail Lifetime**. Pool reuse restores the original lifetime and opacity, so the longer aftermath does not lengthen later flight trails or carry stale vertices. Melee swing trails retain their existing settings.
 - Sword/mace trails follow a separate **VFX Swing Tip** on the actual animated mesh. Setup derives the tip from its geometry, supporting rigid meshes on bones and skinned rigs; existing firing markers are unchanged. The renderer stays at world scale so imported bone scaling cannot collapse its width. Trails emit during **0.12–0.80 of the current Fire pose**, stop during idle/reload, and clear on drop/disable. `MechWeaponAnimator` still owns the original clips and playback speed.
 - Projectile dust uses the swept hit's surface position and normal. Overlap-at-launch impacts use a closest-point contact and an estimated normal. The projectile-center position used by splash damage is unchanged.
 - Cannon impacts retain their existing flash, expanding ring and embers, with an additional smoke plume. All accepted melee victims emit one impact puff, even when they have several colliders.

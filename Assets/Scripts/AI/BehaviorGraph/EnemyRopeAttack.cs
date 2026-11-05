@@ -34,8 +34,8 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
     [SerializeField, Min(0)] float orbitChargeSpeed = 9;
     [SerializeField, Min(0.1f)] float orbitChargeAcceleration = 30;
     [Header("Accepted orbit-hit knockback")]
-    [SerializeField, Min(0)] float orbitKnockbackSpeed = 10;
-    [SerializeField, Range(.01f,1)] float orbitKnockbackDuration = .25f;
+    [SerializeField, Min(0)] float orbitKnockbackSpeed = 32;
+    [SerializeField, Range(.01f,1)] float orbitKnockbackDuration = .65f;
     LineRenderer rope;
     Vector3 start, destination, previous, recoverStart, airbornePosition;
     Material ropeMaterial;

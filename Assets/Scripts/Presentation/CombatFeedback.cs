@@ -310,7 +310,7 @@ public sealed class CombatFeedback : MonoBehaviour
         }
         // Saturation skips the new trail rather than cutting off another live shot.
         if (trail != null) trail.Play(shot, material, color, settings != null ? settings.trailWidth : .08f,
-            settings != null ? settings.trailLifetime : .2f);
+            settings != null ? settings.trailLifetime : .2f, settings != null ? settings.projectileTrailLinger : .9f);
     }
 
     void ConfirmKills(int kills)

@@ -8,9 +8,17 @@ The player rig supplies the existing `CombatHUD` under its shared cursor Canvas 
 
 `WeaponsHudPod` keeps **loaded rounds / total rounds remaining** by default. Its **Ammo Denominator** Inspector field also supports magazine capacity or total ammo capacity. This pass deliberately preserves the existing reload rule: counts refill at reload start while firing is locked until reload ends. No magazine sizes or ammo counts are changed.
 
+Weapons now share the ability icon's **bottom-to-top cooldown sweep**. Fire a weapon (hold LMB/RMB for arms, Q/E for shoulders) or reload a partially empty magazine with R: the icon/ammo dim, a warm horizontal line rises, and normal brightness returns when the weapon can fire again. This includes melee attack cooldowns, ordinary shot intervals, automatic reloads and manual reloads. `Part.CooldownRemaining`, `CooldownDuration` and `CooldownProgress` read the actual `ReadyAt` deadline. Rejected fire/reload requests do not restart the timer; part swaps and HUD rebuilds retain progress. An ammunition-exhausted weapon stays dim after its final cooldown without a moving line. Existing magazine timing, capacities, fire rates and HUD layout are unchanged.
+
+Weapons also use the white upward **ready burst** when an actual attack/reload cooldown completes, including under held fire. Their final empty-ammunition cooldown does not falsely signal readiness. Tuning and the completed 129-check integration verification are in [Ready VFX](AbilityReadyVfx.md#weapon-ready-bursts).
+
 Ability cooldown state lives on the physical part in `PartAbilityCooldown`, rather than on a HUD pod. It survives removal, re-equipping and HUD rebuilds. It uses the gameplay clock, dims the icon and shows the remaining seconds, then restores the ready state. There is no invented fallback cooldown.
 
 A thin horizontal line travels from the bottom of the icon to the top during cooldown. It uses `1 - Remaining / Duration` from the accepted gameplay cooldown, so authoritative updates and re-equipping resume at the correct height. The whole icon stays grey while the line moves. At zero remaining time the line/countdown disappear and the icon returns to its normal ready brightness. The line is non-interactive and stays inside the existing icon; it adds no Canvas or HUD layout changes. Its color and thickness are editable on `AbilitiesHudPod`.
+
+Ability cooldown completion also emits a short white upward particle column, flash and subtle icon pulse. It triggers once per actual cooling-to-ready transition. See [Ability ready VFX](AbilityReadyVfx.md) for preview steps, Inspector tuning and integration details.
+
+The ready effect passed **21 new checks** within a completed **108-check isolated integration run**, including compatibility with older HUD pods and no replay on ready initialization, rebinds or tiny authoritative corrections. Reviewed 1920×1080 and 1280×720 captures and validation details are linked above.
 
 **Gameplay connection:** after an ability actually succeeds, call:
 
@@ -20,11 +28,13 @@ PartAbilityCooldown.For(acceptedPart).ConfirmActivation(actualCooldownSeconds);
 
 For an equipped slot using its authored stat, `MechAbilitiesHud.ReportAcceptedActivation(slot)` is also available (`Activate(slot)` remains a compatibility alias). `PartAbilityCooldown.Synchronize(remainingSeconds, durationSeconds)` accepts authoritative updates for a future ability/network owner. Call this only after acceptance; Tab/Ctrl/Space requests alone do not start a countdown. Head/torso effects remain unimplemented, as previously requested. Space retains the existing leg movement.
 
+**Preview the ability indicator before gameplay connects those hooks:** enter unpaused Play Mode, expand the live **CombatHUD → AbilitiesHUD** in the Hierarchy, select a spawned ability pod, then open the **Abilities Hud Pod** component's context menu and choose **Activate**. The icon dims, its countdown appears, and the line rises for that part's authored cooldown (head 10s, torso 30s, legs 6s). Select the live scene instance, not the Project prefab. This previews accepted cooldown state only; it does not perform Heal/Damage Amp/Jump gameplay. Ready abilities intentionally have no line.
+
 ## 5 — Spinner knockback
 
 `MechMovementController.ApplyKnockback(direction, speed, duration)` adds a bounded, decaying horizontal velocity through the same `CharacterController.Move` call as ordinary movement. It respects walls, preserves gravity and player steering, ends automatic running and clears on disable/death. It does not add a Rigidbody or replace dash/leg locomotion.
 
-The small `EnemySpinnerAttack` applies **15 m/s for 0.30s** on an accepted charge hit. The charging rope-orbit variant applies **10 m/s for 0.25s** on accepted rock/circle hits. Both are configurable on their attack component. The existing once-per-charge/orbit victim history, team rules and wall checks gate damage and knockback together. The throw-and-pull variant's behavior is retained.
+The small `EnemySpinnerAttack` and charging rope-orbit variant now both apply **32 m/s decaying over 0.65s** on accepted hits. On level, unobstructed ground with no player input, this moves the player approximately **10.4 metres** (speed × duration ÷ 2), beyond the orbit circle's 6m radius and the small Spinner's 9m charge reach. The earlier defaults displaced only 2.25m and 1.25m respectively. Walls and active player steering affect the final distance. Both settings are configurable on their attack component; the controller's existing 40m/s and 1s bounds remain. The existing once-per-charge/orbit victim history, team rules and wall checks gate damage and knockback together. The throw-and-pull variant's behavior is retained.
 
 ## 6 — Mission results
 
@@ -82,3 +92,9 @@ Reviewed `c45af0c..d4a4b8c`: new Heal/Damage Amp/Jump artwork, a hard-lock curso
 The change to `JhCombatUIRevampScene` removes its temporary collection objective, objective item, return point and old tooltip, replaces the tooltip with `QuestTooltip`, and adds an elite Cannon test enemy. The old collect/return success route is therefore no longer available in that UI review scene. Other gameplay maps retain their existing mission-tracker integration. `QuestTooltip.SetQuest(type, objective)` and `SetObjective(text)` are exposed, but its `Refresh()` remains empty: gameplay still needs to supply the active mission/objective. The pre-mission launch hook remains empty as requested.
 
 The merged project passed **208 isolated Unity checks** (the previous 204 plus four existing scene checks). Ability captures at 0%, 50%, 95% and ready were reviewed, using the real accepted cooldown state, grey-out and imported artwork. The original ability pod positions/sizes are preserved. No C# warnings/errors or unexpected runtime errors occurred. Artifacts are in `.quest-review/Results/AbilityCooldownSweepAndMerge`; no manual full-map playthrough or player build was performed.
+
+## Weapon sweep, stronger knockback and lingering trails — 2026-11-05
+
+Verified in isolated Unity **6000.5.8f1 / Direct3D 11**: **238 checks passed** (151 combat regressions plus 87 integration/hit-feedback checks), with no C# compilation warnings/errors or unexpected runtime exceptions. Real accepted weapon fire, manual magazine reloads, rejected repeated inputs, part swaps, ready brightness and empty-ammunition presentation were checked. Both Spinner variants moved the idle player over 10m on unobstructed ground; the small Spinner measured 10.4m. Solid walls still block motion, and the orbit attack cannot repeat damage or restart knockback against the same victim while it remains inside the circle.
+
+Rendered weapon/ability sweeps and post-impact projectile trails were reviewed. Trail geometry persists and fades after projectile despawn, then returns to the bounded pool; reuse restores the original flight lifetime and opacity. Only the new sweep child/reference is added to the weapon pod; existing authored HUD transforms/artwork and prefab GUIDs were checked before export. Existing weapon profiles receive only the new trail-linger value. Artifacts are retained in `.quest-review/Results/WeaponCooldownKnockbackTrails`. No manual real-input playthrough or player build was performed.

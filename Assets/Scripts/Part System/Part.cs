@@ -25,6 +25,14 @@ public class Part : MonoBehaviour
     public int MagazineRounds { get; private set; }  // shots left before the next reload
     public float ReadyAt { get; private set; }       // next shot or swing allowed (fire rate and reload)
     public bool IsReloading => reloadEndsAt > Time.time;
+    float readyStartedAt;
+    public float CooldownRemaining => Mathf.Max(0,ReadyAt-Time.time);
+    public float CooldownDuration => Mathf.Max(0,ReadyAt-readyStartedAt);
+    public float CooldownProgress => CooldownRemaining<=0 || CooldownDuration<=0 ? 1 : Mathf.Clamp01(1-CooldownRemaining/CooldownDuration);
+    // Presentation only. Remember an expired wait even if held fire immediately starts the next shot.
+    public uint WeaponCooldownCycle { get; private set; }
+    uint completedWeaponCue, consumedWeaponCue;
+    bool cooldownUsesAmmo;
     float reloadEndsAt;
     bool initialized;
     Collider[] colliders;
@@ -46,6 +54,10 @@ public class Part : MonoBehaviour
     // waits for both the interval and the reload. A magazine of 0 never reloads.
     internal void Consume(float interval, bool ammunition, float reload = 0f, int magazine = 0)
     {
+        RecordCompletedWeaponCooldown();
+        WeaponCooldownCycle++;
+        cooldownUsesAmmo = ammunition;
+        readyStartedAt = Time.time;
         ReadyAt = Time.time + interval;
         if (!ammunition) return;
         RemainingAmmo = Mathf.Max(0, RemainingAmmo - 1);
@@ -65,9 +77,25 @@ public class Part : MonoBehaviour
         int capacity = Stats.MagazineSize;
         int loaded = Mathf.Min(capacity, RemainingAmmo);
         if (capacity <= 0 || MagazineRounds >= loaded) return false;
+        RecordCompletedWeaponCooldown();
+        WeaponCooldownCycle++;
+        cooldownUsesAmmo = true;
         MagazineRounds = loaded;
+        readyStartedAt = Time.time;
         reloadEndsAt = Time.time + Mathf.Max(0f, Stats.GetStat(StatType.Reload));
         ReadyAt = Mathf.Max(ReadyAt, reloadEndsAt);
+        return true;
+    }
+    void RecordCompletedWeaponCooldown()
+    {
+        if (WeaponCooldownCycle != 0 && ReadyAt > readyStartedAt && CooldownRemaining <= 0
+            && (!cooldownUsesAmmo || RemainingAmmo > 0)) completedWeaponCue = WeaponCooldownCycle;
+    }
+    public bool TryConsumeWeaponReadyCue(uint firstObservedCycle)
+    {
+        RecordCompletedWeaponCooldown();
+        if (completedWeaponCue == 0 || completedWeaponCue < firstObservedCycle || consumedWeaponCue == completedWeaponCue) return false;
+        consumedWeaponCue = completedWeaponCue;
         return true;
     }
     internal void SetEquippedPhysics(bool equipped)

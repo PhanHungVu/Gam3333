@@ -31,9 +31,18 @@ public static class CombatMilestoneSetup
             fields.FindProperty("legsIcon").objectReferenceValue=AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/AbilityIcons/JumpIcon.png");
             fields.ApplyModifiedPropertiesWithoutUndo();
             abilityRoot.GetComponent<AbilitiesHudPod>().ConfigureCooldownLine();
+            abilityRoot.GetComponent<AbilitiesHudPod>().ConfigureReadyVfx();
             PrefabUtility.SaveAsPrefabAsset(abilityRoot,"Assets/Prefabs/UI/AbilitiesHUDPodPrefab.prefab");
         }
         finally { PrefabUtility.UnloadPrefabContents(abilityRoot); }
+        var weaponRoot=PrefabUtility.LoadPrefabContents("Assets/Prefabs/UI/WeaponsHUDPodPrefab.prefab");
+        try
+        {
+            weaponRoot.GetComponent<WeaponsHudPod>().ConfigureCooldownLine();
+            weaponRoot.GetComponent<WeaponsHudPod>().ConfigureReadyVfx();
+            PrefabUtility.SaveAsPrefabAsset(weaponRoot,"Assets/Prefabs/UI/WeaponsHUDPodPrefab.prefab");
+        }
+        finally { PrefabUtility.UnloadPrefabContents(weaponRoot); }
         foreach(var path in AssetDatabase.FindAssets("t:Prefab",new[]{"Assets/Prefabs/Enemies"})
             .Select(AssetDatabase.GUIDToAssetPath).Concat(new[]{TestPlayerPath}))
         {
