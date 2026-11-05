@@ -1,0 +1,23 @@
+{
+  "id": "combat_open",
+  "lines": [
+    {
+      "speaker": "Rook",
+      "portrait": "Rook",
+      "text": "Torso's locked in. Shoulders read hot, arms green. You are clear to engage.",
+      "seconds": 0
+    },
+    {
+      "speaker": "Rook",
+      "portrait": "Rook",
+      "text": "The cannon holds one shell a drum. Make it count, because the reload leaves you open.",
+      "seconds": 0
+    },
+    {
+      "speaker": "Pilot",
+      "portrait": "Pilot",
+      "text": "Copy. I'll close the gap and let the axe do the rest.",
+      "seconds": 0
+    }
+  ]
+}

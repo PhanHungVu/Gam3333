@@ -1,0 +1,35 @@
+{
+  "id": "control_dialogue1",
+  "lines": [
+    {
+      "speaker": "Helper",
+      "portrait": "Helper",
+      "text": "Use the WASD keys to move your character.",
+      "seconds": 4
+    },
+    {
+      "speaker": "Helper",
+      "portrait": "Helper",
+      "text": "Use the LMB and RMB to fire your arm weapons, Q and E keys to fire your shoulder weapons, and R key to reload your weapons.",
+      "seconds": 4
+    },
+    {
+      "speaker": "Helper",
+      "portrait": "Helper",
+      "text": "Use the Shift key to dodge enemy attacks!",
+      "seconds": 4
+    },
+    {
+      "speaker": "Helper",
+      "portrait": "Helper",
+      "text": "You also have abilities in your head, torso and legs, Press Tab, Ctrl, and Space to activate each of them!",
+      "seconds": 4
+    },
+    {
+      "speaker": "Helper",
+      "portrait": "Helper",
+      "text": "That's it for the tutorial, now go out there and finish the quest!",
+      "seconds": 4
+    }
+  ]
+}

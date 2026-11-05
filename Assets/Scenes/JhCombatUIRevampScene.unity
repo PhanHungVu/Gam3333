@@ -14841,6 +14841,7 @@ RectTransform:
   - {fileID: 2025627103}
   - {fileID: 1212404386}
   - {fileID: 7711111111111111112}
+  - {fileID: 7711111111111111122}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -17660,6 +17661,32 @@ PrefabInstance:
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 275770742841064, guid: 033855673a0bd97dc71fec79581b761e, type: 3}
   m_PrefabInstance: {fileID: 7711111111111111111}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &7711111111111111121
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1807416783}
+    m_Modifications:
+    - target: {fileID: 108955321343429, guid: 0ef2e5f62365d9b301fb4b5d2b8a19c3, type: 3}
+      propertyPath: m_Name
+      value: DialogueBox
+      objectReference: {fileID: 0}
+    - target: {fileID: 108955321343432, guid: 0ef2e5f62365d9b301fb4b5d2b8a19c3, type: 3}
+      propertyPath: dialogueFile
+      value: 
+      objectReference: {fileID: 4900000, guid: 6c295f166b82d9f4daea9a1249c030d2, type: 3}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 0ef2e5f62365d9b301fb4b5d2b8a19c3, type: 3}
+--- !u!224 &7711111111111111122 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 108955321343430, guid: 0ef2e5f62365d9b301fb4b5d2b8a19c3, type: 3}
+  m_PrefabInstance: {fileID: 7711111111111111121}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &7961891573131854015
 PrefabInstance:
