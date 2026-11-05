@@ -79,7 +79,7 @@ public static class MechLocomotionChecks
             check(!motor.AnimationData.IsBoosting && !motor.AnimationData.IsGrounded && motor.AnimationData.Speed < 17f,
                 "Removed sprint does not activate hover boost");
             Step(motor, view, 1, Vector2.right, boost: true);
-            check(motor.IsQuickBoosting && energy.Current < charge, "Hover accepts airborne quick boost and spends existing energy");
+            check(motor.IsQuickBoosting, "Hover accepts airborne quick boost (energy costs retired)");
             float cooldown = motor.QuickBoostCooldownRemaining;
             velocity = motor.Velocity;
             charge = energy.Current;

@@ -54,19 +54,6 @@ MonoBehaviour:
   icon: {fileID: 279114593727622}
   cooldownLabel: {fileID: 279114593727626}
   cooldownIconAlpha: 0.5
-  partIcons:
-  - {fileID: 21300000, guid: f0ff9ae7019391949a3c62e0cc056e83, type: 3}
-  - {fileID: 21300000, guid: 42366cfac4209464db4c78e676a2d973, type: 3}
-  - {fileID: 21300000, guid: 1786663a2db121142a632f896aa6af51, type: 3}
-  - {fileID: 21300000, guid: b45b73273f85a6246858f84ac0a86185, type: 3}
-  - {fileID: 21300000, guid: 78eeb7b6f1ac81942982c80a60422cd3, type: 3}
-  - {fileID: 21300000, guid: 79dc3f6f3b4b2914d9dd73eaad0fc8b0, type: 3}
-  - {fileID: 21300000, guid: 055bab048f39108429cf40af8b125999, type: 3}
-  - {fileID: 21300000, guid: d4cf09eb6e2c19448a1b63a59034292f, type: 3}
-  - {fileID: 21300000, guid: 79fd45fed8eaa8e40aac8086a1e6e8eb, type: 3}
-  headIcon: {fileID: 21300000, guid: dc1aa31bb8e8b7e44a6ca4254a0178d9, type: 3}
-  torsoIcon: {fileID: 21300000, guid: 6e34e78e53a93214fb0e04e3b7b1f46f, type: 3}
-  legsIcon: {fileID: 21300000, guid: 2c942fb2e1a3f9c47972db2e967686de, type: 3}
   cooldownLine: {fileID: 7730687973515594345}
   cooldownLineThickness: 2
   cooldownLineColor: {r: 1, g: 0.93, b: 0.6, a: 1}

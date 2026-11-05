@@ -43,8 +43,10 @@ public class PartData : ScriptableObject
     public PartType partType;
     [Tooltip("How the part attacks.")]
     public PartSubtype subtype;
-    [Tooltip("Optional HUD icon: the weapon sprite in the weapons HUD, or the ability sprite for head, torso and legs.")]
+    [Tooltip("The part's own picture (e.g. Sprites/PartIcons): shown for weapons in the weapons HUD, and wherever a part is shown.")]
     public Sprite icon;
+    [Tooltip("Head, torso and legs: the picture of this part's ability (e.g. Sprites/AbilityIcons), shown in the abilities HUD.")]
+    public Sprite abilityIcon;
     public List<StatEntry> stats;
     [Header("Combat (Range stat is in golem lengths; metres per golem is in MechRulesConfig)")]
     [Tooltip("Optional projectile prefab. Contains visual meshes and MechProjectile, with no physics colliders.")]

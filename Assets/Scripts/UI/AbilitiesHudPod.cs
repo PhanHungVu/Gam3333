@@ -18,10 +18,6 @@ public sealed class AbilitiesHudPod : MonoBehaviour
     [Header("Cooldown")]
     [Tooltip("Sprite alpha while the ability is on cooldown.")]
     [SerializeField, Range(0f, 1f)] float cooldownIconAlpha = 0.5f;
-    [Tooltip("Imported part artwork; an explicit PartData icon takes priority.")]
-    [SerializeField] Sprite[] partIcons;
-    [Tooltip("Generic artwork for part variants without a dedicated icon.")]
-    [SerializeField] Sprite headIcon, torsoIcon, legsIcon;
     [Header("Cooldown sweep")]
     [SerializeField] Image cooldownLine;
     [SerializeField, Min(.5f)] float cooldownLineThickness = 2f;
@@ -63,13 +59,8 @@ public sealed class AbilitiesHudPod : MonoBehaviour
         state = PartAbilityCooldown.For(part);
         if (icon != null)
         {
-            var sprite = stats != null ? stats.icon : null;
-            if (sprite == null && stats != null)
-                sprite = stats.partType == PartType.Head ? headIcon : stats.partType == PartType.Torso ? torsoIcon : stats.partType == PartType.Legs ? legsIcon : null;
-            if (sprite == null && stats != null && partIcons != null)
-                foreach (var candidate in partIcons)
-                    if (candidate != null && string.Equals(candidate.name.Trim(), (stats.partName ?? "").Trim() + WeaponsHudPod.IconSuffix,
-                        System.StringComparison.OrdinalIgnoreCase)) { sprite = candidate; break; }
+            // The ability's picture, set on the part's PartData (Ability Icon).
+            var sprite = stats != null ? stats.abilityIcon : null;
             icon.sprite = sprite;
             if (sprite != null) iconColour = Color.white;
             SetIconAlpha(1f);

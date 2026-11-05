@@ -12,7 +12,7 @@ public static class TestMech
     public const string LocomotionFolder = "Assets/Prefabs/Mech/Locomotion";
     public const string LegsModel = "Assets/Anim/golem2_v2.glb";
     public const string WeaponAnimationModel = "Assets/Anim/golem2_v3.glb";
-    public const string HealthHudPath = "Assets/Prefabs/UI/Player Health HUD.prefab";
+    public const string HealthHudPath = "Assets/Prefabs/UI/Combat HUD/Player Health HUD.prefab";
     public const string CursorPath = "Assets/Prefabs/Mech Cursor Canvas.prefab";
     public const string BoltPath = "Assets/Prefabs/Combat/Projectiles/CrossbowBolt.prefab";
     public const string AxePath = "Assets/Prefabs/Combat/Projectiles/ThrowingAxe.prefab";

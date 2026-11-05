@@ -19,19 +19,13 @@ public static class CombatMilestoneSetup
             finally { UnityEngine.Object.DestroyImmediate(view.gameObject); }
             results = AssetDatabase.LoadAssetAtPath<GameObject>(ResultsPath).GetComponent<MissionResultsView>();
         }
-        var abilityRoot=PrefabUtility.LoadPrefabContents("Assets/Prefabs/UI/AbilitiesHUDPodPrefab.prefab");
+        // Ability icons now live on each part's PartData (Ability Icon), so only the cooldown line is set up here.
+        const string AbilityPodPath="Assets/Prefabs/UI/Combat HUD/AbilitiesHUDPodPrefab.prefab";
+        var abilityRoot=PrefabUtility.LoadPrefabContents(AbilityPodPath);
         try
         {
-            var icons=AssetDatabase.FindAssets("t:Sprite",new[]{"Assets/Sprites/PartIcons"})
-                .Select(guid=>AssetDatabase.LoadAssetAtPath<Sprite>(AssetDatabase.GUIDToAssetPath(guid))).Where(icon=>icon!=null).ToArray();
-            var fields=new SerializedObject(abilityRoot.GetComponent<AbilitiesHudPod>()); var list=fields.FindProperty("partIcons");
-            list.arraySize=icons.Length; for(int i=0;i<icons.Length;i++) list.GetArrayElementAtIndex(i).objectReferenceValue=icons[i];
-            fields.FindProperty("headIcon").objectReferenceValue=AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/AbilityIcons/HealIcon.png");
-            fields.FindProperty("torsoIcon").objectReferenceValue=AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/AbilityIcons/DamageAmpIcon.png");
-            fields.FindProperty("legsIcon").objectReferenceValue=AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/AbilityIcons/JumpIcon.png");
-            fields.ApplyModifiedPropertiesWithoutUndo();
             abilityRoot.GetComponent<AbilitiesHudPod>().ConfigureCooldownLine();
-            PrefabUtility.SaveAsPrefabAsset(abilityRoot,"Assets/Prefabs/UI/AbilitiesHUDPodPrefab.prefab");
+            PrefabUtility.SaveAsPrefabAsset(abilityRoot,AbilityPodPath);
         }
         finally { PrefabUtility.UnloadPrefabContents(abilityRoot); }
         foreach(var path in AssetDatabase.FindAssets("t:Prefab",new[]{"Assets/Prefabs/Enemies"})
@@ -47,7 +41,7 @@ public static class CombatMilestoneSetup
                 {
                     var participant=root.GetComponent<MissionParticipant>() ?? root.AddComponent<MissionParticipant>();
                     var fields=new SerializedObject(participant); fields.FindProperty("resultsPrefab").objectReferenceValue=results; fields.ApplyModifiedPropertiesWithoutUndo();
-                    fields=new SerializedObject(rig); fields.FindProperty("combatHudPrefab").objectReferenceValue=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/CombatHUD.prefab");
+                    fields=new SerializedObject(rig); fields.FindProperty("combatHudPrefab").objectReferenceValue=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/Combat HUD/CombatHUD.prefab");
                     fields.ApplyModifiedPropertiesWithoutUndo();
                 }
                 PrefabUtility.SaveAsPrefabAsset(root,path);

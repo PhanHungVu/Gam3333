@@ -88,8 +88,10 @@ public static class MechCameraStabilityChecks
             {
                 check(sample.PitchSpan < .1f && sample.HeightSpan < .05f,
                     sample.Name + " stays vertically stable while a nearby enemy crosses side angles");
-                check(sample.Hard ? sample.YawTravel > 500 && sample.Pitch > 30 : sample.YawTravel < .01f && Mathf.Abs(sample.Pitch - 20) < .01f,
-                    sample.Name + " retains the intended manual soft aim or elevated hard-lock tracking");
+                // Soft (free camera) keeps the camera's own Initial Pitch, whatever it is tuned to.
+                float initialPitch = Get<float>(control, "initialPitch");
+                check(sample.Hard ? sample.YawTravel > 500 && sample.Pitch > 30 : sample.YawTravel < .01f && Mathf.Abs(sample.Pitch - initialPitch) < .01f,
+                    sample.Name + " retains the intended manual soft aim or elevated hard-lock tracking; yawTravel=" + sample.YawTravel + "; pitch=" + sample.Pitch);
             }
 
             targeting.EnterFreeAim(); control.BindTarget(player.transform);

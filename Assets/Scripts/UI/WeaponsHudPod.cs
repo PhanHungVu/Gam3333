@@ -12,9 +12,6 @@ public sealed class WeaponsHudPod : MonoBehaviour
 {
     public enum AmmoDenominator { TotalRemaining, MagazineCapacity, TotalCapacity }
     [SerializeField] AmmoDenominator ammoDenominator;
-    // Part art is named after the part it shows: "Cannon" uses "Cannon_Icon".
-    public const string IconSuffix = "_Icon";
-
     [Header("Authored references")]
     [Tooltip("Coloured panel behind the sprite and the ammo count.")]
     [SerializeField] Image background;
@@ -22,8 +19,6 @@ public sealed class WeaponsHudPod : MonoBehaviour
     [SerializeField] TextMeshProUGUI nameLabel;
     [SerializeField] Image icon;
     [SerializeField] TextMeshProUGUI ammoLabel;
-    [Tooltip("Every sprite in Assets/Sprites/PartIcons. A part picks its icon by name: <partName>_Icon.")]
-    [SerializeField] Sprite[] partIcons;
     [Header("Reload")]
     [Tooltip("Multiplier applied to the sprite and the ammo count while the weapon reloads.")]
     [SerializeField, Range(0f, 1f)] float reloadDim = 0.75f;
@@ -52,7 +47,7 @@ public sealed class WeaponsHudPod : MonoBehaviour
         ApplyDim(weapon.IsReloading);
     }
 
-    // Shows one equipped weapon: the sprite comes from the part's icon in Assets/Sprites/PartIcons,
+    // Shows one equipped weapon: the sprite comes from the part's Icon (its PartData),
     // the row is titled with the part's own name, and the ammo is read from the live part.
     public void Bind(Part part)
     {
@@ -71,21 +66,8 @@ public sealed class WeaponsHudPod : MonoBehaviour
         ApplyDim(part != null && part.IsReloading);
     }
 
-    // Part icons live in Assets/Sprites/PartIcons and follow the part name: "Cannon" -> "Cannon_Icon".
-    // A build cannot read a folder by path, so the folder's sprites are listed on this prefab, and a
-    // part's own Icon (when set) still wins over the naming convention.
-    public Sprite IconFor(PartData stats)
-    {
-        if (stats == null) return null;
-        if (stats.icon != null) return stats.icon;
-        string wanted = (stats.partName ?? string.Empty).Trim() + IconSuffix;
-        if (partIcons != null)
-            foreach (var candidate in partIcons)
-                if (candidate != null && string.Equals(candidate.name.Trim(), wanted, StringComparison.OrdinalIgnoreCase))
-                    return candidate;
-        Debug.LogWarning($"Weapons HUD: Assets/Sprites/PartIcons has no '{wanted}'; check the pod prefab's icon list.", this);
-        return null;
-    }
+    // The part's own icon, set on its PartData (the single place a part's picture lives).
+    public Sprite IconFor(PartData stats) => stats != null ? stats.icon : null;
 
     // [in the magazine / in total]. A magazine of 0 never reloads, so it reads as one full count.
     public static string AmmoText(Part part, AmmoDenominator denominator = AmmoDenominator.TotalRemaining)

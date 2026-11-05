@@ -55,16 +55,6 @@ MonoBehaviour:
   nameLabel: {fileID: 102863497154344}
   icon: {fileID: 102863497154340}
   ammoLabel: {fileID: 102863497154348}
-  partIcons:
-  - {fileID: 21300000, guid: f0ff9ae7019391949a3c62e0cc056e83, type: 3}
-  - {fileID: 21300000, guid: 42366cfac4209464db4c78e676a2d973, type: 3}
-  - {fileID: 21300000, guid: 1786663a2db121142a632f896aa6af51, type: 3}
-  - {fileID: 21300000, guid: b45b73273f85a6246858f84ac0a86185, type: 3}
-  - {fileID: 21300000, guid: 78eeb7b6f1ac81942982c80a60422cd3, type: 3}
-  - {fileID: 21300000, guid: 79dc3f6f3b4b2914d9dd73eaad0fc8b0, type: 3}
-  - {fileID: 21300000, guid: 055bab048f39108429cf40af8b125999, type: 3}
-  - {fileID: 21300000, guid: d4cf09eb6e2c19448a1b63a59034292f, type: 3}
-  - {fileID: 21300000, guid: 79fd45fed8eaa8e40aac8086a1e6e8eb, type: 3}
   reloadDim: 0.75
 --- !u!1 &102863497154333
 GameObject:

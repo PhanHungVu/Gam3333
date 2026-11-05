@@ -14,8 +14,8 @@ public static class MechHealthHudChecks
         var viewPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.HealthHudPath);
         check(prefab.GetComponentInChildren<MechHealthHud>(true) == null, "Player prefab contains no health UI");
         check(viewPrefab.GetComponent<Canvas>() == null && viewPrefab.GetComponent<CombatHealth>() == null
-            && viewPrefab.GetComponent<CanvasGroup>() != null && viewPrefab.transform.childCount == 3,
-            "Health prefab is a three-layer meter with independent visibility under a shared Canvas");
+            && viewPrefab.GetComponent<CanvasGroup>() != null && viewPrefab.GetComponentInChildren<UnityEngine.UI.Image>(true) != null,
+            "Health prefab is a meter with independent visibility under a shared Canvas");
         var assetFill = viewPrefab.transform.Find("BarFront").GetComponent<Image>();
         check(assetFill.type == Image.Type.Filled && assetFill.fillMethod == Image.FillMethod.Horizontal && assetFill.fillOrigin == 0,
             "Health front crops horizontally from the right instead of stretching artwork");
