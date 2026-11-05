@@ -16092,7 +16092,7 @@ GameObject:
   - component: {fileID: 7289363981103585664}
   - component: {fileID: 6595480779760735581}
   m_Layer: 0
-  m_Name: FullPlayer_mech_base
+  m_Name: FullPlayer_mech_heavy
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

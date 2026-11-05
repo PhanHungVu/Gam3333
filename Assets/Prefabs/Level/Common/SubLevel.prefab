@@ -91,6 +91,7 @@ MonoBehaviour:
   lastSeed: -101857991
   walkablePercent: 86.2656
   missionChunksPlaced: 3
+  escortRouteComplete: 0
   roadsBuilt: 0
   roadsCarved: 0
   allConnected: 0
@@ -107,6 +108,7 @@ GameObject:
   - component: {fileID: 1657147969302744146}
   - component: {fileID: 7166093300638552774}
   - component: {fileID: 2052888300449810433}
+  - component: {fileID: 7210326861477224627}
   m_Layer: 0
   m_Name: Mission
   m_TagString: Untagged
@@ -157,6 +159,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8555694fe8e027b428498e22ef948344, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MissionHud
+--- !u!114 &7210326861477224627
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7304205167034945194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8573ccd85d82e6428b5113ade8132ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MissionPlayerSpawner
+  defaultPlayer: {fileID: 1479688803245446524, guid: bcd445a55c98fe544afe98fee00e2fad, type: 3}
 --- !u!1001 &2166212935388175758
 PrefabInstance:
   m_ObjectHideFlags: 0

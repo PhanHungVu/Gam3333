@@ -8,7 +8,7 @@ using UnityEngine.UI;
 public static class PartSwapWorldUiSetup
 {
     public const string ViewPath="Assets/Prefabs/UI/PartSwapWorldUI.prefab";
-    public const string PlayerPath="Assets/Prefabs/Mech/Base/FullPlayer_mech_base.prefab";
+    public const string PlayerPath="Assets/Prefabs/Mech/Base/FullPlayer_mech_heavy.prefab";
     [MenuItem("Tools/Mech/UI/Set Up World Part Swap UI")]
     public static void UpgradeAssets()
     {

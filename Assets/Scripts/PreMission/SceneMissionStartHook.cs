@@ -24,6 +24,9 @@ public sealed class SceneMissionStartHook : MissionStartHook
         new MissionScene { missionType = QuestMissionType.Elimination, scenePath = "Assets/Scenes/EliminationTest.unity" },
     };
 
+    [Tooltip("The board catalogue: each starting torso's mission player prefab comes from it.")]
+    [SerializeField] QuestBoardCatalogue catalogue;
+
     public string SceneFor(QuestMissionType type)
     {
         foreach (var entry in missionScenes) if (entry != null && entry.missionType == type) return entry.scenePath;
@@ -40,6 +43,10 @@ public sealed class SceneMissionStartHook : MissionStartHook
         if (run == null || !run.TryBeginMission(selectedQuest, startingTorso, out var attempt))
             throw new InvalidOperationException("The quest board could not start this mission (no active run, or a mission is already in progress).");
         QuestMissionLaunch.Begin(attempt, scene, gameObject.scene.path);
+        // The mission's player follows the chosen torso (the scene's own player is used if none is set).
+        MissionLoadout.PlayerPrefab = catalogue != null ? catalogue.PlayerPrefabFor(startingTorso) : null;
+        if (MissionLoadout.PlayerPrefab == null)
+            Debug.LogWarning($"No mission player prefab is set for {(startingTorso != null ? startingTorso.name : "this torso")}; the scene's own player is used.", this);
         QuestMissionLaunch.LoadScene(scene);
     }
 }

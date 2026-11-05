@@ -50,5 +50,5 @@ public static class CombatMilestoneSetup
         }
         AssetDatabase.SaveAssets(); Debug.Log("COMBAT MILESTONES ASSETS READY: existing HUD icons, scene-local results, bounded physics ragdolls.");
     }
-    const string TestPlayerPath="Assets/Prefabs/Mech/Base/FullPlayer_mech_base.prefab";
+    const string TestPlayerPath="Assets/Prefabs/Mech/Base/FullPlayer_mech_heavy.prefab";
 }

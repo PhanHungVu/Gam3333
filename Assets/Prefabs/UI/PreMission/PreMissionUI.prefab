@@ -3610,6 +3610,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5400b025fce56ee4fb7c1e48d59ecbc2, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::SceneMissionStartHook
+  catalogue: {fileID: 11400000, guid: 266ad70c641610746a56ff5b15c6bcd2, type: 2}
   missionScenes:
   - missionType: 2
     scenePath: Assets/Scenes/KOTHTest.unity

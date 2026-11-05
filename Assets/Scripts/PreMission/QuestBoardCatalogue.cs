@@ -8,6 +8,8 @@ public sealed class StarterTorsoVisual
     [Tooltip("Visual model only. This is not instantiated as gameplay equipment.")]
     public GameObject model;
     public Vector3 rotation;
+    [Tooltip("The player prefab used in missions when this torso is chosen (e.g. the golem or heavy player variant).")]
+    public GameObject playerPrefab;
 }
 
 [CreateAssetMenu(fileName = "QuestBoardCatalogue", menuName = "Mech/Pre-Mission/Board Catalogue")]
@@ -32,4 +34,7 @@ public sealed class QuestBoardCatalogue : ScriptableObject
             if (visual != null && visual.torso == torso) return visual;
         return null;
     }
+
+    // The mission player prefab for a starting torso, or null if none is set.
+    public GameObject PlayerPrefabFor(PartData torso) => FindTorsoVisual(torso)?.playerPrefab;
 }

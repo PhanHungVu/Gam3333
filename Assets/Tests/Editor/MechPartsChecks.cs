@@ -8,7 +8,7 @@ public static class MechPartsChecks
 {
     public static void Run(Action<bool,string> check)
     {
-        var prefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/FullPlayer_mech_base.prefab");
+        var prefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/FullPlayer_mech_heavy.prefab");
         var player=Object.Instantiate(prefab,new Vector3(22000,1.6f,0),Quaternion.identity);
         var equipment=player.GetComponent<EquipManager>(); var combat=player.GetComponent<MechCombat>();
         var bridge=player.GetComponent<MechCombat>();var rig=player.GetComponent<MechPlayerRig>();

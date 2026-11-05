@@ -29,6 +29,11 @@ public static class QuestLaunchChecks
             check(defaultMenu && outcome.ReturnScene == "Assets/Scenes/PreMissionScene.unity",
                 "A mission returns to the main menu by default, or to the quest board when launched from it");
 
+            var board = AssetDatabase.LoadAssetAtPath<QuestBoardCatalogue>("Assets/PreMission/PrototypeBoardCatalogue.asset");
+            check(board != null && board.starterTorsos.Count > 0 && board.starterTorsos.All(t => board.PlayerPrefabFor(t) != null
+                && board.PlayerPrefabFor(t).CompareTag("Player")),
+                "Every starting torso on the quest board has a mission player prefab (tagged Player)");
+
             QuestMissionLaunch.Clear();
             check(!QuestMissionLaunch.Active && !QuestMissionLaunch.Report(QuestMissionOutcome.Succeeded),
                 "With no quest launched, a mission scene reports nothing to the quest board");

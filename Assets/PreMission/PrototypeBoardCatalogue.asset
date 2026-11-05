@@ -30,6 +30,8 @@ MonoBehaviour:
   - torso: {fileID: 11400000, guid: 95c2f3c62f08a9249bfc1432876a1e9a, type: 2}
     model: {fileID: 7538273134166194572, guid: 873eb8762e919424195d109a92d414a6, type: 3}
     rotation: {x: 0, y: 0, z: 0}
+    playerPrefab: {fileID: 1479688803245446524, guid: bcd445a55c98fe544afe98fee00e2fad, type: 3}
   - torso: {fileID: 11400000, guid: 52965c849ad50c84aaa7d48e7eb84b9f, type: 2}
     model: {fileID: 7538273134166194572, guid: 873eb8762e919424195d109a92d414a6, type: 3}
     rotation: {x: 0, y: 0, z: 0}
+    playerPrefab: {fileID: 3053454427299694765, guid: a588d3e00c384674ca03cc2cce5ea513, type: 3}

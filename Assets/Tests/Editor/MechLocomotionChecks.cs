@@ -8,7 +8,7 @@ public static class MechLocomotionChecks
 {
     public static void Run(Action<bool, string> check)
     {
-        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/FullPlayer_mech_base.prefab");
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/FullPlayer_mech_heavy.prefab");
         CheckBoostStopping(check, prefab);
         var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
         floor.transform.position = new Vector3(30000, -0.5f, 0);

@@ -8,7 +8,7 @@ using UnityEngine;
 public static class TestMech
 {
     // Assets the checks load.
-    public const string PlayerPath = "Assets/Prefabs/Mech/Base/FullPlayer_mech_base.prefab";
+    public const string PlayerPath = "Assets/Prefabs/Mech/Base/FullPlayer_mech_heavy.prefab";
     public const string LocomotionFolder = "Assets/Prefabs/Mech/Locomotion";
     public const string LegsModel = "Assets/Anim/golem2_v2.glb";
     public const string WeaponAnimationModel = "Assets/Anim/golem2_v3.glb";
