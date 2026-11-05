@@ -5213,7 +5213,8 @@ Transform:
   m_LocalPosition: {x: 1.165669, y: 0.14845766, z: 0.01104426}
   m_LocalScale: {x: 2.7999997, y: 2.8000002, z: 2.7999997}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 6998945713804766982}
   m_Father: {fileID: 9209133124808834145}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &7751343417678214462
@@ -10183,6 +10184,37 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
+--- !u!1 &1859178726055322846
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6998945713804766982}
+  m_Layer: 0
+  m_Name: VFX Swing Tip
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6998945713804766982
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1859178726055322846}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.3, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7998453579748847832}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2343121799756595705
 GameObject:
   m_ObjectHideFlags: 0
@@ -40522,7 +40554,8 @@ Transform:
   m_LocalPosition: {x: 1.1656702, y: 0.1484575, z: 0.011044365}
   m_LocalScale: {x: 2.7999997, y: 2.8000002, z: 2.7999997}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 2744499741976936872}
   m_Father: {fileID: 2996192473768107907}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &9067892021928569761
@@ -60261,6 +60294,7 @@ GameObject:
   - component: {fileID: 6492975398477903418}
   - component: {fileID: 7373146518886290037}
   - component: {fileID: 4055787572244835739}
+  - component: {fileID: 1710450440031098638}
   m_Layer: 0
   m_Name: Enemy_hammer
   m_TagString: Untagged
@@ -60566,6 +60600,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19b282fea837f494eba9921c829af6bd, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyWeaponTelegraph
+--- !u!114 &1710450440031098638
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7570990084110346288}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6e8a99900e14c578e555af64508b57b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CombatDeathRagdoll
+  maximumActive: 12
+  maximumBodies: 14
+  restSeconds: 5
+  maximumLifetime: 30
+  restSpeed: 0.15
+  restAngularSpeed: 0.3
+  deathKick: 1.5
 --- !u!1 &7619493950189119404
 GameObject:
   m_ObjectHideFlags: 0
@@ -65839,6 +65892,37 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &8453336448786047887
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2744499741976936872}
+  m_Layer: 0
+  m_Name: VFX Swing Tip
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2744499741976936872
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8453336448786047887}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.3, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2163845168720023491}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8482205015411501115
 GameObject:
   m_ObjectHideFlags: 0
@@ -75579,6 +75663,10 @@ PrefabInstance:
       propertyPath: isStartingPart
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6292664937678490932, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
+      propertyPath: trailAnchor
+      value:
+      objectReference: {fileID: 6998945713804766982}
     - target: {fileID: 8678832782221385882, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
       propertyPath: m_Name
       value: arm_mace
@@ -75681,6 +75769,10 @@ PrefabInstance:
       propertyPath: isStartingPart
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6292664937678490932, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
+      propertyPath: trailAnchor
+      value:
+      objectReference: {fileID: 2744499741976936872}
     - target: {fileID: 8678832782221385882, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
       propertyPath: m_Name
       value: arm_mace

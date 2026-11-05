@@ -201,7 +201,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe22ae185d639e040abbc75971581a01, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::MechHealthHud
   health: {fileID: 0}
   autoFindPlayer: 1
@@ -209,15 +209,15 @@ MonoBehaviour:
   visibility: {fileID: 5359805179854769789}
   fill: {fileID: 4531093968007873271}
   glow: {fileID: 6090388157227749378}
+  whiteBar: {fileID: 4251923730453877312}
   label: {fileID: 0}
   tmpLabel: {fileID: 0}
+  whiteBarDelay: 1
+  whiteBarDrainDuration: 0.65
   tintFillByHealth: 0
   healthyColor: {r: 0.3, g: 0.95, b: 0.5, a: 1}
-  lowHealthColor: {r: 1, g: 0.3, b: 0.25, a: 1}
+  lowHealthColor: {r: 0.3, g: 0.95, b: 0.5, a: 1}
   lowHealthThreshold: 0.25
-  whiteBar: {fileID: 4251923730453877312}
-  whiteBarDelay: 0.5
-  whiteBarDrainSpeed: 0.4
 --- !u!225 &5359805179854769789
 CanvasGroup:
   m_ObjectHideFlags: 0

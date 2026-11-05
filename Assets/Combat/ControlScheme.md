@@ -63,10 +63,12 @@ input.RequestTorsoAbility();  // Same request as Ctrl.
 input.RequestLegAbility();    // Requests the effect; Space handles built-in movement separately.
 ```
 
-These functions dispatch the same Inspector/C# events and leave the actual effects unassigned. Requests are ignored while the input component is disabled or gameplay time is paused, or when the relevant part is missing. They do not equip parts, implement effects or start ability cooldowns.
+These functions dispatch the same Inspector/C# events and leave the actual effects unassigned. Requests are ignored while input is disabled, gameplay is paused, a terminal mission result is active, hitstop blocks new actions, or the relevant part is missing. They do not equip parts, implement effects or start ability cooldowns.
 
 Requests fire once per press and only when the corresponding part is equipped. An unhandled request does nothing. Space continues to drive the locomotion module's existing jump / held hover lift. Turn off **Use Built In Leg Movement** when a future legs ability supplies its own movement to avoid triggering both implementations. No new ability cooldown is consumed by an unhandled callback.
 
 ## Verification
+
+The development-only locomotion panel starts hidden. Press **backquote (`)** or click the **Locomotion Debug** button in the top-left to toggle it. Press Esc to free the mouse before clicking the button. F8 remains available for the enemy encounter test shortcut. The obsolete Movement Controls text has been removed from the shared cursor prefab and A33.
 
 In isolated Unity 6000.5.8f1 / Direct3D 11, **42 focused model/control checks** passed, including public ability-function dispatch and paused/disabled request guards. **24 existing pre-mission release checks** also passed during the preceding control revision. `QuestAndControlRevisionChecks.RunBatch` uses actual virtual-device Input System events for the keys and mouse, real equipped parts, magazine/cooldown timing, CharacterController collision, damage events and Cinemachine targets. It verifies blocked versus clear-path running, attack/damage/stop cancellation, empty-energy dodge, context swaps, free-camera aim and manual camera lock. Board coverage includes 64 seeded outward-clearance plans and rendered BigSlab/side-slab inspection. Results are retained in `.quest-review/Results/BigSlabAndControls`, with the public-function follow-up in `.quest-review/Results/AbilityHooks`. HUD code/assets and the shared UI action map remain unchanged. No player build was run.

@@ -6,6 +6,10 @@ public sealed class EnemySpinnerAttack : EnemyGraphAttack
     [SerializeField, Min(1)] float chargeSpeed = 12;
     [SerializeField, Min(0.1f)] float chargeDuration = 0.75f;
     [SerializeField, Min(0.1f)] float contactRadius = 0.8f;
+    [Header("Accepted-hit knockback")]
+    [SerializeField, Min(0)] float knockbackSpeed = 15;
+    [SerializeField, Range(.01f, 1)] float knockbackDuration = .3f;
+    readonly System.Collections.Generic.HashSet<CombatHealth> chargeVictims = new System.Collections.Generic.HashSet<CombatHealth>();
     Vector3 direction, previous;
     Quaternion restRotation;
     readonly RaycastHit[] laneHits = new RaycastHit[48];
@@ -21,11 +25,11 @@ public sealed class EnemySpinnerAttack : EnemyGraphAttack
         if (length < .01f) return true;
         Vector3 heading = delta.normalized;
         int count = Physics.OverlapSphereNonAlloc(position + Vector3.up * .7f, Mathf.Max(contactRadius, agent.BodyRadius),
-            laneOverlaps, ~0, QueryTriggerInteraction.Ignore);
+            laneOverlaps, CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore);
         if (count == laneOverlaps.Length) return false;
         for (int i = 0; i < count; i++) if (laneOverlaps[i].GetComponentInParent<CombatHealth>() == null) return false;
         count = Physics.SphereCastNonAlloc(position + Vector3.up * .7f, Mathf.Max(contactRadius, agent.BodyRadius),
-            heading, laneHits, length, ~0, QueryTriggerInteraction.Ignore);
+            heading, laneHits, length, CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore);
         if (count == laneHits.Length) return false;
         for (int i = 0; i < count; i++)
         {
@@ -40,7 +44,7 @@ public sealed class EnemySpinnerAttack : EnemyGraphAttack
         {
             Vector3 sample = position + heading * length * i / steps;
             count = Physics.RaycastNonAlloc(new Vector3(sample.x, feet + 2, sample.z), Vector3.down,
-                laneHits, 4, ~0, QueryTriggerInteraction.Ignore);
+                laneHits, 4, CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore);
             if (count == laneHits.Length) return false;
             bool grounded = false;
             for (int h = 0; h < count; h++)
@@ -68,13 +72,20 @@ public sealed class EnemySpinnerAttack : EnemyGraphAttack
         marker.Lane(transform.position, transform.position + direction * chargeSpeed * chargeDuration, contactRadius * 2, t);
         return age >= windupDuration;
     }
-    public override void BeginAttack() { CurrentStage = Stage.Attack; age = 0; previous = transform.position; marker.Hide(); }
+    public override void BeginAttack() { chargeVictims.Clear(); CurrentStage = Stage.Attack; age = 0; previous = transform.position; marker.Hide(); }
+    void Knockback(CombatHealth victim)
+    {
+        if (victim == null || victim.IsDead || !victim.TryGetComponent<MechMovementController>(out var movement)) return;
+        var away = Steering.Flat(victim.transform.position - transform.position);
+        movement.ApplyKnockback(away.sqrMagnitude > .0001f ? away : direction, knockbackSpeed, knockbackDuration);
+    }
     public override bool TickAttack(float dt)
     {
         age += dt; var travel = transform.position - previous;
         var rotation = travel.sqrMagnitude > 0.001f ? Quaternion.LookRotation(Steering.Flat(travel).normalized) : Quaternion.LookRotation(direction);
         var result = blast.ResolveBox((previous + transform.position) * 0.5f + Vector3.up * 0.7f,
-            new Vector3(contactRadius, 1.4f, travel.magnitude * 0.5f + contactRadius), rotation, damage, transform, ~0, transform.position + Vector3.up);
+            new Vector3(contactRadius, 1.4f, travel.magnitude * 0.5f + contactRadius), rotation, damage, transform, ~0, transform.position + Vector3.up,
+            hitHistory: chargeVictims, acceptedHit: Knockback);
         previous = transform.position;
         if (result.Hits > 0) { Contacts += result.Hits; ImpactSound(); }
         if (result.Hits > 0 || age >= chargeDuration || age > dt && agent.LastMotionBlocked)

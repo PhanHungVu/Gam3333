@@ -20698,6 +20698,7 @@ GameObject:
   - component: {fileID: 1352349927590265552}
   - component: {fileID: 734544850717331797}
   - component: {fileID: 6085421226633746305}
+  - component: {fileID: 4529530274686522606}
   m_Layer: 0
   m_Name: shoulder_cannon
   m_TagString: Untagged
@@ -20758,6 +20759,34 @@ MonoBehaviour:
   animations: {fileID: 11400000, guid: d476b62987313ac46aa043ff618a1075, type: 2}
   placement: {fileID: 0}
   loadedProjectileRenderers: []
+--- !u!114 &4529530274686522606
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2618577313163647109}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce2917b344d041439ccbfc6660e7cbf3, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
+  material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
+  color: {r: 1, g: 0.5, b: 0.15, a: 1}
+  muzzleFlash: 1
+  muzzleSmoke: 1
+  muzzleSize: 1.2
+  muzzleDuration: 0.12
+  projectileTrail: 1
+  trailWidth: 0.16
+  trailLifetime: 0.35
+  impactSize: 1.2
+  firingShake: 0.075
+  firingShakeDuration: 0.26
+  meleeTrail: 0
+  trailAnchor: {fileID: 905954677517400885}
+  swingStart: 0.12
+  swingEnd: 0.8
 --- !u!1 &2743624114470425552
 GameObject:
   m_ObjectHideFlags: 0
@@ -56145,6 +56174,7 @@ GameObject:
   - component: {fileID: 1326805896875033038}
   - component: {fileID: 191153894900727345}
   - component: {fileID: -2728732762617045363}
+  - component: {fileID: 7240002916359012641}
   m_Layer: 0
   m_Name: Enemy_Boss1
   m_TagString: Untagged
@@ -56386,6 +56416,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawnCost
   cost: 20
+--- !u!114 &7240002916359012641
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8273800007824835416}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6e8a99900e14c578e555af64508b57b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CombatDeathRagdoll
+  maximumActive: 12
+  maximumBodies: 14
+  restSeconds: 5
+  maximumLifetime: 30
+  restSpeed: 0.15
+  restAngularSpeed: 0.3
+  deathKick: 1.5
 --- !u!1 &8633727406642554292
 GameObject:
   m_ObjectHideFlags: 0

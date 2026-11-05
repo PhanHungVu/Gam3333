@@ -28,6 +28,7 @@ public static class RangedAttack
         projectile.Launch(owner, direction, stats.GetStat(StatType.ProjectileSpeed) * Mathf.Max(0.01f, speedMultiplier),
             Mathf.Max(0f, stats.GetStat(StatType.Damage) * Mathf.Max(0f, damageMultiplier)),
             size, range, layers, muzzle);
+        CombatVisualEvents.ReportShot(projectile, muzzle, owner);
         return projectile;
     }
 }

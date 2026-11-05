@@ -39,6 +39,7 @@ public sealed class MissionTracker : MonoBehaviour
     readonly MissionRules rules = new MissionRules();
     ExtractZone extract;
     bool counted;
+    bool frozeTime;
 
     public MissionState State => rules.State;
     public int ObjectivesComplete => MissionObjectives.CompleteCount;
@@ -64,7 +65,9 @@ public sealed class MissionTracker : MonoBehaviour
             if (rules.State == MissionState.Complete)
             {
                 MissionCompleted?.Invoke();
-                if (freezeOnComplete) Time.timeScale = 0f;
+                var outcome = MissionOutcomeController.Find(gameObject.scene);
+                if (outcome != null) outcome.ReportSuccess();
+                else if (freezeOnComplete) { frozeTime = true; Time.timeScale = 0f; }
             }
             StateChanged?.Invoke(rules.State);
         }
@@ -72,5 +75,5 @@ public sealed class MissionTracker : MonoBehaviour
     }
 
     // Never leave the editor or the next scene frozen.
-    void OnDestroy() { if (freezeOnComplete && rules.State == MissionState.Complete) Time.timeScale = 1f; }
+    void OnDestroy() { if (frozeTime) Time.timeScale = 1f; }
 }

@@ -181,7 +181,7 @@ public sealed class EnemyAgent : MonoBehaviour
     void Update()
     {
         float dt = Time.deltaTime;
-        if (dt <= 0f) return;
+        if (dt <= 0f || CombatHitStop.IsFrozen(transform)) return;
 
         ResolveTarget();
         EnemySpatialHash.EnsureBuilt(All);
@@ -368,7 +368,7 @@ public sealed class EnemyAgent : MonoBehaviour
     public bool TryProbe(Vector3 dir, float distance, out RaycastHit hit)
     {
         Vector3 origin = transform.position + Vector3.up * probeHeight;
-        if (!Physics.SphereCast(origin, bodyRadius, dir, out hit, distance, obstacleMask, QueryTriggerInteraction.Ignore))
+        if (!Physics.SphereCast(origin, bodyRadius, dir, out hit, distance, obstacleMask & CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore))
             return false;
 
         if (hit.normal.y > 0.7f) return false;                                    // walkable ground/ramp
@@ -430,7 +430,7 @@ public sealed class EnemyAgent : MonoBehaviour
     bool RaycastGroundIgnoringSelf(Vector3 origin, float maxDistance, out RaycastHit result)
     {
         int count = Physics.RaycastNonAlloc(origin, Vector3.down, groundHitsBuffer, maxDistance,
-            groundMask, QueryTriggerInteraction.Ignore);
+            groundMask & CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore);
 
         bool found = false;
         result = default;

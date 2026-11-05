@@ -35132,6 +35132,7 @@ GameObject:
   - component: {fileID: 7859366647175659405}
   - component: {fileID: 8915340736416908210}
   - component: {fileID: 8142014288630054430}
+  - component: {fileID: 318050787467713322}
   m_Layer: 0
   m_Name: Enemy_Elite_Cannon
   m_TagString: Untagged
@@ -35437,6 +35438,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19b282fea837f494eba9921c829af6bd, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyWeaponTelegraph
+--- !u!114 &318050787467713322
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4106689103570048712}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6e8a99900e14c578e555af64508b57b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CombatDeathRagdoll
+  maximumActive: 12
+  maximumBodies: 14
+  restSeconds: 5
+  maximumLifetime: 30
+  restSpeed: 0.15
+  restAngularSpeed: 0.3
+  deathKick: 1.5
 --- !u!1 &4163300434071380320
 GameObject:
   m_ObjectHideFlags: 0

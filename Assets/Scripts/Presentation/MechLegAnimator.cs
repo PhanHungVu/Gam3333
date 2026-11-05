@@ -77,7 +77,7 @@ public sealed class MechLegAnimator : MonoBehaviour
 
     public void ApplyParameters(float deltaTime)
     {
-        if (animator == null || !animator.isActiveAndEnabled) return;
+        if (animator == null || !animator.isActiveAndEnabled || owner!=null && CombatHitStop.IsFrozen(owner.transform)) return;
         deltaTime = Mathf.Max(0f, deltaTime);
         bool boosting = owner != null && owner.isActiveAndEnabled && IsBoost(owner.AnimationData);
         if (CurrentPose == PoseState.BoostStop) stopAge += deltaTime;

@@ -14867,6 +14867,7 @@ GameObject:
   - component: {fileID: 6138276334047071818}
   - component: {fileID: 990080542242237322}
   - component: {fileID: 4762405756127236763}
+  - component: {fileID: 270829414122316323}
   m_Layer: 0
   m_Name: Enemy_spinner
   m_TagString: Untagged
@@ -15189,6 +15190,25 @@ MonoBehaviour:
   visualRoot: {fileID: 2996880257328939694}
   hopHeight: 0.32
   hopFrequency: 2.5
+--- !u!114 &270829414122316323
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 997392992129280737}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6e8a99900e14c578e555af64508b57b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CombatDeathRagdoll
+  maximumActive: 12
+  maximumBodies: 14
+  restSeconds: 5
+  maximumLifetime: 30
+  restSpeed: 0.15
+  restAngularSpeed: 0.3
+  deathKick: 1.5
 --- !u!1 &1326723221747921326
 GameObject:
   m_ObjectHideFlags: 0

@@ -7,13 +7,28 @@ using UnityEngine.InputSystem;
 public sealed class MechLocomotionDebug : MonoBehaviour
 {
     [SerializeField] Part[] modulePrefabs = new Part[0];
-    [SerializeField] bool showOverlay = true;
+    [SerializeField] bool showOverlay;
+    [SerializeField] Key toggleKey = Key.Backquote;
     [SerializeField] bool enableSwapShortcuts = true;
     EquipManager equipment;
     MechMovementController movement;
     Part[] cached;
     GameObject storage;
     GUIStyle labelStyle;
+    static readonly Rect ToggleArea = new Rect(12, 12, 225, 28);
+    public bool IsOverlayVisible => showOverlay;
+    public void ToggleOverlay() => showOverlay = !showOverlay;
+    public void SetOverlayVisible(bool visible) => showOverlay = visible;
+    // A debug-button click must not be consumed by the normal click-to-capture cursor rule.
+    public bool PointerOverToggle
+    {
+        get
+        {
+            if (!isActiveAndEnabled || Mouse.current == null || Cursor.lockState == CursorLockMode.Locked) return false;
+            Vector2 pointer = Mouse.current.position.ReadValue();
+            return ToggleArea.Contains(new Vector2(pointer.x, Screen.height - pointer.y));
+        }
+    }
 
     void Awake()
     {
@@ -27,7 +42,7 @@ public sealed class MechLocomotionDebug : MonoBehaviour
     {
         var keyboard = Keyboard.current;
         if (keyboard == null || Time.timeScale <= 0f) return;
-        if (keyboard.f8Key.wasPressedThisFrame) showOverlay = !showOverlay;
+        if (toggleKey != Key.None && keyboard[toggleKey].wasPressedThisFrame) ToggleOverlay();
         if (!enableSwapShortcuts) return;
         if (keyboard.f1Key.wasPressedThisFrame) TrySwap(0);
         else if (keyboard.f2Key.wasPressedThisFrame) TrySwap(1);
@@ -83,10 +98,13 @@ public sealed class MechLocomotionDebug : MonoBehaviour
 
     void OnGUI()
     {
-        if (!showOverlay || movement == null) return;
+        if (movement == null) return;
+        string shortcut = toggleKey == Key.None ? "" : " [" + (toggleKey == Key.Backquote ? "`" : toggleKey.ToString()) + "]";
+        if (GUI.Button(ToggleArea, (showOverlay ? "Hide Locomotion Debug" : "Locomotion Debug") + shortcut)) ToggleOverlay();
+        if (!showOverlay) return;
         if (labelStyle == null) labelStyle = new GUIStyle(GUI.skin.label) { fontSize = 14 };
         var data = movement.AnimationData;
-        Rect area = new Rect(12, 12, 350, 294);
+        Rect area = new Rect(12, 48, 350, 294);
         GUI.Box(area, "LOCOMOTION DEBUG");
         GUILayout.BeginArea(new Rect(area.x + 12, area.y + 25, area.width - 24, area.height - 30));
         var legs = equipment.GetEquipped(PartCategory.Legs);
@@ -99,7 +117,7 @@ public sealed class MechLocomotionDebug : MonoBehaviour
             + $"Speed: {data.Speed:F2} m/s\nForward: {data.ForwardSpeed:F2}   Side: {data.SideSpeed:F2}\n"
             + $"Vertical: {data.VerticalSpeed:F2} m/s\nGrounded: {data.IsGrounded}   Boosting: {data.IsBoosting}\n"
             + $"Turning: {data.IsTurning}   Yaw: {data.TurnRate:F1} deg/s\nAim: {data.AimDirection.ToString("F2")}\n\n"
-            + shortcuts + "Space: jump / hover lift\nF8: toggle this panel", labelStyle);
+            + shortcuts + "Space: jump / hover lift", labelStyle);
         GUILayout.EndArea();
     }
 }

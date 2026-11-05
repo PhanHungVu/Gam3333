@@ -11,7 +11,6 @@ public sealed class MechHealthHud : MonoBehaviour
     [SerializeField] CombatHealth health;
     [SerializeField] bool autoFindPlayer = true;
     CombatHealth subscribedHealth;
-    EquipManager equipment;
     float nextPlayerSearch;
     [Header("Editable UI References")]
     [SerializeField] Canvas canvas;
@@ -28,9 +27,9 @@ public sealed class MechHealthHud : MonoBehaviour
     [SerializeField] TMP_Text tmpLabel;
     [Header("Lost Health (white bar)")]
     [Tooltip("Seconds without new damage before the lost-health bar starts draining.")]
-    [SerializeField, Min(0f)] float whiteBarDelay = 0.5f;
-    [Tooltip("Lost-health drain speed in Fill Amount per second. 0.4 empties a full bar in 2.5 s.")]
-    [SerializeField, Min(0.01f)] float whiteBarDrainSpeed = 0.4f;
+    [SerializeField, Min(0f)] float whiteBarDelay = 1f;
+    [Tooltip("Seconds for the held white segment to drain to the current HP after the delay.")]
+    [SerializeField, Min(0.01f)] float whiteBarDrainDuration = .65f;
     [Header("Fill Tint")]
     [Tooltip("Disable to preserve the designer's Image colour and sprite appearance.")]
     [SerializeField] bool tintFillByHealth = true;
@@ -41,6 +40,9 @@ public sealed class MechHealthHud : MonoBehaviour
     float frontFill = 1f;
     float lostFill = 1f;
     float lastDamageTime = float.NegativeInfinity;
+    float boundMaximum;
+    bool healthSnapshot;
+    float drainFrom, drainAge;
     public Canvas Canvas => canvas;
     public CombatHealth Health => health;
     public bool IsVisible => visibility != null ? visibility.alpha > 0f : canvas != null && canvas.enabled;
@@ -102,12 +104,11 @@ public sealed class MechHealthHud : MonoBehaviour
         if (!isActiveAndEnabled || subscribedHealth == health) return;
         Unsubscribe();
         subscribedHealth = health;
+        healthSnapshot = false;
         if (subscribedHealth != null)
         {
-            subscribedHealth.Damaged += OnDamaged;
+            subscribedHealth.Changed += Refresh;
             subscribedHealth.AvailabilityChanged += OnAvailabilityChanged;
-            equipment = subscribedHealth.GetComponent<EquipManager>();
-            if (equipment != null) equipment.EquipmentChanged += Refresh;
         }
         Refresh();
     }
@@ -115,11 +116,10 @@ public sealed class MechHealthHud : MonoBehaviour
     {
         if (subscribedHealth != null)
         {
-            subscribedHealth.Damaged -= OnDamaged;
+            subscribedHealth.Changed -= Refresh;
             subscribedHealth.AvailabilityChanged -= OnAvailabilityChanged;
         }
-        if (equipment != null) equipment.EquipmentChanged -= Refresh;
-        subscribedHealth = null; equipment = null;
+        subscribedHealth = null;
     }
     void OnAvailabilityChanged(bool _) => Refresh();
     void UpdateVisibility()
@@ -132,7 +132,6 @@ public sealed class MechHealthHud : MonoBehaviour
         // Compatibility for an older standalone Canvas; never disable a shared parent.
         else if (canvas != null && canvas.transform == transform) canvas.enabled = visible;
     }
-    void OnDamaged(float _) => Refresh();
     void Refresh()
     {
         UpdateVisibility();
@@ -140,8 +139,11 @@ public sealed class MechHealthHud : MonoBehaviour
         float ratio = Mathf.Clamp01(health.CurrentHealth / Mathf.Max(1f, health.MaximumHealth));
         // Damage: the lost-health bar keeps the ratio the front had before this hit. Healing snaps
         // both bars up together, because there is no lost health left over to show.
-        if (ratio < frontFill) lastDamageTime = Time.unscaledTime;
-        else lostFill = ratio;
+        bool reset = !healthSnapshot || !Mathf.Approximately(boundMaximum, health.MaximumHealth) || health.IsDead;
+        if (reset) lostFill = ratio;
+        else if (ratio < frontFill) { lastDamageTime = Time.unscaledTime; drainFrom = lostFill; drainAge = 0; }
+        else if (ratio > frontFill) lostFill = ratio;
+        boundMaximum = health.MaximumHealth; healthSnapshot = true;
         frontFill = ratio;
         if (lostFill < frontFill) lostFill = frontFill;
         if (fill != null)
@@ -160,12 +162,13 @@ public sealed class MechHealthHud : MonoBehaviour
         if (tmpLabel != null) tmpLabel.text = readout;
     }
     // The lost-health bar waits for a moment without damage, then drains into the front bar at a
-    // fixed rate instead of snapping, so a hit reads as one lost chunk fading away.
+    // configured duration instead of snapping, so a hit reads as one lost chunk fading away.
     void TickLostHealth()
     {
         if (whiteBar == null || lostFill <= frontFill) return;
         if (Time.unscaledTime - lastDamageTime < whiteBarDelay) return;
-        lostFill = Mathf.MoveTowards(lostFill, frontFill, whiteBarDrainSpeed * Time.unscaledDeltaTime);
+        drainAge += Time.unscaledDeltaTime;
+        lostFill = Mathf.Lerp(drainFrom, frontFill, Mathf.Clamp01(drainAge / Mathf.Max(.01f, whiteBarDrainDuration)));
         SetFill(whiteBar, lostFill);
     }
     static void SetFill(Image image, float amount)

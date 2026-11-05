@@ -287,7 +287,7 @@ public sealed partial class EnemyHordeCoordinator : MonoBehaviour
         point = default;
         if (grid == null || !grid.Baked || grid.IsBlockedWorld(candidate) || NavTerrain.IsWall(candidate)) return false;
         float feet = agent.Position.y - agent.PivotHeight;
-        int count = Physics.RaycastNonAlloc(new Vector3(candidate.x, feet + 3, candidate.z), Vector3.down, hits, 6, ~0, QueryTriggerInteraction.Ignore);
+        int count = Physics.RaycastNonAlloc(new Vector3(candidate.x, feet + 3, candidate.z), Vector3.down, hits, 6, CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore);
         float nearest = float.PositiveInfinity; bool found = false;
         for (int i = 0; i < count; i++)
         {
@@ -312,9 +312,9 @@ public sealed partial class EnemyHordeCoordinator : MonoBehaviour
         // SphereCast does not report an initial overlap. Explicitly test the goal.
         Vector3 offset = Vector3.up * agent.ProbeHeight;
         int count = Physics.SphereCastNonAlloc(from + offset, agent.BodyRadius, length > 0.001f ? delta / length : Vector3.up,
-            hits, Mathf.Max(0.01f, length), ~0, QueryTriggerInteraction.Ignore);
+            hits, Mathf.Max(0.01f, length), CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore);
         for (int i = 0; i < count; i++) if (Blocks(hits[i].collider)) return false;
-        int overlapCount = Physics.OverlapSphereNonAlloc(to + offset, agent.BodyRadius, overlaps, ~0, QueryTriggerInteraction.Ignore);
+        int overlapCount = Physics.OverlapSphereNonAlloc(to + offset, agent.BodyRadius, overlaps, CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore);
         if (overlapCount == overlaps.Length || count == hits.Length) return false;
         for (int i = 0; i < overlapCount; i++) if (Blocks(overlaps[i])) return false;
         return true;

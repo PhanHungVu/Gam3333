@@ -10,6 +10,8 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class WeaponsHudPod : MonoBehaviour
 {
+    public enum AmmoDenominator { TotalRemaining, MagazineCapacity, TotalCapacity }
+    [SerializeField] AmmoDenominator ammoDenominator;
     // Part art is named after the part it shows: "Cannon" uses "Cannon_Icon".
     public const string IconSuffix = "_Icon";
 
@@ -46,7 +48,7 @@ public sealed class WeaponsHudPod : MonoBehaviour
     void LateUpdate()
     {
         if (weapon == null || weapon.Stats == null) return;
-        if (ammoLabel != null) ammoLabel.text = AmmoText(weapon);
+        if (ammoLabel != null) ammoLabel.text = AmmoText(weapon, ammoDenominator);
         ApplyDim(weapon.IsReloading);
     }
 
@@ -64,7 +66,7 @@ public sealed class WeaponsHudPod : MonoBehaviour
             // Without art the row keeps the faint empty slot the prefab was authored with.
             iconBase = sprite != null ? Color.white : placeholder;
         }
-        if (ammoLabel != null) ammoLabel.text = AmmoText(part);
+        if (ammoLabel != null) ammoLabel.text = AmmoText(part, ammoDenominator);
         appliedDim = -1f;
         ApplyDim(part != null && part.IsReloading);
     }
@@ -86,11 +88,13 @@ public sealed class WeaponsHudPod : MonoBehaviour
     }
 
     // [in the magazine / in total]. A magazine of 0 never reloads, so it reads as one full count.
-    public static string AmmoText(Part part)
+    public static string AmmoText(Part part, AmmoDenominator denominator = AmmoDenominator.TotalRemaining)
     {
         var stats = part != null ? part.Stats : null;
         if (stats == null || !HasAmmo(stats)) return "N/A";
-        return part.MagazineRounds + " / " + part.RemainingAmmo;
+        int maximum = denominator == AmmoDenominator.MagazineCapacity && stats.MagazineSize > 0 ? stats.MagazineSize
+            : denominator == AmmoDenominator.TotalCapacity ? Mathf.Max(0, Mathf.RoundToInt(stats.GetStat(StatType.Ammo))) : part.RemainingAmmo;
+        return part.MagazineRounds + " / " + maximum;
     }
 
     public static bool HasAmmo(PartData stats) =>

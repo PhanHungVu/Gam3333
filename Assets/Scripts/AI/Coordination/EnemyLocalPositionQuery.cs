@@ -18,7 +18,7 @@ public sealed class EnemyLocalPositionQuery
         if (!Available || grid.IsBlockedWorld(candidate) || NavTerrain.IsWall(candidate)) return false;
         float feet = agent.Position.y - agent.PivotHeight;
         int count = Physics.RaycastNonAlloc(new Vector3(candidate.x, feet + 3, candidate.z), Vector3.down,
-            hits, 6, ~0, QueryTriggerInteraction.Ignore);
+            hits, 6, CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore);
         if (count == hits.Length) return false;
         float nearest = float.PositiveInfinity; bool found = false;
         for (int i = 0; i < count; i++)
@@ -44,10 +44,10 @@ public sealed class EnemyLocalPositionQuery
         }
         Vector3 offset = Vector3.up * agent.ProbeHeight;
         int count = Physics.SphereCastNonAlloc(from + offset, agent.BodyRadius,
-            length > .001f ? delta / length : Vector3.up, hits, Mathf.Max(.01f, length), ~0, QueryTriggerInteraction.Ignore);
+            length > .001f ? delta / length : Vector3.up, hits, Mathf.Max(.01f, length), CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore);
         if (count == hits.Length) return false;
         for (int i = 0; i < count; i++) if (Blocks(hits[i].collider)) return false;
-        count = Physics.OverlapSphereNonAlloc(to + offset, agent.BodyRadius, overlaps, ~0, QueryTriggerInteraction.Ignore);
+        count = Physics.OverlapSphereNonAlloc(to + offset, agent.BodyRadius, overlaps, CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore);
         if (count == overlaps.Length) return false;
         for (int i = 0; i < count; i++) if (Blocks(overlaps[i])) return false;
         return true;

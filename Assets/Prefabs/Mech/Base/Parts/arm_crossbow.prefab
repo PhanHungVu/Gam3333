@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 8723502505440537359}
   - component: {fileID: 772186069702846714}
   - component: {fileID: 8973416839419337696}
+  - component: {fileID: 7448917163394539190}
   m_Layer: 0
   m_Name: arm_crossbow
   m_TagString: Untagged
@@ -72,6 +73,34 @@ MonoBehaviour:
   animations: {fileID: 11400000, guid: cee9dad4229e3cf4c9c2331176e2a1ac, type: 2}
   placement: {fileID: 0}
   loadedProjectileRenderers: []
+--- !u!114 &7448917163394539190
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2332024753439568597}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce2917b344d041439ccbfc6660e7cbf3, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
+  material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
+  color: {r: 1, g: 0.9, b: 0.3, a: 1}
+  muzzleFlash: 1
+  muzzleSmoke: 1
+  muzzleSize: 0.35
+  muzzleDuration: 0.08
+  projectileTrail: 1
+  trailWidth: 0.065
+  trailLifetime: 0.18
+  impactSize: 0.5
+  firingShake: 0.02
+  firingShakeDuration: 0.12
+  meleeTrail: 0
+  trailAnchor: {fileID: 4068936624590580542}
+  swingStart: 0.12
+  swingEnd: 0.8
 --- !u!1 &4271604733969079332
 GameObject:
   m_ObjectHideFlags: 0

@@ -94,8 +94,15 @@ public sealed class MechAbilitiesHud : MonoBehaviour
     // false when that slot has no ability pod, so an ability system can ignore mounts without one.
     public bool Activate(PartCategory slot)
     {
-        foreach (var pod in pods) if (pod != null && pod.Slot == slot) return pod.Activate();
-        return false;
+        return ReportAcceptedActivation(slot);
+    }
+
+    // Compatibility entry point for gameplay. Never wire this to a raw key press/request.
+    public bool ReportAcceptedActivation(PartCategory slot)
+    {
+        var part = equipment != null ? equipment.GetEquipped(slot) : null;
+        if (part == null || part.Stats == null || (slot != PartCategory.Head && slot != PartCategory.Torso && slot != PartCategory.Legs)) return false;
+        return PartAbilityCooldown.For(part).ConfirmActivation(Mathf.Max(0, part.Stats.GetStat(StatType.AbilityCooldown)));
     }
 
     // Pods sit next to the weapons HUD and grow leftwards, so the row keeps its right edge and

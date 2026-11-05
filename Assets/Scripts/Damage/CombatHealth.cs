@@ -18,17 +18,21 @@ public class CombatHealth : MonoBehaviour
     public event Action<float> Damaged;
     public event Action Died;
     public event Action<bool> AvailabilityChanged;
+    // Includes damage, capacity changes and explicit refills; presentation reads the final values.
+    public event Action Changed;
 
     void Awake() => CurrentHealth = maximumHealth;
-    void OnEnable() => AvailabilityChanged?.Invoke(true);
+    void OnEnable() { CombatRagdoll.IgnoreActorCollisions(gameObject); AvailabilityChanged?.Invoke(true); }
     void OnDisable() => AvailabilityChanged?.Invoke(false);
 
     // Changes capacity. Without refill, lost health is not restored and a lower maximum cuts
     // current health to fit; refill is for the start, when the mech begins at full health.
     public void SetMaximum(float maximum, bool refill)
     {
+        if (float.IsNaN(maximum) || float.IsInfinity(maximum)) return;
         maximumHealth = Mathf.Max(1f, maximum);
         CurrentHealth = refill ? maximumHealth : Mathf.Min(CurrentHealth, maximumHealth);
+        Changed?.Invoke();
     }
 
     public bool ApplyDamage(float amount)
@@ -37,6 +41,7 @@ public class CombatHealth : MonoBehaviour
         float applied = Mathf.Min(CurrentHealth, amount);
         CurrentHealth -= applied;
         Damaged?.Invoke(applied);
+        Changed?.Invoke();
         if (IsDead)
         {
             Died?.Invoke();

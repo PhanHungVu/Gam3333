@@ -45,6 +45,10 @@ public static class MechEnemyCombatChecks
         GameObject wall = null;
         try
         {
+            // These checks advance attack time synchronously without advancing the real clock.
+            // Actor hitstop has separate real-frame coverage in CombatHitFeelChecks.
+            var presentation = new SerializedObject(player.GetComponent<CombatFeedback>());
+            presentation.FindProperty("hitStop").boolValue = false; presentation.ApplyModifiedPropertiesWithoutUndo();
             var health = player.GetComponent<CombatHealth>(); var stats = player.GetComponent<MechStats>();
             check(health != null && health.MaximumHealth == stats.MaxHealth && health.CurrentHealth == stats.MaxHealth,
                 "Player starts with real current/max health from equipped stats");
