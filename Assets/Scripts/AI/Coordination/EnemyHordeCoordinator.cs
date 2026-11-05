@@ -153,7 +153,8 @@ public sealed partial class EnemyHordeCoordinator : MonoBehaviour
     public bool TryGetApproachRecovery(EnemyCoordinationMember member, out Vector3 position)
     {
         position = default;
-        var field = FlowField.Instance;
+        // The field leading to this enemy's own target (the player's, or e.g. the escort payload's).
+        var field = FlowField.For(member.Agent.Target);
         if (!isActiveAndEnabled || !member.Eligible || grid == null || !grid.Baked || field == null || !field.HasDirection) return false;
         // Conservative grid padding can mark a physically clear wall edge as
         // blocked. Its flow direction is zero, so direct chase can pin an actor
