@@ -15,8 +15,11 @@ public sealed class MechAbilitiesHud : MonoBehaviour
 
     [Header("Row prefab")]
     [SerializeField] AbilitiesHudPod podPrefab;
-    [SerializeField] Vector2 podSize = new Vector2(56f, 56f);
-    [SerializeField, Min(0f)] float podSpacing = 8f;
+    [SerializeField] Vector2 podSize = new Vector2(90f, 90f);
+    [Tooltip("Gap between pods. Wide enough for the cooldown number and the key chip above each pod.")]
+    [SerializeField, Min(0f)] float podSpacing = 20f;
+    [Tooltip("Height kept above each pod for its key label chip, so the row fits inside the HUD rect.")]
+    [SerializeField, Min(0f)] float podHeaderHeight = 20f;
     [Header("Player binding")]
     [Tooltip("Seconds between searches while no player is in the scene yet.")]
     [SerializeField, Min(0.1f)] float playerSearchInterval = 0.5f;
@@ -115,19 +118,21 @@ public sealed class MechAbilitiesHud : MonoBehaviour
     }
 
     // Pods sit next to the weapons HUD and grow leftwards, so the row keeps its right edge and
-    // reads Head, Torso, Legs from left to right whichever parts are equipped.
+    // reads Head, Torso, Legs from left to right whichever parts are equipped. They anchor to the
+    // bottom of the rect, so the space kept for the key chip above them cannot push them off spot.
     void Layout()
     {
         if (layout == null) return;
         for (int i = 0; i < pods.Count; i++)
         {
             var row = (RectTransform)pods[i].transform;
-            row.anchorMin = row.anchorMax = new Vector2(1f, 0.5f);
+            row.anchorMin = row.anchorMax = new Vector2(1f, 0f);
             row.pivot = row.anchorMin;
             row.sizeDelta = podSize;
             row.anchoredPosition = new Vector2(-(pods.Count - 1 - i) * (podSize.x + podSpacing), 0f);
         }
         float width = pods.Count > 0 ? pods.Count * podSize.x + (pods.Count - 1) * podSpacing : 0f;
         layout.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+        layout.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, podSize.y + podHeaderHeight);
     }
 }

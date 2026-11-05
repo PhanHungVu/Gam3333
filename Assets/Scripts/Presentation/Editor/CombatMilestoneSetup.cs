@@ -19,7 +19,7 @@ public static class CombatMilestoneSetup
             finally { UnityEngine.Object.DestroyImmediate(view.gameObject); }
             results = AssetDatabase.LoadAssetAtPath<GameObject>(ResultsPath).GetComponent<MissionResultsView>();
         }
-        var abilityRoot=PrefabUtility.LoadPrefabContents("Assets/Prefabs/UI/AbilitiesHUDPodPrefab.prefab");
+        var abilityRoot=PrefabUtility.LoadPrefabContents("Assets/Prefabs/UI/Combat HUD/AbilitiesHUDPodPrefab.prefab");
         try
         {
             var icons=AssetDatabase.FindAssets("t:Sprite",new[]{"Assets/Sprites/PartIcons"})
@@ -32,15 +32,14 @@ public static class CombatMilestoneSetup
             fields.ApplyModifiedPropertiesWithoutUndo();
             abilityRoot.GetComponent<AbilitiesHudPod>().ConfigureCooldownLine();
             abilityRoot.GetComponent<AbilitiesHudPod>().ConfigureReadyVfx();
-            PrefabUtility.SaveAsPrefabAsset(abilityRoot,"Assets/Prefabs/UI/AbilitiesHUDPodPrefab.prefab");
+            PrefabUtility.SaveAsPrefabAsset(abilityRoot,"Assets/Prefabs/UI/Combat HUD/AbilitiesHUDPodPrefab.prefab");
         }
         finally { PrefabUtility.UnloadPrefabContents(abilityRoot); }
-        var weaponRoot=PrefabUtility.LoadPrefabContents("Assets/Prefabs/UI/WeaponsHUDPodPrefab.prefab");
+        var weaponRoot=PrefabUtility.LoadPrefabContents("Assets/Prefabs/UI/Combat HUD/WeaponsHUDPodPrefab.prefab");
         try
         {
             weaponRoot.GetComponent<WeaponsHudPod>().ConfigureCooldownLine();
-            weaponRoot.GetComponent<WeaponsHudPod>().ConfigureReadyVfx();
-            PrefabUtility.SaveAsPrefabAsset(weaponRoot,"Assets/Prefabs/UI/WeaponsHUDPodPrefab.prefab");
+            PrefabUtility.SaveAsPrefabAsset(weaponRoot,"Assets/Prefabs/UI/Combat HUD/WeaponsHUDPodPrefab.prefab");
         }
         finally { PrefabUtility.UnloadPrefabContents(weaponRoot); }
         foreach(var path in AssetDatabase.FindAssets("t:Prefab",new[]{"Assets/Prefabs/Enemies"})
@@ -56,7 +55,7 @@ public static class CombatMilestoneSetup
                 {
                     var participant=root.GetComponent<MissionParticipant>() ?? root.AddComponent<MissionParticipant>();
                     var fields=new SerializedObject(participant); fields.FindProperty("resultsPrefab").objectReferenceValue=results; fields.ApplyModifiedPropertiesWithoutUndo();
-                    fields=new SerializedObject(rig); fields.FindProperty("combatHudPrefab").objectReferenceValue=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/CombatHUD.prefab");
+                    fields=new SerializedObject(rig); fields.FindProperty("combatHudPrefab").objectReferenceValue=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/Combat HUD/CombatHUD.prefab");
                     fields.ApplyModifiedPropertiesWithoutUndo();
                 }
                 PrefabUtility.SaveAsPrefabAsset(root,path);

@@ -15,6 +15,8 @@ public sealed class AbilitiesHudPod : MonoBehaviour
     [SerializeField] Image icon;
     [Tooltip("Cooldown seconds, hidden (0% alpha) until the ability is used.")]
     [SerializeField] TextMeshProUGUI cooldownLabel;
+    [Tooltip("Key that fires this ability, named by its slot: Tab (head), Ctrl (torso), Spc (legs).")]
+    [SerializeField] TextMeshProUGUI keyText;
     [Header("Cooldown")]
     [Tooltip("Sprite alpha while the ability is on cooldown.")]
     [SerializeField, Range(0f, 1f)] float cooldownIconAlpha = 0.5f;
@@ -63,6 +65,7 @@ public sealed class AbilitiesHudPod : MonoBehaviour
         if (readyVfx != null) readyVfx.Stop();
         ability = part;
         slot = part != null ? part.Slot : null;
+        if (keyText != null) keyText.text = slot.HasValue ? KeyLabel(slot.Value) : string.Empty;
         var stats = part != null ? part.Stats : null;
         float value = stats != null ? stats.GetStat(StatType.AbilityCooldown) : 0f;
         cooldown = Mathf.Max(0, value);
@@ -83,6 +86,15 @@ public sealed class AbilitiesHudPod : MonoBehaviour
         }
         Refresh();
     }
+
+    // Keys are fixed per slot: head on Tab, torso on Ctrl, legs on Space.
+    public static string KeyLabel(PartCategory slot) => slot switch
+    {
+        PartCategory.Head => "Tab",
+        PartCategory.Torso => "Ctrl",
+        PartCategory.Legs => "Spc",
+        _ => string.Empty,
+    };
 
     // Starts the cooldown: the sprite dims and the counter shows the full ability cooldown.
     public bool Activate()

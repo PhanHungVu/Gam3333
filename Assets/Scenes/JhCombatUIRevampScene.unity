@@ -17261,6 +17261,10 @@ PrefabInstance:
       propertyPath: canvas
       value: 
       objectReference: {fileID: 1807416782}
+    - target: {fileID: 6947245945780156741, guid: 9f405b45c04660a418b44ae30316a067, type: 3}
+      propertyPath: gameplayCamera
+      value: 
+      objectReference: {fileID: 631893043}
     - target: {fileID: 7359205465881014472, guid: 9f405b45c04660a418b44ae30316a067, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -17357,10 +17361,6 @@ PrefabInstance:
     - target: {fileID: 275770742841063, guid: 033855673a0bd97dc71fec79581b761e, type: 3}
       propertyPath: m_Name
       value: CombatHUD
-      objectReference: {fileID: 0}
-    - target: {fileID: 275770742841077, guid: 033855673a0bd97dc71fec79581b761e, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -936
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

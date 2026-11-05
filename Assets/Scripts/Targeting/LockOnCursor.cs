@@ -2,7 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // The reticle that follows the locked target (or the screen centre). It also owns the cursor art:
-// lock-on mode shows the lock-on reticle sprite, everything else shows the plain cursor sprite.
+// camera lock-on (F) shows its own reticle, an enemy the cursor has locked onto by itself shows the
+// lock-on reticle, and everything else shows the plain cursor.
 [DefaultExecutionOrder(200)]
 [DisallowMultipleComponent]
 public class LockOnCursor : MonoBehaviour
@@ -15,15 +16,20 @@ public class LockOnCursor : MonoBehaviour
     [Header("Cursor Art")]
     [Tooltip("Image that draws the cursor. Defaults to the Image on this object.")]
     [SerializeField] Image cursorImage;
-    [Tooltip("Sprite used while the camera is not in lock-on mode.")]
+    [Tooltip("Sprite used while nothing is locked and the camera is free.")]
     [SerializeField] Sprite freeCursorSprite;
-    [Tooltip("Sprite used while lock-on (hard lock) mode is on.")]
+    [Tooltip("Sprite used while the cursor is automatically locked onto an enemy.")]
     [SerializeField] Sprite lockOnSprite;
+    [Tooltip("Sprite used while the player holds camera lock-on (F).")]
+    [SerializeField] Sprite camLockOnSprite;
 
     CanvasGroup cursorVisibility;
 
     public Sprite CurrentSprite => cursorImage != null ? cursorImage.sprite : null;
-    public bool IsLockOn => targetLockController != null && targetLockController.IsHardLockMode;
+    // F-held camera lock, then an automatically acquired enemy, then the plain cursor.
+    public bool IsCamLock => targetLockController != null && targetLockController.IsHardLockMode;
+    public bool IsLockedOn => targetLockController != null && !targetLockController.IsFreeAim
+        && targetLockController.CurrentTarget != null;
 
     public void Bind(MechTargetLockController controller, Camera viewCamera)
     {
@@ -103,12 +109,12 @@ public class LockOnCursor : MonoBehaviour
         }
     }
 
-    // Lock-on mode has its own reticle art; free aim keeps the plain cursor. Only the sprite is
-    // swapped, so the image's colour and size stay as the designer set them.
+    // Camera lock-on outranks the automatic lock so pressing F always reads as the camera reticle.
+    // Only the sprite is swapped, so the image's colour and size stay as the designer set them.
     void ApplyCursorSprite()
     {
         if (cursorImage == null) return;
-        Sprite wanted = IsLockOn ? lockOnSprite : freeCursorSprite;
+        Sprite wanted = IsCamLock ? camLockOnSprite : IsLockedOn ? lockOnSprite : freeCursorSprite;
         if (wanted != null && cursorImage.sprite != wanted) cursorImage.sprite = wanted;
     }
 

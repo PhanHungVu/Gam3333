@@ -18,7 +18,7 @@ public static class AbilityReadyVfxChecks
     static IEnumerator Delay(float seconds) { float end = Time.unscaledTime + seconds; while (Time.unscaledTime < end) yield return null; }
     static AbilitiesHudPod Pod(Transform parent, Part part, int index)
     {
-        var pod = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/AbilitiesHUDPodPrefab.prefab"), parent).GetComponent<AbilitiesHudPod>();
+        var pod = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/Combat HUD/AbilitiesHUDPodPrefab.prefab"), parent).GetComponent<AbilitiesHudPod>();
         var rect = (RectTransform)pod.transform; rect.anchorMin = rect.anchorMax = new Vector2(.5f,0); rect.pivot = new Vector2(.5f,.5f);
         rect.anchoredPosition = new Vector2((index - 1)*150,100); pod.Bind(part); return pod;
     }

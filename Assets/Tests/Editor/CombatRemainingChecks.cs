@@ -319,7 +319,7 @@ public static class CombatRemainingChecks
         fixture.transform.position=new Vector3(100,3,100);
         var data=TestMech.WithMagazine(TestMech.Ranged("Cannon",PartType.Shoulder,PartSubtype.Projectile,1,6,.5f,2,20,.1f),4,.8f);
         var part=TestMech.Equip(fixture,(PartCategory.ShoulderL,data))[0]; fixture.SetActive(true);
-        var pod=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/WeaponsHUDPodPrefab.prefab")).GetComponent<WeaponsHudPod>(); pod.Bind(part);
+        var pod=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/Combat HUD/WeaponsHUDPodPrefab.prefab")).GetComponent<WeaponsHudPod>(); pod.Bind(part);
         Check(combat.TryAttack(PartCategory.ShoulderL).Started,"Multi-round magazine accepts a real shot for manual-reload verification");
         yield return Delay(.55f);
         Check(combat.TryReload(PartCategory.ShoulderL) && Mathf.Abs(part.CooldownDuration-.8f)<.05f,"Partial-magazine reload starts a sweep for its actual reload duration");
