@@ -219,7 +219,7 @@ public sealed class EnemyAttack : MonoBehaviour
 
     public void Tick(float deltaTime)
     {
-        if (!isActiveAndEnabled || self.IsDead || deltaTime <= 0f) return;
+        if (!isActiveAndEnabled || self.IsDead || deltaTime <= 0f || CombatHitStop.IsFrozen(transform)) return;
         stationaryAge = !IsAttacking && agent.Velocity.sqrMagnitude < 0.0025f ? stationaryAge + deltaTime : 0f;
         if (!independentWeapons)
         {
@@ -283,7 +283,7 @@ public sealed class EnemyAttack : MonoBehaviour
     // every ready weapon that can. Returns whether any attack started.
     public bool TryAttack()
     {
-        if (!isActiveAndEnabled || self.IsDead || agent.Target == null) return false;
+        if (!isActiveAndEnabled || self.IsDead || agent.Target == null || CombatHitStop.BlocksNewActions(transform)) return false;
         var target = agent.Target.GetComponentInParent<CombatHealth>();
         if (target == null || target == self || target.IsDead || !target.isActiveAndEnabled) return false;
 
@@ -382,7 +382,7 @@ public sealed class EnemyAttack : MonoBehaviour
         var offset = point - origin;
         int count;
         while ((count = Physics.RaycastNonAlloc(origin, offset.normalized, firingLineHits, offset.magnitude,
-            hitLayers, QueryTriggerInteraction.Ignore)) == firingLineHits.Length)
+            hitLayers & CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore)) == firingLineHits.Length)
             System.Array.Resize(ref firingLineHits, firingLineHits.Length * 2);
         bool clear = true;
         for (int i = 0; i < count; i++)
@@ -402,7 +402,7 @@ public sealed class EnemyAttack : MonoBehaviour
         Vector3 scale = MeleeAttack.BoxScale(transform.lossyScale, part, MetresPerGolem);
         Vector3 center = transform.position + lane.strikeRotation * Vector3.Scale(meleeCenter, scale);
         blast.ResolveBox(center, Vector3.Scale(meleeSize, scale) * 0.5f, lane.strikeRotation, DamageOf(lane.entry.weapon),
-            transform, hitLayers, transform.position + Vector3.up * meleeWallHeight);
+            transform, hitLayers, transform.position + Vector3.up * meleeWallHeight, source: part);
     }
 
     // Same shot as the player's: the part's projectile, size, colour and splash, through RangedAttack.

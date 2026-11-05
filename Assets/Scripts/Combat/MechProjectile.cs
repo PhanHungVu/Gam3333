@@ -9,13 +9,18 @@ public readonly struct MechProjectileImpact
     public readonly PartSubtype Subtype;
     public readonly Vector3 Position;
     public readonly Vector3 Direction;
+    public readonly Vector3 ContactPoint, Normal;
+    public readonly Transform Owner;
     public readonly float Radius;
     public readonly int Hits, Kills;
     public MechProjectileImpact(Part source, PartSubtype subtype, Vector3 position, float radius, int hits, int kills,
-        Vector3 direction = default)
+        Vector3 direction = default, Vector3? contactPoint = null, Vector3 normal = default, Transform owner = null)
     {
         Source = source; Subtype = subtype; Position = position; Radius = radius; Hits = hits; Kills = kills;
         Direction = direction;
+        ContactPoint = contactPoint ?? position;
+        Normal = normal.sqrMagnitude > .0001f ? normal.normalized : direction.sqrMagnitude > .0001f ? -direction.normalized : Vector3.up;
+        Owner = owner;
     }
 }
 
@@ -41,6 +46,7 @@ public class MechProjectile : MonoBehaviour
     public PartSubtype Subtype { get; set; }
     // Optional enemy shot filter. Other bodies still block the shot, without friendly damage.
     public event Action<MechProjectileImpact> ImpactResolved;
+    public event Action<Vector3> Finished;
 
     public static MechProjectile Create(GameObject prefab, string shotName, Vector3 position,
         float shotRadius, Material fallbackMaterial, Color fallbackColor)
@@ -82,7 +88,7 @@ public class MechProjectile : MonoBehaviour
         radius = Mathf.Max(0.01f, shotRadius);
         remainingDistance = Mathf.Max(0f, range);
         travelled = 0f;
-        collisionLayers = layers;
+        collisionLayers = layers & CombatRagdoll.QueryMask;
         live = true;
         // Validate the path from the player's center to the muzzle as well. A muzzle
         // extending through a wall must not spawn a shot on the other side.
@@ -121,7 +127,9 @@ public class MechProjectile : MonoBehaviour
         }
         Array.Clear(overlaps, 0, count);
         if (closest == null) return false;
-        Impact(closest);
+        Vector3 point = closest is MeshCollider mesh && !mesh.convex ? closest.bounds.ClosestPoint(transform.position) : closest.ClosestPoint(transform.position);
+        var normal = transform.position - point;
+        Impact(closest, point, normal.sqrMagnitude > .0001f ? normal.normalized : -direction);
         return true;
     }
 
@@ -144,11 +152,11 @@ public class MechProjectile : MonoBehaviour
         if (nearest < 0) return false;
         transform.position += displacement.normalized * nearestDistance;
         if (countTravel) travelled += nearestDistance;
-        Impact(hits[nearest].collider);
+        Impact(hits[nearest].collider, hits[nearest].point, hits[nearest].normal);
         return true;
     }
 
-    void Impact(Collider collider)
+    void Impact(Collider collider, Vector3 contactPoint, Vector3 normal)
     {
         if (!live) return;
         Vector3 impactPoint = transform.position;
@@ -157,15 +165,24 @@ public class MechProjectile : MonoBehaviour
         Finish();
         // Teams decide who takes damage (CombatBlast skips the shooter's own team).
         var result = blast.Resolve(impactPoint, explosionRadius, impactDamage, splashDamage, owner, collisionLayers, collider);
-        ImpactResolved?.Invoke(new MechProjectileImpact(Source, Subtype, impactPoint, explosionRadius,
-            result.Hits, result.Kills, direction: direction));
+        var impact = new MechProjectileImpact(Source, Subtype, impactPoint, explosionRadius,
+            result.Hits, result.Kills, direction, contactPoint, normal, owner);
+        ImpactResolved?.Invoke(impact);
+        CombatVisualEvents.ReportProjectile(impact);
         ImpactResolved = null;
     }
 
     void Finish()
     {
         live = false;
+        Finished?.Invoke(transform.position); Finished = null;
         gameObject.SetActive(false);
         Destroy(gameObject);
+    }
+    void OnDisable()
+    {
+        if (!live) return;
+        live = false; Finished?.Invoke(transform.position); Finished = null;
+        ImpactResolved = null;
     }
 }

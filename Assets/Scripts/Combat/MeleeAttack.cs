@@ -90,7 +90,7 @@ public sealed class MeleeAttack
     {
         flashTimer = 0.15f;
         var result = combat.Blast.ResolveBox(BoxCenter(Extension, StrikeRotation), BoxSize * 0.5f, StrikeRotation, strikeDamage,
-            owner, combat.HitLayers, combat.MeleeWallOrigin);
+            owner, combat.HitLayers, combat.MeleeWallOrigin, source: activePart);
         Pending = false;
         combat.RaiseMeleePerformed(result.Hits);
     }

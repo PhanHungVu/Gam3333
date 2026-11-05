@@ -33,6 +33,9 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
     [SerializeField, Min(0.5f)] float orbitChaseStopDistance = 2.5f;
     [SerializeField, Min(0)] float orbitChargeSpeed = 9;
     [SerializeField, Min(0.1f)] float orbitChargeAcceleration = 30;
+    [Header("Accepted orbit-hit knockback")]
+    [SerializeField, Min(0)] float orbitKnockbackSpeed = 10;
+    [SerializeField, Range(.01f,1)] float orbitKnockbackDuration = .25f;
     LineRenderer rope;
     Vector3 start, destination, previous, recoverStart, airbornePosition;
     Material ropeMaterial;
@@ -76,7 +79,7 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
         var origin = p; origin.y = Mathf.Max(p.y, transform.position.y) + rockRadius;
         float nearest = float.PositiveInfinity;
         float height = NavTerrain.GroundHeight(p, transform.position.y - 1);
-        foreach (var hit in Physics.RaycastAll(origin, Vector3.down, 100, ~0, QueryTriggerInteraction.Ignore))
+        foreach (var hit in Physics.RaycastAll(origin, Vector3.down, 100, CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore))
         {
             if (Ignore(hit.collider) || hit.normal.y < 0.5f || hit.distance >= nearest) continue;
             nearest = hit.distance; height = hit.point.y;
@@ -154,7 +157,7 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
         bool blocked = false; float nearest = float.PositiveInfinity; var travel = next - from;
         if (travel.sqrMagnitude > 0.0001f)
         {
-            foreach (var hit in Physics.SphereCastAll(from, rockRadius, travel.normalized, travel.magnitude, ~0, QueryTriggerInteraction.Ignore))
+            foreach (var hit in Physics.SphereCastAll(from, rockRadius, travel.normalized, travel.magnitude, CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore))
             {
                 if (Ignore(hit.collider) || hit.distance >= nearest) continue;
                 nearest = hit.distance;
@@ -171,7 +174,7 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
         var travel = to - from;
         var rotation = travel.sqrMagnitude > 0.00001f ? Quaternion.LookRotation(travel.normalized) : Quaternion.identity;
         var result = blast.ResolveBox((from + to) * 0.5f, new Vector3(rockRadius, rockRadius, travel.magnitude * 0.5f + rockRadius),
-            rotation, damage, transform, ~0, from, orbitVictims);
+            rotation, damage, transform, ~0, from, orbitVictims, acceptedHit: KnockbackOrbitVictim);
         OrbitContacts += result.Hits;
         if (result.Hits > 0) ImpactSound();
     }
@@ -179,9 +182,15 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
     {
         // The active spin threatens the whole warning circle, including the
         // space beside the charging enemy, rather than only the rock's rim.
-        var result = blast.ResolveCylinder(OrbitCenter, orbitRadius, rockRadius, damage, transform, ~0, orbitVictims);
+        var result = blast.ResolveCylinder(OrbitCenter, orbitRadius, rockRadius, damage, transform, ~0, orbitVictims, KnockbackOrbitVictim);
         OrbitContacts += result.Hits;
         if (result.Hits > 0) ImpactSound();
+    }
+    void KnockbackOrbitVictim(CombatHealth victim)
+    {
+        if (victim == null || victim.IsDead || !victim.TryGetComponent<MechMovementController>(out var movement)) return;
+        var away = Steering.Flat(victim.transform.position - transform.position);
+        movement.ApplyKnockback(away.sqrMagnitude > .0001f ? away : transform.forward, orbitKnockbackSpeed, orbitKnockbackDuration);
     }
     bool TickOrbit(float dt)
     {

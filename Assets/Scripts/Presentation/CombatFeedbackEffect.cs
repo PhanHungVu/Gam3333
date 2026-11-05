@@ -4,13 +4,14 @@ using UnityEngine.Rendering;
 // A reusable visual only: no colliders, rigidbodies, health, or damage queries.
 public sealed class CombatFeedbackEffect : MonoBehaviour
 {
-    public enum Kind { Muzzle, Explosion, Death }
+    public enum Kind { Muzzle, Explosion, Death, Smoke, Dust }
     const int RingSegments = 40;
     LineRenderer flash, ring;
     MeshRenderer core;
     Mesh coreMesh;
     MaterialPropertyBlock coreTint;
     ParticleSystem sparks;
+    ParticleSystem cloud;
     ParticleSystemRenderer sparkRenderer;
     float age, duration, radius;
     Color color;
@@ -19,7 +20,7 @@ public sealed class CombatFeedbackEffect : MonoBehaviour
     public bool IsPlaying { get; private set; }
     public float Age => age;
 
-    public void Initialize(Material material)
+    public void Initialize(Material material, Material cloudMaterial = null)
     {
         coreTint = new MaterialPropertyBlock();
         var coreObject = new GameObject("Flash Core", typeof(MeshFilter), typeof(MeshRenderer));
@@ -79,6 +80,24 @@ public sealed class CombatFeedbackEffect : MonoBehaviour
         sparkRenderer.velocityScale = 0.08f;
         sparkRenderer.shadowCastingMode = ShadowCastingMode.Off;
         sparkRenderer.receiveShadows = false;
+        var cloudRoot = new GameObject("Smoke and Dust"); cloudRoot.transform.SetParent(transform, false);
+        cloud = cloudRoot.AddComponent<ParticleSystem>();
+        cloud.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        var cloudMain = cloud.main;
+        cloudMain.playOnAwake = false; cloudMain.loop = false;
+        cloudMain.simulationSpace = ParticleSystemSimulationSpace.World; cloudMain.maxParticles = 16;
+        var cloudEmission = cloud.emission; cloudEmission.enabled = false;
+        var cloudShape = cloud.shape; cloudShape.enabled = false;
+        var cloudColors = cloud.colorOverLifetime; cloudColors.enabled = true;
+        var cloudGradient = new Gradient();
+        cloudGradient.SetKeys(new[] { new GradientColorKey(Color.white, 0), new GradientColorKey(Color.white, 1) },
+            new[] { new GradientAlphaKey(0, 0), new GradientAlphaKey(.8f, .12f), new GradientAlphaKey(0, 1) });
+        cloudColors.color = cloudGradient;
+        var cloudSize = cloud.sizeOverLifetime; cloudSize.enabled = true;
+        cloudSize.size = new ParticleSystem.MinMaxCurve(1, AnimationCurve.Linear(0, .35f, 1, 1.3f));
+        var cloudRenderer = cloudRoot.GetComponent<ParticleSystemRenderer>();
+        cloudRenderer.sharedMaterial = cloudMaterial != null ? cloudMaterial : material;
+        cloudRenderer.shadowCastingMode = ShadowCastingMode.Off; cloudRenderer.receiveShadows = false;
         Stop();
     }
 
@@ -96,7 +115,7 @@ public sealed class CombatFeedbackEffect : MonoBehaviour
     }
 
     public void Play(Kind effectKind, Vector3 position, float size, float lifetime, Color tint,
-        bool brightFlash, bool shockwave, bool secondary, Material material)
+        bool brightFlash, bool shockwave, bool secondary, Material material, Vector3 normal = default)
     {
         if (material == null) return;
         Stop();
@@ -111,6 +130,26 @@ public sealed class CombatFeedbackEffect : MonoBehaviour
         core.sharedMaterial = flash.sharedMaterial = ring.sharedMaterial = sparkRenderer.sharedMaterial = material;
         IsPlaying = true;
         gameObject.SetActive(true);
+        if (kind == Kind.Smoke || kind == Kind.Dust)
+        {
+            Vector3 axis = normal.sqrMagnitude > .0001f ? normal.normalized : Vector3.up;
+            var basis = Quaternion.FromToRotation(Vector3.up, axis);
+            cloud.Play();
+            int count = kind == Kind.Smoke ? 9 : 12;
+            for (int i = 0; i < count; i++)
+            {
+                float angle = i * 2.399963f;
+                var heading = basis * new Vector3(Mathf.Cos(angle), kind == Kind.Smoke ? 1.4f : .5f, Mathf.Sin(angle));
+                cloud.Emit(new ParticleSystem.EmitParams
+                {
+                    position = position + axis * .035f,
+                    velocity = heading * radius * (kind == Kind.Smoke ? .5f : 1.4f),
+                    startSize = radius * (kind == Kind.Smoke ? .8f : .45f),
+                    startLifetime = duration * (.65f + (i % 3) * .15f),
+                    startColor = tint, rotation = i * 137.5f
+                }, 1);
+            }
+        }
         if (secondary)
         {
             sparks.Play();
@@ -167,6 +206,7 @@ public sealed class CombatFeedbackEffect : MonoBehaviour
     {
         IsPlaying = false;
         if (sparks != null) sparks.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        if (cloud != null) cloud.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         gameObject.SetActive(false);
     }
 

@@ -7,7 +7,10 @@ public sealed class MechPlayerRig : MonoBehaviour
 {
     [SerializeField] GameObject cameraPrefab;
     [SerializeField] GameObject cursorPrefab;
+    [Tooltip("Fallback only: scenes with an authored combat HUD keep it.")]
+    [SerializeField] GameObject combatHudPrefab;
     GameObject ownedCamera, ownedCursor;
+    GameObject ownedCombatHud;
     Camera replacedCamera;
     AudioListener replacedListener;
     bool cameraWasEnabled, listenerWasEnabled;
@@ -49,13 +52,19 @@ public sealed class MechPlayerRig : MonoBehaviour
         }
         foreach (var hud in FindObjectsByType<MechEnergyHud>()) hud.Bind(GetComponent<MechEnergyController>());
         if (cursor != null) cursor.Bind(GetComponent<MechTargetLockController>(), GameplayCamera);
+        if (combatHudPrefab != null && FindAnyObjectByType<MechWeaponsHud>() == null && cursor != null)
+        {
+            var canvas = cursor.GetComponentInParent<Canvas>();
+            if (canvas != null) ownedCombatHud = Instantiate(combatHudPrefab,canvas.transform,false);
+        }
     }
-    void OnEnable() { if (ownedCamera != null) ownedCamera.SetActive(true); if (ownedCursor != null) ownedCursor.SetActive(true); }
-    void OnDisable() { if (ownedCamera != null) ownedCamera.SetActive(false); if (ownedCursor != null) ownedCursor.SetActive(false); }
+    void OnEnable() { if (ownedCamera != null) ownedCamera.SetActive(true); if (ownedCursor != null) ownedCursor.SetActive(true); if (ownedCombatHud != null) ownedCombatHud.SetActive(true); }
+    void OnDisable() { if (ownedCamera != null) ownedCamera.SetActive(false); if (ownedCursor != null) ownedCursor.SetActive(false); if (ownedCombatHud != null) ownedCombatHud.SetActive(false); }
     void OnDestroy()
     {
         if (ownedCamera != null) Destroy(ownedCamera);
         if (ownedCursor != null) Destroy(ownedCursor);
+        if (ownedCombatHud != null) Destroy(ownedCombatHud);
         if (replacedCamera != null) replacedCamera.enabled = cameraWasEnabled;
         if (replacedListener != null) replacedListener.enabled = listenerWasEnabled;
     }

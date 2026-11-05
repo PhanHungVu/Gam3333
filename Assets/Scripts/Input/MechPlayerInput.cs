@@ -34,6 +34,7 @@ public sealed class MechPlayerInput : MonoBehaviour
     MechTargetLockController targeting;
     CameraControlThirdPerson cameraControl;
     bool attacksArmed;
+    MechLocomotionDebug locomotionDebug;
 
     // Presentation queries only. The existing Update/Attack path still owns all input.
     public string SwapBindingLabel(PartCategory socket)
@@ -60,6 +61,7 @@ public sealed class MechPlayerInput : MonoBehaviour
     void Awake()
     {
         movement = GetComponent<MechMovementController>();
+        locomotionDebug = GetComponent<MechLocomotionDebug>();
         combat = GetComponent<MechCombat>();
         parts = GetComponent<EquipManager>();
         pickup = GetComponentInChildren<PickupDetector>(true);
@@ -101,9 +103,14 @@ public sealed class MechPlayerInput : MonoBehaviour
     void Update()
     {
         if (runtimeInputActions == null) return;
+        if (MissionOutcomeController.BlocksGameplay(gameObject.scene))
+        {
+            attacksArmed = false; cameraControl?.SetLookInput(Vector2.zero); SetCursorLocked(false); return;
+        }
         // Cursor rule: Esc frees the mouse, a click captures it again.
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) SetCursorLocked(false);
-        else if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) SetCursorLocked(true);
+        else if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame
+            && (locomotionDebug == null || !locomotionDebug.PointerOverToggle)) SetCursorLocked(true);
         bool gameplay = (AssumeCursorCaptured || Cursor.lockState == CursorLockMode.Locked) && Time.timeScale > 0f;
 
         if (gameplay && cyclePart != null && pickup != null && Pressed(cyclePart)) pickup.CycleSelection();
@@ -123,7 +130,7 @@ public sealed class MechPlayerInput : MonoBehaviour
             }
         }
 
-        if(gameplay)
+        if(gameplay && !CombatHitStop.BlocksNewActions(transform))
         {
             if(Pressed(swapLeft)) SwapSelected(false);
             else if(Pressed(swapRight)) SwapSelected(true);
@@ -132,7 +139,7 @@ public sealed class MechPlayerInput : MonoBehaviour
             if (Pressed(torsoAbility)) RequestTorsoAbility();
             if (Pressed(jump)) RequestLegAbility();
         }
-        if (!gameplay) attacksArmed = false;
+        if (!gameplay) { attacksArmed = false; movement?.ClearHitStopInputBuffer(); }
         else if (!attacksArmed)
             // A click that captures the mouse must not also attack.
             attacksArmed = !Held(leftArm) && !Held(rightArm) && !Held(leftShoulder) && !Held(rightShoulder);
@@ -163,7 +170,8 @@ public sealed class MechPlayerInput : MonoBehaviour
 
     void RequestAbility(PartCategory socket, UnityEvent<Part> callback)
     {
-        if (!isActiveAndEnabled || Time.timeScale <= 0f) return;
+        if (!isActiveAndEnabled || Time.timeScale <= 0f || MissionOutcomeController.BlocksGameplay(gameObject.scene)
+            || CombatHitStop.BlocksNewActions(transform)) return;
         var part = parts != null ? parts.GetEquipped(socket) : null;
         if (part == null || part.Stats == null || !part.isActiveAndEnabled || !part.isEquipped) return;
         callback?.Invoke(part); AbilityRequested?.Invoke(socket, part);

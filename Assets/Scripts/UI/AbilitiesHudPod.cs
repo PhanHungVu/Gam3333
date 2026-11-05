@@ -18,21 +18,30 @@ public sealed class AbilitiesHudPod : MonoBehaviour
     [Header("Cooldown")]
     [Tooltip("Sprite alpha while the ability is on cooldown.")]
     [SerializeField, Range(0f, 1f)] float cooldownIconAlpha = 0.5f;
-    [Tooltip("Used when the part's Ability Cooldown stat is 0.")]
-    [SerializeField, Min(0.01f)] float defaultCooldown = 1f;
+    [Tooltip("Imported part artwork; an explicit PartData icon takes priority.")]
+    [SerializeField] Sprite[] partIcons;
+    [Tooltip("Generic artwork for part variants without a dedicated icon.")]
+    [SerializeField] Sprite headIcon, torsoIcon, legsIcon;
+    [Header("Cooldown sweep")]
+    [SerializeField] Image cooldownLine;
+    [SerializeField, Min(.5f)] float cooldownLineThickness = 2f;
+    [SerializeField] Color cooldownLineColor = new Color(1f, .93f, .6f, 1f);
 
     Color iconColour = Color.white;
     Color labelColour = Color.white;
     Part ability;
     PartCategory? slot;
     float cooldown;
-    float remaining;
+    PartAbilityCooldown state;
 
     public Part Ability => ability;
     public PartCategory? Slot => slot;
     public float Cooldown => cooldown;
-    public float Remaining => remaining;
-    public bool IsCoolingDown => remaining > 0f;
+    public float Remaining => state != null ? state.Remaining : 0;
+    public bool IsCoolingDown => Remaining > 0f;
+    public Sprite CurrentIcon => icon != null ? icon.sprite : null;
+    // Use the accepted gameplay duration, which can differ from the part's authored default.
+    public float CooldownProgress => state != null && state.Duration > 0 ? Mathf.Clamp01(1f - Remaining / state.Duration) : 1f;
 
     void Awake()
     {
@@ -40,58 +49,86 @@ public sealed class AbilitiesHudPod : MonoBehaviour
         if (cooldownLabel != null) labelColour = cooldownLabel.color;
         SetIconAlpha(1f);
         SetLabelAlpha(0f);
+        ConfigureCooldownLine();
     }
 
-    // Shows one equipped head, torso or legs ability. Its cooldown comes from the part's
-    // Ability Cooldown stat; the sprite stays an empty, faint panel until ability art exists.
+    // Explicit ability art wins; generic slot artwork also covers Fast/Heavy Legs variants.
     public void Bind(Part part)
     {
         ability = part;
         slot = part != null ? part.Slot : null;
         var stats = part != null ? part.Stats : null;
         float value = stats != null ? stats.GetStat(StatType.AbilityCooldown) : 0f;
-        cooldown = value > 0f ? value : defaultCooldown;
-        remaining = 0f;
+        cooldown = Mathf.Max(0, value);
+        state = PartAbilityCooldown.For(part);
         if (icon != null)
         {
             var sprite = stats != null ? stats.icon : null;
+            if (sprite == null && stats != null)
+                sprite = stats.partType == PartType.Head ? headIcon : stats.partType == PartType.Torso ? torsoIcon : stats.partType == PartType.Legs ? legsIcon : null;
+            if (sprite == null && stats != null && partIcons != null)
+                foreach (var candidate in partIcons)
+                    if (candidate != null && string.Equals(candidate.name.Trim(), (stats.partName ?? "").Trim() + WeaponsHudPod.IconSuffix,
+                        System.StringComparison.OrdinalIgnoreCase)) { sprite = candidate; break; }
             icon.sprite = sprite;
             if (sprite != null) iconColour = Color.white;
             SetIconAlpha(1f);
         }
-        if (cooldownLabel != null)
-        {
-            cooldownLabel.text = Mathf.CeilToInt(cooldown).ToString();
-            SetLabelAlpha(0f);
-        }
+        Refresh();
     }
 
     // Starts the cooldown: the sprite dims and the counter shows the full ability cooldown.
     public bool Activate()
     {
-        if (ability == null) return false;
-        remaining = Mathf.Max(0.01f, cooldown);
-        SetIconAlpha(cooldownIconAlpha);
-        if (cooldownLabel != null) cooldownLabel.text = Mathf.CeilToInt(remaining).ToString();
-        SetLabelAlpha(1f);
-        return true;
+        if (ability == null || !ability.isEquipped || state == null || !state.ConfirmActivation(cooldown)) return false;
+        Refresh(); return true;
     }
 
     // Lets the cell be fired from the Inspector in play mode while abilities are still unimplemented.
     [ContextMenu("Activate")]
     void ActivateFromInspector() => Activate();
 
-    void Update()
+    void Update() => Refresh();
+    void Refresh()
     {
-        if (remaining <= 0f) return;
-        remaining = Mathf.Max(0f, remaining - Time.deltaTime);
-        if (remaining > 0f)
+        float remaining = Remaining;
+        SetIconAlpha(remaining > 0 ? cooldownIconAlpha : 1);
+        SetLabelAlpha(remaining > 0 ? 1 : 0);
+        if (cooldownLabel != null) cooldownLabel.text = remaining > 0 ? Mathf.CeilToInt(remaining).ToString() : string.Empty;
+        if (cooldownLine != null)
         {
-            if (cooldownLabel != null) cooldownLabel.text = Mathf.CeilToInt(remaining).ToString();
-            return;
+            cooldownLine.enabled = remaining > 0 && icon != null;
+            if (remaining > 0 && icon != null)
+            {
+                var rect = cooldownLine.rectTransform;
+                float progress = CooldownProgress;
+                rect.anchorMin = new Vector2(0, progress); rect.anchorMax = new Vector2(1, progress);
+                float inset = Mathf.Min(cooldownLineThickness * .5f, icon.rectTransform.rect.height * .5f);
+                rect.anchoredPosition = new Vector2(0, Mathf.Lerp(inset, -inset, progress));
+            }
         }
-        SetIconAlpha(1f);
-        SetLabelAlpha(0f);
+    }
+
+    // Authored by setup; also supports older scene/prefab copies without adding a new Canvas.
+    public void ConfigureCooldownLine()
+    {
+        if (icon == null) return;
+        if (cooldownLine == null)
+        {
+            var existing = icon.transform.Find("Cooldown Sweep");
+            if (existing != null) cooldownLine = existing.GetComponent<Image>();
+            if (cooldownLine == null)
+            {
+                var node = new GameObject("Cooldown Sweep", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                node.layer = icon.gameObject.layer; node.transform.SetParent(icon.transform, false);
+                cooldownLine = node.GetComponent<Image>();
+            }
+        }
+        cooldownLine.raycastTarget = false; cooldownLine.color = cooldownLineColor;
+        var rect = cooldownLine.rectTransform; rect.pivot = new Vector2(.5f, .5f);
+        rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.right;
+        rect.sizeDelta = new Vector2(0, cooldownLineThickness); rect.anchoredPosition = new Vector2(0, cooldownLineThickness * .5f);
+        cooldownLine.enabled = IsCoolingDown;
     }
 
     void SetIconAlpha(float alpha)

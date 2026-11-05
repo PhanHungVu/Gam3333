@@ -60,6 +60,26 @@ public class MechMovementController : MonoBehaviour
     bool assaultBoostRequiresRelease;
     bool brakingAfterBoost;
     Vector3 planarVelocity;
+    bool hitStopDash, hitStopJump;
+    public void ClearHitStopInputBuffer() { hitStopDash=false; hitStopJump=false; }
+    Vector3 externalVelocity;
+    float externalRemaining, externalDuration;
+    public bool IsKnockedBack => externalRemaining > 0;
+    public Vector3 ExternalVelocity => externalRemaining > 0 ? externalVelocity * (externalRemaining / externalDuration) : Vector3.zero;
+
+    // A bounded additive velocity, integrated by the same collision-aware CharacterController.Move.
+    public bool ApplyKnockback(Vector3 direction, float speed, float duration)
+    {
+        if (!isActiveAndEnabled || health != null && health.IsDead || !Finite(direction.x) || !Finite(direction.y) || !Finite(direction.z)
+            || !Finite(speed) || !Finite(duration) || speed <= 0 || duration <= 0) return false;
+        direction = Vector3.ProjectOnPlane(direction, Vector3.up);
+        if (direction.sqrMagnitude < .0001f) return false;
+        externalVelocity = direction.normalized * Mathf.Min(speed, 40);
+        externalRemaining = externalDuration = Mathf.Min(duration, 1);
+        NotifyCombatAction(); return true;
+    }
+    public void ClearExternalMotion() { externalVelocity = Vector3.zero; externalRemaining = 0; }
+    static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
     Vector3 quickBoostDirection;
     float verticalVelocity;
     float quickBoostTimer;
@@ -184,6 +204,8 @@ public class MechMovementController : MonoBehaviour
         quickBoostTimer = 0f;
         quickBoostRecoveryTimer = 0f;
         planarVelocity = Vector3.zero;
+        ClearHitStopInputBuffer();
+        ClearExternalMotion();
         verticalVelocity = 0f;
         Velocity = MoveDirection = FacingDirection = Vector3.zero;
         hasGroundSample = false;
@@ -209,13 +231,19 @@ public class MechMovementController : MonoBehaviour
         if (deltaTime <= 0f || !isActiveAndEnabled || !characterController.enabled)
             return;
 
+        if (CombatHitStop.IsFrozen(transform))
+        {
+            hitStopDash |= input.quickBoost; hitStopJump |= input.jump; return;
+        }
+        input.quickBoost |= hitStopDash; input.jump |= hitStopJump; ClearHitStopInputBuffer();
+
         input.move = Vector2.ClampMagnitude(input.move, 1f);
         MechLocomotionSettings settings = Settings;
         bool wasGrounded = IsGrounded;
         float previousYaw = transform.eulerAngles.y;
         Vector3 movementDirection = GetCameraRelativeDirection(input.move, cameraTransform);
         MoveDirection = movementDirection;
-        bool walking = movementDirection.sqrMagnitude > .001f && CanAssaultBoostHere()
+        bool walking = !IsKnockedBack && movementDirection.sqrMagnitude > .001f && CanAssaultBoostHere()
             && !IsQuickBoosting && !assaultBoostActive && !input.quickBoost && !input.assaultBoost;
         bool wasRunning = IsAutoRunning;
         if (!walking || Vector3.ProjectOnPlane(Velocity, Vector3.up).sqrMagnitude < .01f)
@@ -246,9 +274,14 @@ public class MechMovementController : MonoBehaviour
                 ProbeGround(CurrentModule.GroundProbeDistance), settings, deltaTime)
             : LocomotionModule.GroundVerticalVelocity(input.jump, verticalVelocity, IsGrounded, settings, deltaTime);
 
+        // Integrate the linear decay exactly over this step, including a frame longer than the impulse.
+        float impulseStep = Mathf.Min(deltaTime, externalRemaining);
+        float impulseWeight = externalDuration > 0 ? (externalRemaining - impulseStep * .5f) / externalDuration : 0;
+        Vector3 externalStep = externalVelocity * (impulseStep * impulseWeight);
+        externalRemaining = Mathf.Max(0, externalRemaining - deltaTime);
         Vector3 velocity = planarVelocity + Vector3.up * verticalVelocity;
         Vector3 previousPosition = transform.position;
-        CollisionFlags collisions = characterController.Move(velocity * deltaTime);
+        CollisionFlags collisions = characterController.Move(velocity * deltaTime + externalStep);
         Velocity = (transform.position - previousPosition) / deltaTime;
         float landingSpeed = Mathf.Max(0f, -verticalVelocity);
         if ((collisions & CollisionFlags.Above) != 0 && verticalVelocity > 0f)

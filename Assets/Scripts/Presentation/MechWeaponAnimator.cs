@@ -206,6 +206,7 @@ public sealed class MechWeaponAnimator : MonoBehaviour
     {
         if (!isActiveAndEnabled || !graph.IsValid()) return;
         if (!CanAnimate) { RefreshEquipment(); return; }
+        if (CombatHitStop.IsFrozen(owner!=null ? owner.transform : enemyOwner!=null ? enemyOwner.transform : null)) return;
         deltaTime = Mathf.Max(0f, deltaTime);
         neutralTime = NeutralPlaying ? neutralTime + deltaTime : 0f;
         clips[0].SetTime(Mathf.Repeat(neutralTime, Mathf.Max(0.01f, animations.neutral.length)));

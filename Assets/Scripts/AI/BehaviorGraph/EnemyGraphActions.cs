@@ -20,7 +20,7 @@ namespace Lithomachia.EnemyBehavior
         Status Step()
         {
             if (Controller == null || !Controller.IsReady) return Status.Failure;
-            return Time.deltaTime <= 0 ? Status.Running : Tick();
+            return Time.deltaTime <= 0 || CombatHitStop.IsFrozen(Controller.transform) ? Status.Running : Tick();
         }
         protected virtual void Begin() { }
         protected abstract Status Tick();

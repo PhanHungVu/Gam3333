@@ -51,6 +51,7 @@ public sealed class TempLevelObjective : MonoBehaviour
         if (player == null) return;
         if (state == State.Won)
         {
+            if (MissionOutcomeController.Find(gameObject.scene) != null) return;
             var keyboard = Keyboard.current;
             if (keyboard != null && keyboard[inputKey].wasPressedThisFrame && sceneManager != null)
                 sceneManager.LoadScene("MainMenuScene");
@@ -68,8 +69,13 @@ public sealed class TempLevelObjective : MonoBehaviour
         else if (state == State.Collected && returnPoint != null && Near(returnPoint, returnRadius))
         {
             state = State.Won;
-            if (winScreen != null) winScreen.SetActive(true);
-            if (pauseOnWin) Time.timeScale = 0f;
+            var outcome = MissionOutcomeController.Find(gameObject.scene);
+            if (outcome != null) outcome.ReportSuccess();
+            else
+            {
+                if (winScreen != null) winScreen.SetActive(true);
+                if (pauseOnWin) Time.timeScale = 0f;
+            }
             //Debug.Log("Level complete!");
             SetTooltip("Level complete! Press " + interactKey + " to go back to the main menu");
             Completed?.Invoke();

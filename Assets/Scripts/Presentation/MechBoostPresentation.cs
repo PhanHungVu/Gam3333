@@ -67,7 +67,7 @@ public class MechBoostPresentation : MonoBehaviour
 
     void UpdatePresentation(float deltaTime)
     {
-        if (visualRoot == null || movement == null || deltaTime <= 0f)
+        if (visualRoot == null || movement == null || deltaTime <= 0f || CombatHitStop.IsFrozen(transform))
             return;
         bool active = movement.isActiveAndEnabled;
         Vector3 velocity = active ? movement.Velocity : Vector3.zero;

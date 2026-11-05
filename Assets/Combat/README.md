@@ -1,5 +1,9 @@
 # Combat presentation slice
 
+The latest stronger damage/hit shake and actor-local impact holds are documented in [Hit feedback](HitFeedback.md), including the editable settings and recovery behavior.
+
+Current weapon VFX, firing/damage camera impulses and health feedback are documented in [Game feel — tasks 1–3](GameFeel.md). HUD integration, Spinner/orbit knockback, mission results and physics deaths are documented in [Milestones 4–7](RemainingMilestones.md), including the exposed gameplay hooks and remaining networking/ability dependencies.
+
 Current player bindings, automatic running, reload and ability-input connections are documented in [Player controls](ControlScheme.md). The HUD is being revamped separately; this control revision does not edit its files.
 
 `Prefab/Mech.prefab` has `CombatFeedback`, using the existing `Prototype Combat.mat` and the mesh-only `VisualMech/Body` for recoil. `Prefab/Enemy.prefab` and the unpacked enemies in `Scenes/A33.unity` have `EnemyCombatFeedback`. No extra scene setup is required.

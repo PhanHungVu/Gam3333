@@ -89,6 +89,7 @@ public sealed class MechCameraObstacles : CinemachineExtension
 
     bool Ignored(Collider collider, string ignoreTag)
     {
+        if (collider.GetComponentInParent<CombatRagdoll>() != null) return true;
         if (ignoredRoot != null && collider.transform.IsChildOf(ignoredRoot)) return true;
         if (!string.IsNullOrEmpty(ignoreTag) && collider.CompareTag(ignoreTag)) return true;
         // A health-bearing structure is still scenery. EnemyAgent identifies the

@@ -93,7 +93,7 @@ public class MechCombat : MonoBehaviour
 
     public AttackResult TryAttack(PartCategory socket)
     {
-        if (!isActiveAndEnabled) return default;
+        if (!isActiveAndEnabled || CombatHitStop.BlocksNewActions(transform)) return default;
         var part = GetPart(socket);
         AttackResult result;
         if (part != null && IsRanged(part)) { var shot = Fire(part); result = new AttackResult(shot != null, shot); }
@@ -185,6 +185,7 @@ public class MechCombat : MonoBehaviour
 
     void LateUpdate()
     {
+        if (CombatHitStop.IsFrozen(transform)) return;
         TickCooldowns(Time.deltaTime);
         TickMelee(Time.deltaTime);
     }

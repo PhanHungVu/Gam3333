@@ -323,6 +323,7 @@ GameObject:
   - component: {fileID: 7221128625116836735}
   - component: {fileID: 3887729797017896169}
   - component: {fileID: 1659800879369613361}
+  - component: {fileID: 5403761105406963197}
   m_Layer: 0
   m_Name: arm_throwingaxe
   m_TagString: Untagged
@@ -385,6 +386,34 @@ MonoBehaviour:
   placement: {fileID: 1442497411790760837}
   loadedProjectileRenderers:
   - {fileID: 8088031939848424622}
+--- !u!114 &5403761105406963197
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3874830602067585105}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce2917b344d041439ccbfc6660e7cbf3, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
+  material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
+  color: {r: 0.3, g: 0.9, b: 1, a: 1}
+  muzzleFlash: 0
+  muzzleSmoke: 0
+  muzzleSize: 0.35
+  muzzleDuration: 0.08
+  projectileTrail: 1
+  trailWidth: 0.12
+  trailLifetime: 0.3
+  impactSize: 0.5
+  firingShake: 0.02
+  firingShakeDuration: 0.12
+  meleeTrail: 0
+  trailAnchor: {fileID: 1442497411790760837}
+  swingStart: 0.12
+  swingEnd: 0.8
 --- !u!1 &5759857666210329218
 GameObject:
   m_ObjectHideFlags: 0

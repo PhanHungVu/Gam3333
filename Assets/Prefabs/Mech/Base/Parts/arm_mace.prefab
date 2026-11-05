@@ -289,6 +289,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &5331336796105175306
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5717209918043853322}
+  m_Layer: 0
+  m_Name: VFX Swing Tip
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5717209918043853322
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5331336796105175306}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.0423187, y: 1.0570732, z: 0.011044145}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6515010887687322815}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5344667911303307272
 GameObject:
   m_ObjectHideFlags: 0
@@ -418,6 +449,7 @@ GameObject:
   - component: {fileID: 8802850597739263}
   - component: {fileID: 3288396653387323531}
   - component: {fileID: 8542973691134999615}
+  - component: {fileID: 6292664937678490932}
   m_Layer: 0
   m_Name: arm_mace
   m_TagString: Untagged
@@ -479,6 +511,34 @@ MonoBehaviour:
   animations: {fileID: 11400000, guid: 28ac79f9732ea8848b508803d6d77735, type: 2}
   placement: {fileID: 0}
   loadedProjectileRenderers: []
+--- !u!114 &6292664937678490932
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8678832782221385882}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce2917b344d041439ccbfc6660e7cbf3, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
+  material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
+  color: {r: 0.4, g: 0.85, b: 1, a: 0.95}
+  muzzleFlash: 0
+  muzzleSmoke: 0
+  muzzleSize: 0.35
+  muzzleDuration: 0.08
+  projectileTrail: 0
+  trailWidth: 0.45
+  trailLifetime: 0.26
+  impactSize: 0.75
+  firingShake: 0.02
+  firingShakeDuration: 0.12
+  meleeTrail: 1
+  trailAnchor: {fileID: 5717209918043853322}
+  swingStart: 0.12
+  swingEnd: 0.8
 --- !u!1001 &3464126027175872689
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -545,7 +605,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: -1550650427007601650, guid: 7cd1a88d94a64eb4cb56df8d912454ed, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5717209918043853322}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 5620269637290888176, guid: 7cd1a88d94a64eb4cb56df8d912454ed, type: 3}
       insertIndex: -1
