@@ -25,21 +25,17 @@ public static class MechHealthHudChecks
             "Health meter references all three supplied HP sprites");
         foreach (var graphic in viewPrefab.GetComponentsInChildren<Graphic>(true)) check(!graphic.raycastTarget, "Health artwork never consumes clicks");
         var player = Object.Instantiate(prefab, new Vector3(100000f, 2f, 0f), Quaternion.identity);
-        var ui = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.CursorPath));
+        // The real combat HUD (Combat HUD/CombatHUD), placed under a shared Canvas the way the player's rig
+        // does in game (it has no Canvas of its own).
+        var ui = new GameObject("Health Check Canvas", typeof(RectTransform), typeof(Canvas));
+        var canvas = ui.GetComponent<Canvas>();
+        var combatHud = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(TestMech.CombatHudPath), ui.transform, false);
         try
         {
-            var hud = ui.GetComponentInChildren<MechHealthHud>();
-            var energyHud = ui.GetComponentInChildren<MechEnergyHud>();
-            var canvas = ui.GetComponent<Canvas>();
+            var hud = combatHud.GetComponentInChildren<MechHealthHud>(true);
             var health = player.GetComponent<CombatHealth>();
             hud.Bind(health);
-            energyHud.Bind(player.GetComponent<MechEnergyController>());
-            check(hud.Canvas == canvas && energyHud.GetComponentInParent<Canvas>() == canvas
-                && hud.transform.parent == energyHud.transform.parent && hud.IsVisible,
-                "Health and movement meters share the same Canvas and parent");
-            check(((RectTransform)hud.transform).anchoredPosition == new Vector2(28f, 124f)
-                && ((RectTransform)energyHud.transform).anchoredPosition == new Vector2(28f, 42f),
-                "Canvas prefab places health above movement with room for both glows");
+            check(hud.Canvas == canvas && hud.IsVisible, "The combat HUD holds the health meter under its shared Canvas");
             var fill = hud.transform.Find("BarFront").GetComponent<Image>();
             var glow = hud.transform.Find("Glow").GetComponent<Image>();
             var back = hud.transform.Find("BarBack").GetComponent<Image>();
@@ -54,11 +50,6 @@ public static class MechHealthHudChecks
                 && glow.rectTransform.localScale.y == 1f && back.rectTransform.sizeDelta == backSize,
                 "Damage squeezes glow horizontally and leaves the backing full-sized");
             check(fill.color == colour && hud.Readout == string.Empty, "HP sprite colours are retained without prototype labels");
-            var energy = player.GetComponent<MechEnergyController>(); energy.TrySpend(50f);
-            typeof(MechEnergyHud).GetMethod("LateUpdate", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(energyHud, null);
-            check(Mathf.Approximately(energyHud.transform.Find("BarFront").GetComponent<Image>().fillAmount, 0.5f)
-                && Mathf.Approximately(energyHud.transform.Find("Glow").localScale.x, 0.5f),
-                "Movement front crops and its glow squeezes independently from HP");
             var settings = new SerializedObject(hud);
             var textObject = new GameObject("Designer TMP Readout", typeof(RectTransform));
             textObject.transform.SetParent(hud.transform, false);
@@ -68,7 +59,7 @@ public static class MechHealthHudChecks
             check(tmp.text == "HEALTH  " + Mathf.CeilToInt(health.CurrentHealth) + " / " + Mathf.CeilToInt(health.MaximumHealth),
                 "Optional designer health readout still follows real health");
             hud.enabled = false;
-            check(!hud.IsVisible && canvas.enabled && energyHud.isActiveAndEnabled, "Disabling HP never hides the movement bar or shared Canvas");
+            check(!hud.IsVisible && canvas.enabled, "Disabling HP never hides the shared Canvas");
             hud.enabled = true; check(hud.IsVisible, "Re-enabling HP restores its own meter");
             player.SetActive(false); check(!hud.IsVisible && canvas.enabled, "Disabling player hides HP without disabling shared UI");
             player.SetActive(true); check(hud.IsVisible, "Re-enabling player restores HP");

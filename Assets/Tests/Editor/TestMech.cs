@@ -13,7 +13,7 @@ public static class TestMech
     public const string LegsModel = "Assets/Anim/golem2_v2.glb";
     public const string WeaponAnimationModel = "Assets/Anim/golem2_v3.glb";
     public const string HealthHudPath = "Assets/Prefabs/UI/Combat HUD/Player Health HUD.prefab";
-    public const string CursorPath = "Assets/Prefabs/Mech Cursor Canvas.prefab";
+    public const string CombatHudPath = "Assets/Prefabs/UI/Combat HUD/CombatHUD.prefab";
     public const string BoltPath = "Assets/Prefabs/Combat/Projectiles/CrossbowBolt.prefab";
     public const string AxePath = "Assets/Prefabs/Combat/Projectiles/ThrowingAxe.prefab";
     public static readonly string[] WeaponSounds = { "StoneSword_attack", "ThrowingAxe_attack", "Cannon_attack", "Crossbow_attack", "Mace_attack", "CrossbowArm_attack" };

@@ -107,7 +107,7 @@ public static class CombatRemainingChecks
         var abilities=Object.FindAnyObjectByType<MechAbilitiesHud>(); var weapons=Object.FindAnyObjectByType<MechWeaponsHud>();
         Check(mission!=null && mission.Participants.Count==1,"Actual player bootstraps one local mission participant");
         Check(Object.FindObjectsByType<MechWeaponsHud>().Length==1 && weapons.Pods.Count==4,"Scenes without an authored weapon HUD get one shared fallback HUD");
-        foreach(var diagnostic in abilities.Pods) Debug.Log("ABILITY AUDIT: "+diagnostic.Ability.Stats.partName+"; icons="+Get<Sprite[]>(diagnostic,"partIcons").Length+"; selected="+(diagnostic.CurrentIcon!=null?diagnostic.CurrentIcon.name:"none"));
+        foreach(var diagnostic in abilities.Pods) Debug.Log("ABILITY AUDIT: "+diagnostic.Ability.Stats.partName+"; selected="+(diagnostic.CurrentIcon!=null?diagnostic.CurrentIcon.name:"none"));
         Check(abilities.Pods.Count==3 && abilities.Pods.All(pod=>pod.CurrentIcon!=null),"All three ability pods resolve imported artwork without changing their layout");
         var head=equipment.GetEquipped(PartCategory.Head); input.enabled=true;
         int requests=0; input.AbilityRequested+=(slot,part)=>requests++;
