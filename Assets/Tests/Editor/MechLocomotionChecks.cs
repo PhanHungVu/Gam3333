@@ -212,8 +212,8 @@ public static class MechLocomotionChecks
             Step(motor, view, 90);
             energy.TickRecovery(10f, true);
             Step(motor, view, 1, Vector2.up, boost: true);
-            check(motor.IsQuickBoosting && Near(motor.AnimationData.Speed, 27.3f),
-                "Faster dash stopping preserves its authored ignition curve and speed");
+            check(motor.IsQuickBoosting && motor.AnimationData.Speed >= 47f && motor.AnimationData.Speed <= 50.1f,
+                "Dash stopping preserves the immediate front-loaded burst");
             for (int i = 0; motor.IsQuickBoosting && i < 30; i++) Step(motor, view);
             releasedAt = player.transform.position;
             Step(motor, view, 6);

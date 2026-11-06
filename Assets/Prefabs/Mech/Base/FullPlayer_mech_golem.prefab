@@ -10538,6 +10538,7 @@ GameObject:
   - component: {fileID: 7289363981103585664}
   - component: {fileID: 6595480779760735581}
   - component: {fileID: 5831513891574494349}
+  - component: {fileID: 5103838058099338115}
   m_Layer: 0
   m_Name: FullPlayer_mech_golem
   m_TagString: Player
@@ -10714,17 +10715,18 @@ MonoBehaviour:
   boostAcceleration: 28
   rotationSharpness: 12
   faceCameraDirection: 1
-  quickBoostPeakSpeed: 24
-  quickBoostDuration: 0.22
-  quickBoostRecovery: 0.35
-  quickBoostDistanceMultiplier: 1.75
-  quickBoostDurationMultiplier: 1.35
+  quickBoostPeakSpeed: 50
+  quickBoostDuration: 0.25
+  quickBoostRecovery: 0.4
+  quickBoostDistanceMultiplier: 1
+  quickBoostDurationMultiplier: 1
+  quickBoostExitBlendStart: 0.8
   quickBoostCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0.65
+      value: 0.95
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -10732,7 +10734,7 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
-      time: 0.12
+      time: 0.1
       value: 1
       inSlope: 0
       outSlope: 0
@@ -10741,7 +10743,16 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
-      time: 0.55
+      time: 0.3
+      value: 0.95
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.5
       value: 0.75
       inSlope: 0
       outSlope: 0
@@ -10750,8 +10761,17 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
+      time: 0.75
+      value: 0.4
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
       time: 1
-      value: 0.1
+      value: 0
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -11074,6 +11094,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MechAbilities
   damageMultiplier: 1
   activeAbilities: 
+--- !u!114 &5103838058099338115
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3053454427299694765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 862294e424784fb9a1c0c29161cfaa68, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::QuickDashFeedback
+  dustPrefab: {fileID: 6270878625780173689, guid: 4882e9b1a6776ee4b91ef74d8d3778d3, type: 3}
+  dustPoolSize: 12
+  dustCount: 48
+  dustScale: 1.35
+  dustLifetimeScale: 1.25
+  dustSpacing: 1.6
+  maxDustPuffsPerDash: 6
+  startImpulseStrength: 0.035
+  startImpulseDuration: 0.07
+  endImpulseStrength: 0.018
+  endImpulseDuration: 0.06
 --- !u!1 &3220106313594343585
 GameObject:
   m_ObjectHideFlags: 0

@@ -290,6 +290,9 @@ public sealed class CombatFeedback : MonoBehaviour
         else if(victim==health && hitStop && kind!=CombatHitKind.Projectile)
             CombatHitStop.Request(owner,damageHitStop,this);
     }
+    // Movement presentation shares the existing bounded impulse channel/listener.
+    public bool PlayMovementImpulse(Vector3 direction, float strength, float duration)
+        => isActiveAndEnabled && presentationEnabled && EmitImpulse(transform.position, direction, strength, duration);
     bool EmitImpulse(Vector3 position, Vector3 direction, float strength, float duration)
     {
         if (!cameraImpulse || strength <= 0 || impulseListener == null) return false;

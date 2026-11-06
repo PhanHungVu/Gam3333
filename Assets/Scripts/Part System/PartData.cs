@@ -75,20 +75,40 @@ public class PartData : ScriptableObject
     public int MagazineSize => Mathf.Max(0, Mathf.RoundToInt(GetStat(StatType.MagSize)));
 
 #if UNITY_EDITOR
+    static bool idValidationQueued, validatingIds;
+
     void OnValidate()
     {
-        if (string.IsNullOrEmpty(partId)) return;
+        // Loading another part from OnValidate can recursively validate its dependencies.
+        // Wait until prefab/import deserialization has finished, and coalesce the checks.
+        if (string.IsNullOrEmpty(partId) || idValidationQueued || validatingIds) return;
+        idValidationQueued = true;
+        EditorApplication.delayCall += ValidatePartIds;
+    }
 
-        string[] guids = AssetDatabase.FindAssets("t:PartData");
-        foreach (var guid in guids)
+    static void ValidatePartIds()
+    {
+        idValidationQueued = false;
+        if (EditorApplication.isCompiling || EditorApplication.isUpdating)
         {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
-            var other = AssetDatabase.LoadAssetAtPath<PartData>(path);
-            if (other != null && other != this && other.partId == partId)
+            idValidationQueued = true;
+            EditorApplication.delayCall += ValidatePartIds;
+            return;
+        }
+        validatingIds = true;
+        try
+        {
+            var ids = new Dictionary<string, PartData>();
+            foreach (var guid in AssetDatabase.FindAssets("t:PartData"))
             {
-                Debug.LogWarning($"Duplicate partId '{partId}' found on {other.name} and {name}", this);
+                var part = AssetDatabase.LoadAssetAtPath<PartData>(AssetDatabase.GUIDToAssetPath(guid));
+                if (part == null || string.IsNullOrEmpty(part.partId)) continue;
+                if (ids.TryGetValue(part.partId, out var other))
+                    Debug.LogWarning($"Duplicate partId '{part.partId}' found on {other.name} and {part.name}", part);
+                else ids.Add(part.partId, part);
             }
         }
+        finally { validatingIds = false; }
     }
 #endif
 }

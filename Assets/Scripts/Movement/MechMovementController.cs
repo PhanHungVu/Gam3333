@@ -26,16 +26,16 @@ public class MechMovementController : MonoBehaviour
     [SerializeField] bool faceCameraDirection = true;
 
     [Header("Quick Boost")]
-    [SerializeField] float quickBoostPeakSpeed = 24f;
-    [SerializeField] float quickBoostDuration = 0.22f;
-    [SerializeField] float quickBoostRecovery = 0.35f;
-    [SerializeField] float quickBoostDistanceMultiplier = 1.75f;
-    [SerializeField] float quickBoostDurationMultiplier = 1.35f;
+    [SerializeField] float quickBoostPeakSpeed = 50f;
+    [SerializeField] float quickBoostDuration = 0.25f;
+    [SerializeField] float quickBoostRecovery = 0.4f;
+    [SerializeField] float quickBoostDistanceMultiplier = 1f;
+    [SerializeField] float quickBoostDurationMultiplier = 1f;
+    [Tooltip("Normal movement returns over the final fraction of the dash. Its burst direction remains committed.")]
+    [SerializeField, Range(.5f, .99f)] float quickBoostExitBlendStart = .8f;
     [SerializeField] AnimationCurve quickBoostCurve = new AnimationCurve(
-        new Keyframe(0f, 0.65f),
-        new Keyframe(0.12f, 1f),
-        new Keyframe(0.55f, 0.75f),
-        new Keyframe(1f, 0.1f));
+        new Keyframe(0f, .95f), new Keyframe(.1f, 1f), new Keyframe(.3f, .95f),
+        new Keyframe(.5f, .75f), new Keyframe(.75f, .4f), new Keyframe(1f, 0f));
 
     [Header("Ground Assault Boost")]
     [SerializeField, Min(0f)] float assaultBoostSpeed = 28f;
@@ -84,6 +84,14 @@ public class MechMovementController : MonoBehaviour
     float verticalVelocity;
     float quickBoostTimer;
     float quickBoostRecoveryTimer;
+    const int BoostIntegrationSteps = 128;
+    readonly float[] boostIntegral = new float[BoostIntegrationSteps + 1];
+    readonly float[] exitIntegral = new float[BoostIntegrationSteps + 1];
+    float quickBoostActiveDuration;
+    public Vector3 QuickBoostStartPosition { get; private set; }
+    public bool QuickBoostHasGroundContact { get; private set; }
+    public Vector3 QuickBoostGroundPoint { get; private set; }
+    public Vector3 QuickBoostGroundNormal { get; private set; }
     bool hasGroundSample;
     bool locomotionBoostActive;
     LocomotionModule locomotionModule;
@@ -146,7 +154,7 @@ public class MechMovementController : MonoBehaviour
     public bool IsGrounded => characterController != null && characterController.isGrounded;
     public bool IsQuickBoosting => quickBoostTimer > 0f;
     public float QuickBoostProgress => IsQuickBoosting
-        ? Mathf.Clamp01(1f - quickBoostTimer / ActiveQuickBoostDuration) : 0f;
+        ? Mathf.Clamp01(1f - quickBoostTimer / (quickBoostActiveDuration > 0 ? quickBoostActiveDuration : ActiveQuickBoostDuration)) : 0f;
     // Includes the active boost: this is time until another boost may start.
     public float QuickBoostCooldownRemaining => quickBoostRecoveryTimer;
     public bool CanQuickBoost => isActiveAndEnabled && (CurrentModule != null ? CurrentModule.CanQuickBoost(IsGrounded) : IsGrounded)
@@ -254,21 +262,23 @@ public class MechMovementController : MonoBehaviour
         if (wasRunning && !IsAutoRunning && !IsQuickBoosting && !assaultBoostActive)
             planarVelocity = Vector3.ClampMagnitude(planarVelocity, settings.moveSpeed);
         input.sprint = IsAutoRunning;
-        bool boostEnded = UpdateQuickBoostTimers(deltaTime);
+        quickBoostRecoveryTimer = Mathf.Max(0f, quickBoostRecoveryTimer - deltaTime);
+        if (quickBoostRecoveryTimer < .000001f) quickBoostRecoveryTimer = 0;
         bool boostStarted = input.quickBoost && CanQuickBoost;
         bool wasAssaultBoosting = assaultBoostActive;
         if (boostStarted)
         {
             StartQuickBoost(movementDirection, cameraTransform);
+            quickBoostRecoveryTimer = Mathf.Max(0f, quickBoostRecoveryTimer - deltaTime);
         }
         UpdateAssaultBoost(input, movementDirection, cameraTransform, deltaTime);
 
-        if (boostEnded || wasAssaultBoosting && !assaultBoostActive)
+        if (wasAssaultBoosting && !assaultBoostActive)
             brakingAfterBoost = true;
         if (IsQuickBoosting || assaultBoostActive)
             brakingAfterBoost = false;
 
-        UpdatePlanarVelocity(input.sprint, movementDirection, settings, deltaTime);
+        Vector3 planarStep = StepPlanarMotion(input.sprint, movementDirection, settings, deltaTime, out bool boostEnded);
         UpdateFacing(movementDirection, cameraTransform, settings.rotationSharpness, deltaTime);
         verticalVelocity = CurrentModule != null
             ? CurrentModule.VerticalVelocity(input, verticalVelocity, IsGrounded,
@@ -280,9 +290,8 @@ public class MechMovementController : MonoBehaviour
         float impulseWeight = externalDuration > 0 ? (externalRemaining - impulseStep * .5f) / externalDuration : 0;
         Vector3 externalStep = externalVelocity * (impulseStep * impulseWeight);
         externalRemaining = Mathf.Max(0, externalRemaining - deltaTime);
-        Vector3 velocity = planarVelocity + Vector3.up * verticalVelocity;
         Vector3 previousPosition = transform.position;
-        CollisionFlags collisions = characterController.Move(velocity * deltaTime + externalStep);
+        CollisionFlags collisions = characterController.Move(planarStep + Vector3.up * (verticalVelocity * deltaTime) + externalStep);
         Velocity = (transform.position - previousPosition) / deltaTime;
         float landingSpeed = Mathf.Max(0f, -verticalVelocity);
         if ((collisions & CollisionFlags.Above) != 0 && verticalVelocity > 0f)
@@ -305,10 +314,10 @@ public class MechMovementController : MonoBehaviour
             GetAimDirection(cameraTransform));
 
         // Publish after movement so effects can read this frame's state and velocity.
-        if (boostEnded)
-            QuickBoostEnded?.Invoke();
         if (boostStarted)
             QuickBoostStarted?.Invoke(quickBoostDirection);
+        if (boostEnded)
+            QuickBoostEnded?.Invoke();
         if (wasAssaultBoosting && !assaultBoostActive)
             AssaultBoostEnded?.Invoke();
         else if (!wasAssaultBoosting && assaultBoostActive)
@@ -320,12 +329,7 @@ public class MechMovementController : MonoBehaviour
 
     void UpdatePlanarVelocity(bool sprinting, Vector3 movementDirection, MechLocomotionSettings settings, float deltaTime)
     {
-        if (IsQuickBoosting)
-        {
-            planarVelocity = quickBoostDirection * (quickBoostCurve.Evaluate(QuickBoostProgress)
-                * quickBoostPeakSpeed * quickBoostDistanceMultiplier);
-        }
-        else if (assaultBoostActive)
+        if (assaultBoostActive)
         {
             planarVelocity = Vector3.MoveTowards(planarVelocity, assaultBoostDirection * assaultBoostSpeed,
                 assaultBoostAcceleration * deltaTime);
@@ -345,6 +349,52 @@ public class MechMovementController : MonoBehaviour
             if ((planarVelocity - movementDirection * settings.moveSpeed).sqrMagnitude < 0.0001f)
                 brakingAfterBoost = false;
         }
+    }
+
+    Vector3 StepPlanarMotion(bool sprinting, Vector3 requested, MechLocomotionSettings settings, float deltaTime, out bool ended)
+    {
+        ended = false;
+        if (!IsQuickBoosting)
+        { UpdatePlanarVelocity(sprinting, requested, settings, deltaTime); return planarVelocity * deltaTime; }
+        if (quickBoostActiveDuration <= 0) RebuildBoostIntegral();
+        float activeStep = Mathf.Min(deltaTime, quickBoostTimer);
+        float start = Mathf.Clamp01(1 - quickBoostTimer / quickBoostActiveDuration);
+        float finish = Mathf.Clamp01(start + activeStep / quickBoostActiveDuration);
+        Vector3 exit = requested * settings.moveSpeed;
+        Vector3 step = quickBoostDirection * (quickBoostPeakSpeed * quickBoostDistanceMultiplier * quickBoostActiveDuration
+            * (IntegralAt(boostIntegral, finish) - IntegralAt(boostIntegral, start)))
+            + exit * (quickBoostActiveDuration * (IntegralAt(exitIntegral, finish) - IntegralAt(exitIntegral, start)));
+        float blend = ExitBlend(finish);
+        planarVelocity = quickBoostDirection * (quickBoostPeakSpeed * quickBoostDistanceMultiplier * CurveSpeed(finish) * (1 - blend)) + exit * blend;
+        quickBoostTimer = Mathf.Max(0, quickBoostTimer - activeStep);
+        if (quickBoostTimer <= .000001f)
+        {
+            quickBoostTimer = 0; ended = true; brakingAfterBoost = true; planarVelocity = exit;
+            float remainder = deltaTime - activeStep;
+            if (remainder > 0) { UpdatePlanarVelocity(sprinting, requested, settings, remainder); step += planarVelocity * remainder; }
+        }
+        return step;
+    }
+    float CurveSpeed(float progress) => Mathf.Clamp01(quickBoostCurve != null ? quickBoostCurve.Evaluate(progress) : 1 - progress);
+    float ExitBlend(float progress) => Mathf.SmoothStep(0, 1, Mathf.InverseLerp(quickBoostExitBlendStart, 1, progress));
+    void RebuildBoostIntegral()
+    {
+        quickBoostActiveDuration = ActiveQuickBoostDuration; boostIntegral[0] = exitIntegral[0] = 0;
+        float previousBlend = ExitBlend(0), previous = CurveSpeed(0) * (1 - previousBlend);
+        for (int i = 1; i <= BoostIntegrationSteps; i++)
+        {
+            float progress = i / (float)BoostIntegrationSteps, blend = ExitBlend(progress);
+            float speed = CurveSpeed(progress) * (1 - blend);
+            boostIntegral[i] = boostIntegral[i - 1] + (previous + speed) * (.5f / BoostIntegrationSteps);
+            exitIntegral[i] = exitIntegral[i - 1] + (previousBlend + blend) * (.5f / BoostIntegrationSteps);
+            previous = speed; previousBlend = blend;
+        }
+    }
+    static float IntegralAt(float[] samples, float progress)
+    {
+        float position = Mathf.Clamp01(progress) * BoostIntegrationSteps;
+        int index = Mathf.Min(BoostIntegrationSteps - 1, Mathf.FloorToInt(position));
+        return Mathf.Lerp(samples[index], samples[index + 1], position - index);
     }
 
     void UpdateFacing(Vector3 movementDirection, Transform cameraTransform, float turnSharpness, float deltaTime)
@@ -428,22 +478,43 @@ public class MechMovementController : MonoBehaviour
 
     void StartQuickBoost(Vector3 movementDirection, Transform cameraTransform)
     {
+        QuickBoostStartPosition = transform.position;
+        QuickBoostHasGroundContact = TryGetGroundContact(out var contact);
+        QuickBoostGroundPoint = QuickBoostHasGroundContact ? contact.point : transform.position;
+        QuickBoostGroundNormal = QuickBoostHasGroundContact ? contact.normal : Vector3.up;
         quickBoostDirection = movementDirection.sqrMagnitude > 0.001f
             ? movementDirection.normalized
             : GetCameraForward(cameraTransform);
         if (CurrentModule != null)
             quickBoostDirection = CurrentModule.QuickBoostDirection(quickBoostDirection,
                 Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized);
-        quickBoostTimer = Mathf.Max(ActiveQuickBoostDuration, 0.01f);
+        RebuildBoostIntegral();
+        quickBoostTimer = quickBoostActiveDuration;
         quickBoostRecoveryTimer = quickBoostTimer + Mathf.Max(quickBoostRecovery, 0f);
     }
 
-    bool UpdateQuickBoostTimers(float deltaTime)
+    public bool TryGetGroundContact(out RaycastHit contact, float maximumDistance = .3f)
+        => TryGetGroundContact(transform.position, out contact, maximumDistance);
+
+    // Presentation can sample a position along the resolved movement path between frames.
+    public bool TryGetGroundContact(Vector3 rootPosition, out RaycastHit contact, float maximumDistance = .3f)
     {
-        bool wasBoosting = IsQuickBoosting;
-        quickBoostTimer = Mathf.Max(0f, quickBoostTimer - deltaTime);
-        quickBoostRecoveryTimer = Mathf.Max(0f, quickBoostRecoveryTimer - deltaTime);
-        return wasBoosting && !IsQuickBoosting;
+        contact = default;
+        if (characterController == null || !characterController.enabled) return false;
+        var bounds = characterController.bounds;
+        int count;
+        while ((count = Physics.RaycastNonAlloc(bounds.center + (rootPosition - transform.position), Vector3.down, groundHits,
+            bounds.extents.y + maximumDistance + characterController.skinWidth, Part.MovementQueryMask, QueryTriggerInteraction.Ignore)) == groundHits.Length)
+            Array.Resize(ref groundHits, groundHits.Length * 2);
+        float nearest = float.PositiveInfinity;
+        for (int i = 0; i < count; i++)
+        {
+            var hit = groundHits[i];
+            if (hit.distance >= nearest || hit.normal.y < .5f || hit.transform.IsChildOf(transform)
+                || hit.collider.GetComponentInParent<EnemyAgent>() != null || hit.collider.GetComponentInParent<MechMovementController>() != null) continue;
+            nearest = hit.distance; contact = hit;
+        }
+        return nearest < float.PositiveInfinity;
     }
 
     float ActiveQuickBoostDuration => Mathf.Max(0.01f, quickBoostDuration * quickBoostDurationMultiplier);
@@ -471,6 +542,7 @@ public class MechMovementController : MonoBehaviour
         quickBoostRecovery = Mathf.Max(0f, quickBoostRecovery);
         quickBoostDistanceMultiplier = Mathf.Max(1f, quickBoostDistanceMultiplier);
         quickBoostDurationMultiplier = Mathf.Max(1f, quickBoostDurationMultiplier);
+        quickBoostExitBlendStart = Mathf.Clamp(quickBoostExitBlendStart, .5f, .99f);
     }
 
     Vector3 GetDesiredFacingDirection(Vector3 movementDirection, Transform cameraTransform)

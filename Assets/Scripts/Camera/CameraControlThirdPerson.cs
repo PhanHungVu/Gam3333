@@ -81,13 +81,19 @@ public class CameraControlThirdPerson : MonoBehaviour
     [Header("Movement Feedback")]
     [SerializeField] bool movementFeedback = true;
     [SerializeField, Range(30f, 100f)] float baseFieldOfView = 60f;
-    [SerializeField, Range(0f, 15f)] float quickBoostFovKick = 7f;
+    [SerializeField, Range(0f, 15f)] float quickBoostFovKick = 5f;
+    [SerializeField, Min(.01f)] float quickBoostFovRiseTime = .05f;
+    [SerializeField, Min(.01f)] float quickBoostFovRecoveryTime = .25f;
+    [SerializeField, Min(.01f)] float quickBoostDampingRecovery = .12f;
     [SerializeField, Range(0f, 20f)] float assaultBoostFovKick = 10f;
     [SerializeField, Range(1f, 1.3f)] float assaultBoostDistanceMultiplier = 1.12f;
     [SerializeField] AnimationCurve quickBoostFovCurve = new AnimationCurve(
         new Keyframe(0f, 0f), new Keyframe(0.2f, 1f), new Keyframe(1f, 0f));
     float movementFovOffset;
     float assaultFraming;
+    float assaultFovOffset, quickBoostFovAge = float.PositiveInfinity, quickFollowWeight;
+    bool previousQuickBoost;
+    MechMovementController subscribedMovement;
 
     CinemachineCamera cinemachineCamera;
     Camera outputCamera;
@@ -140,6 +146,8 @@ public class CameraControlThirdPerson : MonoBehaviour
         if (cameraTarget == null) return; // Before Awake, preserve normal rig initialization.
         cameraTarget.SetParent(player, false);
         movementController = player.GetComponent<MechMovementController>();
+        SubscribeMovement(isActiveAndEnabled ? movementController : null);
+        ResetMovementFeedback();
         combatController = player.GetComponent<MechCombat>();
         movementCapsule = player.GetComponent<CharacterController>();
         targetingController = player.GetComponent<MechTargetLockController>();
@@ -185,6 +193,7 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     void OnEnable()
     {
+        SubscribeMovement(movementController);
         if (cameraRigObject != null)
             cameraRigObject.SetActive(true);
         if (target != null)
@@ -193,8 +202,10 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     void OnDisable()
     {
-        movementFovOffset = 0f;
-        assaultFraming = 0f;
+        SubscribeMovement(null);
+        ResetMovementFeedback();
+        if (cinemachineCamera != null)
+        { var lens = cinemachineCamera.Lens; lens.FieldOfView = baseFieldOfView; cinemachineCamera.Lens = lens; }
         if (cameraRigObject != null)
             cameraRigObject.SetActive(false);
     }
@@ -258,8 +269,7 @@ public class CameraControlThirdPerson : MonoBehaviour
         obstacleResolver.Configure(target, avoidObstacles);
         thirdPersonFollow.CameraSide = 0.5f;
         thirdPersonFollow.VerticalArmLength = shoulderHeight;
-        thirdPersonFollow.Damping = movementController != null && movementController.IsQuickBoosting
-            ? quickBoostFollowDamping : normalProfile.damping;
+        thirdPersonFollow.Damping = Vector3.Lerp(normalProfile.damping, quickBoostFollowDamping, quickFollowWeight);
         thirdPersonFollow.ShoulderOffset = ShoulderOffset();
         rotationComposer.TargetOffset = targetingActive ? Vector3.zero : normalProfile.targetOffset;
         // Center on the manual aim focus in soft lock, or the enemy in hard lock.
@@ -371,15 +381,48 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     void UpdateMovementFeedback(float deltaTime)
     {
-        // Melee framing does not pump FOV or distance as the target gets closer.
-        if (meleeFraming > 0.001f) return;
         bool active = movementFeedback && movementController != null && movementController.isActiveAndEnabled;
-        float desiredFov = active && movementController.IsQuickBoosting
-            ? quickBoostFovCurve.Evaluate(movementController.QuickBoostProgress) * quickBoostFovKick
-            : active && movementController.IsAssaultBoosting ? assaultBoostFovKick : 0f;
-        movementFovOffset = Mathf.Lerp(movementFovOffset, desiredFov, 1f - Mathf.Exp(-deltaTime / 0.08f));
-        float desiredFraming = active && movementController.IsAssaultBoosting ? 1f : 0f;
-        assaultFraming = Mathf.Lerp(assaultFraming, desiredFraming, 1f - Mathf.Exp(-deltaTime / 0.2f));
+        if (!active) { ResetMovementFeedback(); return; }
+        bool quick = movementController.IsQuickBoosting;
+        // State-edge fallback also supports a camera bound during an existing dash.
+        if (quick && !previousQuickBoost && float.IsPositiveInfinity(quickBoostFovAge)) OnQuickBoost(Vector3.zero);
+        previousQuickBoost = quick;
+        float quickFov = 0;
+        if (!float.IsPositiveInfinity(quickBoostFovAge))
+        {
+            quickBoostFovAge += Mathf.Max(0, deltaTime);
+            float rise = Mathf.Max(.01f, quickBoostFovRiseTime), recovery = Mathf.Max(.01f, quickBoostFovRecoveryTime);
+            if (quickBoostFovAge < rise + recovery)
+            {
+                float progress = quickBoostFovAge < rise ? .2f * quickBoostFovAge / rise
+                    : Mathf.Lerp(.2f, 1, (quickBoostFovAge - rise) / recovery);
+                quickFov = Mathf.Clamp01(quickBoostFovCurve.Evaluate(progress)) * quickBoostFovKick;
+            }
+            else quickBoostFovAge = float.PositiveInfinity;
+        }
+        quickFollowWeight = quick ? 1 : Mathf.MoveTowards(quickFollowWeight, 0, Mathf.Max(0, deltaTime) / Mathf.Max(.01f, quickBoostDampingRecovery));
+        // Preserve assault/melee framing while always allowing the short dash pulse to recover.
+        if (meleeFraming <= .001f)
+        {
+            float desiredFov = movementController.IsAssaultBoosting && !quick ? assaultBoostFovKick : 0;
+            assaultFovOffset = Mathf.Lerp(assaultFovOffset, desiredFov, 1f - Mathf.Exp(-deltaTime / .08f));
+            float desiredFraming = movementController.IsAssaultBoosting ? 1 : 0;
+            assaultFraming = Mathf.Lerp(assaultFraming, desiredFraming, 1f - Mathf.Exp(-deltaTime / .2f));
+        }
+        movementFovOffset = Mathf.Max(quickFov, assaultFovOffset);
+    }
+    void OnQuickBoost(Vector3 _) { quickBoostFovAge = 0; quickFollowWeight = 1; }
+    void SubscribeMovement(MechMovementController next)
+    {
+        if (subscribedMovement == next) return;
+        if (subscribedMovement != null) subscribedMovement.QuickBoostStarted -= OnQuickBoost;
+        subscribedMovement = next;
+        if (subscribedMovement != null) subscribedMovement.QuickBoostStarted += OnQuickBoost;
+    }
+    void ResetMovementFeedback()
+    {
+        movementFovOffset = assaultFovOffset = assaultFraming = quickFollowWeight = 0;
+        quickBoostFovAge = float.PositiveInfinity; previousQuickBoost = false;
     }
 
     Vector3 ShoulderOffset() => new Vector3((cameraSide + currentLateralOffset)
@@ -396,6 +439,9 @@ public class CameraControlThirdPerson : MonoBehaviour
         normalProfile.maximumPitch = Mathf.Max(normalProfile.minimumPitch, normalProfile.maximumPitch);
         normalProfile.damping = Vector3.Max(Vector3.zero, normalProfile.damping);
         quickBoostFollowDamping = Vector3.Max(Vector3.zero, quickBoostFollowDamping);
+        quickBoostFovRiseTime = Mathf.Max(.01f, quickBoostFovRiseTime);
+        quickBoostFovRecoveryTime = Mathf.Max(.01f, quickBoostFovRecoveryTime);
+        quickBoostDampingRecovery = Mathf.Max(.01f, quickBoostDampingRecovery);
         rotationDamping = Vector2.Max(Vector2.zero, rotationDamping);
         lateralOffsetSpeed = Mathf.Max(0.01f, lateralOffsetSpeed);
         lateralOffsetResponse = Mathf.Max(0.01f, lateralOffsetResponse);
@@ -405,6 +451,7 @@ public class CameraControlThirdPerson : MonoBehaviour
 
     void OnDestroy()
     {
+        SubscribeMovement(null);
         if (cameraRigObject != null)
             Destroy(cameraRigObject);
         if (cameraTarget != null)

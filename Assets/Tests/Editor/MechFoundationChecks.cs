@@ -1144,15 +1144,15 @@ public static class MechFoundationChecks
         Check(Mathf.Abs(((Vector3)Get(motor, "planarVelocity")).z - 5.36f) < 0.01f,
             "Deceleration preserves original 32 units per second squared");
         Step(motor, view, Vector2.right, boost: true);
-        Check(started == 1 && motor.IsQuickBoosting && motor.QuickBoostProgress == 0f,
-            "Quick Boost starts once at progress zero");
-        Check(Mathf.Abs(motor.Velocity.x - 27.3f) < 0.02f, "Quick Boost ignition preserves curve and speed multipliers");
+        Check(started == 1 && motor.IsQuickBoosting && motor.QuickBoostProgress > 0f && motor.QuickBoostProgress <= .1f,
+            "Quick Boost starts once and consumes its first movement step immediately");
+        Check(motor.Velocity.x >= 47f && motor.Velocity.x <= 50.1f, "Quick Boost ignition immediately reaches the front-loaded 50-unit profile");
         view.transform.rotation = Quaternion.Euler(0, 90, 0);
         Step(motor, view, Vector2.left);
         Check(((Vector3)Get(motor, "quickBoostDirection") - Vector3.right).sqrMagnitude < 0.001f
             && motor.QuickBoostProgress > 0, "Dodge direction stays fixed while camera and input change");
         for (int i = 0; i < 15; i++) Step(motor, view);
-        Check(!motor.IsQuickBoosting && ended == 1, "Boost finishes once at original duration");
+        Check(!motor.IsQuickBoosting && ended == 1, "Boost finishes once at its configured duration");
         Step(motor, view, boost: true);
         Check(started == 1 && !motor.CanQuickBoost, "Recovery blocks immediate repeat boost");
         for (int i = 0; i < 30; i++) Step(motor, view);

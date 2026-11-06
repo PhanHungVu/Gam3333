@@ -213,7 +213,10 @@ MonoBehaviour:
   obstacleReturnDamping: 0.25
   movementFeedback: 1
   baseFieldOfView: 60
-  quickBoostFovKick: 7
+  quickBoostFovKick: 5
+  quickBoostFovRiseTime: 0.05
+  quickBoostFovRecoveryTime: 0.25
+  quickBoostDampingRecovery: 0.12
   assaultBoostFovKick: 10
   assaultBoostDistanceMultiplier: 1.12
   quickBoostFovCurve:
