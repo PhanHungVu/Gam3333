@@ -105,6 +105,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 5150000000000000301}
   - component: {fileID: 1657147969302744146}
   - component: {fileID: 7166093300638552774}
   - component: {fileID: 2052888300449810433}
@@ -320,3 +321,23 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2080765808515747233, guid: c02199da86f4fca478af0cc11e45e613, type: 3}
   m_PrefabInstance: {fileID: 6512884027254283627}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &5150000000000000301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7304205167034945194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 315fc819dee3b683dcea684ce23d8081, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TooltipDialogue
+  dialogueFile: {fileID: 4900000, guid: 499b137e995851364c37b84788a25de4, type: 3}
+  questTypeOverride: 
+  tooltip: {fileID: 0}
+  chunkPrefix: Chunk_
+  ignoredChunks:
+  - Chunk_Start
+  - Chunk_End
+  typeSearchSeconds: 8

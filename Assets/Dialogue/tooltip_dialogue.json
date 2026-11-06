@@ -1,0 +1,68 @@
+{
+  "_comment": "Quest tooltip copy. Tokens: {type} {state} {done} {total} {left} {active} {timer}. state is InProgress, ExtractOpen or Complete. timer is the hold in progress (0.0s) or an em dash when nothing is being held.",
+  "defaults": {
+    "type": "",
+    "header": "OBJECTIVE",
+    "states": [
+      { "state": "InProgress", "subtext": "Objectives completed: {done}/{total} · {active} in progress" },
+      { "state": "ExtractOpen", "subtext": "All objectives complete. Head to the extraction point." },
+      { "state": "Complete", "subtext": "Mission complete." }
+    ]
+  },
+  "quests": [
+    {
+      "type": "KOTH",
+      "header": "KING OF THE HILL",
+      "states": [
+        {
+          "state": "InProgress",
+          "subtext": "Zones held: {done}/{total} · {active} in progress · hold {timer}"
+        },
+        {
+          "state": "ExtractOpen",
+          "subtext": "Every hill is held. Get to the extraction point."
+        },
+        {
+          "state": "Complete",
+          "subtext": "Mission complete. All hills held."
+        }
+      ]
+    },
+    {
+      "type": "Elimination",
+      "header": "ELIMINATION",
+      "states": [
+        {
+          "state": "InProgress",
+          "subtext": "Targets cleared: {done}/{total} · {left} left"
+        },
+        {
+          "state": "ExtractOpen",
+          "subtext": "Every target is down. Get to the extraction point."
+        },
+        {
+          "state": "Complete",
+          "subtext": "Mission complete. Area cleared."
+        }
+      ]
+    },
+    {
+      "type": "Escort",
+      "header": "ESCORT",
+      "states": [
+        {
+          "state": "InProgress",
+          "subtext": "Escort the payload · checkpoints {done}/{total}"
+        },
+        {
+          "state": "ExtractOpen",
+          "subtext": "The payload is delivered. Get to the extraction point."
+        },
+        {
+          "state": "Complete",
+          "subtext": "Mission complete. Payload delivered."
+        }
+      ]
+    }
+  ]
+}

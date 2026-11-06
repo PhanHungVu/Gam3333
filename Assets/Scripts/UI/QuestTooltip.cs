@@ -3,12 +3,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // The quest read-out: the type of quest the player is in goes in the header, the state of its
-// current objective in the subtext. The quest system is not in the game yet, so this class is the
-// view only: SetQuest(missionType, objective) is the one call a quest source makes when the player
-// enters a quest or its objective moves on. The copy per objective state lives with that source,
-// for example an escort quest:
-//   just started        -> "Escort the convoy to the drop zone."
-//   convoy delivered    -> "Convoy is through. Head to the extraction point and extract."
+// current objective in the subtext. This class is the view only; TooltipDialogue (on the Mission
+// object, beside MissionTracker) reads the copy from its JSON file and calls SetContent with the two
+// strings. SetQuest still works for a hand-written source that knows its QuestMissionType.
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(380)]
 public sealed class QuestTooltip : MonoBehaviour
@@ -42,6 +39,15 @@ public sealed class QuestTooltip : MonoBehaviour
         SetObjective(objective);
     }
 
+    // Raw copy, used by TooltipDialogue: the header text and the objective line, both already filled in.
+    public void SetContent(string headerText, string subtextText)
+    {
+        if (header != null) header.text = headerText ?? string.Empty;
+        Objective = subtextText ?? string.Empty;
+        if (subtext != null) subtext.text = Objective;
+        Show();
+    }
+
     // Same quest, next objective step: the header stays, the subtext changes.
     public void SetObjective(string objective)
     {
@@ -65,13 +71,5 @@ public sealed class QuestTooltip : MonoBehaviour
     public void Hide()
     {
         if (group != null) group.alpha = 0f;
-    }
-
-    // ---- Quest source: empty until the quest system exists ----
-    // Reads the type of quest the player is in and the state of its current objective, then calls
-    // SetQuest(missionType, objective). Left empty on purpose: the player's active quest, its type
-    // and its objective steps are not available yet.
-    public void Refresh()
-    {
     }
 }

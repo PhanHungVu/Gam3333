@@ -147,15 +147,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ObjectiveMarkerManager
   markerPrefab: {fileID: 1577231607090946155, guid: 82755ce02adc87044815a26bbe56bbc0, type: 3}
-  objectivePrefix: Chunk_
-  ignoredNames:
-  - Chunk_Start
+  exitMarkerPrefab: {fileID: 0}
   searchSeconds: 8
-  edgeMargin: 0.08
-  offScreenScale: 0.5
   icons:
   - {fileID: 21300000, guid: df6e42ee9e0f67d419c36373bb8f248b, type: 3}
   - {fileID: 21300000, guid: 6a9f435ca566b884d93b9163de862f8d, type: 3}
   - {fileID: 21300000, guid: fd2a72de0052bd64d823d2c593083c1e, type: 3}
+  - {fileID: 21300000, guid: 420c9af1cc3f3d44fa817d6ccc5a73c9, type: 3}
   iconPrefix: objectiveMarker
+  chunkPrefix: Chunk_
   gameplayCamera: {fileID: 0}
