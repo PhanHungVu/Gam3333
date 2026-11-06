@@ -36,7 +36,7 @@ public sealed class WanderState : EnemyState
 
     public override void Tick(float dt)
     {
-        if (agent.HasTarget && agent.DistanceToTarget < agent.DetectRadius)
+        if (agent.HasTarget && (agent.IsPursuingFallbackTarget || agent.DistanceToTarget < agent.DetectRadius))
         {
             agent.Fsm.Transition(agent.Chase);
             return;
@@ -67,12 +67,15 @@ public sealed class ChaseState : EnemyState
         agent.InAttackRange = false;
         zigzagTimer = 0f;
         zigzagNoiseSeed = UnityEngine.Random.value * 1000f; // a wide spread so enemies sample unrelated parts of the noise
-        zigzagSmoothedDir = Vector3.zero; // sentinel: next ZigzagField call snaps to the first real sample
+        ResetPathing();
     }
+
+    // A new target must not inherit the previous target's smoothed travel direction.
+    public void ResetPathing() => zigzagSmoothedDir = Vector3.zero;
 
     public override void Tick(float dt)
     {
-        if (!agent.HasTarget || agent.DistanceToTarget > agent.LoseRadius)
+        if (!agent.HasTarget || !agent.IsPursuingFallbackTarget && agent.DistanceToTarget > agent.LoseRadius)
         { agent.Fsm.Transition(agent.Wander); return; }
 
         if (agent.DistanceToTarget <= agent.ArriveRadius)
@@ -155,7 +158,7 @@ public sealed class ArriveState : EnemyState
 
     public override void Tick(float dt)
     {
-        if (!agent.HasTarget || agent.DistanceToTarget > agent.LoseRadius)
+        if (!agent.HasTarget || !agent.IsPursuingFallbackTarget && agent.DistanceToTarget > agent.LoseRadius)
         { agent.Fsm.Transition(agent.Wander); return; }
 
         // 20% hysteresis so an enemy on the boundary doesn't flicker between states.

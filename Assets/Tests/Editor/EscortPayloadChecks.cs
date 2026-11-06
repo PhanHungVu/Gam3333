@@ -40,6 +40,7 @@ public static class EscortPayloadChecks
 
         var agentObject = new UnityEngine.GameObject("Escort Target Check");
         var payloadBody = new UnityEngine.GameObject("Escort Target Body");
+        var fallbackPlayer = new UnityEngine.GameObject("Escort Fallback Player"); fallbackPlayer.tag = "Player";
         try
         {
             var agent = agentObject.AddComponent<EnemyAgent>();
@@ -48,9 +49,9 @@ public static class EscortPayloadChecks
             bool preferred = agent.Target == payloadBody.transform;
             payloadBody.SetActive(false);
             agent.RefreshTarget();
-            check(preferred && agent.Target != payloadBody.transform,
+            check(preferred && agent.Target != null && agent.Target.CompareTag("Player") && agent.IsPursuingFallbackTarget,
                 "Escort enemies go for the payload, and fall back to the player when it is destroyed");
         }
-        finally { UnityEngine.Object.DestroyImmediate(agentObject); UnityEngine.Object.DestroyImmediate(payloadBody); }
+        finally { UnityEngine.Object.DestroyImmediate(agentObject); UnityEngine.Object.DestroyImmediate(payloadBody); UnityEngine.Object.DestroyImmediate(fallbackPlayer); }
     }
 }

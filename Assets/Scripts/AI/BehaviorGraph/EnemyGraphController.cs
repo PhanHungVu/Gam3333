@@ -96,7 +96,7 @@ public sealed class EnemyGraphController : MonoBehaviour
         { detected = false; observedTarget = target; if (rangedPositioning != null) rangedPositioning.Clear(); if (specialCoordinator != null) CancelAttack(); if (coordination != null) { CancelAttack(); coordination.Clear("Target changed"); } }
         var targetHealth = target != null ? target.GetComponentInParent<CombatHealth>() : null;
         detected = targetHealth != null && targetHealth.isActiveAndEnabled && !targetHealth.IsDead
-            && agent.DistanceToTarget <= (detected ? agent.LoseRadius : agent.DetectRadius);
+            && (agent.IsPursuingFallbackTarget || agent.DistanceToTarget <= (detected ? agent.LoseRadius : agent.DetectRadius));
         if (!detected && coordination != null) { CancelAttack(); coordination.Clear("Target unavailable"); }
         if (!detected && rangedPositioning != null) rangedPositioning.Clear();
         if (!detected && specialCoordinator != null) CancelAttack();

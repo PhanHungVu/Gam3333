@@ -116,10 +116,13 @@ public sealed class EnemyAgent : MonoBehaviour
     public float ZigzagNoiseSpeed => zigzagNoiseSpeed;
     public float ZigzagLookAhead => zigzagLookAhead;
 
-    public bool HasTarget => target != null;
+    public bool HasTarget => Target != null;
     // Something this enemy goes for instead of the player while it exists (e.g. the escort payload).
     // When it's gone or switched off, the enemy falls back to the player.
     public Transform PreferredTarget { get; set; }
+    // Losing an objective hands its enemies to the player without a new proximity check.
+    // Restoring the objective (or clearing PreferredTarget) restores ordinary awareness rules.
+    public bool IsPursuingFallbackTarget { get; private set; }
     public Transform Target => target != null && target.gameObject.activeInHierarchy ? target : null;
     public Vector3 TargetPosition => target != null ? target.position : transform.position;
     public float DistanceToTarget { get; private set; } = float.PositiveInfinity;
@@ -286,23 +289,36 @@ public sealed class EnemyAgent : MonoBehaviour
 
     void ResolveTarget()
     {
-        if (PreferredTarget != null && PreferredTarget.gameObject.activeInHierarchy) target = PreferredTarget;
-        else if (target != null && target == PreferredTarget) target = null; // preferred target gone: back to the player
-        if (target == null || !target.gameObject.activeInHierarchy)
+        Transform previousTarget = target;
+        // ReferenceEquals retains the assignment even if Unity has destroyed its Transform.
+        // Health must be checked before deactivation: Died is raised while the body is still active.
+        bool preferredUnavailable = !object.ReferenceEquals(PreferredTarget, null) && !TargetAvailable(PreferredTarget);
+        if (PreferredTarget != null && !preferredUnavailable) target = PreferredTarget;
+        else if (target == PreferredTarget || !TargetAvailable(target))
         {
+            bool lostTarget = !object.ReferenceEquals(target, null);
             target = null;
-            if (Time.time >= nextTargetSearch)
+            if (lostTarget || Time.time >= nextTargetSearch)
             {
                 nextTargetSearch = Time.time + 0.5f; // don't search every frame
                 var player = GameObject.FindWithTag("Player");
-                if (player != null) target = player.transform;
+                if (player != null && TargetAvailable(player.transform)) target = player.transform;
             }
         }
+        IsPursuingFallbackTarget = preferredUnavailable && target != null;
+        if (target != previousTarget) Chase.ResetPathing();
 
         if (target == null) { DistanceToTarget = float.PositiveInfinity; return; }
         Vector3 d = target.position - transform.position;
         d.y = 0f;
         DistanceToTarget = d.magnitude;
+    }
+
+    static bool TargetAvailable(Transform candidate)
+    {
+        if (candidate == null || !candidate.gameObject.activeInHierarchy) return false;
+        var health = candidate.GetComponentInParent<CombatHealth>();
+        return health == null || health.isActiveAndEnabled && !health.IsDead;
     }
 
     void ApplyForce(Vector3 force, float dt)

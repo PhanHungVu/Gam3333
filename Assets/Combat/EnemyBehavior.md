@@ -2,6 +2,14 @@
 
 The nine prototype prefabs use Unity Behavior 1.0.16 for decisions. Open `Scenes/EnemyBehaviorPlaytest.unity` for an isolated combat arena. Existing gameplay scenes keep their existing directors, objective logic, navigation and player rig; their references to the upgraded enemy prefabs and wave data pick up the new behavior.
 
+## Escort cargo target handoff
+
+The 2026-11-07 fix makes enemies assigned to unavailable cargo actively pursue the living player. Previously a real sword enemy switched its target to the player at about 50 units, then failed its 40-unit acquisition check and entered `Wander`. Target identity alone did not preserve aggro.
+
+`EnemyAgent` now rejects dead, disabled or removed cargo, immediately resolves the player on target loss, and marks this objective fallback as deliberate pursuit. Both Behavior Graph detection and the legacy state machine honor that pursuit beyond ordinary detection/lose radii. A changed target also clears the zigzag path's cached direction. Existing enemy movement styles, attacks, cooldowns, wave spawning and leash rules remain configured as before. When the cargo respawns, it regains priority. Ordinary enemies without a cargo assignment keep their normal awareness rules.
+
+Validation uses `EscortAggroChecks.RunBatch` (117 checks across all nine prefabs) and `EscortAggroChecks.RunSceneBatch` (5 checks in the generated `EscortTest` map); all 980 existing foundation checks also pass. It covers death before body deactivation, continued pursuit, new reinforcements, disabled/removed cargo, missing/reappearing players, respawn and ordinary awareness. The original lightweight `EscortPayloadChecks` now requires a real player target instead of accepting a null fallback. Reproduction and successful logs are in `.quest-review/Results/EscortAggro`.
+
 ## Playtesting
 
 **M6 combat refinement:** see [CombatRefinement.md](CombatRefinement.md). Melee uses compact clearance throughout pursuit, overhead axes engage at 3.2 units using their existing reach, and planted ranged enemies turn toward moving targets between committed attacks. **Home** compares pursuit spacing; **End** records role contribution and planning diagnostics. Ordinary attacks remain independent.
