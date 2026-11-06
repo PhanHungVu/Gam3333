@@ -120,18 +120,27 @@ public static class CombatPolishChecks
         Check(trail != null && trail.IsFollowing && trail.Renderer.positionCount > 1, "Trail follows the projectile's actual travel");
         Call(shot, "Step", 20f);
         Check(!shot.IsLive && impacts == 0 && trail.IsPlaying && !trail.IsFollowing, "Range expiry preserves its fading tail and emits no impact");
-        yield return GameDelay(.4f); Check(!trail.IsPlaying, "Expired projectile tail returns to its pool");
+        yield return GameDelay(.4f); Check(trail.IsPlaying && trail.Renderer.positionCount>1 && trail.Renderer.startColor.a>0 && trail.Renderer.startColor.a<.8f,
+            "Projectile path retains real geometry and visibly fades after the shot has despawned");
+        yield return GameDelay(.7f); Check(!trail.IsPlaying, "Expired projectile tail returns to its pool");
         var wall = GameObject.CreatePrimitive(PrimitiveType.Cube); wall.name = "Impact wall";
         wall.transform.position = new Vector3(0, 2, 8); wall.transform.localScale = new Vector3(20, 5, .2f); Physics.SyncTransforms();
-        TestMech.Advance(player, 1); shot = combat.TryAttack(PartCategory.ArmL).Projectile; Call(shot, "Step", 1f);
+        TestMech.Advance(player, 1); shot = combat.TryAttack(PartCategory.ArmL).Projectile;
+        Check(trail.IsFollowing && Mathf.Approximately(trail.Renderer.time,parts[0].GetComponent<WeaponVisualSettings>().trailLifetime)
+            && trail.Renderer.startColor.a>.9f && feedback.TrailPoolSize==1,"Reused trail resets lifetime and opacity without allocating another trail");
+        yield return GameDelay(.12f);
+        Call(shot, "Step", 1f);
         Check(impacts == 1 && Vector3.Dot(impact.Normal, Vector3.back) > .95f && Mathf.Abs(impact.ContactPoint.z - 7.9f) < .02f,
             "Projectile impact publishes the actual wall contact and outward normal once");
         Check(Effects(feedback, CombatFeedbackEffect.Kind.Dust) == 1, "Ordinary projectile impact emits oriented dust");
         Call(shot, "Step", 1f); Check(impacts == 1, "A spent projectile cannot repeat impact feedback");
+        int smokeBeforeCannon=Effects(feedback,CombatFeedbackEffect.Kind.Smoke);
         TestMech.Advance(player, 1); shot = combat.TryAttack(PartCategory.ShoulderL).Projectile; Call(shot, "Step", .2f);
-        Check(Effects(feedback, CombatFeedbackEffect.Kind.Explosion) == 1 && Effects(feedback, CombatFeedbackEffect.Kind.Smoke) >= 3,
+        Check(Effects(feedback, CombatFeedbackEffect.Kind.Explosion) == 1 && Effects(feedback, CombatFeedbackEffect.Kind.Smoke) >= smokeBeforeCannon+2,
             "Cannon impact reuses its blast flash, ring and embers and adds a smoke plume");
         yield return Capture("weapon-impact", camera, feedback, null, null);
+        yield return GameDelay(.2f);
+        yield return Capture("projectile-lingering-tail",camera,feedback,null,null,new Vector3(0,2,5),9);
         int localImpulses = feedback.FiringImpulseCount;
         var enemy = new GameObject("Enemy shot owner"); enemy.SetActive(false); enemy.transform.position = new Vector3(4, 1, 0);
         var enemyHealth = enemy.AddComponent<CombatHealth>(); enemyHealth.Team = CombatTeam.Enemy;

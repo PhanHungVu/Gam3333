@@ -532,6 +532,7 @@ MonoBehaviour:
   projectileTrail: 0
   trailWidth: 0.45
   trailLifetime: 0.26
+  projectileTrailLinger: 0
   impactSize: 0.75
   firingShake: 0.02
   firingShakeDuration: 0.12

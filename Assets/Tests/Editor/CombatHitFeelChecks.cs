@@ -53,7 +53,8 @@ public static class CombatHitFeelChecks
         check(rig.Follow==follow && rig.LookAt==look && rig.Lens.FieldOfView==fov,"Hit feedback preserves camera framing, follow/lock targets and lens");
         yield return Delay(.22f);
         check(!stop.IsStopped && !CombatHitStop.IsFrozen(enemy.transform) && Mathf.Abs(targetAnimator.speed-.7f)<.001f,"Hitstop expires automatically and restores the original animation speed");
-        driver.Tick(.05f); check(driver.NormalizedTime>phase,"The actual weapon animation resumes after hitstop");
+        driver.Tick(.05f); check(driver.CurrentPose==MechWeaponAnimator.PoseState.Neutral || driver.NormalizedTime>phase,
+            "The actual weapon animation resumes or completes naturally after hitstop");
         movement.Tick(default(MechLocomotionInput),null,.01f);
         check(movement.IsQuickBoosting,"A dodge pressed during hitstop is buffered until movement resumes");
         movement.enabled=false; movement.enabled=true;

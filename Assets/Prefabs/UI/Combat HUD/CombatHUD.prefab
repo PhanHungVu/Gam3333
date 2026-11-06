@@ -271,8 +271,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -404, y: -875}
-  m_SizeDelta: {x: 184, y: 56}
+  m_AnchoredPosition: {x: -404, y: -913}
+  m_SizeDelta: {x: 310, y: 110}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &275770742841078
 MonoBehaviour:
@@ -287,8 +287,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechAbilitiesHud
   podPrefab: {fileID: 279114593727614, guid: a9d2b08188c8a381e7b0b95eb95c5d15, type: 3}
-  podSize: {x: 56, y: 56}
-  podSpacing: 8
+  podSize: {x: 90, y: 90}
+  podSpacing: 20
+  podHeaderHeight: 20
   playerSearchInterval: 0.5
 --- !u!1001 &275770742841079
 PrefabInstance:

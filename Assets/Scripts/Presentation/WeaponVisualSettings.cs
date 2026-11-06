@@ -14,6 +14,8 @@ public sealed class WeaponVisualSettings : MonoBehaviour
     public bool projectileTrail = true;
     [Min(.01f)] public float trailWidth = .06f;
     [Range(.03f, 1f)] public float trailLifetime = .2f;
+    [Tooltip("Seconds the last projectile path remains and fades after impact or range expiry.")]
+    [Range(0f,3f)] public float projectileTrailLinger = .9f;
     [Min(.05f)] public float impactSize = .55f;
     [Range(0f, .2f)] public float firingShake = .025f;
     [Range(.1f, .5f)] public float firingShakeDuration = .12f;

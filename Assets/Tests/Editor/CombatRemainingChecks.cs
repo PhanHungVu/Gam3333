@@ -77,6 +77,7 @@ public static class CombatRemainingChecks
     static void ClearCorpses() { foreach(var corpse in Object.FindObjectsByType<CombatRagdoll>()) Object.DestroyImmediate(corpse.gameObject); }
     static void StopEnemy(GameObject enemy)
     {
+        if(enemy.TryGetComponent<EnemyGraphController>(out var controller)) controller.enabled=false;
         if(enemy.TryGetComponent<EnemyAgent>(out var agent)) agent.enabled=false;
         if(enemy.TryGetComponent<Unity.Behavior.BehaviorGraphAgent>(out var graph)) graph.enabled=false;
         if(enemy.TryGetComponent<EnemyAttack>(out var attack)) attack.enabled=false;
@@ -93,6 +94,8 @@ public static class CombatRemainingChecks
         if(SessionState.GetBool("CombatRemainingChecks.Regression",true))
             yield return (IEnumerator)typeof(CombatPolishChecks).GetMethod("Run",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,null);
         yield return CombatHitFeelChecks.Run(Check);
+        yield return AbilityReadyVfxChecks.Run(Check);
+        yield return WeaponReadyVfxChecks.Run(Check);
         ClearCorpses(); yield return Frames();
         var floor=GameObject.CreatePrimitive(PrimitiveType.Cube); floor.name="Physics review floor";
         floor.transform.position=new Vector3(0,-.5f,0); floor.transform.localScale=new Vector3(60,1,60);
@@ -125,6 +128,29 @@ public static class CombatRemainingChecks
         Check(WeaponsHudPod.AmmoText(ranged)==ranged.MagazineRounds+" / "+ranged.RemainingAmmo,"Existing magazine/total notation remains the default");
         Check(WeaponsHudPod.AmmoText(ranged,WeaponsHudPod.AmmoDenominator.MagazineCapacity).EndsWith(" / "+ranged.Stats.MagazineSize),"Optional magazine-capacity notation uses actual weapon data");
         yield return Capture("hud-abilities",new Vector3(10,7,-12),new Vector3(0,2,0));
+        var combat=player.GetComponent<MechCombat>();
+        var fired=combat.TryAttack(ranged.Slot.Value);
+        Check(fired.Started && ranged.CooldownDuration>0 && ranged.CooldownProgress<.05f,"Accepted weapon attack records its complete fire/reload wait on the physical part");
+        yield return Frames();
+        var weaponPod=weapons.Pods.Single(p=>p.Weapon==ranged); var line=Get<Image>(weaponPod,"cooldownLine");
+        Check(weaponPod.IsCoolingDown && line.enabled && !line.raycastTarget && line.rectTransform.anchorMin.y<.2f
+            && Get<Image>(weaponPod,"icon").color.r<1,"Accepted weapon cooldown dims its artwork and starts a non-interactive line at the bottom");
+        float readyAt=ranged.ReadyAt;
+        Check(!combat.TryAttack(ranged.Slot.Value).Started && ranged.ReadyAt==readyAt,"Rejected repeated fire does not restart the cooldown sweep");
+        yield return Delay(ranged.CooldownDuration*.45f);
+        weaponPod=weapons.Pods.Single(p=>p.Weapon==ranged);
+        Check(weaponPod.CooldownProgress>.4f && weaponPod.CooldownProgress<.7f
+            && Mathf.Abs(Get<Image>(weaponPod,"cooldownLine").rectTransform.anchorMin.y-weaponPod.CooldownProgress)<.08f,"Weapon sweep rises with the real reload/fire clock");
+        state.Synchronize(5,10); yield return Frames();
+        yield return Capture("hud-weapon-and-ability-cooldown",new Vector3(10,7,-12),new Vector3(0,2,0));
+        var weaponSlot=ranged.Slot.Value; loose=equipment.Unequip(weaponSlot);
+        Check(equipment.TryEquip(loose,weaponSlot) && ranged.ReadyAt==readyAt,"Removing and re-equipping a physical weapon preserves its cooldown deadline");
+        yield return Frames();
+        weaponPod=weapons.Pods.Single(p=>p.Weapon==ranged);
+        Check(weaponPod.IsCoolingDown && Get<Image>(weaponPod,"cooldownLine").enabled && weaponPod.CooldownProgress>.4f,"Rebuilt weapon pod resumes the sweep at its existing progress");
+        yield return Delay(ranged.CooldownRemaining+.1f);
+        Check(!weaponPod.IsCoolingDown && !Get<Image>(weaponPod,"cooldownLine").enabled && Get<Image>(weaponPod,"icon").color==Color.white,"Weapon ready state hides the line and restores normal brightness");
+        yield return CheckMagazineSweep(player.GetComponent<MechPlayerRig>().GameplayCamera);
 
         movement.enabled=true;
         for(int i=0;i<12;i++) movement.Tick(default(MechLocomotionInput),null,.05f);
@@ -135,13 +161,17 @@ public static class CombatRemainingChecks
         Check(health.CurrentHealth<hp && movement.IsKnockedBack,"Actual Spinner accepted charge hit applies damage and CharacterController knockback");
         float after=health.CurrentHealth; attack.TickAttack(.02f);
         Check(health.CurrentHealth==after,"One Spinner charge cannot repeat damage or knockback against compound colliders");
+        // Remove the deliberately overlapping hit fixture before measuring unobstructed travel.
+        Object.DestroyImmediate(spinner); Object.DestroyImmediate(duplicate); Physics.SyncTransforms();
         yield return Delay(.16f); // Knockback resumes after the intentional impact hold.
         var origin=player.transform.position;
         movement.Tick(default(MechLocomotionInput),null,.1f);
         Check(Vector3.Distance(origin,player.transform.position)>.3f,"Spinner impulse produces visible collision-aware table-space displacement");
         for(int i=0;i<12;i++) movement.Tick(default(MechLocomotionInput),null,.05f);
+        float distance=Vector3.ProjectOnPlane(player.transform.position-origin,Vector3.up).magnitude;
+        Debug.Log("SPINNER KNOCKBACK DISTANCE: "+distance);
+        Check(distance>10 && distance<10.8f,"Actual small Spinner pushes the idle player farther than its nine-metre charge reach on open ground");
         Check(!movement.IsKnockedBack && movement.ExternalVelocity==Vector3.zero,"External velocity expires without changing normal movement state permanently");
-        Object.DestroyImmediate(spinner); Object.DestroyImmediate(duplicate);
         var wall=GameObject.CreatePrimitive(PrimitiveType.Cube); wall.transform.position=player.transform.position+Vector3.forward*2; wall.transform.localScale=new Vector3(10,5,.2f); Physics.SyncTransforms();
         float wallZ=wall.transform.position.z; movement.ApplyKnockback(Vector3.forward,30,.5f);
         for(int i=0;i<12;i++) movement.Tick(default(MechLocomotionInput),null,.05f);
@@ -149,13 +179,24 @@ public static class CombatRemainingChecks
         movement.ApplyKnockback(Vector3.forward,10,.5f); movement.enabled=false;
         Check(!movement.IsKnockedBack,"Disabling/death clears any unfinished knockback"); Object.DestroyImmediate(wall);
         movement.enabled=true;
-        var orbit=Enemy("Elite Enemies/Enemy_Elite_RockRope.prefab",player.transform.position-Vector3.right*2);
-        var rope=orbit.GetComponent<EnemyRopeAttack>(); Set(rope,"orbitVerticalOffset",1.1f); Physics.SyncTransforms(); hp=health.CurrentHealth;
+        // Let native physics publish the manually simulated controller's new query bounds before the next encounter.
+        yield return Delay(.1f);
+        var orbit=Enemy("Elite Enemies/Enemy_Elite_RockRope.prefab",player.transform.position-Vector3.right*3.5f);
+        yield return Frames(3);
+        var rope=orbit.GetComponent<EnemyRopeAttack>(); Physics.SyncTransforms();
+        // Align this directly invoked area check with the actual player's collider, independent of prefab pivot height.
+        Set(rope,"orbitVerticalOffset",player.GetComponent<CharacterController>().bounds.center.y-orbit.transform.position.y); hp=health.CurrentHealth;
         typeof(EnemyRopeAttack).GetMethod("ResolveOrbitArea",Private).Invoke(rope,null);
         Check(health.CurrentHealth<hp && movement.IsKnockedBack,"Charging orbit enemy also knocks back an accepted victim anywhere in its filled spin circle");
-        movement.ClearExternalMotion(); after=health.CurrentHealth;
+        yield return Delay(.16f); origin=player.transform.position;
+        movement.Tick(default(MechLocomotionInput),null,.05f); after=health.CurrentHealth;
+        float remainingImpulse=Get<float>(movement,"externalRemaining");
         typeof(EnemyRopeAttack).GetMethod("ResolveOrbitArea",Private).Invoke(rope,null);
-        Check(health.CurrentHealth==after && !movement.IsKnockedBack,"One orbit victim cannot receive repeated damage or knockback");
+        Check(health.CurrentHealth==after && Get<float>(movement,"externalRemaining")==remainingImpulse,"One orbit victim cannot receive repeated damage or restarted knockback while still inside the circle");
+        for(int i=0;i<13;i++) movement.Tick(default(MechLocomotionInput),null,.05f);
+        distance=Vector3.ProjectOnPlane(player.transform.position-origin,Vector3.up).magnitude;
+        Check(distance>10 && distance<10.8f && distance>rope.OrbitRadius,"Actual orbit hit pushes the player beyond the full six-metre attack radius on open ground");
+        movement.ClearExternalMotion();
         Object.DestroyImmediate(orbit); movement.enabled=false;
 
         // Explicit team roster: one death must not mean the team has been eliminated.
@@ -270,6 +311,28 @@ public static class CombatRemainingChecks
         float until=Time.realtimeSinceStartup+15;
         while(previous!=null) { if(Time.realtimeSinceStartup>until) throw new Exception("Result navigation timed out"); yield return null; }
         yield return Frames(3);
+    }
+    static IEnumerator CheckMagazineSweep(Camera camera)
+    {
+        var fixture=new GameObject("Magazine cooldown fixture"); fixture.SetActive(false);
+        var combat=fixture.AddComponent<MechCombat>(); Set(combat,"gameplayCamera",camera);
+        fixture.transform.position=new Vector3(100,3,100);
+        var data=TestMech.WithMagazine(TestMech.Ranged("Cannon",PartType.Shoulder,PartSubtype.Projectile,1,6,.5f,2,20,.1f),4,.8f);
+        var part=TestMech.Equip(fixture,(PartCategory.ShoulderL,data))[0]; fixture.SetActive(true);
+        var pod=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/Combat HUD/WeaponsHUDPodPrefab.prefab")).GetComponent<WeaponsHudPod>(); pod.Bind(part);
+        Check(combat.TryAttack(PartCategory.ShoulderL).Started,"Multi-round magazine accepts a real shot for manual-reload verification");
+        yield return Delay(.55f);
+        Check(combat.TryReload(PartCategory.ShoulderL) && Mathf.Abs(part.CooldownDuration-.8f)<.05f,"Partial-magazine reload starts a sweep for its actual reload duration");
+        yield return Delay(.4f);
+        Check(pod.IsCoolingDown && pod.CooldownProgress>.4f && pod.CooldownProgress<.7f && Get<Image>(pod,"cooldownLine").enabled,"Manual reload advances the same weapon cooldown sweep");
+        float deadline=part.ReadyAt;
+        Check(!combat.TryReload(PartCategory.ShoulderL) && deadline==part.ReadyAt,"Repeated reload requests cannot restart an active sweep");
+        yield return Delay(part.CooldownRemaining+.1f);
+        for(int i=0;i<5;i++) { TestMech.Advance(fixture,1); combat.TryAttack(PartCategory.ShoulderL); }
+        yield return Delay(part.CooldownRemaining+.1f);
+        Check(part.RemainingAmmo==0 && !pod.IsCoolingDown && !Get<Image>(pod,"cooldownLine").enabled && Get<Image>(pod,"icon").color.r<1,"Exhausted ammunition stays dim without falsely displaying a cooldown");
+        foreach(var shot in Object.FindObjectsByType<MechProjectile>()) if(shot.Source==part) Object.DestroyImmediate(shot.gameObject);
+        Object.DestroyImmediate(pod.gameObject); Object.DestroyImmediate(fixture); Object.DestroyImmediate(data);
     }
     static IEnumerator Capture(string name,Vector3 position,Vector3 look)
     {

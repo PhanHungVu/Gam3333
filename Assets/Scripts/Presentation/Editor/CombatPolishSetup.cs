@@ -42,6 +42,7 @@ public static class CombatPolishSetup
                     settings.muzzleDuration = cannon ? .12f : .08f;
                     settings.trailWidth = melee ? .45f : cannon ? .16f : stats == axe ? .12f : .065f;
                     settings.trailLifetime = melee ? .26f : cannon ? .35f : stats == axe ? .3f : .18f;
+                    settings.projectileTrailLinger = melee ? 0 : cannon ? 1.3f : stats == axe ? 1.1f : .9f;
                     settings.impactSize = melee ? .75f : cannon ? 1.2f : .5f;
                     settings.firingShake = cannon ? .075f : stats == largeBolt ? .04f : .02f;
                     settings.firingShakeDuration = cannon ? .26f : stats == largeBolt ? .18f : .12f;

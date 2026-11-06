@@ -7,8 +7,8 @@ public sealed class EnemySpinnerAttack : EnemyGraphAttack
     [SerializeField, Min(0.1f)] float chargeDuration = 0.75f;
     [SerializeField, Min(0.1f)] float contactRadius = 0.8f;
     [Header("Accepted-hit knockback")]
-    [SerializeField, Min(0)] float knockbackSpeed = 15;
-    [SerializeField, Range(.01f, 1)] float knockbackDuration = .3f;
+    [SerializeField, Min(0)] float knockbackSpeed = 32;
+    [SerializeField, Range(.01f, 1)] float knockbackDuration = .65f;
     readonly System.Collections.Generic.HashSet<CombatHealth> chargeVictims = new System.Collections.Generic.HashSet<CombatHealth>();
     Vector3 direction, previous;
     Quaternion restRotation;

@@ -5,8 +5,9 @@ using UnityEngine.UI;
 
 // One row of the weapons HUD: the weapon's name above a coloured panel that holds its sprite and
 // ammunition. Ammo reads [rounds in the magazine / rounds left in total], or N/A for weapons that
-// carry no ammunition (melee). While the weapon reloads the sprite and the ammo count dim by 25%,
-// then come back to full when the magazine is replenished.
+// carry no ammunition (melee). The icon and ammo dim while an attack/reload cooldown runs;
+// a bottom-to-top sweep follows the physical part's actual time until it can attack again.
+// The key that fires the weapon is printed in the row's top-right corner.
 [DisallowMultipleComponent]
 public sealed class WeaponsHudPod : MonoBehaviour
 {
@@ -19,9 +20,15 @@ public sealed class WeaponsHudPod : MonoBehaviour
     [SerializeField] TextMeshProUGUI nameLabel;
     [SerializeField] Image icon;
     [SerializeField] TextMeshProUGUI ammoLabel;
-    [Header("Reload")]
-    [Tooltip("Multiplier applied to the sprite and the ammo count while the weapon reloads.")]
+    [Tooltip("Key that fires this weapon, named by the socket it is mounted in: LMB, RMB, Q or E.")]
+    [SerializeField] TextMeshProUGUI keyText;
+    [Header("Unavailable appearance")]
+    [Tooltip("Multiplier applied to the sprite and ammo during cooldown, reload, or when out of ammo.")]
     [SerializeField, Range(0f, 1f)] float reloadDim = 0.75f;
+    [Header("Cooldown sweep")]
+    [SerializeField] Image cooldownLine;
+    [SerializeField, Min(.5f)] float cooldownLineThickness = 2f;
+    [SerializeField] Color cooldownLineColor = new Color(1f,.93f,.6f,1f);
 
     Part weapon;
     Color iconBase = Color.white;
@@ -32,28 +39,31 @@ public sealed class WeaponsHudPod : MonoBehaviour
     public Part Weapon => weapon;
     public Image Background => background;
     public Sprite CurrentIcon => icon != null ? icon.sprite : null;
+    public float CooldownProgress => weapon != null ? weapon.CooldownProgress : 1;
+    public bool IsCoolingDown => weapon != null && weapon.CooldownRemaining > 0;
 
     void Awake()
     {
         if (icon != null) placeholder = icon.color;
         if (ammoLabel != null) ammoColour = ammoLabel.color;
+        ConfigureCooldownLine();
     }
 
-    // Reload is read straight from the part, so the row follows the real magazine without events.
+    // Read directly from the part so swaps, reloads and attack cooldowns use the same gameplay clock.
     void LateUpdate()
     {
-        if (weapon == null || weapon.Stats == null) return;
-        if (ammoLabel != null) ammoLabel.text = AmmoText(weapon, ammoDenominator);
-        ApplyDim(weapon.IsReloading);
+        Refresh();
     }
 
     // Shows one equipped weapon: the sprite comes from the part's Icon (its PartData),
-    // the row is titled with the part's own name, and the ammo is read from the live part.
+    // the row is titled with the part's own name, the key comes from the socket it is mounted in,
+    // and the ammo is read from the live part.
     public void Bind(Part part)
     {
         weapon = part;
         var stats = part != null ? part.Stats : null;
         if (nameLabel != null) nameLabel.text = stats != null ? stats.partName.ToUpperInvariant() : string.Empty;
+        if (keyText != null) keyText.text = part != null && part.Slot.HasValue ? KeyLabel(part.Slot.Value) : string.Empty;
         if (icon != null)
         {
             var sprite = IconFor(stats);
@@ -61,9 +71,31 @@ public sealed class WeaponsHudPod : MonoBehaviour
             // Without art the row keeps the faint empty slot the prefab was authored with.
             iconBase = sprite != null ? Color.white : placeholder;
         }
-        if (ammoLabel != null) ammoLabel.text = AmmoText(part, ammoDenominator);
         appliedDim = -1f;
-        ApplyDim(part != null && part.IsReloading);
+        Refresh();
+    }
+
+    // Keys are fixed per socket: the arms fire on the mouse, the shoulders on Q and E.
+    public static string KeyLabel(PartCategory socket) => socket switch
+    {
+        PartCategory.ArmL => "LMB",
+        PartCategory.ArmR => "RMB",
+        PartCategory.ShoulderL => "Q",
+        PartCategory.ShoulderR => "E",
+        _ => string.Empty,
+    };
+
+    void Refresh()
+    {
+        if(ammoLabel!=null) ammoLabel.text=AmmoText(weapon,ammoDenominator);
+        bool empty=weapon!=null && HasAmmo(weapon.Stats) && weapon.RemainingAmmo<=0;
+        ApplyDim(IsCoolingDown || empty);
+        HudCooldownSweep.Refresh(icon,cooldownLine,CooldownProgress,IsCoolingDown,cooldownLineThickness);
+    }
+    public void ConfigureCooldownLine()
+    {
+        cooldownLine=HudCooldownSweep.Configure(icon,cooldownLine,cooldownLineColor,cooldownLineThickness);
+        HudCooldownSweep.Refresh(icon,cooldownLine,CooldownProgress,IsCoolingDown,cooldownLineThickness);
     }
 
     // The part's own icon, set on its PartData (the single place a part's picture lives).

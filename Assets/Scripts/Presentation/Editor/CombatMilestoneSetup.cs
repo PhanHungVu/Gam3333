@@ -19,15 +19,23 @@ public static class CombatMilestoneSetup
             finally { UnityEngine.Object.DestroyImmediate(view.gameObject); }
             results = AssetDatabase.LoadAssetAtPath<GameObject>(ResultsPath).GetComponent<MissionResultsView>();
         }
-        // Ability icons now live on each part's PartData (Ability Icon), so only the cooldown line is set up here.
+        // Ability icons live on each part's PartData (Ability Icon), so only the cooldown line and ready effect are set up here.
         const string AbilityPodPath="Assets/Prefabs/UI/Combat HUD/AbilitiesHUDPodPrefab.prefab";
         var abilityRoot=PrefabUtility.LoadPrefabContents(AbilityPodPath);
         try
         {
             abilityRoot.GetComponent<AbilitiesHudPod>().ConfigureCooldownLine();
+            abilityRoot.GetComponent<AbilitiesHudPod>().ConfigureReadyVfx();
             PrefabUtility.SaveAsPrefabAsset(abilityRoot,AbilityPodPath);
         }
         finally { PrefabUtility.UnloadPrefabContents(abilityRoot); }
+        var weaponRoot=PrefabUtility.LoadPrefabContents("Assets/Prefabs/UI/Combat HUD/WeaponsHUDPodPrefab.prefab");
+        try
+        {
+            weaponRoot.GetComponent<WeaponsHudPod>().ConfigureCooldownLine();
+            PrefabUtility.SaveAsPrefabAsset(weaponRoot,"Assets/Prefabs/UI/Combat HUD/WeaponsHUDPodPrefab.prefab");
+        }
+        finally { PrefabUtility.UnloadPrefabContents(weaponRoot); }
         foreach(var path in AssetDatabase.FindAssets("t:Prefab",new[]{"Assets/Prefabs/Enemies"})
             .Select(AssetDatabase.GUIDToAssetPath).Concat(new[]{TestPlayerPath}))
         {

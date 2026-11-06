@@ -20194,6 +20194,8 @@ MonoBehaviour:
   orbitGroundPauseDuration: 1.2
   orbitLiftDuration: 0.35
   orbitRadius: 6
+  orbitKnockbackSpeed: 32
+  orbitKnockbackDuration: 0.65
   orbitDegreesPerSecond: 360
   orbitDuration: 3
   orbitHeight: 1.1
