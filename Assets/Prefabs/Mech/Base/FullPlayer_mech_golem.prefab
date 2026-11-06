@@ -10845,7 +10845,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechPlayerRig
   cameraPrefab: {fileID: 3557168452864418661, guid: ee0d32885dad7e8499e06dc440d1680f, type: 3}
-  cursorPrefab: {fileID: 7007896882566638223, guid: bc1440da9e190b948ae13d16af646f0c, type: 3}
+  cursorPrefab: {fileID: 7007896882566638223, guid: 9e9fcf2017e682e4099448f05c2ce670, type: 3}
   combatHudPrefab: {fileID: 275770742841063, guid: 033855673a0bd97dc71fec79581b761e, type: 3}
 --- !u!114 &6889486293204489853
 MonoBehaviour:

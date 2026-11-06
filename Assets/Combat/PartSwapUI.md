@@ -75,3 +75,13 @@ Panel placement now follows the selected part's projected side relative to the g
 The rendered UI regression passed **90 checks**, including real V input in both directions, left/right framing, camera orbit, center stability, numeric comparisons, 1/2 swaps and lifecycle cleanup. Captures cover both sides at 1280×720 and the right-side view at 1024×768. The cleanup assertion now waits for the complete hidden-and-cleared state: alpha can cross the visibility threshold one frame before the equip acknowledgement clears its stored data. Production acknowledgement timing is unchanged.
 
 The existing gameplay-scene run also passed **15 checks** with its real pickup trigger and camera, for **105 checks** in this placement revision. Its 1600×900 capture was reviewed. Gameplay/camera code, input actions, part data, the shared player/view prefabs, scenes and the empty mission-start hook retain their pre-placement hashes. No asset setup step is needed for this runtime placement fix.
+
+## Non-blocking dropped parts — 2026-11-06
+
+Loose parts now pass through players and enemies while retaining gravity, floor contact and pickup-trigger detection. Every loose collider child uses MechPart, including children authored on a custom layer. Equipping restores its original layer. Character body and limb colliders exclude MechPart through per-collider overrides; the global layer collision matrix is unchanged. Original part exclusions are restored on drop.
+
+Movement and grounding queries, enemy positioning checks, spinner charge checks and rope movement ignore MechPart. A wall behind loot still blocks movement. This applies to both player variants, existing enemies, newly spawned enemies, enemy drops and parts displaced by equipment swaps; no scene/prefab upgrade step is required.
+
+`DroppedPartCollisionChecks.RunBatch` passed **17 checks** in isolated Unity 6000.5.8f1: both real player variants traverse solid loot, still stop at walls, detect/select pickups, equip and drop again, and retain floor contact. The enemy checks verify movement, grounding, a wall behind loot and falling parts passing through its head/arm/body colliders. Results are under `.quest-review/Results/DroppedPartCollisions`.
+
+The existing equipment/camera regression also passed **29 checks**, covering head, arm, torso and leg swaps, restored authored layers, physical drops and unchanged camera framing. Both runs completed with exit 0, without C# diagnostics or runtime exceptions; verification was headless.

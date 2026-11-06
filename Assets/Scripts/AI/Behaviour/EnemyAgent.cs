@@ -144,6 +144,7 @@ public sealed class EnemyAgent : MonoBehaviour
 
     void Awake()
     {
+        Part.ConfigureCharacterCollisions(gameObject);
         Wander.Init(this); Chase.Init(this); Arrive.Init(this);
     }
 
@@ -373,7 +374,7 @@ public sealed class EnemyAgent : MonoBehaviour
     public bool TryProbe(Vector3 dir, float distance, out RaycastHit hit)
     {
         Vector3 origin = transform.position + Vector3.up * probeHeight;
-        if (!Physics.SphereCast(origin, bodyRadius, dir, out hit, distance, obstacleMask & CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore))
+        if (!Physics.SphereCast(origin, bodyRadius, dir, out hit, distance, obstacleMask & Part.MovementQueryMask, QueryTriggerInteraction.Ignore))
             return false;
 
         if (hit.normal.y > 0.7f) return false;                                    // walkable ground/ramp
@@ -435,7 +436,7 @@ public sealed class EnemyAgent : MonoBehaviour
     bool RaycastGroundIgnoringSelf(Vector3 origin, float maxDistance, out RaycastHit result)
     {
         int count = Physics.RaycastNonAlloc(origin, Vector3.down, groundHitsBuffer, maxDistance,
-            groundMask & CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore);
+            groundMask & Part.MovementQueryMask, QueryTriggerInteraction.Ignore);
 
         bool found = false;
         result = default;

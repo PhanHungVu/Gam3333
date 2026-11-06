@@ -33,16 +33,18 @@ public static class AbilityReadyVfxChecks
         var canvas = ui.GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         var scaler = ui.GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution = new Vector2(1920,1080);
         var legacyRoot=new GameObject("Older ability pod",typeof(RectTransform)); legacyRoot.transform.SetParent(ui.transform,false); legacyRoot.SetActive(false);
-        var legacy=Pod(legacyRoot.transform,parts[0],0); Object.DestroyImmediate(legacy.GetComponent<AbilityReadyVfx>()); legacyRoot.SetActive(true);
-        check(legacy.GetComponents<AbilityReadyVfx>().Length==1 && legacy.GetComponent<AbilityReadyVfx>().PlayCount==0,
-            "Older pods without an authored VFX component receive one safe fallback without flashing on initialization");
+        var legacy=Pod(legacyRoot.transform,parts[0],0); Object.DestroyImmediate(legacy.GetComponentInChildren<AbilityReadyVfx>(true).gameObject); legacyRoot.SetActive(true);
+        check(legacy.GetComponentsInChildren<AbilityReadyVfx>(true).Length==0 && legacy.GetComponentsInChildren<AbilityReadyBurstGraphic>(true).Length==0,
+            "A HUD without the authored burst stays effect-free; the old runtime fallback is removed");
         Object.DestroyImmediate(legacyRoot);
         var pods = new[] { Pod(ui.transform,parts[0],0),Pod(ui.transform,parts[1],1),Pod(ui.transform,parts[2],2) };
-        var effects = new[] { pods[0].GetComponent<AbilityReadyVfx>(),pods[1].GetComponent<AbilityReadyVfx>(),pods[2].GetComponent<AbilityReadyVfx>() };
+        var effects = new[] { pods[0].GetComponentInChildren<AbilityReadyVfx>(true),pods[1].GetComponentInChildren<AbilityReadyVfx>(true),pods[2].GetComponentInChildren<AbilityReadyVfx>(true) };
         yield return Frames(3);
         check(effects[0]!=null && effects[0].PlayCount==0 && effects[1].PlayCount==0 && effects[2].PlayCount==0,
             "Ready HUD initialization creates no completion burst");
-        check(ui.GetComponentsInChildren<AbilityReadyBurstGraphic>().Length==0,"Ready particles allocate no renderer before their first completion");
+        check(ui.GetComponentsInChildren<AbilityReadyBurstGraphic>(true).Length==3
+            && !effects[0].Graphic.enabled && !effects[1].Graphic.enabled && !effects[2].Graphic.enabled,
+            "Each pod starts with exactly one authored, hidden prefab column");
         for(int i=0;i<3;i++) PartAbilityCooldown.For(parts[i]).ConfirmActivation(.25f+i*.1f);
         yield return Delay(.5f);
         check(effects[0].PlayCount==1 && effects[1].PlayCount==1 && effects[2].PlayCount==1,"Three actual cooldown expiries independently trigger exactly one upward burst per icon");
@@ -63,18 +65,18 @@ public static class AbilityReadyVfxChecks
             && Get<Image>(pods[0],"icon").rectTransform.localScale==Vector3.one,"Burst fades out, disables its cached mesh and restores the exact icon scale");
         int plays = effects[0].PlayCount; pods[0].Bind(parts[0]); yield return Frames();
         var duplicate = Pod(ui.transform,parts[0],0);
-        check(effects[0].PlayCount==plays && duplicate.GetComponent<AbilityReadyVfx>().PlayCount==0,"Refreshing or rebuilding an already-ready icon does not replay the cue");
+        check(effects[0].PlayCount==plays && duplicate.GetComponentInChildren<AbilityReadyVfx>(true).PlayCount==0,"Refreshing or rebuilding an already-ready icon does not replay the cue");
         var state = PartAbilityCooldown.For(parts[0]);
         for(int i=0;i<3;i++) { state.Synchronize(.02f,10); yield return Delay(.06f); }
-        check(effects[0].PlayCount==plays && duplicate.GetComponent<AbilityReadyVfx>().PlayCount==0,"Tiny authoritative remaining-time corrections cannot repeatedly retrigger a ready cue");
+        check(effects[0].PlayCount==plays && duplicate.GetComponentInChildren<AbilityReadyVfx>(true).PlayCount==0,"Tiny authoritative remaining-time corrections cannot repeatedly retrigger a ready cue");
         var renderer = effects[0].Graphic;
         state.ConfirmActivation(.2f); yield return Delay(.3f);
-        check(effects[0].PlayCount+duplicate.GetComponent<AbilityReadyVfx>().PlayCount==plays+1,"Duplicate HUD views cannot consume the same physical part's completion twice");
+        check(effects[0].PlayCount+duplicate.GetComponentInChildren<AbilityReadyVfx>(true).PlayCount==plays+1,"Duplicate HUD views cannot consume the same physical part's completion twice");
         check(effects[0].Graphic==renderer,"Subsequent completions reuse the existing UI renderer");
         Object.DestroyImmediate(duplicate.gameObject);
         state.ConfirmActivation(.25f); yield return Frames();
         pods[0].gameObject.SetActive(false); Object.DestroyImmediate(pods[0].gameObject); yield return Frames();
-        pods[0]=Pod(ui.transform,parts[0],0); effects[0]=pods[0].GetComponent<AbilityReadyVfx>();
+        pods[0]=Pod(ui.transform,parts[0],0); effects[0]=pods[0].GetComponentInChildren<AbilityReadyVfx>(true);
         check(effects[0].PlayCount==0,"Rebuilding during a real cooldown does not fabricate an early ready burst");
         yield return Delay(.3f);
         check(effects[0].PlayCount==1,"Rebuilt HUD observes the existing physical cooldown finishing once");

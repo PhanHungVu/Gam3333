@@ -121,8 +121,8 @@ public sealed class AbilitiesHudPod : MonoBehaviour
 
     public void ConfigureReadyVfx()
     {
-        if (readyVfx == null) readyVfx = GetComponent<AbilityReadyVfx>() ?? gameObject.AddComponent<AbilityReadyVfx>();
-        readyVfx.Configure(icon);
+        if (readyVfx == null) readyVfx = GetComponentInChildren<AbilityReadyVfx>(true);
+        if (readyVfx != null) readyVfx.Configure(icon);
     }
     void PrimeReadyCue() { wasCooling = IsCoolingDown; observedCueCycle = state != null ? state.ReadyCueCycle : 0; }
     void OnEnable() => PrimeReadyCue();

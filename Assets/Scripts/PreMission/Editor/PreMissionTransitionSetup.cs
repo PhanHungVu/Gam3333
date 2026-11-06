@@ -76,8 +76,8 @@ public static class PreMissionTransitionSetup
         if (heavy == null)
         {
             heavy = Object.Instantiate(original); heavy.name = "PartData_HeavyTorso_Test";
-            heavy.partId = "starter_heavy_torso_test"; heavy.partName = "Heavy Torso (Test)";
-            heavy.description = "A reinforced core with a higher health contribution. Development test part.";
+            heavy.partId = "starter_heavy_torso_test"; heavy.partName = "Heavy Torso (Demo Only)";
+            heavy.description = "Demo-only loadout with all weapons, included to demonstrate mission selection.";
             heavy.stats = original.stats.Select(s => new StatEntry { type = s.type, value = s.type == StatType.Health ? s.value * 1.5f : s.value }).ToList();
             AssetDatabase.CreateAsset(heavy, HeavyTorsoPath);
         }

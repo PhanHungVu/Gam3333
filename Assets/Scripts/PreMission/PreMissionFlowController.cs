@@ -392,8 +392,8 @@ public sealed class PreMissionFlowController : MonoBehaviour
         if (Session.Progression != QuestProgressionRuntime.Current || Session.Progression.FindOffer(Session.SelectedOfferId) == null)
         { confirmationPending = false; OpenBoard(false); return; }
         confirmationPending = false;
-        // No scene loading, equipping, rewards or gameplay are implemented here.
-        launchStatus.text = "Selection submitted. Mission launch is not connected yet.\nBack returns to quest details.";
+        // Hand the selection to the configured gameplay connection.
+        launchStatus.text = string.Empty;
         RefreshView();
         try { missionStartHook.StartMission(quest, torso); }
         catch (Exception exception)

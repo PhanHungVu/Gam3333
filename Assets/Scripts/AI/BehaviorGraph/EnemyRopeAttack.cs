@@ -79,7 +79,7 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
         var origin = p; origin.y = Mathf.Max(p.y, transform.position.y) + rockRadius;
         float nearest = float.PositiveInfinity;
         float height = NavTerrain.GroundHeight(p, transform.position.y - 1);
-        foreach (var hit in Physics.RaycastAll(origin, Vector3.down, 100, CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore))
+        foreach (var hit in Physics.RaycastAll(origin, Vector3.down, 100, Part.MovementQueryMask, QueryTriggerInteraction.Ignore))
         {
             if (Ignore(hit.collider) || hit.normal.y < 0.5f || hit.distance >= nearest) continue;
             nearest = hit.distance; height = hit.point.y;
@@ -157,7 +157,7 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
         bool blocked = false; float nearest = float.PositiveInfinity; var travel = next - from;
         if (travel.sqrMagnitude > 0.0001f)
         {
-            foreach (var hit in Physics.SphereCastAll(from, rockRadius, travel.normalized, travel.magnitude, CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore))
+            foreach (var hit in Physics.SphereCastAll(from, rockRadius, travel.normalized, travel.magnitude, Part.MovementQueryMask, QueryTriggerInteraction.Ignore))
             {
                 if (Ignore(hit.collider) || hit.distance >= nearest) continue;
                 nearest = hit.distance;

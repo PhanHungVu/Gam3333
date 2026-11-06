@@ -46,16 +46,14 @@ public static class MechHealthHudSceneChecks
                     foreach (var director in Object.FindObjectsByType<SpawnDirector>()) director.enabled = false;
                     foreach (var enemy in Object.FindObjectsByType<EnemyAgent>()) enemy.gameObject.SetActive(false);
                     hud = Object.FindAnyObjectByType<MechHealthHud>(); health = hud.Health; player = health.gameObject;
-                    var energy = Object.FindAnyObjectByType<MechEnergyHud>();
                     Check(hud != null && Object.FindObjectsByType<MechHealthHud>().Length == 1, "Scene has one health meter");
-                    Check(hud.transform.parent == energy.transform.parent && hud.Canvas == energy.GetComponentInParent<Canvas>()
+                    Check(Object.FindObjectsByType<MechEnergyHud>().Length == 0
+                        && hud.Canvas == Object.FindAnyObjectByType<LockOnCursor>().GetComponentInParent<Canvas>()
                         && player.GetComponentInChildren<MechHealthHud>() == null,
-                        "Health and movement share one Canvas outside the player prefab");
-                    Check(((RectTransform)hud.transform).anchoredPosition == new Vector2(28f, 124f)
-                        && ((RectTransform)energy.transform).anchoredPosition == new Vector2(28f, 42f),
-                        "Scene places health above movement with both glows inside the screen");
-                    Check(hud.transform.childCount == 3 && energy.transform.childCount == 3,
-                        "Both meters contain Glow, BarBack and BarFront");
+                        "Health uses the shared cursor Canvas without a stamina meter");
+                    Check(hud.transform.Find("Glow") != null && hud.transform.Find("BarBack") != null
+                        && hud.transform.Find("BarWhite") != null && hud.transform.Find("BarFront") != null,
+                        "Current health meter includes the delayed damage bar");
                     foreach (var graphic in hud.GetComponentsInChildren<Graphic>()) Check(!graphic.raycastTarget, "Health UI never intercepts gameplay clicks");
                     Value(); Capture("full"); health.ApplyDamage(40f); break;
                 case 1:

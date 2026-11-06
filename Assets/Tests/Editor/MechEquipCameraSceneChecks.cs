@@ -118,11 +118,11 @@ public static class MechEquipCameraSceneChecks
         var customCollider = child.AddComponent<BoxCollider>();
         var customPart = custom.AddComponent<Part>(); customPart.data = droppedHead.data; customPart.isStartingPart = false;
         custom.SetActive(true);
-        Check(normalCollider.gameObject.layer == layer && customCollider.gameObject.layer == LayerMask.NameToLayer("EnemyBody"), "Loose parts preserve explicitly authored custom collision layers");
+        Check(normalCollider.gameObject.layer == layer && customCollider.gameObject.layer == layer, "Every loose collider uses the non-blocking pickup layer");
         Check(equipment.TryEquip(customPart, PartCategory.Head) && normalCollider.gameObject.layer == 0
             && customCollider.gameObject.layer == LayerMask.NameToLayer("EnemyBody"), "Attachment restores Default without changing custom child layers");
         equipment.Unequip(PartCategory.Head);
         Check(normalCollider.gameObject.layer == layer && normalCollider.enabled && customCollider.enabled
-            && customCollider.gameObject.layer == LayerMask.NameToLayer("EnemyBody"), "Repeated drop restores colliders and retains custom child layers");
+            && customCollider.gameObject.layer == layer, "Repeated drop restores colliders on the non-blocking pickup layer");
     }
 }

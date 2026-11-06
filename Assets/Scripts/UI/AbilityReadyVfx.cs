@@ -1,11 +1,13 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// One reusable UI mesh per ability/weapon pod, allocated on its first ready cue. No gameplay timer or audio.
+// Prefab-authored ready effect: one reusable UI mesh, no gameplay timer or audio.
 [DisallowMultipleComponent]
 public sealed class AbilityReadyVfx : MonoBehaviour
 {
     [SerializeField] Image icon;
+    [Tooltip("The authored Column child on the Ability Ready Burst prefab.")]
+    [SerializeField] AbilityReadyBurstGraphic burst;
     [SerializeField, Range(.1f, 2f)] float duration = .55f;
     [SerializeField, Range(.01f, .2f)] float flashDuration = .08f;
     [SerializeField, Range(8, 128)] int particleCount = 60;
@@ -18,7 +20,6 @@ public sealed class AbilityReadyVfx : MonoBehaviour
     [Tooltip("Additional icon scale at the peak. 0.1 produces a 1.1x pulse; 0 disables it.")]
     [SerializeField, Range(0, .25f)] float iconPulse = .1f;
 
-    AbilityReadyBurstGraphic burst;
     Vector3 originalScale;
     float age;
     bool playing;
@@ -34,15 +35,9 @@ public sealed class AbilityReadyVfx : MonoBehaviour
 
     public bool Play()
     {
-        if (!isActiveAndEnabled || icon == null || icon.canvas == null || icon.canvasRenderer.GetInheritedAlpha() <= .001f) return false;
+        if (!isActiveAndEnabled || burst == null || icon == null || icon.canvas == null || icon.canvasRenderer.GetInheritedAlpha() <= .001f) return false;
         Stop();
         var canvas = icon.canvas.rootCanvas;
-        if (burst == null)
-        {
-            var node = new GameObject("Ability Ready Burst", typeof(RectTransform), typeof(CanvasRenderer), typeof(AbilityReadyBurstGraphic));
-            node.layer = canvas.gameObject.layer;
-            burst = node.GetComponent<AbilityReadyBurstGraphic>();
-        }
         burst.transform.SetParent(canvas.transform, false);
         burst.transform.SetAsLastSibling();
         originalScale = icon.rectTransform.localScale;
@@ -54,8 +49,8 @@ public sealed class AbilityReadyVfx : MonoBehaviour
 
     void LateUpdate()
     {
-        if (!playing) return;
-        Tick(Time.unscaledDeltaTime);
+        if (playing) Tick(Time.unscaledDeltaTime);
+        else ReturnColumn();
     }
 
     // Cosmetic time only. Readiness is supplied exclusively by PartAbilityCooldown.
@@ -94,6 +89,18 @@ public sealed class AbilityReadyVfx : MonoBehaviour
         playing = false;
         if (burst != null) burst.enabled = false;
     }
+    void ReturnColumn()
+    {
+        if (burst != null && burst.transform.parent != transform)
+        {
+            // Reparent outside enable/disable callbacks: Unity forbids moving a
+            // child while its Canvas or HUD parent is being deactivated/destroyed.
+            burst.transform.SetParent(transform, false);
+            burst.rectTransform.anchoredPosition = Vector2.zero;
+            burst.transform.localRotation = Quaternion.identity;
+            burst.transform.localScale = Vector3.one;
+        }
+    }
     void OnDisable() => Stop();
-    void OnDestroy() { if (burst != null) Destroy(burst.gameObject); }
+    void OnDestroy() { if (burst != null && !burst.transform.IsChildOf(transform)) Destroy(burst.gameObject); }
 }

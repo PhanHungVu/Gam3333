@@ -26,7 +26,7 @@ WASD movement is always camera-relative. Hard lock rotates that camera, so the m
 - `MechBoostPresentation`: leans only `VisualMech` and manages exhaust/trails. The ignition audio slot is intentionally empty, so dashing is silent. Assign a clip later to enable boost audio; there is no generated fallback sound.
 - `MechEquipmentLocomotion` / `MechLegAnimator`: bind the equipped locomotion strategy and its part-owned animation rig. Fast/heavy legs use the real imported clips without root motion.
 - `MechUpperBodyAnimation`: carries the module's authored body/head pose to the existing visible parts after Animator evaluation. `MechAnimationPoseSource` isolates bone references; `MechPartPoseReceiver` moves upper visuals/sockets without moving the leg socket or gameplay root.
-- `MechEnergyHud`: displays remaining energy on the scene Canvas.
+- `MechEnergyHud`: retired stamina display; current gameplay canvases use Mech Cursor Canvas with health, weapons and abilities. See [shared HUD setup](../Combat/SharedGameplayHud.md).
 
 Update order is camera input/toggle/flick in Update (-100), movement in Update, camera rig in LateUpdate (-100), Cinemachine at its default order, selection/lock validation (100), then cursor projection (200). Hard lock suppresses automatic center-crossing switches and retains offscreen targets while the camera catches up. Disabled/destroyed targets, range loss, and loss of eligible colliders replace the selection without changing the selected camera mode.
 

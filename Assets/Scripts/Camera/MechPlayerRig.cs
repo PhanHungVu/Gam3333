@@ -44,13 +44,22 @@ public sealed class MechPlayerRig : MonoBehaviour
     }
     void Start()
     {
+        var authoredHud = FindAnyObjectByType<MechWeaponsHud>();
         var cursor = FindAnyObjectByType<LockOnCursor>();
         if (cursor == null && cursorPrefab != null)
         {
             ownedCursor = Instantiate(cursorPrefab);
             cursor = ownedCursor.GetComponentInChildren<LockOnCursor>(true);
+            // The shared canvas includes CombatHUD. Keep a scene's authored HUD
+            // when only its cursor is missing, rather than showing a second copy.
+            if (authoredHud != null)
+                foreach (var bundled in ownedCursor.GetComponentsInChildren<MechWeaponsHud>(true))
+                {
+                    var root = bundled.transform.parent.gameObject;
+                    root.SetActive(false);
+                    Destroy(root);
+                }
         }
-        foreach (var hud in FindObjectsByType<MechEnergyHud>()) hud.Bind(GetComponent<MechEnergyController>());
         if (cursor != null) cursor.Bind(GetComponent<MechTargetLockController>(), GameplayCamera);
         if (combatHudPrefab != null && FindAnyObjectByType<MechWeaponsHud>() == null && cursor != null)
         {

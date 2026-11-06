@@ -184,6 +184,7 @@ public class MechMovementController : MonoBehaviour
     void Awake()
     {
         characterController = GetComponent<CharacterController>();
+        Part.ConfigureCharacterCollisions(gameObject);
         targetingController = GetComponent<MechTargetLockController>();
         if (energy == null)
             energy = GetComponent<MechEnergyController>();
@@ -374,7 +375,7 @@ public class MechMovementController : MonoBehaviour
         while (true)
         {
             count = Physics.RaycastNonAlloc(bounds.center, Vector3.down, groundHits,
-                distance + bounds.extents.y, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                distance + bounds.extents.y, Part.MovementQueryMask, QueryTriggerInteraction.Ignore);
             if (count < groundHits.Length) break;
             Array.Resize(ref groundHits, groundHits.Length * 2);
         }

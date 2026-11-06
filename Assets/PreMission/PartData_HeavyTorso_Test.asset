@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: PartData_HeavyTorso_Test
   m_EditorClassIdentifier: Assembly-CSharp::PartData
   partId: starter_heavy_torso_test
-  partName: Heavy Torso (Test)
-  description: A reinforced core with a higher health contribution. Development test part.
+  partName: Heavy Torso (Demo Only)
+  description: Demo-only loadout with all weapons, included to demonstrate mission selection.
   partType: 6
   subtype: 0
   stats:

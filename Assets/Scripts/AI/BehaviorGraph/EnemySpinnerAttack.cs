@@ -25,11 +25,11 @@ public sealed class EnemySpinnerAttack : EnemyGraphAttack
         if (length < .01f) return true;
         Vector3 heading = delta.normalized;
         int count = Physics.OverlapSphereNonAlloc(position + Vector3.up * .7f, Mathf.Max(contactRadius, agent.BodyRadius),
-            laneOverlaps, CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore);
+            laneOverlaps, Part.MovementQueryMask, QueryTriggerInteraction.Ignore);
         if (count == laneOverlaps.Length) return false;
         for (int i = 0; i < count; i++) if (laneOverlaps[i].GetComponentInParent<CombatHealth>() == null) return false;
         count = Physics.SphereCastNonAlloc(position + Vector3.up * .7f, Mathf.Max(contactRadius, agent.BodyRadius),
-            heading, laneHits, length, CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore);
+            heading, laneHits, length, Part.MovementQueryMask, QueryTriggerInteraction.Ignore);
         if (count == laneHits.Length) return false;
         for (int i = 0; i < count; i++)
         {
@@ -44,7 +44,7 @@ public sealed class EnemySpinnerAttack : EnemyGraphAttack
         {
             Vector3 sample = position + heading * length * i / steps;
             count = Physics.RaycastNonAlloc(new Vector3(sample.x, feet + 2, sample.z), Vector3.down,
-                laneHits, 4, CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore);
+                laneHits, 4, Part.MovementQueryMask, QueryTriggerInteraction.Ignore);
             if (count == laneHits.Length) return false;
             bool grounded = false;
             for (int h = 0; h < count; h++)

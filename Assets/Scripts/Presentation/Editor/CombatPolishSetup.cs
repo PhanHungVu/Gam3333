@@ -65,7 +65,7 @@ public static class CombatPolishSetup
             }
             finally { PrefabUtility.UnloadPrefabContents(root); }
         }
-        const string healthPath = "Assets/Prefabs/UI/Player Health HUD.prefab";
+        const string healthPath = "Assets/Prefabs/UI/Combat HUD/Player Health HUD.prefab";
         var healthRoot = PrefabUtility.LoadPrefabContents(healthPath);
         try
         {

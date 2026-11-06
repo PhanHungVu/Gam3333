@@ -2,9 +2,30 @@ using UnityEngine;
 
 public class Part : MonoBehaviour
 {
-    // Loose Default-layer colliders keep normal gameplay physics, but do not
-    // obstruct the follow camera when a replaced part drops from a socket.
+    // Loose parts settle on the world, but never obstruct characters or the camera.
     public const string LoosePhysicsLayerName = "MechPart";
+    public static int MovementQueryMask
+    {
+        get
+        {
+            int layer = LayerMask.NameToLayer(LoosePhysicsLayerName);
+            return layer < 0 ? Physics.DefaultRaycastLayers : Physics.DefaultRaycastLayers & ~(1 << layer);
+        }
+    }
+    public static void ConfigureCharacterCollisions(GameObject actor)
+    {
+        int layer = LayerMask.NameToLayer(LoosePhysicsLayerName);
+        if (layer < 0) return;
+        foreach (var collider in actor.GetComponentsInChildren<Collider>(true))
+        {
+            // Pickup triggers must still detect parts. Enemy limb colliders can
+            // remain solid, so include them but preserve their settings for a drop.
+            if (collider.isTrigger) continue;
+            var part = collider.GetComponentInParent<Part>();
+            if (part != null) part.CachePhysics();
+            collider.excludeLayers |= 1 << layer;
+        }
+    }
     public Transform recoilVisual;
     [Tooltip("Direction the recoil visual kicks, in its local space.")]
     public Vector3 recoilAxis = Vector3.left;
@@ -38,6 +59,7 @@ public class Part : MonoBehaviour
     Collider[] colliders;
     bool[] colliderStates;
     int[] colliderLayers;
+    int[] colliderExclusions;
     void Awake() { if (EquippedBy == null && !isEquipped) SetEquippedPhysics(false); }
 
     // State belongs to this physical part, not the shared PartData asset.
@@ -98,7 +120,7 @@ public class Part : MonoBehaviour
         consumedWeaponCue = completedWeaponCue;
         return true;
     }
-    internal void SetEquippedPhysics(bool equipped)
+    void CachePhysics()
     {
         if (colliders == null)
         {
@@ -107,21 +129,28 @@ public class Part : MonoBehaviour
                 if (c.GetComponentInParent<Part>() == this) own.Add(c);
             colliders = own.ToArray(); colliderStates = new bool[colliders.Length];
             colliderLayers = new int[colliders.Length];
+            colliderExclusions = new int[colliders.Length];
             for (int i = 0; i < colliders.Length; i++)
             {
                 colliderStates[i] = colliders[i].enabled;
                 colliderLayers[i] = colliders[i].gameObject.layer;
+                colliderExclusions[i] = colliders[i].excludeLayers;
             }
         }
+    }
+    internal void SetEquippedPhysics(bool equipped)
+    {
+        CachePhysics();
         int looseLayer = LayerMask.NameToLayer(LoosePhysicsLayerName);
         for (int i = 0; i < colliders.Length; i++)
             if (colliders[i] != null)
             {
-                // Preserve explicitly authored custom layers and restore the
-                // original layer on attachment, including nested limb parts.
-                colliders[i].gameObject.layer = !equipped && colliderLayers[i] == 0 && looseLayer >= 0
+                // All loose collider children share the pickup layer, including
+                // custom authored layers. Attachment restores each original layer.
+                colliders[i].gameObject.layer = !equipped && looseLayer >= 0
                     ? looseLayer : colliderLayers[i];
                 colliders[i].enabled = !equipped && colliderStates[i];
+                if (!equipped) colliders[i].excludeLayers = colliderExclusions[i];
             }
         var body = GetComponent<Rigidbody>();
         if (!equipped && body == null) body = gameObject.AddComponent<Rigidbody>();

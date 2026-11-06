@@ -35,11 +35,14 @@ public static class MechSceneFlowChecks
     static void CheckMeters()
     {
         var health = Object.FindAnyObjectByType<MechHealthHud>();
-        var energy = Object.FindAnyObjectByType<MechEnergyHud>();
-        Check(health != null && energy != null && health.transform.parent == energy.transform.parent
-            && health.Canvas == energy.GetComponentInParent<Canvas>() && health.IsVisible
-            && health.transform.childCount == 3 && energy.transform.childCount == 3,
-            SceneManager.GetActiveScene().name + " has both three-layer meters on the same Canvas");
+        var weapons = Object.FindObjectsByType<MechWeaponsHud>();
+        var abilities = Object.FindObjectsByType<MechAbilitiesHud>();
+        var cursors = Object.FindObjectsByType<LockOnCursor>();
+        Check(health != null && Object.FindObjectsByType<MechHealthHud>().Length == 1 && health.IsVisible
+            && weapons.Length == 1 && abilities.Length == 1 && cursors.Length == 1
+            && health.Canvas == cursors[0].GetComponentInParent<Canvas>()
+            && Object.FindObjectsByType<MechEnergyHud>().Length == 0,
+            SceneManager.GetActiveScene().name + " uses one shared combat HUD without stamina");
         Check(health.Health == Object.FindAnyObjectByType<MechPlayerRig>().GetComponent<CombatHealth>(),
             "Health meter binds the current scene player");
     }
