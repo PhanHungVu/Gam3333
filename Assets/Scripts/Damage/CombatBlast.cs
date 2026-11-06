@@ -21,7 +21,7 @@ public sealed class CombatBlast
     // A hit at origin. The target struck directly takes damage, plus splashDamage when there is a radius
     // (rewarding direct hits); everyone else within radius takes splashDamage. Walls block the splash.
     public DamageResult Resolve(Vector3 origin, float radius, float damage, float splashDamage,
-        Transform owner, LayerMask layers, Collider direct = null)
+        Transform owner, LayerMask layers, Collider direct = null, Vector3? directSourcePosition = null)
     {
         layers &= CombatRagdoll.QueryMask;
         damaged.Clear();
@@ -29,7 +29,8 @@ public sealed class CombatBlast
         CombatTeam attacker = CombatTeams.Of(owner);
         if (direct != null && !IsOwner(direct, owner))
             Apply(direct.GetComponentInParent<CombatHealth>(), damage + (radius > 0f ? splashDamage : 0f), attacker, ref hits, ref kills,
-                owner, radius>0 ? CombatHitKind.Blast : CombatHitKind.Projectile);
+                owner, radius>0 ? CombatHitKind.Blast : CombatHitKind.Projectile,
+                radius > 0 ? origin : directSourcePosition ?? (owner != null ? owner.position : (Vector3?)null));
         if (radius > 0)
         {
             int count;
@@ -43,7 +44,7 @@ public sealed class CombatBlast
                 var health = candidate.GetComponentInParent<CombatHealth>();
                 if (health == null || damaged.Contains(health)) continue;
                 if (Blocked(origin, candidate, owner, layers)) continue;
-                Apply(health, splashDamage, attacker, ref hits, ref kills, owner, CombatHitKind.Blast);
+                Apply(health, splashDamage, attacker, ref hits, ref kills, owner, CombatHitKind.Blast, origin);
             }
             Array.Clear(overlaps, 0, count);
         }
@@ -73,7 +74,7 @@ public sealed class CombatBlast
                 || Blocked(wallOrigin, candidate, owner, layers)) continue;
             var point = ClosestPoint(candidate, wallOrigin);
             var normal = wallOrigin - point;
-            if (Apply(health, damage, attacker, ref hits, ref kills, owner, source!=null ? CombatHitKind.Melee : CombatHitKind.Blast))
+            if (Apply(health, damage, attacker, ref hits, ref kills, owner, source!=null ? CombatHitKind.Melee : CombatHitKind.Blast, wallOrigin))
             {
                 hitHistory?.Add(health);
                 acceptedHit?.Invoke(health);
@@ -106,7 +107,7 @@ public sealed class CombatBlast
             var health = candidate.GetComponentInParent<CombatHealth>();
             if (health == null || damaged.Contains(health) || hitHistory != null && hitHistory.Contains(health)
                 || Blocked(center, candidate, owner, layers)) continue;
-            if (Apply(health, damage, attacker, ref hits, ref kills, owner, CombatHitKind.Blast)) { hitHistory?.Add(health); acceptedHit?.Invoke(health); }
+            if (Apply(health, damage, attacker, ref hits, ref kills, owner, CombatHitKind.Blast, center)) { hitHistory?.Add(health); acceptedHit?.Invoke(health); }
         }
         Array.Clear(overlaps, 0, count);
         damaged.Clear();
@@ -118,10 +119,10 @@ public sealed class CombatBlast
         => Blocked(origin, candidate, owner, layers);
 
     // Same-team targets are skipped: no friendly fire.
-    bool Apply(CombatHealth health, float damage, CombatTeam attacker, ref int hits, ref int kills, Transform owner, CombatHitKind kind)
+    bool Apply(CombatHealth health, float damage, CombatTeam attacker, ref int hits, ref int kills, Transform owner, CombatHitKind kind, Vector3? sourcePosition)
     {
         if (health == null || !CombatTeams.CanDamage(attacker, health.Team) || !damaged.Add(health)) return false;
-        if (!health.ApplyDamage(damage)) return false;
+        if (!health.ApplyDamage(damage, sourcePosition)) return false;
         hits++;
         if (health.IsDead) kills++;
         CombatVisualEvents.ReportHit(owner,health,kind);

@@ -16,6 +16,8 @@ public class CombatHealth : MonoBehaviour
     public float MaximumHealth => maximumHealth;
     public bool IsDead => CurrentHealth <= 0f;
     public event Action<float> Damaged;
+    // Optional source data; the original Damaged event and ApplyDamage(float) remain compatible.
+    public event Action<CombatDamageInfo> DamageReceived;
     public event Action Died;
     public event Action<bool> AvailabilityChanged;
     // Includes damage, capacity changes and explicit refills; presentation reads the final values.
@@ -35,12 +37,14 @@ public class CombatHealth : MonoBehaviour
         Changed?.Invoke();
     }
 
-    public bool ApplyDamage(float amount)
+    public bool ApplyDamage(float amount) => ApplyDamage(amount, null);
+    public bool ApplyDamage(float amount, Vector3? sourcePosition)
     {
         if (!isActiveAndEnabled || IsDead || amount <= 0f || float.IsNaN(amount) || float.IsInfinity(amount)) return false;
         float applied = Mathf.Min(CurrentHealth, amount);
         CurrentHealth -= applied;
         Damaged?.Invoke(applied);
+        DamageReceived?.Invoke(new CombatDamageInfo(applied, sourcePosition));
         Changed?.Invoke();
         if (IsDead)
         {

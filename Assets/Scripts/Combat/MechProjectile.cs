@@ -164,7 +164,9 @@ public class MechProjectile : MonoBehaviour
         // Mark spent first: callbacks and compound colliders cannot cause repeat damage.
         Finish();
         // Teams decide who takes damage (CombatBlast skips the shooter's own team).
-        var result = blast.Resolve(impactPoint, explosionRadius, impactDamage, splashDamage, owner, collisionLayers, collider);
+        // The incoming trajectory remains meaningful even if the shooter has moved or died.
+        var result = blast.Resolve(impactPoint, explosionRadius, impactDamage, splashDamage, owner, collisionLayers, collider,
+            impactPoint - direction);
         var impact = new MechProjectileImpact(Source, Subtype, impactPoint, explosionRadius,
             result.Hits, result.Kills, direction, contactPoint, normal, owner);
         ImpactResolved?.Invoke(impact);
