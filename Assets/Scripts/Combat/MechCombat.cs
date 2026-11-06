@@ -49,6 +49,8 @@ public class MechCombat : MonoBehaviour
 
     public void BindCamera(Camera camera) => gameplayCamera = camera;
     public MeleeAttack Melee => melee;
+    // Multipliers on this mech's weapon damage while something is active (e.g. the torso's Damage Amp).
+    public readonly DamageModifiers DamageModifiers = new DamageModifiers();
     public bool MeleeCameraActive => isActiveAndEnabled && melee.CameraTimer > 0f;
     public bool IsMeleeApproaching => melee.Pending;
     public float MeleeExtension => melee.Extension;
@@ -131,7 +133,7 @@ public class MechCombat : MonoBehaviour
         Vector3 muzzle = MuzzleOf(part);
         Vector3 aimPoint = AimSolver.AimPoint(targeting, gameplayCamera, transform, range, hitLayers);
         var projectile = RangedAttack.Fire(part, transform, muzzle, aimPoint, gameplayCamera.transform.forward,
-            range, hitLayers, combatMaterial, ForwardProjectileImpact);
+            range, hitLayers, combatMaterial, ForwardProjectileImpact, DamageModifiers.Total);
         lastAttacker = part;
         ShotFired?.Invoke(projectile);
         WeaponAttackStarted?.Invoke(part);

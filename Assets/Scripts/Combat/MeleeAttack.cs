@@ -30,7 +30,7 @@ public sealed class MeleeAttack
         if (Pending || part.ReadyAt > Time.time) return false;
         activePart = part;
         activeSocket = socket;
-        strikeDamage = Mathf.Max(0f, part.Stats.GetStat(StatType.Damage));
+        strikeDamage = Mathf.Max(0f, part.Stats.GetStat(StatType.Damage)) * combat.DamageModifiers.Total;
         cooldownTimer = Mathf.Max(0.01f, part.Stats.ShotInterval);
         part.Consume(cooldownTimer, false);
         combat.RaiseAttackStarted(part);

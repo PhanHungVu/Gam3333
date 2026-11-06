@@ -5256,7 +5256,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ce2917b344d041439ccbfc6660e7cbf3, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   color: {r: 1, g: 0.9, b: 0.3, a: 1}
@@ -16091,6 +16091,7 @@ GameObject:
   - component: {fileID: 3274276630306271121}
   - component: {fileID: 7289363981103585664}
   - component: {fileID: 6595480779760735581}
+  - component: {fileID: 7767845514356483864}
   m_Layer: 0
   m_Name: FullPlayer_mech_heavy
   m_TagString: Player
@@ -16164,7 +16165,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df55c955fd694140bd431099851905d4, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatFeedback
   presentationEnabled: 1
   effectMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
@@ -16203,6 +16204,15 @@ MonoBehaviour:
   damageCameraImpulse: 1
   damageImpulseStrength: 0.16
   damageImpulseDuration: 0.24
+  hitCameraImpulse: 1
+  hitImpulseStrength: 0.12
+  hitImpulseDuration: 0.14
+  hitShakeInterval: 0.06
+  hitStop: 1
+  meleeHitStop: 0.07
+  projectileHitStop: 0.035
+  blastHitStop: 0.085
+  damageHitStop: 0.08
   fireAudio: 0
   impactAudio: 1
   confirmationAudio: 1
@@ -16250,7 +16260,9 @@ MonoBehaviour:
   gameplayCamera: {fileID: 0}
   energy: {fileID: 6057257043024523587}
   moveSpeed: 10
+  currentWalkSpeed: 0
   sprintSpeed: 12
+  autoRunDelay: 5
   acceleration: 20
   deceleration: 32
   boostAcceleration: 28
@@ -16330,8 +16342,8 @@ MonoBehaviour:
     m_Bits: 4294967295
   screenPadding: 0.04
   targetSwitchRadius: 0.025
+  autoAimRadius: 0.18
   gameplayCamera: {fileID: 0}
-  freeAimHoldDuration: 1.2
   switchFlickDistance: 80
   switchGestureWindow: 0.2
   switchMinimumSpeed: 120
@@ -16384,7 +16396,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7b54c3f0228f3d4bb23513f81bd9b67, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechPlayerRig
   cameraPrefab: {fileID: 3557168452864418661, guid: ee0d32885dad7e8499e06dc440d1680f, type: 3}
   cursorPrefab: {fileID: 7007896882566638223, guid: bc1440da9e190b948ae13d16af646f0c, type: 3}
@@ -16419,6 +16431,7 @@ MonoBehaviour:
   - {fileID: 3215515130323207319, guid: 8e50129ecb5788f44a40a33c28158c29, type: 3}
   - {fileID: 4874642105948719153, guid: c92c52b53fdc8cb46af1c2d610c4619d, type: 3}
   showOverlay: 0
+  toggleKey: 4
   enableSwapShortcuts: 1
 --- !u!114 &1112537626230324030
 MonoBehaviour:
@@ -16475,6 +16488,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a22b2bcb94884e68a023d7d643bc5e92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechStats
+  baseSpeed: 0
+  speedMultiplier: 1
 --- !u!114 &327758736479981224
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16516,6 +16531,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MechPlayerInput
   inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   lockCursorOnPlay: 1
+  headAbilityRequested:
+    m_PersistentCalls:
+      m_Calls: []
+  torsoAbilityRequested:
+    m_PersistentCalls:
+      m_Calls: []
+  legAbilityRequested:
+    m_PersistentCalls:
+      m_Calls: []
+  useBuiltInLegMovement: 1
 --- !u!114 &1139920132479959995
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16526,7 +16551,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0f6c750bfddeec0479375e322fd0b4e6, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PartSwapWorldHudPresenter
   viewPrefab: {fileID: 6710405881133785968, guid: 50c5fcb7b7c0c3241b2a7e16e6555705, type: 3}
   screenWidthFraction: 0.3
@@ -16549,7 +16574,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 52f4762c480644a08a58b5f2954bc13f, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerDamageVignette
   startsAtHealth: 0.5
   fullAtHealth: 0.01
@@ -16566,7 +16591,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f6e8a99900e14c578e555af64508b57b, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatDeathRagdoll
   maximumActive: 12
   maximumBodies: 14
@@ -16585,10 +16610,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ae7a64231c5c43c18b78dc55bc4421cf, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MissionParticipant
   resultsPrefab: {fileID: 1572277034998946294, guid: 048fc651118d41d4c9b202857b2e37a5, type: 3}
   createLocalMission: 1
+--- !u!114 &7767845514356483864
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3053454427299694765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79bc7bf5c1bfb3746bc69c36c145b576, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MechAbilities
+  damageMultiplier: 1
+  activeAbilities: 
 --- !u!1 &3220106313594343585
 GameObject:
   m_ObjectHideFlags: 0
@@ -16717,7 +16756,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ce2917b344d041439ccbfc6660e7cbf3, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   color: {r: 1, g: 0.5, b: 0.15, a: 1}
@@ -17021,7 +17060,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ce2917b344d041439ccbfc6660e7cbf3, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   color: {r: 0.3, g: 0.9, b: 1, a: 1}
@@ -32049,7 +32088,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ce2917b344d041439ccbfc6660e7cbf3, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   color: {r: 0.4, g: 0.85, b: 1, a: 0.95}

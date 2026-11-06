@@ -15,10 +15,14 @@ public enum StatType
     Damage = 2, MagSize = 3, Ammo = 4, Reload = 5, Range = 6,
     ProjectileSpeed = 10, ProjectileSize = 11, SplashRadius = 12,
     FireRate = 13, SplashDamage = 14,
-    // Stored for upcoming features, not used by the game yet: Accuracy (heads); Ability Cooldown and
-    // Ability Duration in seconds (each head, torso and legs for its own ability).
-    Accuracy = 15, AbilityCooldown = 16, AbilityDuration = 17
+    // Accuracy (heads, not used yet). Ability Cooldown and Ability Duration in seconds, and Ability Power
+    // (what the ability does, e.g. 50 = +50% damage for Damage Amp): each head, torso and legs for its own ability.
+    Accuracy = 15, AbilityCooldown = 16, AbilityDuration = 17, AbilityPower = 18
 }
+
+// The ability a head, torso or legs part gives when its button is pressed (Ctrl torso, Tab head).
+// Keep the numbers fixed (assets store them); add new abilities at the end.
+public enum PartAbility { None = 0, DamageAmp = 1 }
 
 // How a part attacks, which decides how its damage is checked. None for parts that don't attack
 // (head, legs, torso). Melee: a hit box. Projectile: a shot that hits what it touches. Splash: a shot
@@ -47,6 +51,8 @@ public class PartData : ScriptableObject
     public Sprite icon;
     [Tooltip("Head, torso and legs: the picture of this part's ability (e.g. Sprites/AbilityIcons), shown in the abilities HUD.")]
     public Sprite abilityIcon;
+    [Tooltip("Head, torso and legs: the ability this part gives (its Ability Cooldown, Duration and Power stats tune it).")]
+    public PartAbility ability;
     public List<StatEntry> stats;
     [Header("Combat (Range stat is in golem lengths; metres per golem is in MechRulesConfig)")]
     [Tooltip("Optional projectile prefab. Contains visual meshes and MechProjectile, with no physics colliders.")]
