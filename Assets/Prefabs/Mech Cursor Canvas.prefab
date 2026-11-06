@@ -1,5 +1,41 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2094693659240707110
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5150000000000000101}
+  - component: {fileID: 7651357440328201403}
+  m_Layer: 5
+  m_Name: ObjectiveMarkerManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &7651357440328201403
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2094693659240707110}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1929469636911233743}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &7007896882566638223
 GameObject:
   m_ObjectHideFlags: 0
@@ -35,6 +71,7 @@ RectTransform:
   - {fileID: 5572270183690412438}
   - {fileID: 118537439496919353}
   - {fileID: 7498855416503485709}
+  - {fileID: 7651357440328201403}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -522,3 +559,28 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 358039453544703, guid: 7c71655522f090616418aea8871d94af, type: 3}
   m_PrefabInstance: {fileID: 7498507569150162418}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &5150000000000000101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2094693659240707110}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fabfeeaaeb5d201033f9f8774c21e615, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObjectiveMarkerManager
+  markerPrefab: {fileID: 1577231607090946155, guid: 82755ce02adc87044815a26bbe56bbc0, type: 3}
+  objectivePrefix: Chunk_
+  ignoredNames:
+  - Chunk_Start
+  searchSeconds: 8
+  edgeMargin: 0.08
+  offScreenScale: 0.5
+  icons:
+  - {fileID: 21300000, guid: df6e42ee9e0f67d419c36373bb8f248b, type: 3}
+  - {fileID: 21300000, guid: 6a9f435ca566b884d93b9163de862f8d, type: 3}
+  - {fileID: 21300000, guid: fd2a72de0052bd64d823d2c593083c1e, type: 3}
+  iconPrefix: objectiveMarker
+  gameplayCamera: {fileID: 0}
