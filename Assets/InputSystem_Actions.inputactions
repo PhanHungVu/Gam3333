@@ -107,6 +107,16 @@
                     "priority": 0
                 },
                 {
+                    "name": "Pickup",
+                    "type": "Button",
+                    "id": "23c1a2af-74e7-49fa-a6a7-662ed096cd2d",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
                     "name": "SwapLeft",
                     "type": "Button",
                     "id": "ee10a7d6-675b-4abd-9450-8c6b8a03307b",
@@ -534,7 +544,7 @@
                 {
                     "name": "",
                     "id": "d4c4e5b6-2d4f-4c8a-9f1e-7c3d2b6a5e90",
-                    "path": "<Keyboard>/f",
+                    "path": "<Mouse>/middleButton",
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse",
@@ -550,6 +560,17 @@
                     "processors": "",
                     "groups": "Gamepad",
                     "action": "LockOn",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e941cc55-7b06-4615-9710-67b7099b8d8a",
+                    "path": "<Keyboard>/f",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Pickup",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

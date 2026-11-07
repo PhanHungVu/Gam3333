@@ -140,8 +140,9 @@ public static class CombatPolishChecks
         Call(shot, "Step", 1f); Check(impacts == 1, "A spent projectile cannot repeat impact feedback");
         int smokeBeforeCannon=Effects(feedback,CombatFeedbackEffect.Kind.Smoke);
         TestMech.Advance(player, 1); shot = combat.TryAttack(PartCategory.ShoulderL).Projectile; Call(shot, "Step", .2f);
-        Check(Effects(feedback, CombatFeedbackEffect.Kind.Explosion) == 1 && Effects(feedback, CombatFeedbackEffect.Kind.Smoke) >= smokeBeforeCannon+2,
-            "Cannon impact reuses its blast flash, ring and embers and adds a smoke plume");
+        // With no authored weaponFireVfx, firing creates no extra smoke (checked above).
+        Check(Effects(feedback, CombatFeedbackEffect.Kind.Explosion) == 1 && Effects(feedback, CombatFeedbackEffect.Kind.Smoke) == smokeBeforeCannon+1,
+            "Cannon impact reuses its blast flash, ring and embers and adds one smoke plume without unauthored firing smoke");
         yield return Capture("weapon-impact", camera, feedback, null, null);
         yield return GameDelay(.2f);
         yield return Capture("projectile-lingering-tail",camera,feedback,null,null,new Vector3(0,2,5),9);

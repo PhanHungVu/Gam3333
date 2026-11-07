@@ -63,11 +63,13 @@ public class EquipManager : MonoBehaviour
         var part = GetSelectedPart();
         return part != null && TryEquip(part, slot);
     }
-    // Equip into a named slot. Parts carry no side, so the caller (swap input, loadout)
-    // always decides which socket a part goes into.
-    public bool TryEquip(Part part, PartCategory slot)
+    // The same read-only validation drives pickup previews and the final equipment transaction.
+    public bool CanEquip(Part part, PartCategory slot)
+        => CanEquipForRetrieval(part, slot, null);
+    internal bool CanEquipForRetrieval(Part part, PartCategory slot, RemotePartRetrieval requester)
     {
-        if (part == null || part.isEquipped || !part.gameObject.activeInHierarchy) return false;
+        if (part == null || part.isEquipped || !part.isActiveAndEnabled
+            || (part.IsRetrieving && part.RetrievalOwner != requester)) return false;
         var target = FindSocket(slot);
         if (target == null || !CanEquip(target, part)) return false;
         if (slot == PartCategory.Torso)
@@ -80,9 +82,30 @@ public class EquipManager : MonoBehaviour
                 foreach (var socket in replacement) if (socket.socketType == pair.Key) found = true;
                 if (!found) return false;
             }
+        }
+        return true;
+    }
+    // Empty compatible sockets first; otherwise a stable left/default replacement.
+    public PartCategory? PreferredSlotFor(Part part)
+    {
+        if (part == null) return null;
+        PartCategory? fallback = null;
+        foreach (var slot in PartSlots.SlotsFor(part.partType))
+        {
+            if (!CanEquip(part, slot)) continue;
+            if (!fallback.HasValue) fallback = slot;
+            if (GetEquipped(slot) == null) return slot;
+        }
+        return fallback;
+    }
+    // Equip into a named slot. Parts carry no side, so the caller decides the side.
+    public bool TryEquip(Part part, PartCategory slot)
+    {
+        if (!CanEquip(part, slot)) return false;
+        var target = FindSocket(slot);
+        if (slot == PartCategory.Torso)
             foreach (var pair in equipped)
                 if (pair.Key != PartCategory.Torso && pair.Value != null) pair.Value.transform.SetParent(target.transform.parent, true);
-        }
         Unequip(slot, false);
         Attach(target, part);
         if (slot == PartCategory.Torso)
@@ -97,8 +120,11 @@ public class EquipManager : MonoBehaviour
         return true;
     }
     // No slot given: the first free slot that fits (left before right), otherwise the left slot.
-    public bool TryEquip(Part part) =>
-        part != null && TryEquip(part, FindFreeSlot(part.partType) ?? PartSlots.DefaultSlot(part.partType));
+    public bool TryEquip(Part part)
+    {
+        var slot = PreferredSlotFor(part);
+        return slot.HasValue && TryEquip(part, slot.Value);
+    }
     public Part Unequip(PartCategory category) => Unequip(category, true);
     Part Unequip(PartCategory category, bool notify)
     {
@@ -126,14 +152,27 @@ public class EquipManager : MonoBehaviour
     }
     void Place(Socket socket, Part part)
     {
+        AttachmentPose(socket, part, out var pose, out var desired);
         part.transform.SetParent(socket.transform, true);
-        Vector3 desired = Vector3.Scale(transform.lossyScale, part.authoredScale) * partScale;
-        var attachment = socket.AttachmentFor(part);
-        part.transform.SetPositionAndRotation(socket.transform.position + socket.transform.rotation * Vector3.Scale(desired, attachment.position),
-            socket.transform.rotation * attachment.rotation);
+        part.transform.SetPositionAndRotation(pose.position, pose.rotation);
         Vector3 parent = socket.transform.lossyScale;
         part.transform.localScale = new Vector3(desired.x / parent.x, desired.y / parent.y, desired.z / parent.z);
         part.ApplyMuzzlePose(socket.TryMuzzlePose(part, out var muzzlePose), muzzlePose);
+    }
+    // World destination uses exactly the same per-weapon corrections as final attachment.
+    public bool TryGetAttachmentPose(Part part, PartCategory slot, out Pose pose, out Vector3 worldScale)
+    {
+        pose = Pose.identity; worldScale = Vector3.one;
+        var requester = part != null && part.RetrievalOwner != null && part.RetrievalOwner.Equipment == this ? part.RetrievalOwner : null;
+        if (!CanEquipForRetrieval(part, slot, requester)) return false;
+        AttachmentPose(FindSocket(slot), part, out pose, out worldScale); return true;
+    }
+    void AttachmentPose(Socket socket, Part part, out Pose pose, out Vector3 worldScale)
+    {
+        worldScale = Vector3.Scale(transform.lossyScale, part.authoredScale) * partScale;
+        var correction = socket.AttachmentFor(part);
+        pose = new Pose(socket.transform.position + socket.transform.rotation * Vector3.Scale(worldScale, correction.position),
+            socket.transform.rotation * correction.rotation);
     }
     Socket FindSocket(PartCategory slot)
     {

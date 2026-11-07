@@ -25,7 +25,7 @@ public readonly struct MechProjectileImpact
 }
 
 // Straight projectile: direction is captured at launch and never tracks a target.
-public class MechProjectile : MonoBehaviour
+public class MechProjectile : MonoBehaviour, ICombatTrailSource
 {
     [SerializeField] Transform visual;
     [SerializeField] Vector3 angularVelocity;
@@ -40,6 +40,7 @@ public class MechProjectile : MonoBehaviour
     readonly CombatBlast blast = new CombatBlast();
     public Vector3 Direction => direction;
     public bool IsLive => live;
+    public Transform TrailTransform => this != null ? transform : null;
     public CombatTeam OwnerTeam { get; private set; }
     // The part that fired this shot (null for enemy shots) and how it attacks.
     public Part Source { get; set; }

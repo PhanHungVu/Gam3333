@@ -20,13 +20,8 @@ public static class PartSwapDisplay
     public static void CompatibleSlots(EquipManager owner,Part part,List<PartCategory> result)
     {
         result.Clear(); if(owner==null || part==null || part.Stats==null) return;
-        var sockets=owner.GetComponentsInChildren<Socket>(true);
-        foreach(var category in PartSlots.SlotsFor(part.partType)) foreach(var socket in sockets)
-        {
-            if(socket.socketType!=category) continue;
-            bool fits=owner.rulesConfig!=null ? owner.rulesConfig.CanEquip(socket,part) : PartSlots.Fits(socket.socketType,part.partType);
-            if(fits) { result.Add(socket.socketType); break; }
-        }
+        foreach(var category in PartSlots.SlotsFor(part.partType))
+            if(owner.CanEquip(part,category)) result.Add(category);
     }
     static bool Has(PartData data,StatType type)
     { if(data!=null && data.stats!=null) foreach(var entry in data.stats) if(entry.type==type) return true; return false; }

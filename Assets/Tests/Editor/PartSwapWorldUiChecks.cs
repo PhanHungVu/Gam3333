@@ -117,6 +117,8 @@ public static class PartSwapWorldUiChecks
         yield return Frames(3);
         hud=Object.FindObjectsByType<PartSwapWorldHudPresenter>().Single(h=>h.isActiveAndEnabled);
         equipment=hud.GetComponent<EquipManager>(); detector=equipment.GetComponentInChildren<PickupDetector>(); input=equipment.GetComponent<MechPlayerInput>();
+        // These fixtures explicitly choose parts to test UI layout/cycling. Remote acquisition has its own integration suite.
+        var retrieval=equipment.GetComponent<RemotePartRetrieval>(); if(retrieval!=null) retrieval.enableRemoteTargeting=false;
         input.AssumeCursorCaptured=true;
         Check(hud.View!=null&&detector.worldSpaceHud==hud,"Shared player owns exactly one connected world view after repeated setup");
         Check(hud.View.Canvas.renderMode==RenderMode.WorldSpace&&!hud.View.Group.blocksRaycasts&&!hud.View.Group.interactable
@@ -245,8 +247,11 @@ public static class PartSwapWorldUiChecks
     }
     static IEnumerator CycleTo(Part part)
     {
+        // Layout captures pause simulation; gameplay correctly ignores V while paused.
+        float captureScale=Time.timeScale; Time.timeScale=1; yield return Frames(2);
         InputSystem.QueueStateEvent(keyboard,new KeyboardState(Key.V)); yield return Frames(2);
         InputSystem.QueueStateEvent(keyboard,new KeyboardState()); yield return Frames(2);
+        Time.timeScale=captureScale;
         Check(equipment.GetSelectedPart()==part,"Actual V input selects the other nearby part: "+part.Stats.partName);
         yield return Visible(part);
     }
@@ -268,11 +273,13 @@ public static class PartSwapWorldUiChecks
             "Cycling changes only UI placement and does not move the gameplay camera");
         yield return CycleTo(right);
         Vector3 original=right.transform.position;
-        right.transform.position=new Vector3(-0.005f,original.y,original.z); yield return Frames();
+        Vector3 pickupOffset=right.PickupPoint-right.transform.position;
+        // Move the visible pickup across the player, not the imported weapon's offset rig pivot.
+        right.transform.position=new Vector3(-0.005f-pickupOffset.x,original.y,original.z); Physics.SyncTransforms(); yield return Frames();
         CheckSide(true,"Tiny center crossings do not make the selected part's panel flicker between sides");
-        right.transform.position=new Vector3(-1.2f,original.y,original.z); yield return Frames();
+        right.transform.position=new Vector3(-1.2f-pickupOffset.x,original.y,original.z); Physics.SyncTransforms(); yield return Frames();
         CheckSide(false,"The same selected part moving clearly across the player updates its panel side");
-        right.transform.position=original; yield return Frames();
+        right.transform.position=original; Physics.SyncTransforms(); yield return Frames();
         Camera.transform.SetPositionAndRotation(new Vector3(0,4,10),Quaternion.LookRotation(new Vector3(0,0.6f,0)-new Vector3(0,4,10)));
         yield return Frames();
         CheckSide(false,"Camera orbit chooses the part's projected side instead of its fixed world-X side");
@@ -317,7 +324,7 @@ public static class PartSwapWorldUiChecks
             Check(points.All(p=>p.z>0&&p.x>=0.025f&&p.x<=0.975f&&p.y>=0.025f&&p.y<=0.975f),name+": world panel remains inside the gameplay-camera frame");
             float playerX=camera.WorldToViewportPoint(equipment.transform.position).x;
             Check(points.Max(p=>p.x)<=playerX-0.115f || points.Min(p=>p.x)>=playerX+0.115f,name+": panel keeps the player silhouette clear");
-            Check(hud.View.transform.position.y>=hud.DisplayedPart.transform.position.y+0.024f,name+": panel base stays above the selected ground anchor");
+            Check(hud.View.transform.position.y>=hud.DisplayedPart.PickupPoint.y+0.024f,name+": panel base stays above the physical pickup anchor rather than an offset rig pivot");
             RenderPipeline.SubmitRenderRequest(camera,new RenderPipeline.StandardRequest {destination=target}); RenderTexture.active=target;
             texture.ReadPixels(new Rect(0,0,width,height),0,0); texture.Apply(); var shown=texture.GetPixels32();
             if(occluded)

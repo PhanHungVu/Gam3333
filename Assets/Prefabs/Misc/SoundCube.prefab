@@ -431,7 +431,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ZooSoundplayer
   clip: {fileID: 8300000, guid: 5f7146eaff925714982e8f9b44a4bdb5, type: 3}
   volume: 1
-  interactKey: 102
+  interactKey: 103
   activated: 0
 --- !u!82 &5470398417484331914
 AudioSource:

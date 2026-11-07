@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 public class ZooToggle : MonoBehaviour
 {
-    public KeyCode interactKey = KeyCode.F;
+    public KeyCode interactKey = KeyCode.G;
     Key inputKey;
     TMP_Text text;
     [SerializeField] bool activated = false;
@@ -27,7 +27,7 @@ public class ZooToggle : MonoBehaviour
 
     void Update()
     {
-        if (UnityEngine.InputSystem.Keyboard.current[inputKey].wasPressedThisFrame && activated == true)
+        if (Keyboard.current != null && Keyboard.current[inputKey].wasPressedThisFrame && activated == true)
         {
             Debug.Log("Toggling " + toggleObject.name);
             toggleObject.SetActive(!toggleObject.activeSelf);

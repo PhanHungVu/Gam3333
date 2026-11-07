@@ -53,7 +53,7 @@ public sealed class AbilityReadyVfx : MonoBehaviour
         else ReturnColumn();
     }
 
-    // Cosmetic time only. Readiness is supplied exclusively by PartAbilityCooldown.
+    // Cosmetic time only. The owning HUD pod supplies actual weapon/ability readiness.
     public void Tick(float deltaTime)
     {
         if (!playing) return;

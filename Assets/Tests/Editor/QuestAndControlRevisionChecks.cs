@@ -167,6 +167,9 @@ public static class QuestAndControlRevisionChecks
             (PartCategory.Legs, Body("Legs", PartType.Legs)), (PartCategory.ArmL, Gun("Left", PartType.Arm)), (PartCategory.ArmR, Gun("Right", PartType.Arm)),
             (PartCategory.ShoulderL, Gun("Left shoulder", PartType.Shoulder)), (PartCategory.ShoulderR, Gun("Right shoulder", PartType.Shoulder)));
         var equipment = player.GetComponent<EquipManager>(); var combat = player.AddComponent<MechCombat>(); var input = player.AddComponent<MechPlayerInput>();
+        var sensorRoot = new GameObject("Actual nearby pickup sensor"); sensorRoot.transform.SetParent(player.transform, false);
+        var sensor = sensorRoot.AddComponent<SphereCollider>(); sensor.isTrigger = true; sensor.radius = 2;
+        var nearbyDetector = sensorRoot.AddComponent<PickupDetector>();
         var asset = AssetDatabase.LoadAssetAtPath<InputActionAsset>("Assets/InputSystem_Actions.inputactions"); Set(input, "inputActions", asset); input.AssumeCursorCaptured = true;
         player.SetActive(true); motor.BindCamera(view); combat.BindCamera(view); targeting.BindCamera(view); Physics.SyncTransforms();
         int leftShots = 0, rightShots = 0, leftShoulderShots = 0, rightShoulderShots = 0, headRequests = 0, torsoRequests = 0, legRequests = 0;
@@ -181,12 +184,12 @@ public static class QuestAndControlRevisionChecks
         Physics.SyncTransforms(); yield return Frames(3);
         Check(targeting.CurrentTarget == enemy && !targeting.IsHardLocked, "Enemies entering the center aim radius are selected without locking the camera");
         Check(Vector3.Distance(AimSolver.AimPoint(targeting, view, player.transform, 60, ~0), enemy.AimPosition) < .001f, "Free-camera projectiles aim at the selected enemy");
-        yield return Keys(Key.F); yield return Delay(1.3f);
-        Check(targeting.IsHardLocked && !targeting.IsFreeAim, "F locks immediately and holding it does not enter the old free-aim mode"); yield return Keys();
-        yield return Keys(Key.F); yield return Keys();
-        Check(targeting.IsFreeCamera && targeting.CurrentTarget == enemy && !targeting.IsFreeAim, "Second F press frees the camera while retaining automatic weapon aim");
+        yield return MouseButtons(false, false, true); yield return Delay(1.3f);
+        Check(targeting.IsHardLocked && !targeting.IsFreeAim, "MMB locks immediately and holding it neither repeats nor disables automatic aim"); yield return MouseButtons(false, false);
         yield return MouseButtons(false, false, true); yield return MouseButtons(false, false);
-        Check(targeting.IsFreeCamera, "MMB has no gameplay lock-on action while manual aiming is deferred");
+        Check(targeting.IsFreeCamera && targeting.CurrentTarget == enemy && !targeting.IsFreeAim, "Second MMB press frees the camera while retaining automatic weapon aim");
+        yield return Keys(Key.F); yield return Keys();
+        Check(targeting.IsFreeCamera, "F no longer changes camera lock mode");
         dummy.transform.position = new Vector3(15, 1, 20); Physics.SyncTransforms(); yield return Frames(3);
         Check(targeting.CurrentTarget == null, "Automatic aim releases enemies outside the configured screen-space radius");
         dummy.transform.position = new Vector3(0, 1, 20); Physics.SyncTransforms(); yield return Frames(3);
@@ -242,10 +245,12 @@ public static class QuestAndControlRevisionChecks
         for (int i = 0; i < 8; i++) { MotorTicks(motor, view.transform, 60, Vector2.up); TestMech.Advance(player, 1); combat.TryAttack(PartCategory.ArmR); }
         Check(!motor.IsAutoRunning, "Repeated attacks prevent the five-second run timer from accumulating");
         input.enabled = true; yield return Keys();
-        var pickup = new GameObject("New Head").AddComponent<Part>(); pickup.transform.position = player.transform.position + Vector3.right; pickup.data = Body("New Head", PartType.Head); equipment.SetSelectedPart(pickup);
+        var pickup = GameObject.CreatePrimitive(PrimitiveType.Cube).AddComponent<Part>(); pickup.name = "New Head"; pickup.transform.position = player.transform.position + Vector3.right; pickup.data = Body("New Head", PartType.Head);
+        pickup.GetComponent<Rigidbody>().isKinematic = true; Physics.SyncTransforms(); Call(nearbyDetector,"OnTriggerStay",pickup.GetComponent<Collider>()); Call(nearbyDetector,"Update");
         yield return Keys(Key.Digit2); yield return Keys(); Check(!pickup.isEquipped, "A single-slot part ignores slot 2");
         yield return Keys(Key.Digit1); yield return Keys(); Check(equipment.GetEquipped(PartCategory.Head) == pickup, "1 swaps a nearby selected single-slot part");
-        var replacement = new GameObject("New Right Arm").AddComponent<Part>(); replacement.transform.position = player.transform.position + Vector3.right; replacement.data = Gun("New Right Arm", PartType.Arm); equipment.SetSelectedPart(replacement);
+        var replacement = GameObject.CreatePrimitive(PrimitiveType.Cube).AddComponent<Part>(); replacement.name = "New Right Arm"; replacement.transform.position = player.transform.position + Vector3.right; replacement.data = Gun("New Right Arm", PartType.Arm);
+        replacement.GetComponent<Rigidbody>().isKinematic = true; Physics.SyncTransforms(); Call(nearbyDetector,"OnTriggerStay",replacement.GetComponent<Collider>()); Call(nearbyDetector,"Update");
         yield return Keys(Key.Digit2); yield return Keys(); Check(equipment.GetEquipped(PartCategory.ArmR) == replacement, "2 swaps the selected arm into its right socket");
         input.enabled = false;
         dummy.transform.position = new Vector3(0, 1, 20);

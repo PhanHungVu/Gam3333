@@ -131,7 +131,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90753aea4d2c12742ae7416bd24e3629, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ZooToggle
-  interactKey: 102
+  interactKey: 103
   activated: 0
   toggleObject: {fileID: 0}
 --- !u!1 &3121960571684865435

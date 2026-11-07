@@ -31,7 +31,7 @@ public sealed class MeleeAttack
         activePart = part;
         activeSocket = socket;
         strikeDamage = Mathf.Max(0f, part.Stats.GetStat(StatType.Damage)) * combat.DamageModifiers.Total;
-        cooldownTimer = Mathf.Max(0.01f, part.Stats.ShotInterval);
+        cooldownTimer = Mathf.Max(0.01f, part.Stats.ShotInterval / combat.AttackCadenceMultiplier);
         part.Consume(cooldownTimer, false);
         combat.RaiseAttackStarted(part);
         CameraTimer = combat.MeleeCameraHold;

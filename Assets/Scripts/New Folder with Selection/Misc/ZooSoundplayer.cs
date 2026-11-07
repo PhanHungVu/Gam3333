@@ -8,7 +8,7 @@ public class ZooSoundplayer : MonoBehaviour
     AudioSource audioSource;
     public AudioClip clip;
     public float volume = 1f;
-    public KeyCode interactKey = KeyCode.F;
+    public KeyCode interactKey = KeyCode.G;
     Key inputKey;
     TMP_Text text;
     [SerializeField] bool activated = false;
@@ -28,7 +28,7 @@ public class ZooSoundplayer : MonoBehaviour
     }
     void Update()
     {
-        if (UnityEngine.InputSystem.Keyboard.current[inputKey].wasPressedThisFrame && activated == true)
+        if (Keyboard.current != null && Keyboard.current[inputKey].wasPressedThisFrame && activated == true)
         {
             Debug.Log("Playing sound: " + clip.name);
             audioSource.PlayOneShot(clip, volume);

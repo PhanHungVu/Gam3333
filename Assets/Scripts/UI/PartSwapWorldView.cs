@@ -29,6 +29,7 @@ public sealed class PartSwapWorldView : MonoBehaviour
     readonly Dictionary<Material,Material> overlayFonts=new Dictionary<Material,Material>();
     static readonly Color cardColor=new Color(0.16f,0.20f,0.21f,0.98f);
     Color accentColor;
+    Image statusBacking;
     public RectTransform Panel=>panel;
     public Canvas Canvas=>canvas;
     public CanvasGroup Group=>group;
@@ -38,6 +39,13 @@ public sealed class PartSwapWorldView : MonoBehaviour
     public SocketCard Card(int index)=>cards[index];
     void Awake()
     {
+        // The status sits below the comparison cards; give it the same readable backing over bright scenery.
+        statusBacking=new GameObject("Pickup Status Backing",typeof(RectTransform),typeof(CanvasRenderer),typeof(Image)).GetComponent<Image>();
+        statusBacking.transform.SetParent(footer.transform.parent,false);
+        statusBacking.transform.SetSiblingIndex(footer.transform.GetSiblingIndex());
+        statusBacking.raycastTarget=false; statusBacking.color=new Color(.10f,.13f,.14f,.94f);
+        var statusRect=statusBacking.rectTransform;
+        statusRect.anchorMin=footer.rectTransform.anchorMin; statusRect.anchorMax=footer.rectTransform.anchorMax; statusRect.pivot=footer.rectTransform.pivot;
         foreach(var graphic in GetComponentsInChildren<Graphic>(true))
         {
             if(graphic is TMP_Text label)
@@ -84,8 +92,8 @@ public sealed class PartSwapWorldView : MonoBehaviour
             {
                 var card=cards[j]; card.category=slots[j];
                 string key=input!=null ? input.SwapBindingLabel(slots[j]) : null;
-                card.available=!string.IsNullOrEmpty(key);
-                card.binding.text=card.available ? "["+key+"] "+PartSwapDisplay.SocketName(slots[j]) : "Unavailable";
+                card.available=!string.IsNullOrEmpty(key) && (detector==null || detector.IsNearby(part));
+                card.binding.text=string.IsNullOrEmpty(key) ? "Unavailable" : "["+key+"] "+PartSwapDisplay.SocketName(slots[j])+(card.available ? "" : " (nearby only)");
                 card.slot.text=""; card.slot.gameObject.SetActive(false);
                 var current=owner.GetEquipped(slots[j]); card.current.text=PartSwapDisplay.Name(current);
                 lines=Mathf.Max(lines,PartSwapDisplay.Comparison(current,part,out string comparison)); card.comparison.text=comparison;
@@ -105,8 +113,22 @@ public sealed class PartSwapWorldView : MonoBehaviour
         }
         bool multiple=detector!=null && detector.DistinctNearbyPartCount>1;
         string cycle=input!=null ? input.CycleBindingLabel : null;
-        footer.text=slots.Count==0 ? "Unavailable" : multiple && !string.IsNullOrEmpty(cycle) ? "["+cycle+"] Next" : "";
+        var preferred=owner.PreferredSlotFor(part);
+        string pickup=input!=null ? input.PickupBindingLabel : null;
+        var retrieval=detector!=null ? detector.Retrieval : null;
+        footer.text=part.IsRetrieving ? "Retrieving..." : preferred.HasValue && !string.IsNullOrEmpty(pickup) && retrieval!=null
+            ? !retrieval.InRange(part) ? "Out of range ("+retrieval.pickupRange.ToString("0.#")+"m)"
+                : !retrieval.CanStart(part) ? "Pickup blocked" : "["+pickup+"] Retrieve: "+PartSwapDisplay.SocketName(preferred.Value)
+            : "";
+        if(multiple && !string.IsNullOrEmpty(cycle)) footer.text+=(footer.text.Length>0 ? "    " : "")+"["+cycle+"] Next";
+        if(slots.Count==0 && !part.IsRetrieving) footer.text="Unavailable";
         footer.gameObject.SetActive(footer.text.Length>0);
+        if(statusBacking!=null)
+        {
+            statusBacking.gameObject.SetActive(footer.text.Length>0);
+            statusBacking.rectTransform.anchoredPosition=new Vector2(0,-y+4);
+            statusBacking.rectTransform.sizeDelta=new Vector2(660,28);
+        }
         panel.sizeDelta=new Vector2(660,y+(footer.text.Length>0 ? 28 : 0));
         footer.rectTransform.anchoredPosition=new Vector2(14,-y);
         UnityEngine.Canvas.ForceUpdateCanvases();

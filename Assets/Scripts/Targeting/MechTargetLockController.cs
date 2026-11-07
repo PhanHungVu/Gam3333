@@ -64,7 +64,7 @@ public class MechTargetLockController : MonoBehaviour
         SetHardLock(rememberedHardLock);
     }
 
-    // F toggles camera lock immediately on press. Weapon auto-aim stays enabled
+    // MMB toggles camera lock immediately on press. Weapon auto-aim stays enabled
     // in both camera modes; no hold gesture changes aim mode.
     public void ProcessLockButton(bool pressed, bool held, bool released, float deltaTime)
     {

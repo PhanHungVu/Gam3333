@@ -13,7 +13,7 @@ public class PickupDetector : MonoBehaviour
 
     public IReadOnlyList<Part> NearbyParts => nearbyParts;
     public GameObject partSwapHudPopupParent;
-    [Tooltip("Optional replacement presentation; detection and selection are unchanged.")]
+    [Tooltip("Existing comparison panel, shared by nearby swapping and remote retrieval.")]
     public PartSwapWorldHudPresenter worldSpaceHud;
     GameObject popup1;
     GameObject popup2;
@@ -28,13 +28,36 @@ public class PickupDetector : MonoBehaviour
     PartType? highlightType;
     int selectedIndex = -1;
     bool cycleRequested;
+    Collider[] sensors;
+    RemotePartRetrieval retrieval;
+    Part lastAimed;
+    bool nearbyOverride;
+    public RemotePartRetrieval Retrieval => retrieval;
+
+    // Input revalidates the actual trigger overlap instead of trusting a stale selected item.
+    public bool IsNearby(Part part)
+    {
+        if (!isActiveAndEnabled || part == null || part.isEquipped || part.IsRetrieving || !part.gameObject.activeInHierarchy || sensors == null) return false;
+        foreach (var pair in tracked)
+        {
+            var other = pair.Key;
+            if (pair.Value != part || other == null || !other.enabled || !other.gameObject.activeInHierarchy) continue;
+            foreach (var sensor in sensors)
+                if (sensor != null && sensor.enabled && sensor.isTrigger && sensor.gameObject.activeInHierarchy
+                    && Physics.ComputePenetration(sensor, sensor.transform.position, sensor.transform.rotation,
+                        other, other.transform.position, other.transform.rotation, out _, out _)) return true;
+        }
+        return false;
+    }
 
     // Called by player input (CyclePart): move the highlight to the next nearby part.
     public void CycleSelection() => cycleRequested = true;
 
     void Awake()
     {
+        sensors = GetComponents<Collider>();
         manager = GetComponentInParent<EquipManager>();
+        retrieval = manager != null ? manager.GetComponent<RemotePartRetrieval>() : null;
         if (partSwapHudPopupParent == null) partSwapHudPopupParent = GameObject.Find("Canvas/PartSwapPopup");
         if (partSwapHudPopupParent != null)
         {
@@ -50,16 +73,28 @@ public class PickupDetector : MonoBehaviour
     {
         uniqueParts.Clear();
         foreach (var p in nearbyParts)
-            if (p != null && !p.isEquipped && p.gameObject.activeInHierarchy && !uniqueParts.Contains(p))
+            if (p != null && !p.isEquipped && !p.IsRetrieving && p.isActiveAndEnabled && !uniqueParts.Contains(p))
                 uniqueParts.Add(p);
     }
-    private void Update()
+    private void Update() => RefreshSelection();
+    public void RefreshSelection()
     {
         bool cycle = cycleRequested;
         cycleRequested = false;
         if (manager == null) return;
+        if (retrieval == null) retrieval = manager.GetComponent<RemotePartRetrieval>();
+        Part aimed = retrieval != null && retrieval.isActiveAndEnabled ? retrieval.Target : null;
+        if (aimed != lastAimed) nearbyOverride = false;
+        lastAimed = aimed;
         RebuildUnique();
         int count = uniqueParts.Count;
+        if (cycle && count > 0) nearbyOverride = true;
+        var remote = retrieval != null && retrieval.isActiveAndEnabled ? retrieval.ActivePart : null;
+        if (remote == null && !nearbyOverride) remote = aimed;
+        if (remote != null)
+        {
+            ShowPopups(false, false); SelectPart(remote); return;
+        }
         if (count == 0)
         {
             selectedIndex = -1;
@@ -143,13 +178,15 @@ public class PickupDetector : MonoBehaviour
         tracked.Clear();
         nearbyParts.Clear();
         selectedIndex = -1;
+        nearbyOverride = false; lastAimed = null;
+        if (manager != null) manager.ClearSelectedPart(manager.GetSelectedPart());
         ShowPopups(false, false);
         ClearHighlight();
     }
 
     void SelectPart(Part part)
     {
-        if (part.isEquipped) return;
+        if (part.isEquipped || (part.IsRetrieving && part.RetrievalOwner != retrieval)) return;
         SetHighlight(part);
         manager.SetSelectedPart(part);
     }
@@ -162,7 +199,7 @@ public class PickupDetector : MonoBehaviour
             highlightElement = Instantiate(highlightElementPrefab);
             highlightType = null;
         }
-        highlightElement.transform.position = part.transform.position;
+        highlightElement.transform.position = part.PickupPoint;
         if (highlightType != part.partType) Recolour(part.partType);
     }
 

@@ -3,7 +3,8 @@ using UnityEngine;
 public class MechTargetable : MonoBehaviour
 {
     [SerializeField] Transform aimPoint;
+    internal Transform PhysicsAim { get; set; }
 
-    public Vector3 AimPosition => aimPoint != null ? aimPoint.position : transform.position;
-    public Transform AimTransform => aimPoint != null ? aimPoint : transform;
+    public Vector3 AimPosition => AimTransform.position;
+    public Transform AimTransform => PhysicsAim != null ? PhysicsAim : aimPoint != null ? aimPoint : transform;
 }

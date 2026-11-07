@@ -57,6 +57,20 @@ public class Part : MonoBehaviour
     public bool isStartingPart = true;
     public bool isEquipped = false;
     public EquipManager EquippedBy { get; internal set; }
+    // Reservation belongs to the physical drop, shared by every detector/player.
+    public RemotePartRetrieval RetrievalOwner { get; private set; }
+    public bool IsRetrieving => RetrievalOwner != null;
+    internal bool TryReserveRetrieval(RemotePartRetrieval owner)
+    {
+        if (owner == null || IsRetrieving || isEquipped || data == null || !isActiveAndEnabled) return false;
+        RetrievalOwner = owner; return true;
+    }
+    internal void ReleaseRetrieval(RemotePartRetrieval owner)
+    { if (RetrievalOwner == owner) RetrievalOwner = null; }
+    void OnDisable()
+    {
+        if (RetrievalOwner != null) RetrievalOwner.Cancel();
+    }
     public int RemainingAmmo { get; private set; }   // total shots left; at 0 the weapon is empty
     public int MagazineRounds { get; private set; }  // shots left before the next reload
     public float ReadyAt { get; private set; }       // next shot or swing allowed (fire rate and reload)
@@ -76,6 +90,34 @@ public class Part : MonoBehaviour
     int[] colliderLayers;
     int[] colliderExclusions;
     PickupHighlight pickupHighlight;
+    Renderer[] pickupRenderers;
+    // Imported rigs can have a pivot beneath the floor while their actual pickup collider rests above it.
+    public Vector3 PickupPoint
+    {
+        get
+        {
+            if (RetrievalOwner != null && RetrievalOwner.ActivePart == this) return RetrievalOwner.ActivePickupPoint;
+            CachePhysics();
+            Bounds bounds = default; bool found = false;
+            foreach (var collider in colliders)
+            {
+                if (collider == null || !collider.enabled || collider.isTrigger || !collider.gameObject.activeInHierarchy) continue;
+                if (!found) { bounds = collider.bounds; found = true; } else bounds.Encapsulate(collider.bounds);
+            }
+            if (!found)
+            {
+                if (pickupRenderers == null) pickupRenderers = GetComponentsInChildren<Renderer>(true);
+                foreach (var renderer in pickupRenderers)
+                {
+                    if (renderer == null || !(renderer is MeshRenderer || renderer is SkinnedMeshRenderer) || !renderer.enabled
+                        || !renderer.gameObject.activeInHierarchy || renderer.GetComponentInParent<Part>() != this
+                        || renderer.GetComponentInParent<PickupHighlight>() != null) continue;
+                    if (!found) { bounds = renderer.bounds; found = true; } else bounds.Encapsulate(renderer.bounds);
+                }
+            }
+            return found ? bounds.center : transform.position;
+        }
+    }
     void Awake() { if (EquippedBy == null && !isEquipped) SetEquippedPhysics(false); }
 
     // State belongs to this physical part, not the shared PartData asset.
@@ -109,7 +151,8 @@ public class Part : MonoBehaviour
     }
     // RemainingAmmo includes the loaded rounds. Reloading moves existing rounds
     // into the magazine; it neither consumes nor creates ammunition.
-    public bool TryReload()
+    // Cadence is captured for this newly accepted reload; later buff changes never rewrite its clock.
+    public bool TryReload(float cadenceMultiplier = 1f)
     {
         if (!initialized || Stats == null || IsReloading) return false;
         int capacity = Stats.MagazineSize;
@@ -120,7 +163,7 @@ public class Part : MonoBehaviour
         cooldownUsesAmmo = true;
         MagazineRounds = loaded;
         readyStartedAt = Time.time;
-        reloadEndsAt = Time.time + Mathf.Max(0f, Stats.GetStat(StatType.Reload));
+        reloadEndsAt = Time.time + Mathf.Max(0f, Stats.GetStat(StatType.Reload)) / Mathf.Max(.01f, cadenceMultiplier);
         ReadyAt = Mathf.Max(ReadyAt, reloadEndsAt);
         return true;
     }

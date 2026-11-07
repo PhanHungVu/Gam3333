@@ -128,7 +128,8 @@ public static class SpecialistPlayerIntegrationChecks
             for (int i = 0; i < 40; i++) { motor.Tick(default(MechLocomotionInput), heading, .02f); yield return Frames(1); }
             Check(feedback.DustBurstCount == 6 && feedback.PoolSize == 12, "Six spaced dash puffs finish using the bounded pool");
             Check(equipment.GetEquipped(PartCategory.ArmL) != null && equipment.GetEquipped(PartCategory.ArmR) == null,
-                "Sword-only regular starter remains distinct from the Heavy demo");
+                "Regular starter retains its sword and empty right arm, distinct from the Heavy demo");
+            CheckStartingCannon(player);
             if (path == SpecialistPlayerIntegrationSetup.PlayerPath) yield return CheckWeapons(player, heading);
             yield return Clear();
         }
@@ -138,12 +139,59 @@ public static class SpecialistPlayerIntegrationChecks
             yield return Frames(45); CheckHud(scene);
             var player = Object.FindAnyObjectByType<MechPlayerRig>(); player.GetComponent<MechPlayerInput>().enabled = false;
             Check(player.name == "FullPlayer_mech_specialist" && player.GetComponent<QuickDashFeedback>() != null, scene + " uses the integrated Specialist player");
+            Check(player.GetComponent<EquipManager>().GetEquipped(PartCategory.ShoulderR)?.Stats.partId == "backweaponA3",
+                scene + " starts with the existing cannon on its E/right shoulder");
             if (scene == "ZooScene")
             {
                 var waves = Object.FindAnyObjectByType<ZooEnemyWaves>(); var roster = (WaveData)new SerializedObject(waves).FindProperty("roster").objectReferenceValue;
                 Check(roster.name == "WaveData_Zoo" && roster.enemies.Any(e => e.prefab.name == "Enemy_Fodder") && roster.enemies.Length == 10,
                     "Zoo retains the teammate's ten-entry showcase roster, Fodder and switches");
             }
+        }
+    }
+    static void CheckStartingCannon(GameObject player)
+    {
+        var equipment = player.GetComponent<EquipManager>(); var combat = player.GetComponent<MechCombat>();
+        var cannon = equipment.GetEquipped(PartCategory.ShoulderR);
+        Check(cannon != null && cannon.Stats == AssetDatabase.LoadAssetAtPath<GameObject>(SpecialistPlayerIntegrationSetup.CannonPath).GetComponent<Part>().Stats
+            && cannon.GetComponent<MechWeaponAnimator>().Animations.name == "Cannon_Specialist"
+            && equipment.GetEquipped(PartCategory.ShoulderL) == null,
+            player.name + " starts with the grey Specialist cannon on E/right and preserves the empty left shoulder");
+        Check(cannon.RemainingAmmo == Mathf.RoundToInt(cannon.Stats.GetStat(StatType.Ammo))
+            && cannon.MagazineRounds == cannon.Stats.MagazineSize && cannon.CooldownRemaining == 0,
+            player.name + " starting cannon initializes its authored ammo/magazine and is immediately ready");
+        var aim = new GameObject("Starting cannon aim check").AddComponent<Camera>(); aim.enabled = false;
+        aim.transform.SetPositionAndRotation(player.transform.position + Vector3.up * 1.5f - Vector3.forward * 6, Quaternion.identity);
+        var previousCamera = (Camera)typeof(MechCombat).GetField("gameplayCamera", Private).GetValue(combat);
+        var targeting = player.GetComponent<MechTargetLockController>(); bool free = targeting.IsFreeAim;
+        targeting.EnterFreeAim(); combat.BindCamera(aim);
+        GameObject directObject = null, nearbyObject = null;
+        try
+        {
+            var shot = combat.TryAttack(PartCategory.ShoulderR).Projectile;
+            Check(shot != null && shot.IsLive && cannon.RemainingAmmo == Mathf.RoundToInt(cannon.Stats.GetStat(StatType.Ammo)) - 1
+                && cannon.IsReloading && cannon.CooldownRemaining > cannon.Stats.GetStat(StatType.Reload) - .05f,
+                player.name + " starting cannon fires through normal combat, spends one round and begins its real reload");
+            Vector3 contact = shot.transform.position + shot.Direction * 3;
+            directObject = GameObject.CreatePrimitive(PrimitiveType.Cube); directObject.transform.position = contact;
+            directObject.transform.localScale = Vector3.one * .6f;
+            var direct = directObject.AddComponent<CombatHealth>(); direct.Team = CombatTeam.Enemy; direct.SetMaximum(500, true);
+            nearbyObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            nearbyObject.transform.position = contact + Vector3.Cross(Vector3.up, shot.Direction).normalized;
+            nearbyObject.transform.localScale = Vector3.one * .6f;
+            var nearby = nearbyObject.AddComponent<CombatHealth>(); nearby.Team = CombatTeam.Enemy; nearby.SetMaximum(500, true);
+            Physics.SyncTransforms();
+            typeof(MechProjectile).GetMethod("Step", Private).Invoke(shot, new object[] { 4f / cannon.Stats.GetStat(StatType.ProjectileSpeed) });
+            Check(Mathf.Approximately(direct.CurrentHealth, 500 - cannon.Stats.GetStat(StatType.Damage) - cannon.Stats.GetStat(StatType.SplashDamage))
+                && Mathf.Approximately(nearby.CurrentHealth, 500 - cannon.Stats.GetStat(StatType.SplashDamage)),
+                player.name + " starting cannon's existing AoE damages a direct enemy and a separate nearby enemy");
+        }
+        finally
+        {
+            combat.BindCamera(previousCamera); if (!free) targeting.ResumeTargeting();
+            Object.DestroyImmediate(aim.gameObject);
+            if (directObject != null) Object.DestroyImmediate(directObject);
+            if (nearbyObject != null) Object.DestroyImmediate(nearbyObject);
         }
     }
     static IEnumerator CheckWeapons(GameObject player, Transform heading)

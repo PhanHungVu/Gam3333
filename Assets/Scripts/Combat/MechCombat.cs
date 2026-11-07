@@ -33,11 +33,19 @@ public class MechCombat : MonoBehaviour
     [SerializeField, Range(1f, 60f)] float maximumMeleeAssistAngle = 30f;
     [SerializeField, Min(0.01f)] float meleeApproachDuration = 0.12f;
     [SerializeField, Min(0f)] float meleeCameraHold = 0.45f;
+    [Header("Melee impact on enemies")]
+    [SerializeField] bool meleePhysics = true;
+    [SerializeField, Min(0)] float meleeImpulseSpeed = 20f / 3f;
+    [SerializeField, Min(0)] float meleeLiftSpeed = 2f;
+    [SerializeField, Min(.1f)] float meleeKnockdownSeconds = .9f;
+    [SerializeField, Min(0)] float meleeKillImpulseSpeed = 18f;
+    [SerializeField, Min(0)] float meleeKillLiftSpeed = 7f;
 
     static readonly PartCategory[] Sockets = (PartCategory[])Enum.GetValues(typeof(PartCategory));
     EquipManager parts;
     MechTargetLockController targeting;
     MechMovementController movement;
+    RetrievalSpeedBuff retrievalBuff;
     MeleeAttack melee;
     Part lastAttacker;
     internal readonly CombatBlast Blast = new CombatBlast();
@@ -51,6 +59,7 @@ public class MechCombat : MonoBehaviour
     public MeleeAttack Melee => melee;
     // Multipliers on this mech's weapon damage while something is active (e.g. the torso's Damage Amp).
     public readonly DamageModifiers DamageModifiers = new DamageModifiers();
+    public float AttackCadenceMultiplier => retrievalBuff != null ? retrievalBuff.AttackCadenceMultiplier : 1f;
     public bool MeleeCameraActive => isActiveAndEnabled && melee.CameraTimer > 0f;
     public bool IsMeleeApproaching => melee.Pending;
     public float MeleeExtension => melee.Extension;
@@ -71,6 +80,23 @@ public class MechCombat : MonoBehaviour
     internal Vector3 MeleeWallOrigin => transform.position + Vector3.up * muzzleOffset.y;
     internal void RaiseAttackStarted(Part part) { lastAttacker = part; WeaponAttackStarted?.Invoke(part); }
     internal void RaiseMeleePerformed(int hits) => MeleePerformed?.Invoke(hits);
+    internal void ApplyMeleeImpact(CombatHealth victim, Vector3 direction)
+    {
+        if (!meleePhysics || meleeImpulseSpeed <= 0 || victim == null || victim.GetComponent<EnemyAgent>() == null) return;
+        direction = Vector3.ProjectOnPlane(direction, Vector3.up).normalized;
+        if (direction.sqrMagnitude < .001f) direction = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+        if (victim.IsDead)
+        {
+            var death = victim.GetComponent<CombatDeathRagdoll>();
+            if (death != null && death.LastRagdoll != null)
+                death.LastRagdoll.ApplyImpulse(direction * meleeKillImpulseSpeed + Vector3.up * meleeKillLiftSpeed, replaceVelocity: true);
+        }
+        else
+        {
+            var reaction = victim.GetComponent<EnemyMeleeReaction>() ?? victim.gameObject.AddComponent<EnemyMeleeReaction>();
+            reaction.Apply(direction * meleeImpulseSpeed + Vector3.up * meleeLiftSpeed, meleeKnockdownSeconds);
+        }
+    }
 
     // ---- Socket queries (HUD, tests) ----
 
@@ -113,7 +139,7 @@ public class MechCombat : MonoBehaviour
     public bool TryReload(PartCategory socket)
     {
         var part = isActiveAndEnabled ? GetPart(socket) : null;
-        return part != null && IsRanged(part) && part.TryReload();
+        return part != null && IsRanged(part) && part.TryReload(AttackCadenceMultiplier);
     }
     public int ReloadWeapons()
     {
@@ -133,7 +159,7 @@ public class MechCombat : MonoBehaviour
         Vector3 muzzle = MuzzleOf(part);
         Vector3 aimPoint = AimSolver.AimPoint(targeting, gameplayCamera, transform, range, hitLayers);
         var projectile = RangedAttack.Fire(part, transform, muzzle, aimPoint, gameplayCamera.transform.forward,
-            range, hitLayers, combatMaterial, ForwardProjectileImpact, DamageModifiers.Total);
+            range, hitLayers, combatMaterial, ForwardProjectileImpact, DamageModifiers.Total, cadenceMultiplier: AttackCadenceMultiplier);
         lastAttacker = part;
         ShotFired?.Invoke(projectile);
         WeaponAttackStarted?.Invoke(part);
@@ -157,6 +183,7 @@ public class MechCombat : MonoBehaviour
         parts = GetComponent<EquipManager>();
         targeting = GetComponent<MechTargetLockController>();
         movement = GetComponent<MechMovementController>();
+        retrievalBuff = GetComponent<RetrievalSpeedBuff>();
         melee = new MeleeAttack(this);
         if (gameplayCamera == null) gameplayCamera = Camera.main;
     }

@@ -4,11 +4,12 @@ using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
-// Migrates the old pod component to one linked, self-contained effect prefab.
+// Connects ability and weapon pods to the same reusable, prefab-authored ready effect.
 public static class AbilityReadyPrefabSetup
 {
     public const string BurstPath = "Assets/Prefabs/UI/Combat HUD/Ability Ready Burst.prefab";
     public const string PodPath = "Assets/Prefabs/UI/Combat HUD/AbilitiesHUDPodPrefab.prefab";
+    public const string WeaponPodPath = "Assets/Prefabs/UI/Combat HUD/WeaponsHUDPodPrefab.prefab";
 
     [MenuItem("Tools/Mech/UI/Connect Ability Ready Burst Prefab")]
     public static void Apply()
@@ -37,7 +38,15 @@ public static class AbilityReadyPrefabSetup
             }
             finally { Object.DestroyImmediate(root); }
         }
-        var pod = PrefabUtility.LoadPrefabContents(PodPath);
+        ConnectPod<AbilitiesHudPod>(PodPath, burstPrefab);
+        ConnectPod<WeaponsHudPod>(WeaponPodPath, burstPrefab);
+        AssetDatabase.SaveAssets();
+        Debug.Log("READY PREFAB CONNECTED: linked, reusable burst inside ability and weapon pods; no runtime object builder.");
+    }
+
+    static void ConnectPod<T>(string path, GameObject burstPrefab) where T : Component
+    {
+        var pod = PrefabUtility.LoadPrefabContents(path);
         try
         {
             var old = pod.GetComponent<AbilityReadyVfx>();
@@ -45,15 +54,13 @@ public static class AbilityReadyPrefabSetup
             var effect = pod.GetComponentInChildren<AbilityReadyVfx>(true);
             if (effect == null)
                 effect = ((GameObject)PrefabUtility.InstantiatePrefab(burstPrefab, pod.transform)).GetComponent<AbilityReadyVfx>();
-            var fields = new SerializedObject(pod.GetComponent<AbilitiesHudPod>());
+            var fields = new SerializedObject(pod.GetComponent<T>());
             fields.FindProperty("readyVfx").objectReferenceValue = effect;
             fields.ApplyModifiedPropertiesWithoutUndo();
             effect.Configure((Image)fields.FindProperty("icon").objectReferenceValue);
             PrefabUtility.RecordPrefabInstancePropertyModifications(effect);
-            PrefabUtility.SaveAsPrefabAsset(pod, PodPath);
+            PrefabUtility.SaveAsPrefabAsset(pod, path);
         }
         finally { PrefabUtility.UnloadPrefabContents(pod); }
-        AssetDatabase.SaveAssets();
-        Debug.Log("ABILITY READY PREFAB CONNECTED: linked burst inside the ability pod; runtime object builder removed.");
     }
 }

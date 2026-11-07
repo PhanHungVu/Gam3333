@@ -39,10 +39,22 @@ public static class AbilityReadyPrefabChecks
         var hud = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/Combat HUD/CombatHUD.prefab");
         Check(new SerializedObject(hud.GetComponentInChildren<MechAbilitiesHud>()).FindProperty("podPrefab").objectReferenceValue
             == pod.GetComponent<AbilitiesHudPod>(), "Shared CombatHUD uses the upgraded ability pod");
+        var weaponPod = AssetDatabase.LoadAssetAtPath<GameObject>(AbilityReadyPrefabSetup.WeaponPodPath);
+        var weaponEffect = weaponPod.GetComponentInChildren<AbilityReadyVfx>(true);
+        var weaponFields = new SerializedObject(weaponPod.GetComponent<WeaponsHudPod>());
+        Check(weaponPod.GetComponent<AbilityReadyVfx>() == null && weaponPod.GetComponentsInChildren<AbilityReadyVfx>(true).Length == 1
+            && PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(weaponEffect.gameObject) == AbilityReadyPrefabSetup.BurstPath
+            && weaponFields.FindProperty("readyVfx").objectReferenceValue == weaponEffect
+            && new SerializedObject(weaponEffect).FindProperty("icon").objectReferenceValue == weaponFields.FindProperty("icon").objectReferenceValue,
+            "Weapon pod authors one linked instance of the same burst prefab bound to its own icon");
+        Check(new SerializedObject(hud.GetComponentInChildren<MechWeaponsHud>()).FindProperty("podPrefab").objectReferenceValue == weaponPod.GetComponent<WeaponsHudPod>(),
+            "Shared CombatHUD uses the upgraded weapon pod in every weapon cell");
         // Reapplying the setup preserves the authored asset and creates no duplicates.
         AbilityReadyPrefabSetup.Apply();
         Check(AssetDatabase.LoadAssetAtPath<GameObject>(AbilityReadyPrefabSetup.PodPath).GetComponentsInChildren<AbilityReadyVfx>(true).Length == 1,
             "Reapplying prefab setup does not add a second effect");
+        Check(AssetDatabase.LoadAssetAtPath<GameObject>(AbilityReadyPrefabSetup.WeaponPodPath).GetComponentsInChildren<AbilityReadyVfx>(true).Length == 1,
+            "Reapplying setup also preserves exactly one weapon burst instance");
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
         SessionState.SetBool(Pending, true); EditorApplication.EnterPlaymode();
     }

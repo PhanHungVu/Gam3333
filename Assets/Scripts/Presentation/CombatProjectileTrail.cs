@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 public sealed class CombatProjectileTrail : MonoBehaviour
 {
     TrailRenderer trail;
-    MechProjectile projectile;
+    ICombatTrailSource projectile;
     float tailRemaining;
     float linger, tailDuration;
     Color headColor;
@@ -21,14 +21,14 @@ public sealed class CombatProjectileTrail : MonoBehaviour
         target.shadowCastingMode = ShadowCastingMode.Off; target.receiveShadows = false;
         target.autodestruct = false;
     }
-    public void Play(MechProjectile shot, Material material, Color color, float width, float lifetime, float lingerSeconds = 0)
+    public void Play(ICombatTrailSource shot, Material material, Color color, float width, float lifetime, float lingerSeconds = 0)
     {
         Stop();
-        if (shot == null || !shot.IsLive || material == null) return;
+        if (shot == null || shot.TrailTransform == null || !shot.IsLive || material == null) return;
         if (trail == null) trail = gameObject.AddComponent<TrailRenderer>();
         Configure(trail, material, color, width, lifetime);
         linger = Mathf.Max(0,lingerSeconds); headColor = color;
-        transform.position = shot.transform.position;
+        transform.position = shot.TrailTransform.position;
         gameObject.SetActive(true); trail.Clear(); trail.emitting = true;
         projectile = shot; projectile.Finished += OnFinished; IsPlaying = true;
     }
@@ -50,8 +50,9 @@ public sealed class CombatProjectileTrail : MonoBehaviour
         if (!IsPlaying) return;
         if (projectile != null)
         {
-            if (projectile.IsLive && projectile.isActiveAndEnabled) { transform.position = projectile.transform.position; return; }
-            OnFinished(projectile.transform.position);
+            var follow = projectile.TrailTransform;
+            if (follow != null && projectile.IsLive && follow.gameObject.activeInHierarchy) { transform.position = follow.position; return; }
+            OnFinished(follow != null ? follow.position : transform.position);
         }
         tailRemaining -= Mathf.Max(0, deltaTime);
         if(trail!=null && linger>0 && tailDuration>0)

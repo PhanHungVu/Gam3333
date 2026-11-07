@@ -9,7 +9,7 @@ public readonly struct DamageResult
     public DamageResult(int hits, int kills) { Hits = hits; Kills = kills; }
 }
 
-// Shared damage rules: direct/splash hits, melee boxes and filled circular areas.
+// Shared damage rules: direct/splash hits, melee boxes, swept paths and filled circular areas.
 // Never hits the owner, walls block it, and each target is hit once even with several colliders.
 // Presentation never applies damage.
 public sealed class CombatBlast
@@ -77,12 +77,43 @@ public sealed class CombatBlast
             if (Apply(health, damage, attacker, ref hits, ref kills, owner, source!=null ? CombatHitKind.Melee : CombatHitKind.Blast, wallOrigin))
             {
                 hitHistory?.Add(health);
+                MeleeImpulse(source, owner, health, rotation * Vector3.forward);
                 acceptedHit?.Invoke(health);
                 if (source != null) CombatVisualEvents.ReportMelee(source, owner, point, normal.sqrMagnitude > .0001f ? normal.normalized : Vector3.up);
             }
         }
         Array.Clear(overlaps, 0, count);
         damaged.Clear();
+        return new DamageResult(hits, kills);
+    }
+
+    // One swept return-path segment. History spans the whole retrieval, including compound colliders.
+    public DamageResult ResolveCapsule(Vector3 from, Vector3 to, float radius, float damage,
+        Transform owner, LayerMask layers, ISet<CombatHealth> hitHistory, Part source = null)
+    {
+        layers &= CombatRagdoll.QueryMask;
+        damaged.Clear();
+        int hits = 0, kills = 0, count;
+        CombatTeam attacker = CombatTeams.Of(owner);
+        while ((count = Physics.OverlapCapsuleNonAlloc(from, to, Mathf.Max(.01f, radius), overlaps, layers,
+            QueryTriggerInteraction.Ignore)) == overlaps.Length) Array.Resize(ref overlaps, overlaps.Length * 2);
+        Vector3 segment = to - from;
+        for (int i = 0; i < count; i++)
+        {
+            var candidate = overlaps[i];
+            if (IsOwner(candidate, owner)) continue;
+            var health = candidate.GetComponentInParent<CombatHealth>();
+            if (health == null || damaged.Contains(health) || hitHistory != null && hitHistory.Contains(health)) continue;
+            float t = segment.sqrMagnitude > .000001f ? Mathf.Clamp01(Vector3.Dot(candidate.bounds.center - from, segment) / segment.sqrMagnitude) : 0;
+            Vector3 origin = from + segment * t;
+            if (Blocked(origin, candidate, owner, layers)) continue;
+            var point = ClosestPoint(candidate, origin); var normal = origin - point;
+            if (!Apply(health, damage, attacker, ref hits, ref kills, owner, CombatHitKind.Melee, origin)) continue;
+            hitHistory?.Add(health);
+            MeleeImpulse(source, owner, health, segment.sqrMagnitude > .000001f ? segment : owner != null ? owner.position - from : Vector3.forward);
+            if (source != null) CombatVisualEvents.ReportMelee(source, owner, point, normal.sqrMagnitude > .0001f ? normal.normalized : Vector3.up);
+        }
+        Array.Clear(overlaps, 0, count); damaged.Clear();
         return new DamageResult(hits, kills);
     }
 
@@ -112,6 +143,12 @@ public sealed class CombatBlast
         Array.Clear(overlaps, 0, count);
         damaged.Clear();
         return new DamageResult(hits, kills);
+    }
+
+    static void MeleeImpulse(Part source, Transform owner, CombatHealth victim, Vector3 direction)
+    {
+        if (source != null && source.Stats != null && source.Stats.subtype == PartSubtype.Melee && owner != null
+            && owner.TryGetComponent<MechCombat>(out var combat)) combat.ApplyMeleeImpact(victim, direction);
     }
 
     // True when something other than the owner or a damageable target is between origin and candidate.

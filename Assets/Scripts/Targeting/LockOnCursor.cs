@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // The reticle that follows the locked target (or the screen centre). It also owns the cursor art:
-// camera lock-on (F) shows its own reticle, an enemy the cursor has locked onto by itself shows the
+// camera lock-on (MMB) shows its own reticle, an enemy the cursor has locked onto by itself shows the
 // lock-on reticle, and everything else shows the plain cursor.
 [DefaultExecutionOrder(200)]
 [DisallowMultipleComponent]
@@ -20,14 +20,14 @@ public class LockOnCursor : MonoBehaviour
     [SerializeField] Sprite freeCursorSprite;
     [Tooltip("Sprite used while the cursor is automatically locked onto an enemy.")]
     [SerializeField] Sprite lockOnSprite;
-    [Tooltip("Sprite used while the player holds camera lock-on (F).")]
+    [Tooltip("Sprite used while camera lock is toggled on with MMB.")]
     [SerializeField] Sprite camLockOnSprite;
 
     CanvasGroup cursorVisibility;
     bool reportedMissingCamera;
 
     public Sprite CurrentSprite => cursorImage != null ? cursorImage.sprite : null;
-    // F-held camera lock, then an automatically acquired enemy, then the plain cursor.
+    // Camera lock mode, then an automatically acquired enemy, then the plain cursor.
     public bool IsCamLock => targetLockController != null && targetLockController.IsHardLockMode;
     public bool IsLockedOn => targetLockController != null && !targetLockController.IsFreeAim
         && targetLockController.CurrentTarget != null;

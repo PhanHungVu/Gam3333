@@ -27,6 +27,7 @@ public sealed class PartSwapWorldHudPresenter : MonoBehaviour
     Part displayed;
     bool dirty=true,subscribed;
     int nearbyCount;
+    bool wasNearby,wasInRange,wasRetrieving;
     float alpha,successAge,successAlpha;
     PartCategory? confirmed;
     bool? anchorOnRight;
@@ -81,7 +82,7 @@ public sealed class PartSwapWorldHudPresenter : MonoBehaviour
         if(displayed!=part) anchorOnRight=null;
         displayed=part; dirty=false;
         if(part==null) { view.Clear(); return; }
-        lastAnchor=part.transform.position; view.Populate(part,owner,input,detector);
+        lastAnchor=part.PickupPoint; view.Populate(part,owner,input,detector);
     }
     void LateUpdate()
     {
@@ -90,6 +91,11 @@ public sealed class PartSwapWorldHudPresenter : MonoBehaviour
         { displayed=null; confirmed=null; anchorOnRight=null; alpha=0; view.Clear(); return; }
         float dt=Mathf.Min(Time.unscaledDeltaTime,0.05f);
         var selected=owner.GetSelectedPart();
+        bool nearby=selected!=null && detector.IsNearby(selected);
+        bool inRange=selected!=null && detector.Retrieval!=null && detector.Retrieval.InRange(selected);
+        bool retrieving=selected!=null && selected.IsRetrieving;
+        if(nearby!=wasNearby || inRange!=wasInRange || retrieving!=wasRetrieving)
+        { wasNearby=nearby; wasInRange=inRange; wasRetrieving=retrieving; dirty=true; }
         if(confirmed.HasValue)
         {
             successAge+=dt;
@@ -122,7 +128,7 @@ public sealed class PartSwapWorldHudPresenter : MonoBehaviour
         if(alpha<=0) return;
         var camera=rig!=null && rig.GameplayCamera!=null && rig.GameplayCamera.isActiveAndEnabled ? rig.GameplayCamera : Camera.main;
         if(camera==null) { view.Canvas.enabled=false; return; }
-        if(displayed!=null && !confirmed.HasValue) lastAnchor=displayed.transform.position;
+        if(displayed!=null && !confirmed.HasValue) lastAnchor=displayed.PickupPoint;
         float depth=Vector3.Dot(lastAnchor-camera.transform.position,camera.transform.forward);
         if(depth<=camera.nearClipPlane) { view.Canvas.enabled=false; return; }
         float worldPerPixel=camera.orthographic ? 2*camera.orthographicSize/Mathf.Max(1,camera.pixelHeight)

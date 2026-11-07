@@ -20781,6 +20781,11 @@ GameObject:
   - component: {fileID: 4292166438708666591}
   - component: {fileID: 917387141356824075}
   - component: {fileID: 5427559615897409343}
+  - component: {fileID: 8813042750198436201}
+  - component: {fileID: 8813042750198436202}
+  - component: {fileID: 8813042750198436203}
+  - component: {fileID: 8813042750198436204}
+  - component: {fileID: 8813042750198436205}
   m_Layer: 0
   m_Name: FullPlayer_mech_specialist
   m_TagString: Player
@@ -20819,7 +20824,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipManager
   rulesConfig: {fileID: 11400000, guid: ee7e37eb664fbfb4695ed0f740b434c4, type: 2}
   partScale: 0.5
-  startingLoadout: []
+  startingLoadout:
+  - slot: 5
+    part: {fileID: 5583169396773374467, guid: 99dd9886178d57942a9be3244ae47544, type: 3}
 --- !u!114 &3202050430980999261
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20844,6 +20851,8 @@ MonoBehaviour:
   maximumMeleeAssistAngle: 30
   meleeApproachDuration: 0.12
   meleeCameraHold: 0.45
+  meleeImpulseSpeed: 6.666667
+  meleeLiftSpeed: 2
 --- !u!114 &2227306619891938304
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -51092,3 +51101,82 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 262627380481657048, guid: 5b106e1bfe861d445bec75936cfbe9c8, type: 3}
   m_PrefabInstance: {fileID: 8543186655846340947}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &8813042750198436201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6720988751508575343}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09a88111720f4ac6b2684e44106bf2b9, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RemotePartRetrieval
+  pickupRange: 20
+  aimRadius: 0.18
+  rangePreviewMultiplier: 1.25
+  enableRemoteTargeting: 1
+  travelDuration: 0.2
+  arcHeight: 0.3
+  obstructionRadius: 0.06
+  weaponLiftHeight: 0.8
+  weaponLiftDuration: 0.12
+  weaponHoverDuration: 0.18
+  weaponFlightDuration: 0.1
+--- !u!114 &8813042750198436202
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6720988751508575343}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9c7656d30d54af79f4c1e40ad71c0da, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RetrievalBonusCooldowns
+  cooldownDuration: 30
+  bypassCooldownForTesting: 1
+--- !u!114 &8813042750198436203
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6720988751508575343}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 496a5809f690481ab06a037c94ce6b38, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RetrievalCombatEffects
+  catalogue: {fileID: 11400000, guid: b303c4e63547477989f5ae89f5918150, type: 2}
+--- !u!114 &8813042750198436204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6720988751508575343}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1963962e9e444feabd4d38d1ed6abe1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RetrievalFeedback
+  arrivalShakeStrength: 0.12
+  arrivalShakeDuration: 0.16
+--- !u!114 &8813042750198436205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6720988751508575343}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d8b08ec545b3421c8580f9858c70ce38, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::RetrievalSpeedBuff
+  remaining: 0
+  movementMultiplier: 1
+  attackCadenceMultiplier: 1

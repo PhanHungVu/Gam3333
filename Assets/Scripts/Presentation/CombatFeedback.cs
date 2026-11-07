@@ -152,6 +152,9 @@ public sealed class CombatFeedback : MonoBehaviour
         CombatVisualEvents.ProjectileImpact += OnImpact;
         CombatVisualEvents.MeleeImpact += OnMeleeImpact;
         CombatVisualEvents.HitConfirmed += OnConfirmedHit;
+        CombatVisualEvents.RetrievalBlast += OnRetrievalBlast;
+        CombatVisualEvents.RetrievalShotReleased += OnRetrievalShot;
+        CombatVisualEvents.RetrievalBoltReleased += OnRetrievalBolt;
         if (health != null) health.Damaged += OnDamaged;
     }
 
@@ -162,6 +165,9 @@ public sealed class CombatFeedback : MonoBehaviour
         CombatVisualEvents.ProjectileImpact -= OnImpact;
         CombatVisualEvents.MeleeImpact -= OnMeleeImpact;
         CombatVisualEvents.HitConfirmed -= OnConfirmedHit;
+        CombatVisualEvents.RetrievalBlast -= OnRetrievalBlast;
+        CombatVisualEvents.RetrievalShotReleased -= OnRetrievalShot;
+        CombatVisualEvents.RetrievalBoltReleased -= OnRetrievalBolt;
         if (health != null) health.Damaged -= OnDamaged;
         StopPresentation();
         if (impulseListener != null) impulseListener.Gain = 0;
@@ -224,6 +230,24 @@ public sealed class CombatFeedback : MonoBehaviour
         if (fireAudio && heavy) PlayAudio(cannonFireClip, muzzle, false);
     }
 
+    void OnRetrievalShot(MechProjectile shot, Vector3 muzzle, Transform owner)
+    {
+        if (!presentationEnabled || !projectileTrails || shot == null || !shot.IsLive) return;
+        var settings = Settings(shot.Source);
+        if (settings != null && !settings.projectileTrail) return;
+        Color color = settings != null ? settings.color : shot.Source != null && shot.Source.Stats != null ? shot.Source.Stats.projectileColor : Color.white;
+        // Arrival already supplies the impulse. Do not replay normal firing/recoil/audio for every axe.
+        PlayTrail(shot, settings, color);
+    }
+    void OnRetrievalBolt(RetrievalPiercingBolt bolt, Vector3 origin, Transform owner)
+    {
+        if (!presentationEnabled || !projectileTrails || bolt == null || !bolt.IsLive) return;
+        var settings = Settings(bolt.Source);
+        if (settings != null && !settings.projectileTrail) return;
+        Color color = settings != null ? settings.color : bolt.Source != null && bolt.Source.Stats != null ? bolt.Source.Stats.projectileColor : Color.white;
+        PlayTrail(bolt, settings, color, bolt.HitRadius * .5f);
+    }
+
     void OnImpact(MechProjectileImpact result)
     {
         if (!presentationEnabled) return;
@@ -234,6 +258,17 @@ public sealed class CombatFeedback : MonoBehaviour
         if (result.Owner != transform || result.Subtype != PartSubtype.Splash) return;
         if (result.Kills <= 0) return;
         ConfirmKills(result.Kills);
+    }
+
+    void OnRetrievalBlast(Part source, Transform owner, Vector3 position, float radius, DamageResult result)
+    {
+        if (!presentationEnabled) return;
+        // Reuse pooled explosion visuals; arrival shake is handled once by RetrievalFeedback.
+        if (explosionFlash || shockwaveRing || secondaryEmbers)
+            PlayEffect(CombatFeedbackEffect.Kind.Explosion, position, radius, explosionDuration, explosionColor, explosionFlash, shockwaveRing, secondaryEmbers);
+        PlayEffect(CombatFeedbackEffect.Kind.Smoke, position, Mathf.Max(.5f, radius * .55f), 1.25f,
+            new Color(.35f, .32f, .28f, .6f), false, false, false);
+        if (owner == transform && result.Kills > 0) ConfirmKills(result.Kills);
     }
 
     void PlayImpact(MechProjectileImpact result)
@@ -284,7 +319,7 @@ public sealed class CombatFeedback : MonoBehaviour
         else if(victim==health && hitStop && kind!=CombatHitKind.Projectile)
             CombatHitStop.Request(owner,damageHitStop,this);
     }
-    // Movement presentation shares the existing bounded impulse channel/listener.
+    // Movement and retrieval presentation share the existing bounded impulse channel/listener.
     public bool PlayMovementImpulse(Vector3 direction, float strength, float duration)
         => isActiveAndEnabled && presentationEnabled && EmitImpulse(transform.position, direction, strength, duration);
     bool EmitImpulse(Vector3 position, Vector3 direction, float strength, float duration)
@@ -293,7 +328,7 @@ public sealed class CombatFeedback : MonoBehaviour
         impulse.ImpulseDuration = Mathf.Clamp(duration, .05f, .5f);
         impulse.CreateEvent(position, direction.normalized * Mathf.Clamp(strength, 0, .2f)); return true;
     }
-    void PlayTrail(MechProjectile shot, WeaponVisualSettings settings, Color color)
+    void PlayTrail(ICombatTrailSource shot, WeaponVisualSettings settings, Color color, float minimumWidth = 0)
     {
         var material = settings != null && settings.material != null ? settings.material : effectMaterial;
         if (material == null || poolRoot == null) return;
@@ -306,7 +341,7 @@ public sealed class CombatFeedback : MonoBehaviour
             trail = root.AddComponent<CombatProjectileTrail>(); trails[createdTrails++] = trail;
         }
         // Saturation skips the new trail rather than cutting off another live shot.
-        if (trail != null) trail.Play(shot, material, color, settings != null ? settings.trailWidth : .08f,
+        if (trail != null) trail.Play(shot, material, color, Mathf.Max(minimumWidth, settings != null ? settings.trailWidth : .08f),
             settings != null ? settings.trailLifetime : .2f, settings != null ? settings.projectileTrailLinger : .9f);
     }
 

@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 public class ZooBacktoMain : MonoBehaviour
 {
-    public KeyCode interactKey = KeyCode.F;
+    public KeyCode interactKey = KeyCode.G;
     Key inputKey;
     TMP_Text text;
     [SerializeField] bool activated = false;
@@ -16,7 +16,7 @@ public class ZooBacktoMain : MonoBehaviour
         text = GetComponentInChildren<TMP_Text>();
         if (sceneManager != null)
         {
-            text.text = "Back to Menu";
+            text.text = "Back to Menu [" + interactKey + "]";
         }
         else
         {
@@ -26,7 +26,7 @@ public class ZooBacktoMain : MonoBehaviour
 
     void Update()
     {
-        if (UnityEngine.InputSystem.Keyboard.current[inputKey].wasPressedThisFrame && activated == true)
+        if (Keyboard.current != null && Keyboard.current[inputKey].wasPressedThisFrame && activated == true)
         {
             //Debug.Log("Going back to menu via " + sceneManager.gameObject.name);
             sceneManager.LoadScene("MainMenuScene");

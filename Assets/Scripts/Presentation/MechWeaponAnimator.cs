@@ -197,6 +197,7 @@ public sealed class MechWeaponAnimator : MonoBehaviour
     {
         if (animations == null || !animations.animationOnly || PreviewCooldownRemaining > 0f) return false;
         float cooldown = part != null && part.data != null ? Mathf.Max(0.01f, part.data.ShotInterval) : 1f;
+        cooldown /= owner != null ? owner.AttackCadenceMultiplier : 1f;
         if (!PlayAttack(cooldown)) return false;
         previewReadyAt = Time.time + cooldown;
         return true;

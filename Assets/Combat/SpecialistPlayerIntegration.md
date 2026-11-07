@@ -4,7 +4,7 @@ The active cannon is now the grey Specialist model across players, enemies and p
 
 The regular player now uses the teammate's Specialist torso, head and animated biped legs. `Prefabs/Mech/Base/FullPlayer_mech_golem.prefab` keeps its existing GUID and root component IDs so scenes that reference the regular golem receive the new body. `Prefabs/Mech/Specialist/FullPlayer_mech_specialist.prefab` remains the default for SubLevel, Zoo and the regular pre-mission torso selection. Both use the current shared HUD, explosive dash and six spaced dust puffs.
 
-The **Heavy Torso (Demo Only)** selection retains its old body and all-weapons loadout. The regular starter remains sword-only. Source models, import settings, part stats, mission waves and the shared HUD artwork/layout are unchanged.
+The **Heavy Torso (Demo Only)** selection retains its old body and all-weapons loadout. On the experimental remote-retrieval branch, the regular starter keeps its sword and adds the existing grey Specialist cannon through the serialized starting loadout (right shoulder, E). The right arm and left shoulder remain empty. See [RemoteWeaponRetrieval.md](RemoteWeaponRetrieval.md) for the branch audit and staged plan. Source models, import settings, part stats, mission waves and the shared HUD artwork/layout are unchanged.
 
 ## Weapons and sockets
 

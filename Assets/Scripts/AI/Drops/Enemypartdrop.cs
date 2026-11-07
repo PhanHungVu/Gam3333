@@ -23,31 +23,53 @@ public sealed class EnemyPartDrop : MonoBehaviour
     [SerializeField] float popVelocity = 3f;
 
     CombatHealth health;
+    bool deathResolved;
 
     public int PartCount => partPrefabs != null ? partPrefabs.Length : 0;
+    public Part LastDrop { get; private set; }
+    public Part DroppedCarriedPart { get; private set; }
 
     void Awake() => health = GetComponent<CombatHealth>();
-    void OnEnable() => health.Died += OnDied;
+    void OnEnable() { deathResolved = false; LastDrop = DroppedCarriedPart = null; health.Died += OnDied; }
     void OnDisable() => health.Died -= OnDied;
 
-    void OnDied()
+    void OnDied() => ResolveDeathDrop();
+
+    // Death presentation calls this first too. A single roll/spawn per life makes listener order irrelevant.
+    public Part ResolveDeathDrop()
     {
-        if (partPrefabs == null || partPrefabs.Length == 0) return;
-        if (Random.value * 100f >= dropChancePercent) return;
+        if (deathResolved || !isActiveAndEnabled || health == null || !health.IsDead) return LastDrop;
+        deathResolved = true;
+        if (partPrefabs == null || partPrefabs.Length == 0) return null;
+        float roll = Random.value * 100f;
+        if (dropChancePercent <= 0 || (dropChancePercent < 100f && roll >= dropChancePercent)) return null;
         Part partPrefab = partPrefabs[Random.Range(0, partPrefabs.Length)];
-        if (partPrefab == null) return;
+        if (partPrefab == null) return null;
+
+        if (TryGetComponent<EnemyMeleeReaction>(out var reaction)) reaction.SynchronizeDeathPose();
 
         Vector3 position = transform.position + Vector3.up * spawnHeight;
         Quaternion rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
 
         // No parent on purpose: CombatHealth deactivates this enemy right after Died,
         // and a child would vanish with it.
-        Part drop = Instantiate(partPrefab, position, rotation);
+        LastDrop = Instantiate(partPrefab, position, rotation);
+        foreach (var carried in GetComponentsInChildren<Part>(true))
+        {
+            if (!carried.isEquipped || carried.Stats == null || partPrefab.Stats == null) continue;
+            if (carried.Stats == partPrefab.Stats || !string.IsNullOrEmpty(carried.Stats.partId)
+                && string.Equals(carried.Stats.partId, partPrefab.Stats.partId, System.StringComparison.Ordinal))
+            { DroppedCarriedPart = carried; break; }
+        }
 
         // Part.Awake has already run inside Instantiate and added the Rigidbody.
-        var body = drop.GetComponent<Rigidbody>();
-        if (body != null && popVelocity > 0f)
-            body.AddForce(Vector3.up * popVelocity, ForceMode.VelocityChange);
+        var body = LastDrop.GetComponent<Rigidbody>();
+        if (body != null && !body.isKinematic)
+        {
+            body.linearVelocity = Vector3.up * Mathf.Max(0, popVelocity);
+            body.angularVelocity = Vector3.zero;
+        }
+        return LastDrop;
     }
 
 #if UNITY_EDITOR

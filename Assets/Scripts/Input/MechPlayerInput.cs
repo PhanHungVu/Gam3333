@@ -5,7 +5,7 @@ using System;
 
 // The one place that reads the player's devices. Each frame it turns input into actions for the
 // other systems: movement (move, jump, boosts), the camera (look), targeting (lock-on, switching),
-// the part system (1/2 swap left/right, V cycles the highlighted part) and combat (attack
+// the part system (F picks a compatible slot, 1/2 swap left/right, V cycles the highlighted part) and combat (attack
 // with the socket's part). It also owns the cursor rule: Esc frees the mouse, a click captures it,
 // and gameplay input only flows while it is captured and the game is not paused.
 [DisallowMultipleComponent]
@@ -26,11 +26,12 @@ public sealed class MechPlayerInput : MonoBehaviour
 
     InputActionAsset runtimeInputActions;
     InputAction move, jump, quickBoost, look, lockOn, reload, headAbility, torsoAbility;
-    InputAction leftArm, rightArm, leftShoulder, rightShoulder, swapLeft, swapRight, cyclePart;
+    InputAction leftArm, rightArm, leftShoulder, rightShoulder, swapLeft, swapRight, cyclePart, pickupAction;
     MechMovementController movement;
     MechCombat combat;
     EquipManager parts;
     PickupDetector pickup;
+    RemotePartRetrieval retrieval;
     MechTargetLockController targeting;
     CameraControlThirdPerson cameraControl;
     bool attacksArmed;
@@ -43,6 +44,7 @@ public sealed class MechPlayerInput : MonoBehaviour
         return button!=null && button.enabled ? DisplayBinding(button,"<Keyboard>") : null;
     }
     public string CycleBindingLabel => cyclePart!=null && cyclePart.enabled ? DisplayBinding(cyclePart,"<Keyboard>") : null;
+    public string PickupBindingLabel => pickupAction!=null && pickupAction.enabled ? DisplayBinding(pickupAction,"<Keyboard>") : null;
     static string DisplayBinding(InputAction action,string preferredDevice)
     {
         string fallback=null; bool keyboardMouseFallback=false;
@@ -64,6 +66,7 @@ public sealed class MechPlayerInput : MonoBehaviour
         locomotionDebug = GetComponent<MechLocomotionDebug>();
         combat = GetComponent<MechCombat>();
         parts = GetComponent<EquipManager>();
+        retrieval = GetComponent<RemotePartRetrieval>();
         pickup = GetComponentInChildren<PickupDetector>(true);
         targeting = GetComponent<MechTargetLockController>();
     }
@@ -79,6 +82,7 @@ public sealed class MechPlayerInput : MonoBehaviour
         leftArm = Enable("Player/Melee"); rightArm = Enable("Player/Attack");
         leftShoulder = Enable("Player/Cannon"); rightShoulder = Enable("Player/Crossbow");
         swapLeft = Enable("Player/SwapLeft"); swapRight = Enable("Player/SwapRight"); cyclePart = Enable("Player/CyclePart");
+        pickupAction = Enable("Player/Pickup");
     }
 
     InputAction Enable(string name)
@@ -92,9 +96,10 @@ public sealed class MechPlayerInput : MonoBehaviour
 
     void OnDisable()
     {
+        retrieval?.Cancel();
         MechInputActions.Release(ref runtimeInputActions);
         move = jump = quickBoost = look = lockOn = reload = headAbility = torsoAbility = null;
-        leftArm = rightArm = leftShoulder = rightShoulder = swapLeft = swapRight = cyclePart = null;
+        leftArm = rightArm = leftShoulder = rightShoulder = swapLeft = swapRight = cyclePart = pickupAction = null;
         targeting?.CancelLockButtonInput();
         attacksArmed = false;
         SetCursorLocked(false);
@@ -134,6 +139,7 @@ public sealed class MechPlayerInput : MonoBehaviour
         {
             if(Pressed(swapLeft)) SwapSelected(false);
             else if(Pressed(swapRight)) SwapSelected(true);
+            else if(Pressed(pickupAction)) RequestPickup();
             if (Pressed(reload) && combat != null) combat.ReloadWeapons();
             if (Pressed(headAbility)) RequestHeadAbility();
             if (Pressed(torsoAbility)) RequestTorsoAbility();
@@ -177,10 +183,23 @@ public sealed class MechPlayerInput : MonoBehaviour
         callback?.Invoke(part); AbilityRequested?.Invoke(socket, part);
     }
 
+    // Remote travel owns F pickup. Nearby 1/2 swaps still use the ordinary immediate transaction.
+    public bool RequestPickup()
+    {
+        if (!isActiveAndEnabled || Time.timeScale <= 0 || MissionOutcomeController.BlocksGameplay(gameObject.scene)
+            || CombatHitStop.BlocksNewActions(transform)) return false;
+        Physics.SyncTransforms();
+        if (retrieval == null || !retrieval.isActiveAndEnabled || pickup == null || !pickup.isActiveAndEnabled) return false;
+        retrieval.RefreshTarget(); pickup.RefreshSelection();
+        return retrieval.TryStart(parts != null ? parts.GetSelectedPart() : null);
+    }
+
     void SwapSelected(bool right)
     {
         var selected=parts!=null ? parts.GetSelectedPart() : null;
         if(selected==null || selected.Stats==null) return;
+        Physics.SyncTransforms();
+        if(pickup==null || !pickup.IsNearby(selected)) return;
         var slots=PartSlots.SlotsFor(selected.partType);
         int index=right ? 1 : 0;
         if(index<slots.Count) parts.TrySwapSelectedInto(slots[index]);

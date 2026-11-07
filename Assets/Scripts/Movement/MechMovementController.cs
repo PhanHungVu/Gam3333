@@ -16,6 +16,7 @@ public class MechMovementController : MonoBehaviour
     [Tooltip("Read-only: the walking speed right now, after legs and part Speed modifiers.")]
     [SerializeField] float currentWalkSpeed;
     MechStats stats;
+    RetrievalSpeedBuff retrievalBuff;
     [SerializeField] float sprintSpeed = 12f;
     [Header("Automatic Run")]
     [SerializeField, Min(0f)] float autoRunDelay = 5f;
@@ -140,6 +141,10 @@ public class MechMovementController : MonoBehaviour
             settings.moveSpeed = target;
             settings.sprintSpeed *= scale;
         }
+        if (retrievalBuff == null) retrievalBuff = GetComponent<RetrievalSpeedBuff>();
+        float bonus = retrievalBuff != null ? retrievalBuff.MovementMultiplier : 1f;
+        settings.moveSpeed *= bonus;
+        settings.sprintSpeed *= bonus;
         currentWalkSpeed = settings.moveSpeed;
         return settings;
     }
