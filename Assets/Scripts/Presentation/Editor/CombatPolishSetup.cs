@@ -37,9 +37,7 @@ public static class CombatPolishSetup
                     settings.material = material;
                     settings.color = melee ? new Color(.4f, .85f, 1, .95f) : stats.projectileColor;
                     settings.meleeTrail = melee; settings.projectileTrail = !melee;
-                    settings.muzzleFlash = settings.muzzleSmoke = !melee && stats != axe;
-                    settings.muzzleSize = cannon ? 1.2f : stats == largeBolt ? .5f : .35f;
-                    settings.muzzleDuration = cannon ? .12f : .08f;
+                    settings.weaponFireVfx = FireVfx(part);
                     settings.trailWidth = melee ? .45f : cannon ? .16f : stats == axe ? .12f : .065f;
                     settings.trailLifetime = melee ? .26f : cannon ? .35f : stats == axe ? .3f : .18f;
                     settings.projectileTrailLinger = melee ? 0 : cannon ? 1.3f : stats == axe ? 1.1f : .9f;
@@ -117,6 +115,15 @@ public static class CombatPolishSetup
         }
         if (!found) return part.muzzle;
         return PlaceTip(bones[dominant], bounds);
+    }
+    // The empty child that carries a weapon's fire particle systems. Nothing named this way means the
+    // weapon plays no muzzle vfx when it fires.
+    static GameObject FireVfx(Part part)
+    {
+        foreach (var child in part.GetComponentsInChildren<Transform>(true))
+            if (child != part.transform && child.name.StartsWith("Weapon Fire VFX", StringComparison.OrdinalIgnoreCase))
+                return child.gameObject;
+        return null;
     }
     static Transform PlaceTip(Transform parent, Bounds bounds)
     {

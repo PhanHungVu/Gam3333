@@ -28,7 +28,7 @@ RectTransform:
   m_GameObject: {fileID: 7007896882566638223}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4166989867311416178}
@@ -224,6 +224,22 @@ PrefabInstance:
       propertyPath: canvas
       value: 
       objectReference: {fileID: 1242564004180074010}
+    - target: {fileID: 6947245945780156741, guid: 9f405b45c04660a418b44ae30316a067, type: 3}
+      propertyPath: StoneHit1
+      value: 
+      objectReference: {fileID: 8300000, guid: c78eb93de175d7e4d9926378b638d8c4, type: 3}
+    - target: {fileID: 6947245945780156741, guid: 9f405b45c04660a418b44ae30316a067, type: 3}
+      propertyPath: StoneHit2
+      value: 
+      objectReference: {fileID: 8300000, guid: ca26c9359c088ae4193ec9a856e917f0, type: 3}
+    - target: {fileID: 6947245945780156741, guid: 9f405b45c04660a418b44ae30316a067, type: 3}
+      propertyPath: StoneHit3
+      value: 
+      objectReference: {fileID: 8300000, guid: 2ebe79c86dc81cd46a6c070ce00ef6eb, type: 3}
+    - target: {fileID: 6947245945780156741, guid: 9f405b45c04660a418b44ae30316a067, type: 3}
+      propertyPath: stoneCooldown
+      value: 0.25
+      objectReference: {fileID: 0}
     - target: {fileID: 7359205465881014472, guid: 9f405b45c04660a418b44ae30316a067, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5

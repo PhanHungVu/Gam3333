@@ -172,10 +172,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   color: {r: 1, g: 0.5, b: 0.15, a: 1}
-  muzzleFlash: 1
-  muzzleSmoke: 1
-  muzzleSize: 1.2
-  muzzleDuration: 0.12
+  weaponFireVfx: {fileID: 0}
   projectileTrail: 1
   trailWidth: 0.16
   trailLifetime: 0.35

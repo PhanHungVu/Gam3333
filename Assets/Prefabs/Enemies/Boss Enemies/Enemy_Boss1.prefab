@@ -20758,14 +20758,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ce2917b344d041439ccbfc6660e7cbf3, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   color: {r: 1, g: 0.5, b: 0.15, a: 1}
-  muzzleFlash: 1
-  muzzleSmoke: 1
-  muzzleSize: 1.2
-  muzzleDuration: 0.12
+  weaponFireVfx: {fileID: 0}
   projectileTrail: 1
   trailWidth: 0.16
   trailLifetime: 0.35
@@ -20967,7 +20964,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage:
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -56369,6 +56366,10 @@ MonoBehaviour:
   deathEffect: 1
   hitFlashDuration: 0.08
   hitColor: {r: 2, g: 1.3, b: 0.6, a: 1}
+  BigRockHit1: {fileID: 8300000, guid: c9981ce701a499d489f873c0e389fca7, type: 3}
+  BigRockHit2: {fileID: 8300000, guid: 13420056f6528694d9a545fccea4958f, type: 3}
+  BigRockHit3: {fileID: 8300000, guid: f259d1def6b125941a232d7468bdc98f, type: 3}
+  hitAudioVolume: 0.5
 --- !u!114 &8464126641647225059
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -56584,7 +56585,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f6e8a99900e14c578e555af64508b57b, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatDeathRagdoll
   maximumActive: 12
   maximumBodies: 14

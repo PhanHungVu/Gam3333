@@ -20865,9 +20865,7 @@ MonoBehaviour:
   weaponImpacts: 1
   maximumTrails: 64
   dustColor: {r: 0.63, g: 0.58, b: 0.48, a: 0.65}
-  muzzleFlash: 1
-  muzzleDuration: 0.1
-  muzzleSize: 1.8
+  hurtVfx: {fileID: 3518098091515318511, guid: cf57e8e851d1b874da3ceabb70dfd3d7, type: 3}
   visualRecoil: 1
   recoilVisual: {fileID: 0}
   recoilDistance: 0.22
@@ -20908,6 +20906,9 @@ MonoBehaviour:
   cannonFireClip: {fileID: 0}
   cannonImpactClip: {fileID: 0}
   multiKillClip: {fileID: 0}
+  BigRockHit1: {fileID: 8300000, guid: c9981ce701a499d489f873c0e389fca7, type: 3}
+  BigRockHit2: {fileID: 8300000, guid: 13420056f6528694d9a545fccea4958f, type: 3}
+  BigRockHit3: {fileID: 8300000, guid: f259d1def6b125941a232d7468bdc98f, type: 3}
   audioVolume: 0.5
 --- !u!143 &4543004682980854188
 CharacterController:
@@ -21050,7 +21051,7 @@ MonoBehaviour:
     m_Bits: 4294967295
   screenPadding: 0.04
   targetSwitchRadius: 0.025
-  autoAimRadius: 0.18
+  autoAimRadius: 0.4
   gameplayCamera: {fileID: 0}
   switchFlickDistance: 80
   switchGestureWindow: 0.2
@@ -21346,7 +21347,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 862294e424784fb9a1c0c29161cfaa68, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::QuickDashFeedback
   dustPrefab: {fileID: 6270878625780173689, guid: 4882e9b1a6776ee4b91ef74d8d3778d3, type: 3}
   dustPoolSize: 12
@@ -50778,10 +50779,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   color: {r: 0.4, g: 0.85, b: 1, a: 0.95}
-  muzzleFlash: 0
-  muzzleSmoke: 0
-  muzzleSize: 0.35
-  muzzleDuration: 0.08
+  weaponFireVfx: {fileID: 0}
   projectileTrail: 0
   trailWidth: 0.45
   trailLifetime: 0.26
@@ -50847,15 +50845,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7645209126774095248, guid: 508fdbec07f43b140b2fada88e0091d7, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.00000008940695
+      value: 0.0000001490116
       objectReference: {fileID: 0}
     - target: {fileID: 7645209126774095248, guid: 508fdbec07f43b140b2fada88e0091d7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.00000023841858
+      value: -0.00000071525574
       objectReference: {fileID: 0}
     - target: {fileID: 7645209126774095248, guid: 508fdbec07f43b140b2fada88e0091d7, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 3.7740924
+      value: 3.774093
       objectReference: {fileID: 0}
     - target: {fileID: 7645209126774095248, guid: 508fdbec07f43b140b2fada88e0091d7, type: 3}
       propertyPath: m_LocalRotation.x

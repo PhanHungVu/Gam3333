@@ -90,7 +90,7 @@ public static class CombatPolishChecks
         }
         var cannonProfile = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/Parts/shoulder_cannon.prefab").GetComponent<WeaponVisualSettings>();
         var boltProfile = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/Parts/shoulder_crossbow.prefab").GetComponent<WeaponVisualSettings>();
-        Check(boltProfile.firingShake < cannonProfile.firingShake && boltProfile.muzzleSize < cannonProfile.muzzleSize,
+        Check(boltProfile.firingShake < cannonProfile.firingShake && boltProfile.impactSize < cannonProfile.impactSize,
             "Large crossbow retains lighter presentation than the cannon despite its existing splash-damage subtype");
         var player = new GameObject("Polish fixture player"); player.SetActive(false); player.transform.position = Vector3.up;
         var health = player.AddComponent<CombatHealth>(); health.Team = CombatTeam.Player;
@@ -109,8 +109,12 @@ public static class CombatPolishChecks
         var rig = (CinemachineCamera)Get(control, "cinemachineCamera"); var follow = rig.Follow; var look = rig.LookAt; float fov = rig.Lens.FieldOfView;
         int impacts = 0; MechProjectileImpact impact = default; combat.ProjectileImpact += value => { impacts++; impact = value; };
         var shot = combat.TryAttack(PartCategory.ArmL).Projectile;
-        Check(shot != null && Effects(feedback, CombatFeedbackEffect.Kind.Muzzle) == 1 && Effects(feedback, CombatFeedbackEffect.Kind.Smoke) == 1,
-            "One accepted ordinary shot emits exactly one muzzle flash and smoke puff");
+        var shotProfile = parts[0].GetComponent<WeaponVisualSettings>();
+        shotProfile.PlayWeaponFireVfx();   // no weapon fire vfx assigned: must do nothing
+        Check(shot != null && shotProfile.weaponFireVfx == null
+              && Effects(feedback, CombatFeedbackEffect.Kind.Muzzle) == 0
+              && Effects(feedback, CombatFeedbackEffect.Kind.Smoke) == 0,
+            "A weapon with no fire vfx plays no muzzle flash and no smoke when it fires");
         Check(feedback.FiringImpulseCount == 1 && feedback.TrailPoolSize == 1, "Successful firing emits a local camera impulse and starts a pooled projectile trail");
         int ammo = parts[0].RemainingAmmo;
         Check(!combat.TryAttack(PartCategory.ArmL).Started && parts[0].RemainingAmmo == ammo && feedback.FiringImpulseCount == 1,

@@ -7,10 +7,11 @@ public sealed class WeaponVisualSettings : MonoBehaviour
 {
     public Material material;
     public Color color = new Color(1f, .8f, .35f);
-    public bool muzzleFlash = true;
-    public bool muzzleSmoke = true;
-    [Min(.01f)] public float muzzleSize = .35f;
-    [Min(.04f)] public float muzzleDuration = .1f;
+    [Header("Weapon fire vfx")]
+    [Tooltip("Child object of this weapon that holds its fire particle systems. They are played exactly " +
+             "where they sit: nothing here changes their position, rotation or scale. " +
+             "Left empty, firing plays nothing.")]
+    public GameObject weaponFireVfx;
     public bool projectileTrail = true;
     [Min(.01f)] public float trailWidth = .06f;
     [Range(.03f, 1f)] public float trailLifetime = .2f;
@@ -27,8 +28,27 @@ public sealed class WeaponVisualSettings : MonoBehaviour
     Part part;
     MechWeaponAnimator driver;
     TrailRenderer swing;
+    ParticleSystem[] fireSystems;      // cached children of weaponFireVfx
+    GameObject fireSystemsOwner;       // which object that cache was gathered from
     public bool IsSwingEmitting => swing != null && swing.emitting;
     void Awake() { part = GetComponent<Part>(); driver = GetComponent<MechWeaponAnimator>(); }
+
+    // Plays every particle system under the assigned child object. The object is used exactly as it
+    // was authored and placed: no position, rotation or scale is written here. No object, or one
+    // without particle systems, plays nothing.
+    public void PlayWeaponFireVfx()
+    {
+        if (weaponFireVfx == null) return;
+        if (fireSystems == null || fireSystemsOwner != weaponFireVfx)
+        {
+            fireSystemsOwner = weaponFireVfx;
+            fireSystems = weaponFireVfx.GetComponentsInChildren<ParticleSystem>(true);
+        }
+        if (fireSystems == null) return;
+        for (int i = 0; i < fireSystems.Length; i++)
+            if (fireSystems[i] != null) fireSystems[i].Play(true);
+    }
+
     void LateUpdate()
     {
         bool feedbackEnabled = CombatFeedback.Current != null && CombatFeedback.Current.VisualsEnabled;

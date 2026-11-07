@@ -5230,7 +5230,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a5b8d878916e38419b9edd084199490, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 5
   weaponAttachments:
@@ -10258,7 +10258,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a83a10ed3c50e19479018b309d84c0ca, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
   recoilAxis: {x: -1, y: 0, z: 0}
@@ -10277,7 +10277,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 565e0671c1dca71448b09a2ea96b7d57, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechPartPoseReceiver
   pivotPosition: {x: 0, y: 0, z: 0}
   pivotRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -20731,7 +20731,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage:
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -20859,7 +20859,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1d8c5232c2d18cd409ba201304eadd29, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PartPickup
   partSwapHudPopupParent: {fileID: 0}
   worldSpaceHud: {fileID: 1139920132479959995}
@@ -25816,7 +25816,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3105f3c8c57a47acbbdc5bdfdbbe5e38, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GolemJointGlow
   boostBrightness: 6
   dodgeBrightness: 1.8
@@ -26107,7 +26107,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3671457730a92054683f894d556551ce, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EquipManager
   rulesConfig: {fileID: 11400000, guid: ee7e37eb664fbfb4695ed0f740b434c4, type: 2}
   partScale: 0.5
@@ -26122,7 +26122,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9c201ada6e3e49d49292fc53f6dc0025, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechCombatController
   gameplayCamera: {fileID: 0}
   hitLayers:
@@ -26146,7 +26146,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df55c955fd694140bd431099851905d4, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatFeedback
   presentationEnabled: 1
   effectMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
@@ -26157,9 +26157,7 @@ MonoBehaviour:
   weaponImpacts: 1
   maximumTrails: 64
   dustColor: {r: 0.63, g: 0.58, b: 0.48, a: 0.65}
-  muzzleFlash: 1
-  muzzleDuration: 0.1
-  muzzleSize: 1.8
+  hurtVfx: {fileID: 3518098091515318511, guid: cf57e8e851d1b874da3ceabb70dfd3d7, type: 3}
   visualRecoil: 1
   recoilVisual: {fileID: 0}
   recoilDistance: 0.22
@@ -26200,6 +26198,9 @@ MonoBehaviour:
   cannonFireClip: {fileID: 0}
   cannonImpactClip: {fileID: 0}
   multiKillClip: {fileID: 0}
+  BigRockHit1: {fileID: 8300000, guid: c9981ce701a499d489f873c0e389fca7, type: 3}
+  BigRockHit2: {fileID: 8300000, guid: 13420056f6528694d9a545fccea4958f, type: 3}
+  BigRockHit3: {fileID: 8300000, guid: f259d1def6b125941a232d7468bdc98f, type: 3}
   audioVolume: 0.5
 --- !u!143 &2151410870433537973
 CharacterController:
@@ -26236,7 +26237,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c5040003381fcac46a32521a0c86364b, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechMovementController
   gameplayCamera: {fileID: 0}
   energy: {fileID: 6057257043024523587}
@@ -26334,7 +26335,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8e01e99e2497bbd4b8d657213fa2636e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechTargetLockController
   lockRange: 60
   targetLayers:
@@ -26342,7 +26343,7 @@ MonoBehaviour:
     m_Bits: 4294967295
   screenPadding: 0.04
   targetSwitchRadius: 0.025
-  autoAimRadius: 0.18
+  autoAimRadius: 0.4
   gameplayCamera: {fileID: 0}
   switchFlickDistance: 80
   switchGestureWindow: 0.2
@@ -26360,7 +26361,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 29454c7fbb814c36a4a1a5a80793819a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechEnergyController
   capacity: 100
   regenerationPerSecond: 25
@@ -26375,7 +26376,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 38e4c352eb0142b2b17e3b9c43f6ccb0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechBoostPresentation
   movement: {fileID: 897119625829190670}
   visualRoot: {fileID: 5317951554273154181}
@@ -26396,7 +26397,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7b54c3f0228f3d4bb23513f81bd9b67, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechPlayerRig
   cameraPrefab: {fileID: 3557168452864418661, guid: ee0d32885dad7e8499e06dc440d1680f, type: 3}
   cursorPrefab: {fileID: 7007896882566638223, guid: 9e9fcf2017e682e4099448f05c2ce670, type: 3}
@@ -26411,7 +26412,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d505173abfcb03345b76268251d66bba, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechEquipmentLocomotion
 --- !u!114 &8456050643938572305
 MonoBehaviour:
@@ -26423,7 +26424,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b96340e8833377469d87c0447da45e1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechLocomotionDebug
   modulePrefabs:
   - {fileID: 4339597897044973096, guid: 508fdbec07f43b140b2fada88e0091d7, type: 3}
@@ -26443,7 +26444,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 052395a115e17b7439c35b89e0bdb6cc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechUpperBodyAnimation
   swapBlendDuration: 0.12
 --- !u!114 &2323618638901885361
@@ -26456,7 +26457,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc15aad914b342bc859e2ab8c19fce6d, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maximumHealth: 100
   currentHealth: 0
@@ -26471,7 +26472,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a2d82b4923b447919128641029d59c27, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechMovementAudio
   movementSound: {fileID: 8300000, guid: 0d78b4bb67abde745a1ca2c3cd1e2f43, type: 3}
   volume: 0.3
@@ -26486,7 +26487,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a22b2bcb94884e68a023d7d643bc5e92, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechStats
   baseSpeed: 0
   speedMultiplier: 1
@@ -26500,7 +26501,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d6d46aaaa823483587a36b4e35a57f01, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechWeaponIdle
   weaponIdleDelay: 3
 --- !u!114 &732845130996398655
@@ -26513,7 +26514,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8149786338b64b96a8f3fe81f45855fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MeleeBoxPreview
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   showMeleeBox: 1
@@ -26527,7 +26528,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 67688985eee34d21b01f72d224bce207, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechPlayerInput
   inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   lockCursorOnPlay: 1
@@ -26551,7 +26552,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0f6c750bfddeec0479375e322fd0b4e6, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PartSwapWorldHudPresenter
   viewPrefab: {fileID: 6710405881133785968, guid: 50c5fcb7b7c0c3241b2a7e16e6555705, type: 3}
   screenWidthFraction: 0.3
@@ -26574,7 +26575,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 52f4762c480644a08a58b5f2954bc13f, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerDamageVignette
   startsAtHealth: 0.5
   fullAtHealth: 0.01
@@ -26591,7 +26592,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f6e8a99900e14c578e555af64508b57b, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatDeathRagdoll
   maximumActive: 12
   maximumBodies: 14
@@ -26610,7 +26611,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ae7a64231c5c43c18b78dc55bc4421cf, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MissionParticipant
   resultsPrefab: {fileID: 1572277034998946294, guid: 048fc651118d41d4c9b202857b2e37a5, type: 3}
   createLocalMission: 1
@@ -26624,10 +26625,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 79bc7bf5c1bfb3746bc69c36c145b576, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechAbilities
   damageMultiplier: 1
-  activeAbilities:
+  activeAbilities: 
 --- !u!114 &5103838058099338115
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26638,7 +26639,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 862294e424784fb9a1c0c29161cfaa68, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::QuickDashFeedback
   dustPrefab: {fileID: 6270878625780173689, guid: 4882e9b1a6776ee4b91ef74d8d3778d3, type: 3}
   dustPoolSize: 12
@@ -26701,7 +26702,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage:
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -31616,7 +31617,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a5b8d878916e38419b9edd084199490, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 6
   weaponAttachments: []
@@ -41781,7 +41782,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage:
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -47165,7 +47166,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a5b8d878916e38419b9edd084199490, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 3
   weaponAttachments: []
@@ -47219,7 +47220,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage:
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -47271,7 +47272,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3105f3c8c57a47acbbdc5bdfdbbe5e38, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GolemJointGlow
   boostBrightness: 6
   dodgeBrightness: 1.8
@@ -47778,7 +47779,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a5b8d878916e38419b9edd084199490, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 1
   weaponAttachments:
@@ -48254,7 +48255,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a5b8d878916e38419b9edd084199490, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 0
   weaponAttachments: []
@@ -48613,7 +48614,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a5b8d878916e38419b9edd084199490, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 2
   weaponAttachments:
@@ -48671,7 +48672,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a83a10ed3c50e19479018b309d84c0ca, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
   recoilAxis: {x: -1, y: 0, z: 0}
@@ -48690,7 +48691,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 39a10c3e992074141b45ab35cbdc9981, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechWeaponAnimator
   animator: {fileID: 4104818327900593488}
   animations: {fileID: 11400000, guid: 4ac8fc18ee6733f44a5e69e79d7f153d, type: 2}
@@ -48706,14 +48707,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ce2917b344d041439ccbfc6660e7cbf3, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   color: {r: 0.4, g: 0.85, b: 1, a: 0.95}
-  muzzleFlash: 0
-  muzzleSmoke: 0
-  muzzleSize: 0.35
-  muzzleDuration: 0.08
+  weaponFireVfx: {fileID: 0}
   projectileTrail: 0
   trailWidth: 0.45
   trailLifetime: 0.26
@@ -48830,7 +48828,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a83a10ed3c50e19479018b309d84c0ca, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
   recoilAxis: {x: -1, y: 0, z: 0}
@@ -48849,7 +48847,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 565e0671c1dca71448b09a2ea96b7d57, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechPartPoseReceiver
   pivotPosition: {x: -0.00000023841858, y: 0.3070922, z: 0.00000047683716}
   pivotRotation: {x: 0, y: -0.70710677, z: -0.7071069, w: 0}
@@ -49062,7 +49060,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a83a10ed3c50e19479018b309d84c0ca, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Part
   recoilVisual: {fileID: 0}
   recoilAxis: {x: -1, y: 0, z: 0}
@@ -49081,7 +49079,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ee890f52fd95b214080a0deb712e588e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BipedLocomotionModule
 --- !u!114 &2184530470600860609
 MonoBehaviour:
@@ -49093,7 +49091,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c64ac902c472f824a80072f471e248e1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechLegAnimator
   animator: {fileID: 634915060115055150}
   referenceSpeed: 6
@@ -49111,7 +49109,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64c2aba78ddfcce44bce2d7599cc2e5d, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MechAnimationPoseSource
   animator: {fileID: 634915060115055150}
   body:
@@ -54130,7 +54128,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a5b8d878916e38419b9edd084199490, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 4
   weaponAttachments:

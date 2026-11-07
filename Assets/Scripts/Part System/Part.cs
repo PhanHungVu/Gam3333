@@ -75,6 +75,7 @@ public class Part : MonoBehaviour
     bool[] colliderStates;
     int[] colliderLayers;
     int[] colliderExclusions;
+    PickupHighlight pickupHighlight;
     void Awake() { if (EquippedBy == null && !isEquipped) SetEquippedPhysics(false); }
 
     // State belongs to this physical part, not the shared PartData asset.
@@ -173,5 +174,9 @@ public class Part : MonoBehaviour
         // Stop visual playback immediately on drop, including within the same frame.
         var weaponAnimator = GetComponent<MechWeaponAnimator>();
         if (weaponAnimator != null) weaponAnimator.RefreshEquipment();
+        // Only actual loose pickups receive the reusable marker; carried parts/corpses keep their normal visuals.
+        if (Application.isPlaying && !equipped && data != null && pickupHighlight == null && GetComponentInParent<CombatHealth>() == null)
+            pickupHighlight = PickupHighlight.Attach(transform);
+        if (pickupHighlight != null) pickupHighlight.gameObject.SetActive(!equipped);
     }
 }

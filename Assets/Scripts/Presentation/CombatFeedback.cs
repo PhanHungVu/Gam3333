@@ -18,10 +18,12 @@ public sealed class CombatFeedback : MonoBehaviour
     [SerializeField] bool weaponImpacts = true;
     [SerializeField, Range(4, 128)] int maximumTrails = 64;
     [SerializeField] Color dustColor = new Color(.63f, .58f, .48f, .65f);
+    [Header("Hurt VFX")]
+    [Tooltip("Hurt VFX: prefab spawned on this mech when it takes damage, its particle systems all " +
+             "played once and the copy cleared when they finish. An object already in the scene is " +
+             "played where it sits. Left empty, nothing plays.")]
+    public GameObject hurtVfx;
     [Header("Cannon Fire")]
-    [SerializeField] bool muzzleFlash = true;
-    [SerializeField, Min(0.04f)] float muzzleDuration = 0.1f;
-    [SerializeField, Min(0.1f)] float muzzleSize = 1.8f;
     [SerializeField] bool visualRecoil = true;
     [Tooltip("A mesh-only child, separate from the root that boost presentation rotates.")]
     [SerializeField] Transform recoilVisual;
@@ -71,6 +73,13 @@ public sealed class CombatFeedback : MonoBehaviour
     [SerializeField] AudioClip cannonFireClip;
     [SerializeField] AudioClip cannonImpactClip;
     [SerializeField] AudioClip multiKillClip;
+    [Header("Hurt Audio")]
+    [Tooltip("BigRockHit1: one of the three is picked at random when the mech is hurt.")]
+    public AudioClip BigRockHit1;
+    [Tooltip("BigRockHit2: one of the three is picked at random when the mech is hurt.")]
+    public AudioClip BigRockHit2;
+    [Tooltip("BigRockHit3: one of the three is picked at random when the mech is hurt.")]
+    public AudioClip BigRockHit3;
     [SerializeField, Range(0, 1)] float audioVolume = 0.5f;
 
     CombatHealth health;
@@ -207,13 +216,10 @@ public sealed class CombatFeedback : MonoBehaviour
         if (!presentationEnabled || shot == null) return;
         var settings = Settings(shot.Source);
         bool heavy = shot.Subtype == PartSubtype.Splash;
-        float size = settings != null ? settings.muzzleSize : heavy ? muzzleSize : .35f;
-        float duration = settings != null ? settings.muzzleDuration : heavy ? muzzleDuration : .1f;
         Color color = settings != null ? settings.color : heavy ? explosionColor : new Color(1, .8f, .4f);
-        if (muzzleFlash && (settings == null || settings.muzzleFlash))
-            PlayEffect(CombatFeedbackEffect.Kind.Muzzle, muzzle, size, duration, color, true, false, false);
-        if (settings == null || settings.muzzleSmoke)
-            PlayEffect(CombatFeedbackEffect.Kind.Smoke, muzzle, size, .65f, new Color(.6f, .58f, .52f, .4f), false, false, false);
+        // The weapon owns its muzzle effect now: every particle system under its "weapon fire vfx"
+        // object plays, and a weapon without one plays nothing.
+        if (settings != null) settings.PlayWeaponFireVfx();
         if (projectileTrails && shot.IsLive && (settings == null || settings.projectileTrail)) PlayTrail(shot, settings, color);
         if (shooter != transform) return;
         if (firingCameraImpulse && EmitImpulse(muzzle, -shot.Direction,
@@ -269,9 +275,75 @@ public sealed class CombatFeedback : MonoBehaviour
     }
     void OnDamaged(float amount)
     {
+        // Hurt VFX: a fresh copy is spawned on the mech, played, then cleared.
+        if (presentationEnabled) PlayHurtVfx();
+        if (presentationEnabled) PlayRockHit();
         if (presentationEnabled && damageCameraImpulse && EmitImpulse(transform.position, Vector3.down,
             damageImpulseStrength, damageImpulseDuration)) DamageImpulseCount++;
         if (presentationEnabled && hitStop) CombatHitStop.Request(transform,damageHitStop,this);
+    }
+
+    // One of BigRockHit1..3 at random, re-pitched up to a quarter either way so repeated hits do not
+    // sound identical. Only clips that are actually assigned take part in the pick.
+    public void PlayRockHit()
+    {
+        var clip = PickRockHit();
+        if (clip == null) return;
+        PlayAudio(clip, transform.position, false, Random.Range(.75f, 1.25f));
+    }
+
+    AudioClip PickRockHit()
+    {
+        int count = (BigRockHit1 != null ? 1 : 0) + (BigRockHit2 != null ? 1 : 0) + (BigRockHit3 != null ? 1 : 0);
+        if (count == 0) return null;
+        int pick = Random.Range(0, count);
+        if (BigRockHit1 != null && pick-- == 0) return BigRockHit1;
+        if (BigRockHit2 != null && pick-- == 0) return BigRockHit2;
+        return BigRockHit3;
+    }
+
+    // Spawns the hurt VFX on the mech and plays every particle system in it. Each hit gets its own
+    // copy, so overlapping hits never cut each other short, and the copy is destroyed once the
+    // longest system has finished. An object already in the scene is played where it sits instead.
+    public void PlayHurtVfx()
+    {
+        if (hurtVfx == null) return;
+        bool inScene = hurtVfx.scene.IsValid();
+        var effect = inScene ? hurtVfx : Instantiate(hurtVfx, transform.position, transform.rotation, transform);
+        PlayAllParticleSystems(effect);
+        if (inScene) return;   // never destroys something the designer placed
+        Destroy(effect, ParticleLifetime(effect));
+    }
+
+    // Longest particle system in the object, so the instanced copy lives exactly as long as its puffs.
+    static float ParticleLifetime(GameObject holder)
+    {
+        float lifetime = 0f;
+        var systems = holder.GetComponentsInChildren<ParticleSystem>(true);
+        for (int i = 0; i < systems.Length; i++)
+        {
+            var main = systems[i].main;
+            lifetime = Mathf.Max(lifetime, main.duration + main.startLifetime.constantMax);
+        }
+        return lifetime > 0.05f ? lifetime : 2f;
+    }
+
+    // Plays every particle system inside a GameObject, children included, waking any that were left
+    // switched off in the prefab. Nothing here moves, rotates or scales anything.
+    public static void PlayAllParticleSystems(GameObject holder)
+    {
+        if (holder == null) return;
+        if (!holder.activeSelf) holder.SetActive(true);
+        var systems = holder.GetComponentsInChildren<ParticleSystem>(true);
+        for (int i = 0; i < systems.Length; i++)
+        {
+            var system = systems[i];
+            if (system == null) continue;
+            if (!system.gameObject.activeSelf) system.gameObject.SetActive(true);
+            // Clear first, so a second hit restarts the puff instead of stacking on the last one.
+            system.Clear(true);
+            system.Play(true);
+        }
     }
     void OnConfirmedHit(Transform owner,CombatHealth victim,CombatHitKind kind)
     {
@@ -381,7 +453,7 @@ public sealed class CombatFeedback : MonoBehaviour
     void UpdateImpulseGain()
     { if (impulseListener != null) impulseListener.Gain = presentationEnabled && cameraImpulse ? 1 : 0; }
 
-    void PlayAudio(AudioClip clip, Vector3 position, bool ui)
+    void PlayAudio(AudioClip clip, Vector3 position, bool ui, float pitch = 1f)
     {
         if (clip == null) return;
         int index = nextVoice++ % voices.Length;
@@ -399,6 +471,7 @@ public sealed class CombatFeedback : MonoBehaviour
         voice.transform.position = position;
         voice.clip = clip;
         voice.volume = audioVolume;
+        voice.pitch = pitch;
         voice.spatialBlend = ui ? 0 : 0.8f;
         voice.Play();
     }
