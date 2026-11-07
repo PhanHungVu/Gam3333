@@ -1,5 +1,7 @@
 # Directional melee force and knockdown
 
+Historical implementation notes: the temporary living-enemy ragdoll/knockdown described below has been retired. The merged experimental branch uses the reduced upright push for both ordinary melee and F-return damage. Current behavior is documented in `MeleePush.md`; `MeleePhysicsChecks.RunBatch` forwards to that current suite. Killing launches and independent loot remain active.
+
 Player melee weapons now apply physical force after an accepted damage hit. This covers ordinary sword/mace swings and their damaging F-retrieval paths. Damage, range, cooldowns, team checks and wall rejection stay with the existing combat systems. Rejected damage, ordinary non-damaging pickup and ranged attacks grant no melee impulse.
 
 ## Direction and current tuning

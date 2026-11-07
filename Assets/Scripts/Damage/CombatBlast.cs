@@ -62,8 +62,6 @@ public sealed class CombatBlast
         damaged.Clear();
         int hits = 0, kills = 0, count;
         CombatTeam attacker = CombatTeams.Of(owner);
-        var playerMelee = source != null && source.Stats != null && source.Stats.subtype == PartSubtype.Melee && owner != null
-            ? owner.GetComponent<MechCombat>() : null;
         while ((count = Physics.OverlapBoxNonAlloc(center, halfExtents, overlaps, rotation, layers,
             QueryTriggerInteraction.Ignore)) == overlaps.Length)
             Array.Resize(ref overlaps, overlaps.Length * 2);
@@ -76,20 +74,10 @@ public sealed class CombatBlast
                 || Blocked(wallOrigin, candidate, owner, layers)) continue;
             var point = ClosestPoint(candidate, wallOrigin);
             var normal = wallOrigin - point;
-            Vector3 push = default, launch = default;
-            bool hasPush = playerMelee != null && playerMelee.TryMeleePush(health, rotation * Vector3.forward, out push, out launch);
-            var death = hasPush ? health.GetComponent<CombatDeathRagdoll>() : null;
-            // Death callbacks run inside ApplyDamage. Scope the upright launch to this hit only,
-            // including rejected damage, rather than leaving a flag for an unrelated later death.
-            if (death != null) death.BeginMeleeLaunch(launch);
-            bool applied;
-            try { applied = Apply(health, damage, attacker, ref hits, ref kills, owner, source!=null ? CombatHitKind.Melee : CombatHitKind.Blast, wallOrigin); }
-            finally { if (death != null) death.EndMeleeLaunch(); }
-            if (applied)
+            if (ApplyMeleeContact(health, damage, attacker, ref hits, ref kills, owner, source, rotation * Vector3.forward,
+                source != null ? CombatHitKind.Melee : CombatHitKind.Blast, wallOrigin))
             {
-                if (hasPush) playerMelee.PushSurvivingEnemy(health, push);
                 hitHistory?.Add(health);
-                MeleeImpulse(source, owner, health, rotation * Vector3.forward);
                 acceptedHit?.Invoke(health);
                 if (source != null) CombatVisualEvents.ReportMelee(source, owner, point, normal.sqrMagnitude > .0001f ? normal.normalized : Vector3.up);
             }
@@ -120,9 +108,9 @@ public sealed class CombatBlast
             Vector3 origin = from + segment * t;
             if (Blocked(origin, candidate, owner, layers)) continue;
             var point = ClosestPoint(candidate, origin); var normal = origin - point;
-            if (!Apply(health, damage, attacker, ref hits, ref kills, owner, CombatHitKind.Melee, origin)) continue;
+            Vector3 direction = segment.sqrMagnitude > .000001f ? segment : owner != null ? owner.position - from : Vector3.forward;
+            if (!ApplyMeleeContact(health, damage, attacker, ref hits, ref kills, owner, source, direction, CombatHitKind.Melee, origin)) continue;
             hitHistory?.Add(health);
-            MeleeImpulse(source, owner, health, segment.sqrMagnitude > .000001f ? segment : owner != null ? owner.position - from : Vector3.forward);
             if (source != null) CombatVisualEvents.ReportMelee(source, owner, point, normal.sqrMagnitude > .0001f ? normal.normalized : Vector3.up);
         }
         Array.Clear(overlaps, 0, count); damaged.Clear();
@@ -157,10 +145,22 @@ public sealed class CombatBlast
         return new DamageResult(hits, kills);
     }
 
-    static void MeleeImpulse(Part source, Transform owner, CombatHealth victim, Vector3 direction)
+    // Ordinary swings and F-return paths share one accepted-hit push. Never add the old knockdown on top.
+    bool ApplyMeleeContact(CombatHealth victim, float damage, CombatTeam attacker, ref int hits, ref int kills,
+        Transform owner, Part source, Vector3 direction, CombatHitKind kind, Vector3 origin)
     {
-        if (source != null && source.Stats != null && source.Stats.subtype == PartSubtype.Melee && owner != null
-            && owner.TryGetComponent<MechCombat>(out var combat)) combat.ApplyMeleeImpact(victim, direction);
+        var combat = source != null && source.Stats != null && source.Stats.subtype == PartSubtype.Melee && owner != null
+            ? owner.GetComponent<MechCombat>() : null;
+        Vector3 push = default, launch = default;
+        bool hasPush = combat != null && combat.TryMeleePush(victim, direction, out push, out launch);
+        var death = hasPush ? victim.GetComponent<CombatDeathRagdoll>() : null;
+        // Death callbacks run inside ApplyDamage; clear this override even when damage is rejected.
+        if (death != null) death.BeginMeleeLaunch(launch);
+        bool applied;
+        try { applied = Apply(victim, damage, attacker, ref hits, ref kills, owner, kind, origin); }
+        finally { if (death != null) death.EndMeleeLaunch(); }
+        if (applied && hasPush) combat.PushSurvivingEnemy(victim, push);
+        return applied;
     }
 
     // True when something other than the owner or a damageable target is between origin and candidate.

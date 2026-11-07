@@ -6,6 +6,10 @@ Branch inspected: `meow-meow-test`, base commit `0134cd4`, 2026-11-07. Updated 2
 
 ## Accepted control and cooldown rules
 
+Merge compatibility: retain this branch's F retrieval, MMB lock toggle, nearby 1/2 swaps, six effect profiles, 20m range, lift/hover/fast flight, right/E starting cannon and temporary per-family cooldown bypass. Normal sword/mace swings and their F-return damage now use the same reduced **6.667m/s grounded push**, without disabling enemy attacks/graphs, living ragdolls or knockdown stun. This replaces the old knockdown implementation left alongside the main-branch push code by the merge. Deaths retain their stronger, rotation-locked launch and independent loot.
+
+Verified after the merge repair with 1,449 isolated Unity checks covering ordinary/F-return melee, real input, travel/equipment, every retrieval bonus and core gameplay. Current temporary cooldown-bypass values and effect settings were preserved. Detailed counts and the merge explanation are in `MeleePush.md`; logs are under `.quest-review/Results/RetrievalMergeRepair`.
+
 - F becomes remote part retrieval. MMB takes over the existing hard/soft camera-lock toggle.
 - 1 and 2 retain nearby left/right part swapping; V currently cycles nearby parts.
 - Remote retrieval prefers an empty compatible socket. When both are occupied, use the existing left-first slot priority, previewing the selected replacement before F. Single-slot parts use their actual socket. All equipment types can be retrieved; only configured weapons receive a retrieval bonus.

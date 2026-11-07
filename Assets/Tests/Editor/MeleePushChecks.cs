@@ -171,5 +171,66 @@ public static class MeleePushChecks
         Check(controller.enabled && controller.Graph.enabled && controller.Graph.Graph.IsRunning && !victim.GetComponent<EnemyAgent>().IsMeleePushed,
             "The actual behavior graph remains usable after the shove without disable/restore cycles");
         DestroyEnemy(victim); yield return Frames();
+        yield return ReturningWeapons();
+    }
+    static Part ReturningDrop(string file)
+    {
+        var root = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/Parts/" + file + ".prefab"));
+        var part = root.GetComponent<Part>(); part.isStartingPart = false;
+        root.transform.position = player.transform.position + new Vector3(0, .5f, 14); root.GetComponent<Rigidbody>().isKinematic = true;
+        Physics.SyncTransforms();
+        float bottom = root.GetComponentsInChildren<Collider>().Where(c => c.enabled && !c.isTrigger && c.GetComponentInParent<Part>() == part).Min(c => c.bounds.min.y);
+        root.transform.position += Vector3.up * (.08f - bottom); Physics.SyncTransforms(); return part;
+    }
+    static IEnumerator ReturningWeapons()
+    {
+        // Preserve the actual motor-grounded pivot; .1 would bury this model's sockets in the floor.
+        player.transform.SetPositionAndRotation(new Vector3(80, player.transform.position.y, 0), Quaternion.identity);
+        player.GetComponent<CombatHealth>().SetMaximum(10000, true);
+        var remote = player.GetComponent<RemotePartRetrieval>(); remote.enableRemoteTargeting = false;
+        foreach (string file in new[] { "arm_sword", "arm_mace" })
+        {
+            var victim = Enemy(offset: Vector3.forward * 8); yield return Frames(4);
+            var controller = victim.GetComponent<EnemyGraphController>(); controller.enabled = true; controller.Graph.enabled = true;
+            victim.GetComponent<EnemyAttack>().enabled = true; yield return Frames(4);
+            var part = ReturningDrop(file); bool pushed = false; int acceptedHits = 0;
+            victim.GetComponent<CombatHealth>().Damaged += _ => acceptedHits++;
+            Action<Part, Vector3, Vector3> inspect = (p, from, to) =>
+            {
+                var agent = victim.GetComponent<EnemyAgent>(); if (!agent.IsMeleePushed || pushed) return;
+                pushed = true;
+                Check(Mathf.Abs(agent.MeleePushVelocity.magnitude - 20f / 3f) < .01f && agent.MeleePushVelocity.z < -6 && agent.MeleePushVelocity.y == 0,
+                    file + " F-return applies one reduced horizontal push toward the player, without lift");
+                Check(agent.enabled && controller.enabled && controller.Graph.enabled && controller.Graph.Graph.IsRunning
+                    && victim.GetComponent<EnemyAttack>().enabled && Object.FindObjectsByType<CombatRagdoll>().Length == 0,
+                    file + " F-return leaves enemy movement/attack/graph enabled and creates no stun or knockdown rig");
+            };
+            remote.Travelled += inspect;
+            Check(remote.TryStart(part), file + " real bonus-damage retrieval starts on the merged branch");
+            while (remote.IsBusy || CombatHitStop.IsFrozen(player.transform)) yield return null; remote.Travelled -= inspect;
+            Check(pushed && acceptedHits == 1 && part.isEquipped && player.GetComponent<RetrievalCombatEffects>().LastPathHits == 1,
+                file + " still damages once and equips after its return, without applying a duplicate push; pushed=" + pushed
+                + "; hits=" + acceptedHits + "; equipped=" + part.isEquipped + "; pathHits=" + player.GetComponent<RetrievalCombatEffects>().LastPathHits);
+            DestroyEnemy(victim); yield return Frames(4);
+
+            victim = Enemy(offset: Vector3.forward * 8); yield return Frames(4); DropChance(victim, 100);
+            victim.GetComponent<CombatHealth>().SetMaximum(1, true); part = ReturningDrop(file);
+            bool launched = false;
+            Action<Part, Vector3, Vector3> inspectKill = (p, from, to) =>
+            {
+                var corpse = victim.GetComponent<CombatDeathRagdoll>().LastRagdoll;
+                if (launched || corpse == null) return; launched = true;
+                Check(corpse.PoseLocked && corpse.BodyCount == 1 && corpse.Bodies[0].constraints == RigidbodyConstraints.FreezeRotation
+                    && corpse.Bodies[0].linearVelocity.z < -17 && corpse.Bodies[0].linearVelocity.y > 6.9f,
+                    file + " F-return killing launch uses the same rotation-locked death path in the return direction");
+            };
+            remote.Travelled += inspectKill;
+            Check(remote.TryStart(part), file + " returning killing-blow retrieval starts");
+            while (remote.IsBusy || CombatHitStop.IsFrozen(player.transform)) yield return null; remote.Travelled -= inspectKill;
+            var loot = victim.GetComponent<EnemyPartDrop>().LastDrop;
+            Check(launched && loot != null && loot.transform.parent == null && Vector3.ProjectOnPlane(loot.GetComponent<Rigidbody>().linearVelocity, Vector3.up).magnitude < .2f,
+                file + " return-path kills keep rolled loot independent from the launched corpse");
+            DestroyEnemy(victim); ClearCorpses(); yield return Frames(4);
+        }
     }
 }

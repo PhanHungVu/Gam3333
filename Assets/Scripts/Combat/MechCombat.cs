@@ -33,15 +33,8 @@ public class MechCombat : MonoBehaviour
     [SerializeField, Range(1f, 60f)] float maximumMeleeAssistAngle = 30f;
     [SerializeField, Min(0.01f)] float meleeApproachDuration = 0.12f;
     [SerializeField, Min(0f)] float meleeCameraHold = 0.45f;
-    [Header("Melee impact on enemies")]
-    [SerializeField] bool meleePhysics = true;
-    [SerializeField, Min(0)] float meleeImpulseSpeed = 20f / 3f;
-    [SerializeField, Min(0)] float meleeLiftSpeed = 2f;
-    [SerializeField, Min(.1f)] float meleeKnockdownSeconds = .9f;
-    [SerializeField, Min(0)] float meleeKillImpulseSpeed = 18f;
-    [SerializeField, Min(0)] float meleeKillLiftSpeed = 7f;
-
     [Header("Melee push on enemies")]
+    [UnityEngine.Serialization.FormerlySerializedAs("meleePhysics")]
     [SerializeField] bool meleePush = true;
     [SerializeField, Min(0)] float meleeImpulseSpeed = 6.666667f;
     [SerializeField, Min(.01f)] float meleePushSeconds = .9f;
@@ -87,24 +80,6 @@ public class MechCombat : MonoBehaviour
     internal Vector3 MeleeWallOrigin => transform.position + Vector3.up * muzzleOffset.y;
     internal void RaiseAttackStarted(Part part) { lastAttacker = part; WeaponAttackStarted?.Invoke(part); }
     internal void RaiseMeleePerformed(int hits) => MeleePerformed?.Invoke(hits);
-    internal void ApplyMeleeImpact(CombatHealth victim, Vector3 direction)
-    {
-        if (!meleePhysics || meleeImpulseSpeed <= 0 || victim == null || victim.GetComponent<EnemyAgent>() == null) return;
-        direction = Vector3.ProjectOnPlane(direction, Vector3.up).normalized;
-        if (direction.sqrMagnitude < .001f) direction = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
-        if (victim.IsDead)
-        {
-            var death = victim.GetComponent<CombatDeathRagdoll>();
-            if (death != null && death.LastRagdoll != null)
-                death.LastRagdoll.ApplyImpulse(direction * meleeKillImpulseSpeed + Vector3.up * meleeKillLiftSpeed, replaceVelocity: true);
-        }
-        else
-        {
-            var reaction = victim.GetComponent<EnemyMeleeReaction>() ?? victim.gameObject.AddComponent<EnemyMeleeReaction>();
-            reaction.Apply(direction * meleeImpulseSpeed + Vector3.up * meleeLiftSpeed, meleeKnockdownSeconds);
-        }
-    }
-
     internal bool TryMeleePush(CombatHealth victim, Vector3 incoming, out Vector3 push, out Vector3 killingLaunch)
     {
         push = killingLaunch = Vector3.zero;

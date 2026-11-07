@@ -1,6 +1,6 @@
 # Upright melee push
 
-This branch applies directional force to enemies hit by ordinary player melee. It does not introduce remote retrieval, flying pickups or retrieval attacks.
+This experimental branch applies the same reduced upright push to ordinary player melee and sword/mace F-return damage. Remote retrieval and its weapon-specific bonuses remain active; see `RemoteWeaponRetrieval.md`.
 
 ## Tuning
 
@@ -19,7 +19,7 @@ Killing melee hits use the existing death snapshot and cleanup budget, with **on
 
 ## Damage and loot
 
-The shared box resolver applies the effect only for an equipped melee source owned by a player `MechCombat`, against an `EnemyAgent`, after ordinary damage acceptance. Wall checks, team rules, compound-collider deduplication, damage, reach, cooldowns and existing hit feedback retain their current owners. Enemy attacks and other box/blast damage do not receive the player shove.
+Box swings and swept F-return capsules share `CombatBlast.ApplyMeleeContact`. The effect applies only for a melee source owned by a player `MechCombat`, against an `EnemyAgent`, after ordinary damage acceptance. Swings use the captured attack forward; retrieval uses the actual physical travel segment toward the player. One accepted hit applies one push, with no second legacy knockdown call. Wall checks, team rules, compound-collider deduplication, damage, reach, cooldowns and existing hit feedback retain their current owners. Enemy attacks and other box/blast damage do not receive the player shove.
 
 The death handler resolves configured loot first, once per life, regardless of death-listener ordering. Successful loot spawns unparented with only its own upward pop. The matching carried weapon's visual duplicate is hidden on the corpse. Corpse colliders exclude the loose-part layer, so bodies cannot knock pickups away. The configured drop chance/list remain authoritative; pooling resets the per-life guard.
 
@@ -31,6 +31,10 @@ The death handler resolves configured loot first, once per life, regardless of d
 - `Scripts/Presentation/CombatDeathRagdoll.cs` / `CombatRagdoll.cs`: pose-locked whole-model killing launch; ordinary death behavior remains available.
 - `Scripts/AI/Drops/Enemypartdrop.cs`: independent loot before launch, once per life.
 - `Tests/Editor/MeleePushChecks.cs`: isolated Unity tests using real player, sword/mace and enemy prefabs.
+
+Merge resolution: the merge retained both melee implementations, duplicating `meleeImpulseSpeed`, `meleeKillImpulseSpeed` and `meleeKillLiftSpeed`, and calling the obsolete knockdown on top of ordinary pushes. The duplicate/old settings and unused `EnemyMeleeReaction` component were removed. No scene or prefab referenced that component. Both melee routes now use the upright system; the old `meleePhysics` toggle migrates to `meleePush`. The obsolete ragdoll-specific test entry point forwards to the current push suite, which also covers actual F-return sword/mace hits, live enemy attack/graph ownership, killing launches and independent loot.
+
+Merge validation: **1,449 checks passed**, all exit 0 in isolated Unity 6000.5.8f1: 49 upright-melee/F-return checks, 37 real-input pickup checks, 62 retrieval-travel checks, 65 retrieval-combat/cooldown checks, 72 anticipation/cannon checks, 43 axe-barrage checks, 76 speed-buff checks, 48 piercing-bolt checks and 997 core gameplay checks. The F-return fixture preserves the player's motor-grounded pivot height; spawning that pivot at Y .1 incorrectly buries its sockets and rightly blocks the pickup against the floor. No production targeting/travel change was needed. Logs: `.quest-review/Results/RetrievalMergeRepair`.
 
 Validation in isolated Unity 6000.5.8f1: **35 focused push checks and 997 core gameplay checks passed**, exit 0. These cover actual sword/mace attacks, initial strength, real displacement without rotation, targeting/hitbox preservation, recovery, rotated strikes, bounded repeats, pooling, scenery blocking, team rejection, the Inspector toggle, killing velocity/pose, independent loot, ordinary later deaths, multiple enemy models and the actual behavior graph.
 
