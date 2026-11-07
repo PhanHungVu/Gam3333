@@ -33,6 +33,10 @@ public static class AbilityChecks
             && head.GetStat(StatType.AbilityCooldown) > 0f && head.GetStat(StatType.AbilityDuration) > 0f,
             "The default head's ability is Heal, with a power, a cooldown and a duration set");
 
+        var legsData = AssetDatabase.LoadAssetAtPath<PartData>("Assets/PartCatalogue/PartData_Legs_Fast.asset");
+        check(torso != null && torso.abilityVfx != null && head != null && head.abilityVfx != null && legsData != null && legsData.abilityVfx != null,
+            "The default torso, head and legs each have an Ability Vfx set on their PartData");
+
         var patient = new GameObject("Heal Check");
         try
         {
@@ -86,6 +90,11 @@ public static class AbilityChecks
                 "The default player mech has Mech Abilities and a torso with Damage Amp");
             if (abilities == null || torso == null) return;
 
+            var vfx = player.GetComponent<MechAbilityVfx>();
+            if (vfx == null) vfx = player.AddComponent<MechAbilityVfx>(); // until the prefab carries it
+            int startedEvents = 0, endedEvents = 0;
+            abilities.AbilityStarted += (s, p, d) => startedEvents++;
+            abilities.AbilityEnded += (s, p) => endedEvents++;
             float power = torso.Stats.GetStat(StatType.AbilityPower), duration = torso.Stats.GetStat(StatType.AbilityDuration);
             float amp = 1f + power / 100f;
             bool started = abilities.Request(PartCategory.Torso, torso);
@@ -108,9 +117,12 @@ public static class AbilityChecks
                     "A melee swing during Damage Amp deals the amplified damage; swung=" + swung + "; strike=" + dealt);
             }
 
+            bool effectOn = vfx.ActiveCount == 1 && player.transform.Find(torso.Stats.abilityVfx.name + "(Clone)") != null;
             abilities.Tick(duration + 0.1f);
             check(combat.DamageModifiers.Total == 1f && !abilities.IsActive(PartCategory.Torso),
                 "Damage Amp ends after its duration and damage returns to normal");
+            check(effectOn && vfx.ActiveCount == 0 && startedEvents == 1 && endedEvents == 1,
+                "The torso's ability effect plays on the mech while Damage Amp is active and stops when it ends");
 
             // Heal on the equipped head: restores Power% of max HP per second, for its duration only.
             var health = player.GetComponent<CombatHealth>();

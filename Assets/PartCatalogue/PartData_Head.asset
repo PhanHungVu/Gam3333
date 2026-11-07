@@ -17,6 +17,7 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 42366cfac4209464db4c78e676a2d973, type: 3}
   abilityIcon: {fileID: 21300000, guid: dc1aa31bb8e8b7e44a6ca4254a0178d9, type: 3}
   ability: 2
+  abilityVfx: {fileID: 6608214352323667724, guid: 4fc01379dbc90ad4681782983bc079f6, type: 3}
   description: 
   partType: 0
   subtype: 0

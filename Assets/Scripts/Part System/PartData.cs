@@ -53,6 +53,8 @@ public class PartData : ScriptableObject
     public Sprite abilityIcon;
     [Tooltip("Head, torso and legs: the ability this part gives (its Ability Cooldown, Duration and Power stats tune it).")]
     public PartAbility ability;
+    [Tooltip("Head, torso and legs: the effect shown on the mech while its ability is active (e.g. VFX/Abilities/HealVFX). Played by MechAbilityVfx.")]
+    public GameObject abilityVfx;
     public List<StatEntry> stats;
     [Header("Combat (Range stat is in golem lengths; metres per golem is in MechRulesConfig)")]
     [Tooltip("Optional projectile prefab. Contains visual meshes and MechProjectile, with no physics colliders.")]

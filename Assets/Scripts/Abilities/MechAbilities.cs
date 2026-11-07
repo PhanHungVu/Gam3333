@@ -91,6 +91,11 @@ public sealed class MechAbilities : MonoBehaviour
 
     public bool IsActive(PartCategory socket) => running.Exists(r => r.Socket == socket);
 
+    // Announced for presentation (e.g. MechAbilityVfx); gameplay code never calls visuals itself.
+    // Started gives the duration (0 = an instant ability, which ends straight after).
+    public event System.Action<PartCategory, Part, float> AbilityStarted;
+    public event System.Action<PartCategory, Part> AbilityEnded;
+
     // The effect for each ability kind. A new ability is a new case here and a new effect class.
     public static IAbilityEffect Create(PartAbility ability) => ability switch
     {
@@ -129,6 +134,7 @@ public sealed class MechAbilities : MonoBehaviour
         run.Timer.Start(part.Stats.GetStat(StatType.AbilityDuration));
         running.Add(run);
         cooldown.ConfirmActivation(Mathf.Max(0f, part.Stats.GetStat(StatType.AbilityCooldown)));
+        AbilityStarted?.Invoke(socket, part, run.Timer.Remaining);
         if (!run.Timer.Active) Finish(running.Count - 1); // an instant ability (no duration) ends at once
         return true;
     }
@@ -151,7 +157,9 @@ public sealed class MechAbilities : MonoBehaviour
 
     void Finish(int index)
     {
-        running[index].Effect.End(context);
+        var run = running[index];
+        run.Effect.End(context);
         running.RemoveAt(index);
+        AbilityEnded?.Invoke(run.Socket, run.Part);
     }
 }
