@@ -22,7 +22,7 @@ public enum StatType
 
 // The ability a head, torso or legs part gives when its button is pressed (Ctrl torso, Tab head).
 // Keep the numbers fixed (assets store them); add new abilities at the end.
-public enum PartAbility { None = 0, DamageAmp = 1 }
+public enum PartAbility { None = 0, DamageAmp = 1, Heal = 2, Jump = 3 }
 
 // How a part attacks, which decides how its damage is checked. None for parts that don't attack
 // (head, legs, torso). Melee: a hit box. Projectile: a shot that hits what it touches. Splash: a shot
