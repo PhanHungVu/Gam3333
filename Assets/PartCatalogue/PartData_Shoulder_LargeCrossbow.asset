@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PartData
   partId: backweaponA4
   partName: Large Crossbow
-  icon: {fileID: 21300000, guid: 78eeb7b6f1ac81942982c80a60422cd3, type: 3}
+  icon: {fileID: 21300000, guid: 5cd717194be546c41b6f77c54449b72c, type: 3}
   abilityIcon: {fileID: 0}
   description: single shot long range, precision
   partType: 4

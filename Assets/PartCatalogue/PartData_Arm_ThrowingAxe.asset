@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PartData
   partId: weaponA2
   partName: Throwing Axe
-  icon: {fileID: 21300000, guid: 79fd45fed8eaa8e40aac8086a1e6e8eb, type: 3}
+  icon: {fileID: 21300000, guid: 22b487461f676d2488b8a16a3736f5fe, type: 3}
   abilityIcon: {fileID: 0}
   description: ranged weapon, unable to melee attack with it.
   partType: 1

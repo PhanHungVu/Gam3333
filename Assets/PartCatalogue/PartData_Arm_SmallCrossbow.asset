@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PartData
   partId: weaponB2
   partName: smallcrossbow
-  icon: {fileID: 21300000, guid: 055bab048f39108429cf40af8b125999, type: 3}
+  icon: {fileID: 21300000, guid: b71dc70c7a4cb73438e6bec3695495e1, type: 3}
   abilityIcon: {fileID: 0}
   description: ranged weapon
   partType: 1
