@@ -34,6 +34,13 @@ public class MechCombat : MonoBehaviour
     [SerializeField, Min(0.01f)] float meleeApproachDuration = 0.12f;
     [SerializeField, Min(0f)] float meleeCameraHold = 0.45f;
 
+    [Header("Melee push on enemies")]
+    [SerializeField] bool meleePush = true;
+    [SerializeField, Min(0)] float meleeImpulseSpeed = 6.666667f;
+    [SerializeField, Min(.01f)] float meleePushSeconds = .9f;
+    [SerializeField, Min(0)] float meleeKillImpulseSpeed = 18f;
+    [SerializeField, Min(0)] float meleeKillLiftSpeed = 7f;
+
     static readonly PartCategory[] Sockets = (PartCategory[])Enum.GetValues(typeof(PartCategory));
     EquipManager parts;
     MechTargetLockController targeting;
@@ -71,6 +78,22 @@ public class MechCombat : MonoBehaviour
     internal Vector3 MeleeWallOrigin => transform.position + Vector3.up * muzzleOffset.y;
     internal void RaiseAttackStarted(Part part) { lastAttacker = part; WeaponAttackStarted?.Invoke(part); }
     internal void RaiseMeleePerformed(int hits) => MeleePerformed?.Invoke(hits);
+
+    internal bool TryMeleePush(CombatHealth victim, Vector3 incoming, out Vector3 push, out Vector3 killingLaunch)
+    {
+        push = killingLaunch = Vector3.zero;
+        if (!isActiveAndEnabled || !meleePush || victim == null || CombatTeams.Of(transform) != CombatTeam.Player
+            || victim.GetComponent<EnemyAgent>() == null) return false;
+        var direction = Vector3.ProjectOnPlane(incoming, Vector3.up).normalized;
+        if (direction.sqrMagnitude < .0001f) return false;
+        push = direction * Mathf.Max(0, meleeImpulseSpeed);
+        killingLaunch = direction * Mathf.Max(0, meleeKillImpulseSpeed) + Vector3.up * Mathf.Max(0, meleeKillLiftSpeed);
+        return true;
+    }
+    internal void PushSurvivingEnemy(CombatHealth victim, Vector3 push)
+    {
+        if (!victim.IsDead && victim.TryGetComponent<EnemyAgent>(out var agent)) agent.ApplyMeleePush(push, meleePushSeconds);
+    }
 
     // ---- Socket queries (HUD, tests) ----
 

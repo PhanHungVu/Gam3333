@@ -116,7 +116,7 @@ public static class EnemyRosterSetup
                     }
                 }
                 else Add<EnemyWeaponTelegraph>(root);
-                if (role == EnemyBehaviorRole.Hammer) HammerProxy(root);
+                if (role == EnemyBehaviorRole.Mace || role == EnemyBehaviorRole.Hammer) UseCurrentMaceVisuals(root);
                 var health = new SerializedObject(root.GetComponent<CombatHealth>()); float[] hp = { 100, 120, 160, 90, 120, 80, 320, 400, 400 };
                 Value(health, "maximumHealth", hp[i]); health.ApplyModifiedPropertiesWithoutUndo();
                 var cost = new SerializedObject(root.GetComponent<EnemySpawnCost>()); cost.FindProperty("cost").intValue = i < 4 ? 1 : i < 6 ? 2 : 10; cost.ApplyModifiedPropertiesWithoutUndo();
@@ -204,25 +204,59 @@ public static class EnemyRosterSetup
         result = new Material(Shader.Find("Universal Render Pipeline/Unlit")); result.SetColor("_BaseColor", color);
         result.SetFloat("_Cull", 0); AssetDatabase.CreateAsset(result, path); return result;
     }
-    static void HammerProxy(GameObject root)
+    [MenuItem("Tools/Mech/Enemies/Use Current Mace For Melee Enemies")]
+    public static void UpgradeMaceVisuals()
     {
-        foreach (var animator in root.GetComponent<EnemyAttack>().Weapons)
+        if (Application.isPlaying) throw new InvalidOperationException("Stop Play Mode before authoring enemy assets.");
+        foreach (string path in new[] { Roster[1], Roster[2] })
         {
-            if (animator.GetComponentsInChildren<Transform>(true).Any(t => t.name == "Hammer head proxy")) continue;
-            var mesh = animator.GetComponentsInChildren<SkinnedMeshRenderer>(true).FirstOrDefault();
-            var rigid = animator.GetComponentsInChildren<MeshFilter>(true)
-                .Where(f => f.sharedMesh != null && f.gameObject.activeInHierarchy && f.GetComponent<Renderer>() != null)
-                .OrderByDescending(f => f.sharedMesh.bounds.size.sqrMagnitude).FirstOrDefault();
-            if ((mesh == null || mesh.sharedMesh == null) && rigid == null)
-                throw new InvalidOperationException("Hammer proxy requires an equipped weapon mesh");
-            var source = mesh != null ? mesh.transform : rigid.transform;
-            var bounds = mesh != null ? mesh.sharedMesh.bounds : rigid.sharedMesh.bounds;
-            var tip = source.TransformPoint(new Vector3(bounds.max.x, bounds.center.y, bounds.center.z));
-            var parent = mesh != null && mesh.bones.Length > 0 ? mesh.bones.OrderBy(b => (b.position-tip).sqrMagnitude).First() : source;
-            var block = GameObject.CreatePrimitive(PrimitiveType.Cube); block.name = "Hammer head proxy"; Object.DestroyImmediate(block.GetComponent<Collider>());
-            block.transform.position = tip; block.transform.rotation = source.rotation; block.transform.localScale = Vector3.one * .7f;
-            block.transform.SetParent(parent, true); block.GetComponent<Renderer>().sharedMaterial = source.GetComponent<Renderer>().sharedMaterial;
+            var root = PrefabUtility.LoadPrefabContents(path);
+            try { if (UseCurrentMaceVisuals(root)) PrefabUtility.SaveAsPrefabAsset(root, path); }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
         }
+        AssetDatabase.SaveAssets();
+        Debug.Log("ENEMY MACE VISUALS READY: current mace mesh/material; prototype hammer heads removed.");
+    }
+    public static bool UseCurrentMaceVisuals(GameObject root)
+    {
+        var canonical = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/Parts/arm_mace.prefab");
+        var settings = canonical.GetComponent<WeaponVisualSettings>();
+        var source = settings.trailAnchor != null ? settings.trailAnchor.parent.GetComponent<MeshFilter>() : null;
+        var sourceRenderer = source != null ? source.GetComponent<MeshRenderer>() : null;
+        if (source == null || source.sharedMesh == null || sourceRenderer == null)
+            throw new InvalidOperationException("The current mace needs its authored mesh and renderer at the swing-tip parent.");
+        string meshPath = AnimationUtility.CalculateTransformPath(source.transform, canonical.transform);
+        string trailPath = AnimationUtility.CalculateTransformPath(settings.trailAnchor, canonical.transform);
+        var animations = canonical.GetComponent<MechWeaponAnimator>().Animations;
+        bool changed = false;
+        foreach (var weapon in root.GetComponent<EnemyAttack>().Weapons)
+        {
+            var mesh = weapon.transform.Find(meshPath)?.GetComponent<MeshFilter>();
+            var renderer = mesh != null ? mesh.GetComponent<MeshRenderer>() : null;
+            if (mesh == null || renderer == null)
+                throw new InvalidOperationException(root.name + " weapon is missing the current mace's authored mesh path.");
+            foreach (var proxy in weapon.GetComponentsInChildren<Transform>(true).Where(t => t.name == "Hammer head proxy").ToArray())
+            { Object.DestroyImmediate(proxy.gameObject); changed = true; }
+            var tip = weapon.transform.Find(trailPath);
+            var visuals = weapon.GetComponent<WeaponVisualSettings>();
+            if (tip == null || visuals == null)
+                throw new InvalidOperationException(root.name + " weapon is missing the current mace's swing-tip binding.");
+            if (visuals.trailAnchor != tip)
+            {
+                var fields = new SerializedObject(visuals); fields.FindProperty("trailAnchor").objectReferenceValue = tip;
+                changed |= fields.ApplyModifiedPropertiesWithoutUndo();
+            }
+            if (mesh.sharedMesh != source.sharedMesh) { mesh.sharedMesh = source.sharedMesh; changed = true; }
+            if (!renderer.sharedMaterials.SequenceEqual(sourceRenderer.sharedMaterials))
+            { renderer.sharedMaterials = sourceRenderer.sharedMaterials; changed = true; }
+            if (renderer.enabled != sourceRenderer.enabled) { renderer.enabled = sourceRenderer.enabled; changed = true; }
+            if (weapon.Animations != animations)
+            {
+                var fields = new SerializedObject(weapon); fields.FindProperty("animations").objectReferenceValue = animations;
+                changed |= fields.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
+        return changed;
     }
     static void Wave(string path, bool survival)
     {

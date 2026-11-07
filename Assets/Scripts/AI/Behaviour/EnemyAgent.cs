@@ -91,6 +91,28 @@ public sealed class EnemyAgent : MonoBehaviour
     float positionClearance;
     bool preserveGraphFacing;
     public bool LastMotionBlocked { get; private set; }
+    Vector3 meleePushVelocity;
+    float meleePushRemaining, meleePushDeceleration;
+    RaycastHit[] pushHits = new RaycastHit[16];
+    public bool IsMeleePushed => meleePushRemaining > 0;
+    public Vector3 MeleePushVelocity => meleePushVelocity;
+
+    // The normal motor owns the shove. No temporary body, torque or knocked-down pose.
+    public bool ApplyMeleePush(Vector3 impulse, float seconds)
+    {
+        if (!isActiveAndEnabled || !TryGetComponent<CombatHealth>(out var health) || health.IsDead
+            || MissionOutcomeController.BlocksGameplay(gameObject.scene) || !Finite(impulse.x) || !Finite(impulse.z)
+            || !Finite(seconds) || seconds <= 0) return false;
+        impulse.y = 0;
+        if (impulse.sqrMagnitude < .0001f) return false;
+        meleePushVelocity = Vector3.ClampMagnitude(meleePushVelocity + impulse, 22);
+        meleePushRemaining = Mathf.Clamp(seconds, .01f, 3);
+        meleePushDeceleration = meleePushVelocity.magnitude / meleePushRemaining;
+        velocity = meleePushVelocity;
+        return true;
+    }
+    static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+    void ClearMeleePush() { meleePushVelocity = Vector3.zero; meleePushRemaining = 0; }
 
     // ---- read by Steering and the states ----
     public Vector3 Position => transform.position;
@@ -156,12 +178,13 @@ public sealed class EnemyAgent : MonoBehaviour
         All.Add(this);
         WanderAngle = UnityEngine.Random.value * Mathf.PI * 2f;
         velocity = Vector3.zero;
+        ClearMeleePush();
         EndPositioning();
         intentionFrame = -1;
         if (!externalDecisions) Fsm.Transition(Wander);
     }
 
-    void OnDisable() => All.Remove(this);
+    void OnDisable() { All.Remove(this); ClearMeleePush(); }
 
     // The ground an enemy starts on: generated terrain's height there if there is terrain, else the fallback.
     public static float SpawnGroundY(Vector3 position, float fallback) => NavTerrain.GroundHeight(position, fallback);
@@ -191,6 +214,11 @@ public sealed class EnemyAgent : MonoBehaviour
         if (dt <= 0f || CombatHitStop.IsFrozen(transform)) return;
 
         ResolveTarget();
+        if (IsMeleePushed)
+        {
+            if (MissionOutcomeController.BlocksGameplay(gameObject.scene)) { ClearMeleePush(); velocity = Vector3.zero; return; }
+            TickMeleePush(dt); debugState = "Melee push"; return;
+        }
         EnemySpatialHash.EnsureBuilt(All);
 
         // 1. the active state decides where we want to go (sets BehaviourForce)
@@ -280,7 +308,7 @@ public sealed class EnemyAgent : MonoBehaviour
     // Hold still preserves a committed melee/special attack's facing.
     public void HoldFacingTarget(float dt)
     {
-        if (!externalDecisions) return;
+        if (!externalDecisions || IsMeleePushed) return;
         SetMovementIntent(EnemyMovementIntent.Hold, dt); FaceTarget = true; Face(dt);
     }
     // Dense melee pressure keeps body clearance without the wide flocking ring.
@@ -337,6 +365,37 @@ public sealed class EnemyAgent : MonoBehaviour
         // A committed graph attack keeps the visual swing aligned to the
         // existing attack's snapshotted strike direction.
         if (!externalDecisions || intention != EnemyMovementIntent.Hold && !preserveGraphFacing) Face(dt);
+        SnapToGround(dt);
+    }
+
+    void TickMeleePush(float dt)
+    {
+        float step = Mathf.Min(dt, meleePushRemaining);
+        var next = Vector3.MoveTowards(meleePushVelocity, Vector3.zero, meleePushDeceleration * step);
+        Vector3 motion = (meleePushVelocity + next) * (.5f * step);
+        float distance = motion.magnitude;
+        LastMotionBlocked = false;
+        if (distance > .00001f)
+        {
+            Vector3 direction = motion / distance;
+            int count;
+            while ((count = Physics.SphereCastNonAlloc(Position + Vector3.up * probeHeight, bodyRadius, direction, pushHits,
+                distance + skin, obstacleMask & Part.MovementQueryMask & CombatRagdoll.QueryMask, QueryTriggerInteraction.Ignore)) == pushHits.Length)
+                System.Array.Resize(ref pushHits, pushHits.Length * 2);
+            for (int i = 0; i < count; i++)
+            {
+                var hit = pushHits[i];
+                if (hit.transform.IsChildOf(transform) || hit.normal.y > .7f || hit.collider.GetComponentInParent<CombatHealth>() != null) continue;
+                float allowed = Mathf.Max(0, hit.distance - skin);
+                if (allowed < distance) { distance = allowed; LastMotionBlocked = true; }
+            }
+            System.Array.Clear(pushHits, 0, count);
+            transform.position += direction * distance;
+        }
+        meleePushRemaining = Mathf.Max(0, meleePushRemaining - step);
+        meleePushVelocity = LastMotionBlocked || meleePushRemaining <= 0 ? Vector3.zero : next;
+        if (LastMotionBlocked) meleePushRemaining = 0;
+        velocity = meleePushVelocity;
         SnapToGround(dt);
     }
 

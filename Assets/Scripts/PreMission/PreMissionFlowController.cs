@@ -24,7 +24,8 @@ public sealed class PreMissionFlowController : MonoBehaviour
     [SerializeField] QuestNoticeView noticePrefab;
     [SerializeField] TMP_Text boardMessage;
     [SerializeField] Button exitButton;
-    [SerializeField] Button skipPostingButton;
+    // Retain the legacy reference so older scene/prefab instances can hide the retired control.
+    [SerializeField, HideInInspector] Button skipPostingButton;
     [SerializeField] TMP_Text boardHint;
     [SerializeField] PreMissionPaperPresentation presentation;
     [Tooltip("Scene-owned 3D board. Unassigned prefabs retain the legacy paper preview.")]
@@ -77,7 +78,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
         previousTorsoButton.onClick.AddListener(PreviousTorso);
         nextTorsoButton.onClick.AddListener(NextTorso);
         confirmTorsoButton.onClick.AddListener(ConfirmTorso);
-        if (skipPostingButton != null) skipPostingButton.onClick.AddListener(SkipPosting);
+        if (skipPostingButton != null) skipPostingButton.gameObject.SetActive(false);
         exitButton.GetComponent<PreMissionSlabButton>()?.BindCamera(stoneBoard != null ? stoneBoard.BoardCamera : null);
         initialized = true;
         OpenBoard(false);
@@ -119,7 +120,6 @@ public sealed class PreMissionFlowController : MonoBehaviour
         if (displayedVersion != Session.Progression.Version && !IsTransitioning && !IsPosting
             && (Session.View == PreMissionView.Board || (Session.SelectedOfferId != null && Session.Progression.FindOffer(Session.SelectedOfferId) == null)))
             SynchronizeBoard();
-        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame && IsPosting) SkipPosting();
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) Back();
     }
 
@@ -136,12 +136,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
     void RefreshPostingControls()
     {
         bool posting = Session != null && Session.View == PreMissionView.Board && IsPosting;
-        if (skipPostingButton != null)
-        {
-            bool appeared = posting && !skipPostingButton.gameObject.activeSelf;
-            skipPostingButton.gameObject.SetActive(posting);
-            if (appeared && EventSystem.current != null) EventSystem.current.SetSelectedGameObject(skipPostingButton.gameObject);
-        }
+        if (skipPostingButton != null) skipPostingButton.gameObject.SetActive(false);
         if (boardHint != null) boardHint.gameObject.SetActive(!posting);
     }
 
@@ -467,7 +462,7 @@ public sealed class PreMissionFlowController : MonoBehaviour
         if (stoneBoard != null) stoneBoard.DetachOwner(this);
         Unbind(exitButton, Back); Unbind(declineButton, Back); Unbind(torsoBackButton, Back);
         Unbind(acceptButton, AcceptQuest); Unbind(previousTorsoButton, PreviousTorso); Unbind(nextTorsoButton, NextTorso);
-        Unbind(confirmTorsoButton, ConfirmTorso); Unbind(skipPostingButton, SkipPosting);
+        Unbind(confirmTorsoButton, ConfirmTorso);
     }
     static void Unbind(Button button, UnityAction action) { if (button != null) button.onClick.RemoveListener(action); }
 

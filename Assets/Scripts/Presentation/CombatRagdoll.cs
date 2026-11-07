@@ -22,10 +22,13 @@ public sealed class CombatRagdoll : MonoBehaviour
     public float RestAge => restAge;
     public IReadOnlyList<Rigidbody> Bodies => bodies;
     readonly List<Rigidbody> bodies = new List<Rigidbody>();
+    CombatVisualSnapshot visualSnapshot;
+    public bool PoseLocked { get; private set; }
+    public int HiddenLootRendererCount { get; private set; }
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void Reset() => active.Clear();
 
     public static CombatRagdoll Spawn(Transform actor, Vector3 velocity, int limit = 12, int bodyLimit = 14,
-        float restSeconds = 5, float maximumLifetime = 30, float restSpeed = .15f, float restAngularSpeed = .3f)
+        float restSeconds = 5, float maximumLifetime = 30, float restSpeed = .15f, float restAngularSpeed = .3f, bool lockPose = false)
     {
         active.RemoveAll(item => item == null);
         if (active.Count >= Mathf.Clamp(limit,1,24)) return null;
@@ -34,6 +37,7 @@ public sealed class CombatRagdoll : MonoBehaviour
         var root = new GameObject(actor.name + " Corpse"); SceneManager.MoveGameObjectToScene(root,actor.gameObject.scene);
         snapshot.Root.transform.SetParent(root.transform,true);
         var corpse = root.AddComponent<CombatRagdoll>();
+        corpse.visualSnapshot = snapshot; corpse.PoseLocked = lockPose;
         corpse.restSeconds = Mathf.Max(0,restSeconds); corpse.maximumLifetime = Mathf.Max(1,maximumLifetime);
         corpse.restSpeed = Mathf.Max(.01f,restSpeed); corpse.restAngularSpeed = Mathf.Max(.01f,restAngularSpeed);
         corpse.Build(actor,snapshot,Mathf.Clamp(bodyLimit,1,20),velocity);
@@ -49,7 +53,12 @@ public sealed class CombatRagdoll : MonoBehaviour
     {
         var rigid = new Dictionary<Transform,Bounds>();
         var anchors = new HashSet<Transform>();
-        foreach (var renderer in actor.GetComponentsInChildren<Renderer>())
+        if (PoseLocked)
+        {
+            var bounds = InFrame(snapshot.Bounds, actor);
+            bones.Add(new Bone { source = actor, visual = snapshot.Root.transform, center = bounds.center, size = bounds.size });
+        }
+        else foreach (var renderer in actor.GetComponentsInChildren<Renderer>())
         {
             if (!renderer.enabled || !snapshot.Transforms.ContainsKey(renderer.transform)) continue;
             if (renderer is SkinnedMeshRenderer skin)
@@ -92,8 +101,11 @@ public sealed class CombatRagdoll : MonoBehaviour
             var proxy = new GameObject(bone.source.name + " Physics"); proxy.layer = CorpseLayer;
             proxy.transform.SetParent(transform,false); proxy.transform.SetPositionAndRotation(bone.source.position,bone.source.rotation);
             var box = proxy.AddComponent<BoxCollider>(); box.center = bone.center;
+            int lootLayer = LayerMask.NameToLayer(Part.LoosePhysicsLayerName);
+            if (lootLayer >= 0) box.excludeLayers |= 1 << lootLayer;
             box.size = Vector3.Max(bone.size*.85f,Vector3.one*.06f);
             var body = proxy.AddComponent<Rigidbody>(); body.mass = bone == core ? 8 : 2;
+            if (PoseLocked) body.constraints = RigidbodyConstraints.FreezeRotation;
             body.linearDamping = .35f; body.angularDamping = 1.5f; body.interpolation = RigidbodyInterpolation.Interpolate;
             body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
             body.solverIterations = 8; body.maxDepenetrationVelocity = 3; body.maxAngularVelocity = 12;
@@ -133,6 +145,21 @@ public sealed class CombatRagdoll : MonoBehaviour
     void LateUpdate()
     {
         foreach(var bone in bones) if(bone.visual != null && bone.body != null) bone.visual.SetPositionAndRotation(bone.body.position,bone.body.rotation);
+    }
+    public void HideDroppedPart(Part part)
+    {
+        if (part == null || visualSnapshot == null) return;
+        foreach (var renderer in part.GetComponentsInChildren<Renderer>(true))
+        {
+            if (renderer.GetComponentInParent<Part>() != part || !visualSnapshot.Transforms.TryGetValue(renderer.transform, out var visual)) continue;
+            foreach (var copy in visual.GetComponents<Renderer>())
+                if (copy.enabled) { copy.enabled = false; HiddenLootRendererCount++; }
+        }
+        foreach (var bone in bones)
+            if (bone.source != null && bone.source.GetComponentInParent<Part>() == part && bone.body != null)
+            {
+                var collider = bone.body.GetComponent<Collider>(); if (collider != null) collider.enabled = false;
+            }
     }
     void Update() => TickLifetime(Time.deltaTime,Time.unscaledDeltaTime);
     public void TickLifetime(float scaledDelta,float unscaledDelta)

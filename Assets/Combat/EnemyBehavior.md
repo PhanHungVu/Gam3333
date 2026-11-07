@@ -57,7 +57,7 @@ The spinner's swept contact box and rope's landing area use `CombatBlast` and `C
 | Hammer | `Small Enemies/Enemy_hammer` | 160 | 4.5 | 2.3 | 1 |
 | Throwing axe | `Small Enemies/Enemy_throwingAxe` | 90 | 6 | 3.2 | 1 |
 | Spinner | `Small Enemies/Enemy_spinner` | 120 | 4 (12 charging) | 8 | 2 |
-| Crossbow | `Small Enemies/Enemy_crossbow` | 80 | 5 | 5–8 | 2 |
+| Fodder (Crossbow AI role) | `Small Enemies/Enemy_crossbow` (legacy reference; new Zoo Fodder body/cannon) | 80 | 5 | 5–8 | 2 |
 | Heavy ranged | `Elite Enemies/Enemy_Elite_Cannon` | 320 | 3.5 | 11–18 | 10 |
 | Orbiting rock | `Elite Enemies/Enemy_Elite_RockRope` | 400 | 3 approach / 9 orbit charge | 4.5–6.5 | 10 provisional |
 | Rock throw and pull | `Elite Enemies/Enemy_Elite_RockRopePull` | 400 | 3 (8 pulling) | 11–18 | 10 provisional |
@@ -68,7 +68,7 @@ Distances and speeds are world units. Tune awareness, speed and stop distance on
 | --- | ---: | ---: | --- |
 | Sword | 0.15 | 1.5 | 0.7 s / 0.6 |
 | Mace | 0.25 | 1.5 | 0.7 s / 0.6 |
-| Hammer (mace data proxy) | 0.35 | 2 | 1.1 s / 0.7 |
+| Hammer role (current mace model) | 0.35 | 2 | 1.1 s / 0.7 |
 | Throwing axe | 0.3 | 3 | 0.7 s / 0.6 |
 | Crossbow | 0.2 | 3.2 | 1 s / 0.7 |
 | Heavy shoulder cannon | 0.45 | 1.5 | 1.4 s / 0.7 |
@@ -89,7 +89,11 @@ The rope now attaches to the proxy rig's **right shoulder mount**, with **Rope A
 
 Landing samples the target's actual floor, including raised platforms. A wall interception preserves its contact height instead of snapping the rock down to the floor. If the rock already overlaps scenery at launch, it stops there; an empty initial-overlap contact point is never interpreted as world origin. The landed rock stays fixed while pulling, and the final movement step is limited to the stopping clearance. Lost targets during recovery, stopped graphs and death cancel the presentation; a cancelled rope stays hidden instead of being re-enabled by `LateUpdate`.
 
-The hammer uses two replaceable block heads on the existing animated mace rigs. Spinner reuses the current small golem art; the rope elite reuses the current heavy golem and a map-rock proxy with a simple rope. These are gameplay prototypes, not final character art. Source models, shared player `PartData` and animation clips are unchanged. Replace visual references on these new prefabs when authored assets arrive. Threat lines are lightweight, replaceable world-space presentation without damage or collision. New special-attack audio slots are intentionally empty for authored clips later; existing weapon audio remains its existing system.
+The hammer role now uses the current `Prefabs/Mech/Base/Parts/arm_mace.prefab` mesh, textured materials and animation set on both existing weapon rigs. The former cube "Hammer head proxy" overlays were removed: those prototype cubes reused the weapon material with unrelated UVs, causing the incorrect texture appearance. Swing trails are rebound from the deleted cube heads to the canonical mace mesh tips. The regular mace enemy is checked against the same canonical weapon. Socket placement, rigs, colliders, damage, reach, health, speed, cooldowns and release timing are preserved; the hammer role retains its heavier gameplay tuning. `Tools > Mech > Enemies > Use Current Mace For Melee Enemies` reapplies this limited visual repair. The full roster setup also uses the current mace and no longer regenerates cube heads.
+
+Visual repair verification: 23 isolated Unity editor/runtime checks passed, including exact canonical meshes/materials on both arms, valid shader/texture maps, unchanged profiles/root component IDs, repeatable authoring, correctly rebound swing trails, real animated swings and unchanged accepted damage. Idle/swing captures were inspected. Review artifacts: `.quest-review/Results/EnemyMaceVisuals`.
+
+Spinner reuses the current small golem art; the rope elite reuses the current heavy golem and a map-rock proxy with a simple rope. These are gameplay prototypes, not final character art. Source models, shared player `PartData` and animation clips are unchanged. Replace visual references on these new prefabs when authored assets arrive. Threat lines are lightweight, replaceable world-space presentation without damage or collision. New special-attack audio slots are intentionally empty for authored clips later; existing weapon audio remains its existing system.
 
 ## Waves
 
