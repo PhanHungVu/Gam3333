@@ -36,7 +36,7 @@ public static class GameplaySceneMaintenanceChecks
         var catalogue = AssetDatabase.LoadAssetAtPath<QuestBoardCatalogue>("Assets/PreMission/PrototypeBoardCatalogue.asset");
         var heavy = AssetDatabase.LoadAssetAtPath<PartData>("Assets/PreMission/PartData_HeavyTorso_Test.asset");
         Check(heavy.partName == "Heavy Torso (Demo Only)" && catalogue.PlayerPrefabFor(heavy)
-            == AssetDatabase.LoadAssetAtPath<GameObject>(GameplaySceneMaintenance.PlayerPaths[1]), "Demo heavy selector retains its real all-weapons player mapping");
+            == AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/FullPlayer_mech_heavy.prefab"), "Demo heavy selector retains its real all-weapons player mapping");
         foreach (var path in new[] { "A33", "ZooScene", "JhMapScene", "Merge Test", "KOTHTest", "EscortTest", "EnemyBehaviorPlaytest", "JhCombatUIRevampScene" })
         {
             var scene = EditorSceneManager.OpenScene("Assets/Scenes/" + path + ".unity");

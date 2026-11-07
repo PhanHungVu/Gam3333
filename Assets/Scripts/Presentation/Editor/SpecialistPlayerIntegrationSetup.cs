@@ -7,7 +7,6 @@ using Object = UnityEngine.Object;
 public static class SpecialistPlayerIntegrationSetup
 {
     public const string PlayerPath = "Assets/Prefabs/Mech/Specialist/FullPlayer_mech_specialist.prefab";
-    public const string LegacyPlayerPath = "Assets/Prefabs/Mech/Base/FullPlayer_mech_golem.prefab";
     public const string LegsPath = "Assets/Prefabs/Mech/Specialist/BipedSpecialist_Module.prefab";
     public const string BlasterPath = "Assets/Prefabs/Mech/Specialist/arm_blaster_specialist.prefab";
     public const string CannonPath = "Assets/Prefabs/Mech/Specialist/shoulder_cannon_specialist.prefab";
@@ -21,8 +20,7 @@ public static class SpecialistPlayerIntegrationSetup
         if (Application.isPlaying) throw new InvalidOperationException("Stop Play Mode before integrating player assets.");
         NormalizeSmallCrossbow();
         ConfigureLegacyWeapons(PlayerPath);
-        UpgradeRegularGolem();
-        ConfigureLegacyWeapons(LegacyPlayerPath);
+        // The old regular golem (FullPlayer_mech_golem) is retired: the specialist is the default player.
         // These existing tools also cover the new player, so later repair/tuning passes retain it.
         QuickDashPolishSetup.Apply();
         GameplaySceneMaintenance.Apply();
@@ -209,45 +207,4 @@ public static class SpecialistPlayerIntegrationSetup
         finally { Object.DestroyImmediate(root); }
     }
 
-    static void UpgradeRegularGolem()
-    {
-        var source = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPath);
-        var sourceTorso = source.GetComponentsInChildren<Part>(true).Single(p => p.partType == PartType.Torso);
-        var root = PrefabUtility.LoadPrefabContents(LegacyPlayerPath);
-        try
-        {
-            bool changed = false;
-            // Preserve the existing prefab's root and component file IDs for scene/camera references.
-            // Copy the complete authored assembly: torso bones/sockets, head, legs and starter sword.
-            bool hasSpecialist = root.GetComponentsInChildren<MeshFilter>(true).Any(m => m.sharedMesh != null
-                && AssetDatabase.GetAssetPath(m.sharedMesh).EndsWith("/TORSO_Specialist.fbx", StringComparison.OrdinalIgnoreCase));
-            if (!hasSpecialist)
-            {
-                var oldTorso = root.GetComponentsInChildren<Part>(true).Single(p => p.partType == PartType.Torso);
-                var parent = oldTorso.transform.parent;
-                var replacement = Object.Instantiate(sourceTorso.gameObject, parent, false);
-                replacement.name = sourceTorso.name;
-                replacement.transform.localPosition = sourceTorso.transform.localPosition;
-                replacement.transform.localRotation = sourceTorso.transform.localRotation;
-                replacement.transform.localScale = sourceTorso.transform.localScale;
-                Object.DestroyImmediate(oldTorso.gameObject);
-                // Keep the new assembly's full holder convention, including its visual scale.
-                // The old golem's VisualMech was half size; copying just its torso would retain that offset.
-                for (var holder = sourceTorso.transform.parent; holder != source.transform; holder = holder.parent)
-                {
-                    string path = AnimationUtility.CalculateTransformPath(holder, source.transform);
-                    var destination = root.transform.Find(path);
-                    if (destination == null) throw new InvalidOperationException("Missing player visual holder: " + path);
-                    destination.localPosition = holder.localPosition; destination.localRotation = holder.localRotation;
-                    destination.localScale = holder.localScale;
-                }
-                changed = true;
-            }
-            var debug = new SerializedObject(root.GetComponent<MechLocomotionDebug>());
-            debug.FindProperty("modulePrefabs").GetArrayElementAtIndex(0).objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>(LegsPath).GetComponent<Part>();
-            changed |= debug.ApplyModifiedPropertiesWithoutUndo();
-            if (changed) PrefabUtility.SaveAsPrefabAsset(root, LegacyPlayerPath);
-        }
-        finally { PrefabUtility.UnloadPrefabContents(root); }
-    }
 }

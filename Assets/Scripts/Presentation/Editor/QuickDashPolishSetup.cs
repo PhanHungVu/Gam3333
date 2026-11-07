@@ -10,7 +10,7 @@ public static class QuickDashPolishSetup
     public const string BoardPath = "Assets/PreMission/StoneBoard/QuestStoneBoard.prefab";
     public const string CameraPath = "Assets/Prefabs/Main Camera.prefab";
     public static readonly string[] PlayerPaths = {
-        "Assets/Prefabs/Mech/Base/FullPlayer_mech_golem.prefab", "Assets/Prefabs/Mech/Base/FullPlayer_mech_heavy.prefab",
+        "Assets/Prefabs/Mech/Base/FullPlayer_mech_heavy.prefab",
         "Assets/Prefabs/Mech/Specialist/FullPlayer_mech_specialist.prefab"
     };
     [MenuItem("Tools/Mech/Movement/Apply Quick Dash Polish")]

@@ -18,8 +18,6 @@ public sealed class MechPlayerInput : MonoBehaviour
     [SerializeField] UnityEvent<Part> headAbilityRequested = new UnityEvent<Part>();
     [SerializeField] UnityEvent<Part> torsoAbilityRequested = new UnityEvent<Part>();
     [SerializeField] UnityEvent<Part> legAbilityRequested = new UnityEvent<Part>();
-    [Tooltip("Built-in jump / hover lift on Space, used while the equipped legs have no ability of their own (legs with an ability, e.g. Jump, use that instead).")]
-    [SerializeField] bool useBuiltInLegMovement = true;
     public event Action<PartCategory, Part> AbilityRequested;
     // Batch Unity cannot capture a native cursor; tests set this to run the real input path.
     public bool AssumeCursorCaptured { get; set; }
@@ -156,8 +154,10 @@ public sealed class MechPlayerInput : MonoBehaviour
             movement.Tick(new MechLocomotionInput
             {
                 move = gameplay ? Vector2.ClampMagnitude(Read(move), 1f) : Vector2.zero,
-                jump = gameplay && UsesBuiltInLegMovement && Pressed(jump),
-                jumpHeld = gameplay && UsesBuiltInLegMovement && Held(jump),
+                // Space never moves the mech directly: it only asks the equipped legs for their ability
+                // (e.g. Jump). Legs without an ability do nothing.
+                jump = false,
+                jumpHeld = false,
                 quickBoost = gameplay && Pressed(quickBoost)
             }, Time.deltaTime);
     }
@@ -167,17 +167,6 @@ public sealed class MechPlayerInput : MonoBehaviour
     public void RequestHeadAbility() => RequestAbility(PartCategory.Head, headAbilityRequested);
     public void RequestTorsoAbility() => RequestAbility(PartCategory.Torso, torsoAbilityRequested);
     public void RequestLegAbility() => RequestAbility(PartCategory.Legs, legAbilityRequested);
-
-    // Space drives the built-in jump / hover lift unless the equipped legs bring their own ability.
-    bool UsesBuiltInLegMovement
-    {
-        get
-        {
-            if (!useBuiltInLegMovement) return false;
-            var legs = parts != null ? parts.GetEquipped(PartCategory.Legs) : null;
-            return legs == null || legs.Stats == null || legs.Stats.ability == PartAbility.None;
-        }
-    }
 
     void RequestAbility(PartCategory socket, UnityEvent<Part> callback)
     {
