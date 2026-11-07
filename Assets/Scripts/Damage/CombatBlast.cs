@@ -62,6 +62,8 @@ public sealed class CombatBlast
         damaged.Clear();
         int hits = 0, kills = 0, count;
         CombatTeam attacker = CombatTeams.Of(owner);
+        var playerMelee = source != null && source.Stats != null && source.Stats.subtype == PartSubtype.Melee && owner != null
+            ? owner.GetComponent<MechCombat>() : null;
         while ((count = Physics.OverlapBoxNonAlloc(center, halfExtents, overlaps, rotation, layers,
             QueryTriggerInteraction.Ignore)) == overlaps.Length)
             Array.Resize(ref overlaps, overlaps.Length * 2);
@@ -74,8 +76,18 @@ public sealed class CombatBlast
                 || Blocked(wallOrigin, candidate, owner, layers)) continue;
             var point = ClosestPoint(candidate, wallOrigin);
             var normal = wallOrigin - point;
-            if (Apply(health, damage, attacker, ref hits, ref kills, owner, source!=null ? CombatHitKind.Melee : CombatHitKind.Blast, wallOrigin))
+            Vector3 push = default, launch = default;
+            bool hasPush = playerMelee != null && playerMelee.TryMeleePush(health, rotation * Vector3.forward, out push, out launch);
+            var death = hasPush ? health.GetComponent<CombatDeathRagdoll>() : null;
+            // Death callbacks run inside ApplyDamage. Scope the upright launch to this hit only,
+            // including rejected damage, rather than leaving a flag for an unrelated later death.
+            if (death != null) death.BeginMeleeLaunch(launch);
+            bool applied;
+            try { applied = Apply(health, damage, attacker, ref hits, ref kills, owner, source!=null ? CombatHitKind.Melee : CombatHitKind.Blast, wallOrigin); }
+            finally { if (death != null) death.EndMeleeLaunch(); }
+            if (applied)
             {
+                if (hasPush) playerMelee.PushSurvivingEnemy(health, push);
                 hitHistory?.Add(health);
                 acceptedHit?.Invoke(health);
                 if (source != null) CombatVisualEvents.ReportMelee(source, owner, point, normal.sqrMagnitude > .0001f ? normal.normalized : Vector3.up);

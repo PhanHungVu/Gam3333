@@ -57,7 +57,7 @@ The spinner's swept contact box and rope's landing area use `CombatBlast` and `C
 | Hammer | `Small Enemies/Enemy_hammer` | 160 | 4.5 | 2.3 | 1 |
 | Throwing axe | `Small Enemies/Enemy_throwingAxe` | 90 | 6 | 3.2 | 1 |
 | Spinner | `Small Enemies/Enemy_spinner` | 120 | 4 (12 charging) | 8 | 2 |
-| Crossbow | `Small Enemies/Enemy_crossbow` | 80 | 5 | 5–8 | 2 |
+| Fodder (Crossbow AI role) | `Small Enemies/Enemy_crossbow` (legacy reference; new Zoo Fodder body/cannon) | 80 | 5 | 5–8 | 2 |
 | Heavy ranged | `Elite Enemies/Enemy_Elite_Cannon` | 320 | 3.5 | 11–18 | 10 |
 | Orbiting rock | `Elite Enemies/Enemy_Elite_RockRope` | 400 | 3 approach / 9 orbit charge | 4.5–6.5 | 10 provisional |
 | Rock throw and pull | `Elite Enemies/Enemy_Elite_RockRopePull` | 400 | 3 (8 pulling) | 11–18 | 10 provisional |
