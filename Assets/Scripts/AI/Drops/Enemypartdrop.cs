@@ -35,7 +35,7 @@ public sealed class EnemyPartDrop : MonoBehaviour
 
     void OnDied() => ResolveDeathDrop();
 
-    // Death presentation calls this first too. A single roll/spawn per life makes listener order irrelevant.
+    // Called before death presentation too; always one roll/spawn per life, whatever the listener order.
     public Part ResolveDeathDrop()
     {
         if (deathResolved || !isActiveAndEnabled || health == null || !health.IsDead) return LastDrop;
@@ -45,8 +45,6 @@ public sealed class EnemyPartDrop : MonoBehaviour
         if (dropChancePercent <= 0 || (dropChancePercent < 100f && roll >= dropChancePercent)) return null;
         Part partPrefab = partPrefabs[Random.Range(0, partPrefabs.Length)];
         if (partPrefab == null) return null;
-
-        if (TryGetComponent<EnemyMeleeReaction>(out var reaction)) reaction.SynchronizeDeathPose();
 
         Vector3 position = transform.position + Vector3.up * spawnHeight;
         Quaternion rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
@@ -65,10 +63,7 @@ public sealed class EnemyPartDrop : MonoBehaviour
         // Part.Awake has already run inside Instantiate and added the Rigidbody.
         var body = LastDrop.GetComponent<Rigidbody>();
         if (body != null && !body.isKinematic)
-        {
-            body.linearVelocity = Vector3.up * Mathf.Max(0, popVelocity);
-            body.angularVelocity = Vector3.zero;
-        }
+        { body.linearVelocity = Vector3.up * Mathf.Max(0, popVelocity); body.angularVelocity = Vector3.zero; }
         return LastDrop;
     }
 

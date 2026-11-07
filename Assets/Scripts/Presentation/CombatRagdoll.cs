@@ -22,44 +22,27 @@ public sealed class CombatRagdoll : MonoBehaviour
     public float RestAge => restAge;
     public IReadOnlyList<Rigidbody> Bodies => bodies;
     readonly List<Rigidbody> bodies = new List<Rigidbody>();
-    Rigidbody coreBody;
-    bool temporary;
     CombatVisualSnapshot visualSnapshot;
+    public bool PoseLocked { get; private set; }
     public int HiddenLootRendererCount { get; private set; }
-    public bool IsTemporary => temporary;
-    public Rigidbody CoreBody => coreBody;
-    public Transform AimPoint { get; private set; }
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void Reset() => active.Clear();
 
     public static CombatRagdoll Spawn(Transform actor, Vector3 velocity, int limit = 12, int bodyLimit = 14,
-        float restSeconds = 5, float maximumLifetime = 30, float restSpeed = .15f, float restAngularSpeed = .3f, bool temporary = false)
+        float restSeconds = 5, float maximumLifetime = 30, float restSpeed = .15f, float restAngularSpeed = .3f, bool lockPose = false)
     {
         active.RemoveAll(item => item == null);
-        int count = 0;
-        foreach (var item in active) if (item.temporary == temporary) count++;
-        if (count >= Mathf.Clamp(limit,1,24)) return null;
+        if (active.Count >= Mathf.Clamp(limit,1,24)) return null;
         var snapshot = CombatVisualSnapshot.Create(actor, actor.name + " Ragdoll", CorpseLayer);
         if (snapshot.RendererCount == 0) { Destroy(snapshot.Root); return null; }
         var root = new GameObject(actor.name + " Corpse"); SceneManager.MoveGameObjectToScene(root,actor.gameObject.scene);
         snapshot.Root.transform.SetParent(root.transform,true);
         var corpse = root.AddComponent<CombatRagdoll>();
-        corpse.visualSnapshot = snapshot;
-        corpse.temporary = temporary;
+        corpse.visualSnapshot = snapshot; corpse.PoseLocked = lockPose;
         corpse.restSeconds = Mathf.Max(0,restSeconds); corpse.maximumLifetime = Mathf.Max(1,maximumLifetime);
         corpse.restSpeed = Mathf.Max(.01f,restSpeed); corpse.restAngularSpeed = Mathf.Max(.01f,restAngularSpeed);
         corpse.Build(actor,snapshot,Mathf.Clamp(bodyLimit,1,20),velocity);
         if (corpse.bones.Count == 0) { Destroy(root); return null; }
         corpse.colliders = root.GetComponentsInChildren<Collider>();
-        if (temporary)
-        {
-            root.name = actor.name + " Knockdown";
-            root.transform.SetParent(actor, true); // Queries still resolve the original health; no extra health/loot entity.
-            // The visual copy already follows native body poses in LateUpdate. Interpolating proxies
-            // under a moving logical health root would rewind their transform poses on physics sync.
-            foreach (var body in corpse.bodies) body.interpolation = RigidbodyInterpolation.None;
-            int hitLayer = LayerMask.NameToLayer("EnemyBody");
-            corpse.SetLayer(hitLayer >= 0 ? hitLayer : actor.gameObject.layer);
-        }
         foreach (var other in active) Ignore(corpse.colliders,other.colliders);
         Ignore(corpse.colliders,corpse.colliders);
         active.Add(corpse);
@@ -70,9 +53,8 @@ public sealed class CombatRagdoll : MonoBehaviour
     {
         var rigid = new Dictionary<Transform,Bounds>();
         var anchors = new HashSet<Transform>();
-        if (limit == 1)
+        if (PoseLocked)
         {
-            // The inexpensive fallback moves the entire visual copy as one body, not one isolated limb.
             var bounds = InFrame(snapshot.Bounds, actor);
             bones.Add(new Bone { source = actor, visual = snapshot.Root.transform, center = bounds.center, size = bounds.size });
         }
@@ -120,19 +102,14 @@ public sealed class CombatRagdoll : MonoBehaviour
             proxy.transform.SetParent(transform,false); proxy.transform.SetPositionAndRotation(bone.source.position,bone.source.rotation);
             var box = proxy.AddComponent<BoxCollider>(); box.center = bone.center;
             int lootLayer = LayerMask.NameToLayer(Part.LoosePhysicsLayerName);
-            if (lootLayer >= 0) box.excludeLayers |= 1 << lootLayer; // Bodies hit terrain, never bat loose loot away.
+            if (lootLayer >= 0) box.excludeLayers |= 1 << lootLayer;
             box.size = Vector3.Max(bone.size*.85f,Vector3.one*.06f);
             var body = proxy.AddComponent<Rigidbody>(); body.mass = bone == core ? 8 : 2;
+            if (PoseLocked) body.constraints = RigidbodyConstraints.FreezeRotation;
             body.linearDamping = .35f; body.angularDamping = 1.5f; body.interpolation = RigidbodyInterpolation.Interpolate;
             body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
             body.solverIterations = 8; body.maxDepenetrationVelocity = 3; body.maxAngularVelocity = 12;
             body.linearVelocity = velocity; bone.body = body; bodies.Add(body);
-            if (bone == core)
-            {
-                coreBody = body;
-                AimPoint = new GameObject("Physics Aim").transform;
-                AimPoint.SetParent(body.transform, false); AimPoint.localPosition = box.center;
-            }
         }
         foreach (var bone in bones)
         {
@@ -169,7 +146,6 @@ public sealed class CombatRagdoll : MonoBehaviour
     {
         foreach(var bone in bones) if(bone.visual != null && bone.body != null) bone.visual.SetPositionAndRotation(bone.body.position,bone.body.rotation);
     }
-    public void SynchronizeVisuals() => LateUpdate();
     public void HideDroppedPart(Part part)
     {
         if (part == null || visualSnapshot == null) return;
@@ -182,40 +158,12 @@ public sealed class CombatRagdoll : MonoBehaviour
         foreach (var bone in bones)
             if (bone.source != null && bone.source.GetComponentInParent<Part>() == part && bone.body != null)
             {
-                var collider = bone.body.GetComponent<Collider>();
-                if (collider != null) collider.enabled = false;
+                var collider = bone.body.GetComponent<Collider>(); if (collider != null) collider.enabled = false;
             }
     }
-    public void ApplyImpulse(Vector3 velocity, bool replaceVelocity = false)
-    {
-        Vector3 spin = Vector3.Cross(Vector3.up, Vector3.ProjectOnPlane(velocity, Vector3.up)).normalized * 3f;
-        foreach (var body in bodies)
-        {
-            if (body == null || body.isKinematic) continue;
-            // A bounded mass-independent impulse keeps connected stone pieces together, including repeated hits.
-            body.linearVelocity = Vector3.ClampMagnitude((replaceVelocity ? Vector3.zero : body.linearVelocity) + velocity, 22);
-            body.angularVelocity = Vector3.ClampMagnitude(body.angularVelocity + spin, 10);
-            body.WakeUp();
-        }
-    }
-    public bool BecomeCorpse(int limit, float restSeconds, float maximumLifetime, float restSpeed, float restAngularSpeed)
-    {
-        int count = 0;
-        foreach (var item in active) if (item != null && item != this && !item.temporary) count++;
-        if (count >= Mathf.Clamp(limit, 1, 24)) { Dispose(); return false; }
-        temporary = false; life = restAge = 0;
-        this.restSeconds = Mathf.Max(0, restSeconds); this.maximumLifetime = Mathf.Max(1, maximumLifetime);
-        this.restSpeed = Mathf.Max(.01f, restSpeed); this.restAngularSpeed = Mathf.Max(.01f, restAngularSpeed);
-        transform.SetParent(null, true); name = name.Replace(" Knockdown", " Corpse"); SetLayer(CorpseLayer);
-        foreach (var body in bodies) if (body != null) body.interpolation = RigidbodyInterpolation.Interpolate;
-        return true;
-    }
-    void SetLayer(int layer) { foreach (var node in GetComponentsInChildren<Transform>(true)) node.gameObject.layer = layer; }
-    public void Dispose() { gameObject.SetActive(false); Destroy(gameObject); }
     void Update() => TickLifetime(Time.deltaTime,Time.unscaledDeltaTime);
     public void TickLifetime(float scaledDelta,float unscaledDelta)
     {
-        if (temporary) return; // The living enemy owns recovery; its proxy must never time out independently.
         life+=Mathf.Max(0,unscaledDelta); bool resting=bodies.Count>0;
         foreach(var body in bodies)
             if(body != null && (body.linearVelocity.sqrMagnitude>restSpeed*restSpeed || body.angularVelocity.sqrMagnitude>restAngularSpeed*restAngularSpeed)) { resting=false; break; }

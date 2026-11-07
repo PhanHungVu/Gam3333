@@ -103,20 +103,25 @@ public static class MechEnemyCombatChecks
             crossbow = Enemy("crossbow", player, 8f);
             before = health.CurrentHealth;
             check(crossbow.TryAttack() && crossbow.Weapon.CurrentPose == MechWeaponAnimator.PoseState.Fire,
-                "Crossbow enemy starts the correct arm Fire animation");
-            check(crossbow.Weapon.GetComponentInChildren<AudioSource>().clip == TestMech.Sound("CrossbowArm_attack"),
-                "Enemy crossbow windup plays the authored arm crossbow sound");
+                "Fodder replacement starts its equipped cannon Fire animation");
+            check(crossbow.GetComponent<EnemyFodderAnimation>() != null
+                && crossbow.Weapon.GetComponentInChildren<AudioSource>().clip == crossbow.Weapon.Animations.attackSound,
+                "Fodder windup plays the tested Zoo cannon's authored sound");
             float crossbowRelease = crossbow.AttackDuration * new SerializedObject(crossbow).FindProperty("releaseFrame").floatValue;
             Step(crossbow, crossbowRelease * .5f);
             check(!Object.FindObjectsByType<MechProjectile>().Any(FromEnemy),
                 "Crossbow projectile waits for its release frame");
             Step(crossbow, crossbowRelease * .5f + .01f); var bolt = Bolt();
             check(bolt.IsLive && health.CurrentHealth == before, "Crossbow releases a travelling projectile rather than instant ranged damage");
-            check(bolt.GetComponentInChildren<MeshFilter>().sharedMesh.name == "CrossbowBoltMesh",
-                "Enemy crossbow launches the same authored bolt model as the player");
+            var cannon = crossbow.Weapon.GetComponent<Part>().Stats;
+            check(cannon.partId == "backweaponA3" && bolt.Subtype == PartSubtype.Splash
+                && bolt.GetComponentInChildren<MeshFilter>().sharedMesh.name == "Sphere",
+                "Fodder fires the Zoo cannon's existing splash projectile instead of the retired enemy crossbow bolt");
+            float cannonDirectHit = crossbow.DamageOf(crossbow.Weapon)
+                * (1 + cannon.GetStat(StatType.SplashDamage) / cannon.GetStat(StatType.Damage));
             Fly(bolt, 1f);
-            check(Mathf.Abs(health.CurrentHealth - (before - crossbow.DamageOf(crossbow.Weapon))) < 0.002f && !bolt.IsLive,
-                "Enemy bolt uses swept collision to damage player once");
+            check(Mathf.Abs(health.CurrentHealth - (before - cannonDirectHit)) < 0.002f && !bolt.IsLive,
+                "Fodder cannon swept impact applies its direct plus splash damage once");
             Object.DestroyImmediate(bolt.gameObject);
             check(!crossbow.TryAttack(), "Crossbow cannot restart before its weapon cooldown expires");
             Step(crossbow, crossbow.CooldownRemaining + .01f); check(crossbow.TryAttack(), "Crossbow can fire again after reload cooldown");
