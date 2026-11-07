@@ -236,7 +236,7 @@ Transform:
   m_GameObject: {fileID: 5014094580915790290}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.010882616, y: -1.3575075, z: 0.07295324}
+  m_LocalPosition: {x: 0.040879488, y: -1.20662, z: -0.03350313}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -268,8 +268,8 @@ Transform:
   m_GameObject: {fileID: 5858749676096860013}
   serializedVersion: 2
   m_LocalRotation: {x: -0.04507756, y: -0.70566857, z: -0.045077566, w: 0.70566845}
-  m_LocalPosition: {x: -0.21133488, y: -9.123193, z: 7.159129}
-  m_LocalScale: {x: 2.586947, y: 2.5682921, z: 0.9210655}
+  m_LocalPosition: {x: 0.39409956, y: -4.2521887, z: 2.7717547}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6318292216577449508}
@@ -321,15 +321,15 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6172776141998030202}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.06374929, y: 0, z: 0, w: 0.997966}
-  m_LocalPosition: {x: 0.008023977, y: -0.57953036, z: 0.12266521}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.008023977, y: -0.5843582, z: -0.09579353}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8954574662915129871}
   - {fileID: 4068936624590580542}
   m_Father: {fileID: 1607623841225000526}
-  m_LocalEulerAnglesHint: {x: 7.310087, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6383595128121280252
 GameObject:
   m_ObjectHideFlags: 0
@@ -566,6 +566,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -629801700976285170, guid: 847fa2b5e345e354cad80965a7e39167, type: 3}
+      propertyPath: m_Mesh
+      value:
+      objectReference: {fileID: 4300000, guid: e058b8055f4e25e42b580c268b95d8b9, type: 2}
     - target: {fileID: 8887460113410414956, guid: 847fa2b5e345e354cad80965a7e39167, type: 3}
       propertyPath: m_Name
       value: CrossbowArm 1
@@ -602,8 +606,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 2.4028156, y: 1.0749238, z: 3.075572}
-  m_Center: {x: -0.00000071525574, y: -0.18699753, z: -0.18281898}
+  m_Size: {x: 6.215956, y: 2.7607188, z: 2.8328037}
+  m_Center: {x: 0.077601194, y: -0.44902974, z: -0.20663053}
 --- !u!4 &8954574662915129871 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -1869039414903561838, guid: 847fa2b5e345e354cad80965a7e39167, type: 3}

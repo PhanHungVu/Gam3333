@@ -108,6 +108,7 @@ public class EquipManager : MonoBehaviour
             foreach (var pair in equipped)
                 if (pair.Key != PartCategory.Torso && pair.Value != null) pair.Value.transform.SetParent(part.transform.parent, true);
         part.transform.SetParent(null, true);
+        part.ApplyMuzzlePose(false, Pose.identity);
         part.isEquipped = false; part.EquippedBy = null; part.Slot = null;
         part.SetEquippedPhysics(false);
         equipped.Remove(category);
@@ -126,10 +127,13 @@ public class EquipManager : MonoBehaviour
     void Place(Socket socket, Part part)
     {
         part.transform.SetParent(socket.transform, true);
-        part.transform.SetPositionAndRotation(socket.transform.position, socket.transform.rotation);
         Vector3 desired = Vector3.Scale(transform.lossyScale, part.authoredScale) * partScale;
+        var attachment = socket.AttachmentFor(part);
+        part.transform.SetPositionAndRotation(socket.transform.position + socket.transform.rotation * Vector3.Scale(desired, attachment.position),
+            socket.transform.rotation * attachment.rotation);
         Vector3 parent = socket.transform.lossyScale;
         part.transform.localScale = new Vector3(desired.x / parent.x, desired.y / parent.y, desired.z / parent.z);
+        part.ApplyMuzzlePose(socket.TryMuzzlePose(part, out var muzzlePose), muzzlePose);
     }
     Socket FindSocket(PartCategory slot)
     {

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PartData
   partId: weaponA1
   partName: sword
-  icon: {fileID: 21300000, guid: d4cf09eb6e2c19448a1b63a59034292f, type: 3}
+  icon: {fileID: 21300000, guid: c050a1ea9a4558848a55ad7a685b6f4f, type: 3}
   abilityIcon: {fileID: 0}
   description: 1 attack, long 1h sword, aoe
   partType: 1

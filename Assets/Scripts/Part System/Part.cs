@@ -30,6 +30,21 @@ public class Part : MonoBehaviour
     [Tooltip("Direction the recoil visual kicks, in its local space.")]
     public Vector3 recoilAxis = Vector3.left;
     public Transform muzzle;
+    Transform overriddenMuzzle;
+    Pose authoredMuzzlePose;
+    // Attachment-specific marker corrections never change the shared weapon prefab or enemy copies.
+    internal void ApplyMuzzlePose(bool apply, Pose pose)
+    {
+        if (overriddenMuzzle != null && (!apply || overriddenMuzzle != muzzle))
+        {
+            overriddenMuzzle.SetLocalPositionAndRotation(authoredMuzzlePose.position, authoredMuzzlePose.rotation);
+            overriddenMuzzle = null;
+        }
+        if (!apply || muzzle == null) return;
+        if (overriddenMuzzle == null)
+        { overriddenMuzzle = muzzle; authoredMuzzlePose = new Pose(muzzle.localPosition, muzzle.localRotation); }
+        muzzle.SetLocalPositionAndRotation(pose.position, pose.rotation);
+    }
     public Vector3 authoredScale = Vector3.one;
     public PartData data;    
     // What this part is, read from its data (the single source of truth). Parts have no side:

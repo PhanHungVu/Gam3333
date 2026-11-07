@@ -1,6 +1,6 @@
 # Quick dash movement and presentation
 
-Implemented on 2026-11-06 following approval to complete all four phases. Both `FullPlayer_mech_golem` and `FullPlayer_mech_heavy` are configured. Existing scene instances inherit their prefab changes.
+Implemented on 2026-11-06 following approval to complete all four phases. `FullPlayer_mech_golem`, `FullPlayer_mech_heavy` and the newly merged `FullPlayer_mech_specialist` are configured. Existing scene instances inherit their prefab changes. See [SpecialistPlayerIntegration.md](SpecialistPlayerIntegration.md) for the new body's integration.
 
 ## 1. Movement
 
@@ -43,7 +43,7 @@ Each puff uses 48 particles, 1.35x scale and a 1.25x lifetime multiplier (approx
 
 ## 4. Controls and compatibility
 
-Shift, weapon inputs, lock-on and current ability controls remain as configured. Biped/Fast/Heavy legs retain grounded-only dashes; Hover retains airborne dashes; Tank retains grounded forward-only dashes. Retired energy costs stay retired. Existing attacks and damage remain possible during a dash, with existing hitstop buffering preserved.
+Shift, weapon inputs, lock-on and current ability controls remain as configured. Biped/Fast/Heavy legs now allow dashing during a jump: Space + Shift together, jumping before dashing, and jumping during a grounded dash all work. The dash changes horizontal motion and preserves vertical jump/gravity, with the existing cooldown and no extra jump or airborne dust. Hover retains airborne dashes; Tank retains grounded forward-only dashes. Retired energy costs stay retired. Existing attacks and damage remain possible during a dash, with existing hitstop buffering preserved.
 
 No HUD, enemy AI, weapon behavior, authored animation or sound assets were changed.
 
@@ -55,7 +55,7 @@ An editor-only prerequisite fix in `PartData` defers duplicate-ID validation unt
 - `Prefabs/Main Camera.prefab` → `CameraControlThirdPerson` → Movement Feedback: FOV pulse and follow recovery.
 - Player prefab → `QuickDashFeedback`: dust prefab, count, scale, lifetime multiplier, spacing, maximum puffs per dash, pool size and impulse strengths/durations.
 - `Prefabs/Combat/Quick Dash Dust.prefab`: particle appearance and backward spread.
-- `Tools > Mech > Movement > Apply Quick Dash Polish` reapplies these starting settings to the two player prefabs and camera. It preserves an existing dust prefab's authored settings.
+- `Tools > Mech > Movement > Apply Quick Dash Polish` reapplies these starting settings to all three player prefabs and camera. It preserves an existing dust prefab's authored settings.
 
 ## Verification and playtest
 

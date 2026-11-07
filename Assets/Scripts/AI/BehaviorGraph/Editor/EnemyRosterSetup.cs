@@ -12,7 +12,7 @@ public static class EnemyRosterSetup
     public const string Elite = "Assets/Prefabs/Enemies/Elite Enemies/";
     public const string Graphs = "Assets/AI/Behavior/Graphs/";
     public const string Roaming = "Assets/LevelCatalogue/WaveData_Roaming.asset";
-    public const string Survival = "Assets/LevelCatalogue/WaveData_Survival.asset";
+    public const string Survival = "Assets/LevelCatalogue/WaveData_KOTH.asset"; // the playtest's objective wave (WaveData_Survival retired)
     public static readonly string[] Roster = { Small+"Enemy_sword.prefab", Small+"Enemy_mace.prefab", Small+"Enemy_hammer.prefab", Small+"Enemy_throwingAxe.prefab", Small+"Enemy_spinner.prefab", Small+"Enemy_crossbow.prefab", Elite+"Enemy_Elite_Cannon.prefab", Elite+"Enemy_Elite_RockRope.prefab", Elite+"Enemy_Elite_RockRopePull.prefab" };
     static void Value(SerializedObject owner, string name, float value) => owner.FindProperty(name).floatValue = value;
     static void Flag(SerializedObject owner, string name, bool value) => owner.FindProperty(name).boolValue = value;

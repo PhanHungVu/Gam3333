@@ -11,7 +11,7 @@ using UnityEngine;
 public sealed class EnemyPartDrop : MonoBehaviour
 {
     [Header("Drop")]
-    [Tooltip("Loose part prefabs from Prefabs/Mech/Base/Parts; one is picked at random. Each Part must have Is Equipped unchecked.")]
+    [Tooltip("Loose part prefabs; one is picked at random. Current cannon: Mech/Specialist/shoulder_cannon_specialist. Each Part must have Is Equipped unchecked.")]
     [SerializeField] Part[] partPrefabs = new Part[0];
     [Tooltip("Chance that this enemy drops anything at all when it dies.")]
     [SerializeField, Range(0f, 100f)] float dropChancePercent = 30f;
@@ -59,7 +59,11 @@ public sealed class EnemyPartDrop : MonoBehaviour
         foreach (var part in GetComponentsInChildren<Part>(true))
         {
             if (!part.isEquipped || part.Stats == null || part.Stats.subtype == PartSubtype.None) continue;
-            var source = UnityEditor.PrefabUtility.GetCorrespondingObjectFromOriginalSource(part);
+            // Carried cannon components can be embedded in an enemy prefab. Loot must use
+            // the unequipped Specialist pickup, rather than an equipped enemy child or the archive.
+            var cannon = part.Stats.partId == "backweaponA3"
+                ? UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Specialist/shoulder_cannon_specialist.prefab") : null;
+            var source = cannon != null ? cannon.GetComponent<Part>() : UnityEditor.PrefabUtility.GetCorrespondingObjectFromOriginalSource(part);
             if (source != null) found.Add(source);
         }
         if (found.Count == 0) { Debug.LogWarning("No equipped weapon parts found on this enemy.", this); return; }

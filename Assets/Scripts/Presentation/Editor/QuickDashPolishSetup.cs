@@ -10,7 +10,8 @@ public static class QuickDashPolishSetup
     public const string BoardPath = "Assets/PreMission/StoneBoard/QuestStoneBoard.prefab";
     public const string CameraPath = "Assets/Prefabs/Main Camera.prefab";
     public static readonly string[] PlayerPaths = {
-        "Assets/Prefabs/Mech/Base/FullPlayer_mech_golem.prefab", "Assets/Prefabs/Mech/Base/FullPlayer_mech_heavy.prefab"
+        "Assets/Prefabs/Mech/Base/FullPlayer_mech_golem.prefab", "Assets/Prefabs/Mech/Base/FullPlayer_mech_heavy.prefab",
+        "Assets/Prefabs/Mech/Specialist/FullPlayer_mech_specialist.prefab"
     };
     [MenuItem("Tools/Mech/Movement/Apply Quick Dash Polish")]
     public static void Apply()
@@ -57,8 +58,9 @@ public static class QuickDashPolishSetup
                 fields.FindProperty("quickBoostCurve").animationCurveValue = new AnimationCurve(
                     new Keyframe(0, .95f), new Keyframe(.1f, 1), new Keyframe(.3f, .95f),
                     new Keyframe(.5f, .75f), new Keyframe(.75f, .4f), new Keyframe(1, 0));
-                fields.ApplyModifiedPropertiesWithoutUndo();
-                var feedback = root.GetComponent<QuickDashFeedback>() ?? root.AddComponent<QuickDashFeedback>();
+                bool changed = fields.ApplyModifiedPropertiesWithoutUndo();
+                var feedback = root.GetComponent<QuickDashFeedback>();
+                if (feedback == null) { feedback = root.AddComponent<QuickDashFeedback>(); changed = true; }
                 fields = new SerializedObject(feedback); fields.FindProperty("dustPrefab").objectReferenceValue = dustPrefab.GetComponent<ParticleSystem>();
                 fields.FindProperty("dustPoolSize").intValue = 12;
                 fields.FindProperty("dustCount").intValue = 48;
@@ -66,7 +68,8 @@ public static class QuickDashPolishSetup
                 fields.FindProperty("dustLifetimeScale").floatValue = 1.25f;
                 fields.FindProperty("dustSpacing").floatValue = 1.6f;
                 fields.FindProperty("maxDustPuffsPerDash").intValue = 6;
-                fields.ApplyModifiedPropertiesWithoutUndo(); PrefabUtility.SaveAsPrefabAsset(root, path);
+                changed |= fields.ApplyModifiedPropertiesWithoutUndo();
+                if (changed) PrefabUtility.SaveAsPrefabAsset(root, path);
             }
             finally { PrefabUtility.UnloadPrefabContents(root); }
         }
@@ -78,7 +81,7 @@ public static class QuickDashPolishSetup
             fields.FindProperty("quickBoostFovRiseTime").floatValue = .05f;
             fields.FindProperty("quickBoostFovRecoveryTime").floatValue = .25f;
             fields.FindProperty("quickBoostDampingRecovery").floatValue = .12f;
-            fields.ApplyModifiedPropertiesWithoutUndo(); PrefabUtility.SaveAsPrefabAsset(cameraRoot, CameraPath);
+            if (fields.ApplyModifiedPropertiesWithoutUndo()) PrefabUtility.SaveAsPrefabAsset(cameraRoot, CameraPath);
         }
         finally { PrefabUtility.UnloadPrefabContents(cameraRoot); }
         AssetDatabase.SaveAssets(); Debug.Log("QUICK DASH POLISH READY: integrated movement, shared camera/impulses and separate pooled board-derived dust.");

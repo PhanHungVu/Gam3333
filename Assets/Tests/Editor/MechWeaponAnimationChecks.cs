@@ -19,6 +19,17 @@ public static class MechWeaponAnimationChecks
         try
         {
             TestMech.StopPlayerInput(player.GetComponent<MechMovementController>());
+            // This suite compares the six archived glTF rig imports with their source clips.
+            // Live loadouts use the Specialist cannon, covered by GreyCannonReplacementChecks.
+            var equipmentForImports = player.GetComponent<EquipManager>();
+            foreach (var slot in new[] { PartCategory.ShoulderL, PartCategory.ShoulderR })
+            {
+                var live = equipmentForImports.GetEquipped(slot);
+                if (live == null || live.data.partId != "backweaponA3") continue;
+                var archived = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(GreyCannonReplacementSetup.LegacyPath)).GetComponent<Part>();
+                check(equipmentForImports.TryEquip(archived, slot), "Archived cannon remains usable for legacy clip-import validation");
+                Object.DestroyImmediate(live.gameObject);
+            }
             var bridge = player.GetComponent<MechWeaponIdle>();
             var drivers = player.GetComponentsInChildren<MechWeaponAnimator>();
             bridge.ResetWeaponIdle();

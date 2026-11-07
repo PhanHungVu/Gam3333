@@ -18,7 +18,8 @@ public static class GameplaySceneMaintenance
     public const string TrainingWavePath = "Assets/LevelCatalogue/WaveData_Training.asset";
     public static readonly string[] PlayerPaths = {
         "Assets/Prefabs/Mech/Base/FullPlayer_mech_golem.prefab",
-        "Assets/Prefabs/Mech/Base/FullPlayer_mech_heavy.prefab"
+        "Assets/Prefabs/Mech/Base/FullPlayer_mech_heavy.prefab",
+        "Assets/Prefabs/Mech/Specialist/FullPlayer_mech_specialist.prefab"
     };
     static readonly string[] Retired = { "3c93e3bc34dac5e4394db937a5e4f772", "c8be8f34120258b4fa2fdab60358411f" };
     static readonly Regex Blocks = new Regex(@"(?ms)^--- !u!(\d+) &([^\r\n ]+)(?: stripped)?\r?\n.*?(?=^--- !u!|\z)");

@@ -402,6 +402,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 1
+  weaponAttachments:
+  - animations: {fileID: 11400000, guid: cee9dad4229e3cf4c9c2331176e2a1ac, type: 2}
+    position: {x: -1.1528591, y: 0.66340816, z: -0.007088081}
+    eulerAngles: {x: 0.0000066548937, y: -0.0000070149827, z: 6.044073}
+    overrideMuzzle: 1
+    muzzlePosition: {x: 0.040878534, y: 1.7930981, z: 0.16400842}
+    muzzleEulerAngles: {x: 276.04407, y: -0.00003409884, z: 180.00003}
 --- !u!1 &1413321059394041018
 GameObject:
   m_ObjectHideFlags: 0
@@ -559,6 +566,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 2
+  weaponAttachments:
+  - animations: {fileID: 11400000, guid: cee9dad4229e3cf4c9c2331176e2a1ac, type: 2}
+    position: {x: -1.1528591, y: 0.66340816, z: -0.007088081}
+    eulerAngles: {x: 0.0000066548937, y: -0.0000070149827, z: 6.044073}
+    overrideMuzzle: 1
+    muzzlePosition: {x: 0.040878534, y: 1.7930981, z: 0.16400842}
+    muzzleEulerAngles: {x: 276.04407, y: -0.00003409884, z: 180.00003}
 --- !u!1 &2023256413243841962
 GameObject:
   m_ObjectHideFlags: 0
@@ -5835,6 +5849,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 5
+  weaponAttachments:
+  - animations: {fileID: 11400000, guid: d476b62987313ac46aa043ff618a1075, type: 2}
+    position: {x: 0.353026, y: -0.77540195, z: -0.29969937}
+    eulerAngles: {x: -0.0000017075083, y: 0.000008537741, z: -0.00051738665}
+    overrideMuzzle: 0
+    muzzlePosition: {x: 0, y: 0, z: 0}
+    muzzleEulerAngles: {x: 0, y: 0, z: 0}
+  - animations: {fileID: 11400000, guid: 2d4cc11a0888ea8478d35abfebeb757e, type: 2}
+    position: {x: 0.2979325, y: -0.82124853, z: -0.94435114}
+    eulerAngles: {x: 351.13354, y: 0.3116413, z: 357.97903}
+    overrideMuzzle: 1
+    muzzlePosition: {x: 0.008011181, y: 4.3538947, z: 0.119458154}
+    muzzleEulerAngles: {x: 271.38367, y: -0.00068945653, z: 171.12886}
+  - animations: {fileID: 11400000, guid: be113725f811d57498dd149821403b1b, type: 2}
+    position: {x: 0, y: 0, z: 0}
+    eulerAngles: {x: 0, y: 0, z: 0}
+    overrideMuzzle: 0
+    muzzlePosition: {x: 0, y: 0, z: 0}
+    muzzleEulerAngles: {x: 0, y: 0, z: 0}
 --- !u!1 &3976874508596635064
 GameObject:
   m_ObjectHideFlags: 0
@@ -10747,6 +10780,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 4
+  weaponAttachments:
+  - animations: {fileID: 11400000, guid: d476b62987313ac46aa043ff618a1075, type: 2}
+    position: {x: 0.3530263, y: -0.77540183, z: 1.5036743}
+    eulerAngles: {x: -0.0000017075083, y: 0.000008537741, z: -0.00051738665}
+    overrideMuzzle: 0
+    muzzlePosition: {x: 0, y: 0, z: 0}
+    muzzleEulerAngles: {x: 0, y: 0, z: 0}
+  - animations: {fileID: 11400000, guid: 2d4cc11a0888ea8478d35abfebeb757e, type: 2}
+    position: {x: 0.29793274, y: -0.8212483, z: 0.8583476}
+    eulerAngles: {x: 351.13354, y: 0.3116413, z: 357.97903}
+    overrideMuzzle: 1
+    muzzlePosition: {x: 0.008011181, y: 4.3538947, z: 0.119458154}
+    muzzleEulerAngles: {x: 271.38367, y: -0.00068945653, z: 171.12886}
+  - animations: {fileID: 11400000, guid: be113725f811d57498dd149821403b1b, type: 2}
+    position: {x: 0, y: 0, z: 0}
+    eulerAngles: {x: 0, y: 0, z: 0}
+    overrideMuzzle: 0
+    muzzlePosition: {x: 0, y: 0, z: 0}
+    muzzleEulerAngles: {x: 0, y: 0, z: 0}
 --- !u!1 &4664888831395760620
 GameObject:
   m_ObjectHideFlags: 0
@@ -15748,6 +15800,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 6
+  weaponAttachments: []
 --- !u!1 &5621166027403952261
 GameObject:
   m_ObjectHideFlags: 0
@@ -15858,6 +15911,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 0
+  weaponAttachments: []
 --- !u!1 &6604634432961506624
 GameObject:
   m_ObjectHideFlags: 0
@@ -20726,6 +20780,7 @@ GameObject:
   - component: {fileID: 54781088923709835}
   - component: {fileID: 4292166438708666591}
   - component: {fileID: 917387141356824075}
+  - component: {fileID: 5427559615897409343}
   m_Layer: 0
   m_Name: FullPlayer_mech_specialist
   m_TagString: Player
@@ -20902,18 +20957,18 @@ MonoBehaviour:
   boostAcceleration: 28
   rotationSharpness: 12
   faceCameraDirection: 1
-  quickBoostPeakSpeed: 24
-  quickBoostDuration: 0.22
-  quickBoostRecovery: 0.35
-  quickBoostDistanceMultiplier: 1.75
-  quickBoostDurationMultiplier: 1.35
+  quickBoostPeakSpeed: 50
+  quickBoostDuration: 0.25
+  quickBoostRecovery: 0.4
+  quickBoostDistanceMultiplier: 1
+  quickBoostDurationMultiplier: 1
   quickBoostExitBlendStart: 0.8
   quickBoostCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0.65
+      value: 0.95
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -20921,7 +20976,7 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
-      time: 0.12
+      time: 0.1
       value: 1
       inSlope: 0
       outSlope: 0
@@ -20930,7 +20985,16 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
-      time: 0.55
+      time: 0.3
+      value: 0.95
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.5
       value: 0.75
       inSlope: 0
       outSlope: 0
@@ -20939,8 +21003,17 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
+      time: 0.75
+      value: 0.4
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
       time: 1
-      value: 0.1
+      value: 0
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -21263,6 +21336,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MechAbilities
   damageMultiplier: 1
   activeAbilities: 
+--- !u!114 &5427559615897409343
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6720988751508575343}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 862294e424784fb9a1c0c29161cfaa68, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::QuickDashFeedback
+  dustPrefab: {fileID: 6270878625780173689, guid: 4882e9b1a6776ee4b91ef74d8d3778d3, type: 3}
+  dustPoolSize: 12
+  dustCount: 48
+  dustScale: 1.35
+  dustLifetimeScale: 1.25
+  dustSpacing: 1.6
+  maxDustPuffsPerDash: 6
+  startImpulseStrength: 0.035
+  startImpulseDuration: 0.07
+  endImpulseStrength: 0.018
+  endImpulseDuration: 0.06
 --- !u!1 &6853095158587661972
 GameObject:
   m_ObjectHideFlags: 0
@@ -50529,6 +50625,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Socket
   socketType: 3
+  weaponAttachments: []
 --- !u!1 &8393262503486296549
 GameObject:
   m_ObjectHideFlags: 0

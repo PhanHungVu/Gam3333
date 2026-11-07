@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PartData
   partId: backweaponA3
   partName: Cannon
-  icon: {fileID: 21300000, guid: f0ff9ae7019391949a3c62e0cc056e83, type: 3}
+  icon: {fileID: 21300000, guid: 3e0beadd6b2f90d40bec6811d67dd2ee, type: 3}
   abilityIcon: {fileID: 0}
   description: 'single shot med range, aoe '
   partType: 4
