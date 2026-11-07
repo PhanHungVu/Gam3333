@@ -19,8 +19,9 @@ public sealed class CombatFeedback : MonoBehaviour
     [SerializeField, Range(4, 128)] int maximumTrails = 64;
     [SerializeField] Color dustColor = new Color(.63f, .58f, .48f, .65f);
     [Header("Hurt VFX")]
-    [Tooltip("Hurt VFX: object whose particle systems all play when this mech takes damage. " +
-             "Left empty, nothing plays.")]
+    [Tooltip("Hurt VFX: prefab spawned on this mech when it takes damage, its particle systems all " +
+             "played once and the copy cleared when they finish. An object already in the scene is " +
+             "played where it sits. Left empty, nothing plays.")]
     public GameObject hurtVfx;
     [Header("Cannon Fire")]
     [SerializeField] bool visualRecoil = true;
@@ -267,11 +268,37 @@ public sealed class CombatFeedback : MonoBehaviour
     }
     void OnDamaged(float amount)
     {
-        // Hurt VFX: every particle system under the assigned object plays on the damage frame.
-        if (presentationEnabled) PlayAllParticleSystems(hurtVfx);
+        // Hurt VFX: a fresh copy is spawned on the mech, played, then cleared.
+        if (presentationEnabled) PlayHurtVfx();
         if (presentationEnabled && damageCameraImpulse && EmitImpulse(transform.position, Vector3.down,
             damageImpulseStrength, damageImpulseDuration)) DamageImpulseCount++;
         if (presentationEnabled && hitStop) CombatHitStop.Request(transform,damageHitStop,this);
+    }
+
+    // Spawns the hurt VFX on the mech and plays every particle system in it. Each hit gets its own
+    // copy, so overlapping hits never cut each other short, and the copy is destroyed once the
+    // longest system has finished. An object already in the scene is played where it sits instead.
+    public void PlayHurtVfx()
+    {
+        if (hurtVfx == null) return;
+        bool inScene = hurtVfx.scene.IsValid();
+        var effect = inScene ? hurtVfx : Instantiate(hurtVfx, transform.position, transform.rotation, transform);
+        PlayAllParticleSystems(effect);
+        if (inScene) return;   // never destroys something the designer placed
+        Destroy(effect, ParticleLifetime(effect));
+    }
+
+    // Longest particle system in the object, so the instanced copy lives exactly as long as its puffs.
+    static float ParticleLifetime(GameObject holder)
+    {
+        float lifetime = 0f;
+        var systems = holder.GetComponentsInChildren<ParticleSystem>(true);
+        for (int i = 0; i < systems.Length; i++)
+        {
+            var main = systems[i].main;
+            lifetime = Mathf.Max(lifetime, main.duration + main.startLifetime.constantMax);
+        }
+        return lifetime > 0.05f ? lifetime : 2f;
     }
 
     // Plays every particle system inside a GameObject, children included, waking any that were left
