@@ -5,6 +5,7 @@ using UnityEngine;
 public sealed class MechAbilityContext
 {
     public MechCombat Combat;
+    public MechMovementController Movement;
     public CombatHealth Health;
     public GameObject Mech;
 }
@@ -15,6 +16,44 @@ public interface IAbilityEffect
 {
     void Begin(MechAbilityContext context, float power);
     void End(MechAbilityContext context);
+}
+
+// An effect that can only start in some situations (e.g. Jump needs ground). When it can't, the request
+// is refused and the cooldown isn't spent.
+public interface IConditionalAbilityEffect : IAbilityEffect
+{
+    bool CanBegin(MechAbilityContext context);
+}
+
+// Jump (default legs): a leap of Power golem lengths, through the movement controller's own jump.
+// Instant (no duration); only from the ground.
+public sealed class JumpEffect : IConditionalAbilityEffect
+{
+    public bool CanBegin(MechAbilityContext context) => context.Movement != null && context.Movement.IsGrounded;
+    public void Begin(MechAbilityContext context, float power)
+    {
+        float metresPerGolem = context.Combat != null ? context.Combat.MetresPerGolem : 4f;
+        context.Movement?.RequestJump(Mathf.Max(0f, power) * metresPerGolem);
+    }
+    public void End(MechAbilityContext context) { }
+}
+
+// An effect that also does something every frame while active (e.g. Heal over time).
+public interface ITickingAbilityEffect : IAbilityEffect
+{
+    void Tick(MechAbilityContext context, float deltaTime);
+}
+
+// Heal (default head): restores Power% of maximum health per second for the duration.
+public sealed class HealEffect : ITickingAbilityEffect
+{
+    float percentPerSecond;
+    public void Begin(MechAbilityContext context, float power) => percentPerSecond = Mathf.Max(0f, power);
+    public void Tick(MechAbilityContext context, float deltaTime)
+    {
+        if (context.Health != null) context.Health.Heal(context.Health.MaximumHealth * percentPerSecond / 100f * Mathf.Max(0f, deltaTime));
+    }
+    public void End(MechAbilityContext context) { }
 }
 
 // Damage Amp (default torso): weapon damage x (1 + Power%) for the duration.
@@ -56,6 +95,8 @@ public sealed class MechAbilities : MonoBehaviour
     public static IAbilityEffect Create(PartAbility ability) => ability switch
     {
         PartAbility.DamageAmp => new DamageAmpEffect(),
+        PartAbility.Heal => new HealEffect(),
+        PartAbility.Jump => new JumpEffect(),
         _ => null,
     };
 
@@ -63,7 +104,8 @@ public sealed class MechAbilities : MonoBehaviour
     {
         input = GetComponent<MechPlayerInput>();
         equipment = GetComponent<EquipManager>();
-        context = new MechAbilityContext { Combat = GetComponent<MechCombat>(), Health = GetComponent<CombatHealth>(), Mech = gameObject };
+        context = new MechAbilityContext { Combat = GetComponent<MechCombat>(), Health = GetComponent<CombatHealth>(),
+            Movement = GetComponent<MechMovementController>(), Mech = gameObject };
     }
 
     void OnEnable() { if (input != null) input.AbilityRequested += OnAbilityRequested; }
@@ -81,7 +123,7 @@ public sealed class MechAbilities : MonoBehaviour
         var cooldown = PartAbilityCooldown.For(part);
         if (cooldown.IsCoolingDown) return false;
         var effect = Create(part.Stats.ability);
-        if (effect == null) return false;
+        if (effect == null || (effect is IConditionalAbilityEffect conditional && !conditional.CanBegin(context))) return false;
         var run = new Running { Part = part, Socket = socket, Effect = effect };
         effect.Begin(context, part.Stats.GetStat(StatType.AbilityPower));
         run.Timer.Start(part.Stats.GetStat(StatType.AbilityDuration));
@@ -100,6 +142,7 @@ public sealed class MechAbilities : MonoBehaviour
         {
             var run = running[i];
             bool removed = run.Part == null || (equipment != null && equipment.GetEquipped(run.Socket) != run.Part);
+            if (!removed && run.Effect is ITickingAbilityEffect ticking) ticking.Tick(context, Mathf.Min(deltaTime, run.Timer.Remaining));
             if (run.Timer.Tick(deltaTime) || removed) Finish(i);
         }
         damageMultiplier = context.Combat != null ? context.Combat.DamageModifiers.Total : 1f;

@@ -55,5 +55,17 @@ public class CombatHealth : MonoBehaviour
         return true;
     }
 
+    // Restores health (never above maximum, never for the dead). Returns how much was restored.
+    // Raises Changed, so health displays update like they do for damage.
+    public float Heal(float amount)
+    {
+        if (!isActiveAndEnabled || IsDead || amount <= 0f || float.IsNaN(amount) || float.IsInfinity(amount)) return 0f;
+        float restored = Mathf.Min(maximumHealth - CurrentHealth, amount);
+        if (restored <= 0f) return 0f;
+        CurrentHealth += restored;
+        Changed?.Invoke();
+        return restored;
+    }
+
     void OnValidate() => maximumHealth = Mathf.Max(1f, maximumHealth);
 }

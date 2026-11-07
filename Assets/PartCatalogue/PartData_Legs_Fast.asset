@@ -16,10 +16,13 @@ MonoBehaviour:
   partName: Fast Legs
   icon: {fileID: 21300000, guid: 1786663a2db121142a632f896aa6af51, type: 3}
   abilityIcon: {fileID: 21300000, guid: 2c942fb2e1a3f9c47972db2e967686de, type: 3}
+  ability: 3
   description: 
   partType: 3
   subtype: 0
   stats:
+  - type: 18
+    value: 2
   - type: 0
     value: 50
   - type: 1

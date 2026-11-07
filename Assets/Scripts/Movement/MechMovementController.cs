@@ -63,6 +63,18 @@ public class MechMovementController : MonoBehaviour
     Vector3 planarVelocity;
     bool hitStopDash, hitStopJump;
     public void ClearHitStopInputBuffer() { hitStopDash=false; hitStopJump=false; }
+
+    // A one-off jump of a given height (metres) requested by something else, e.g. a legs ability. It is
+    // applied on the next movement update through the normal jump, so hit-stop, landing and the legs
+    // module all behave as for a regular jump. Only accepted while grounded.
+    float requestedJumpHeight;
+    public bool RequestJump(float height)
+    {
+        if (!isActiveAndEnabled || !IsGrounded || height <= 0f || float.IsNaN(height) || float.IsInfinity(height)) return false;
+        requestedJumpHeight = height;
+        return true;
+    }
+    public bool HasRequestedJump => requestedJumpHeight > 0f;
     Vector3 externalVelocity;
     float externalRemaining, externalDuration;
     public bool IsKnockedBack => externalRemaining > 0;
@@ -253,6 +265,12 @@ public class MechMovementController : MonoBehaviour
 
         input.move = Vector2.ClampMagnitude(input.move, 1f);
         MechLocomotionSettings settings = Settings;
+        if (requestedJumpHeight > 0f)
+        {
+            input.jump = true;
+            settings.jumpHeight = requestedJumpHeight;
+            requestedJumpHeight = 0f;
+        }
         bool wasGrounded = IsGrounded;
         float previousYaw = transform.eulerAngles.y;
         Vector3 movementDirection = GetCameraRelativeDirection(input.move, cameraTransform);

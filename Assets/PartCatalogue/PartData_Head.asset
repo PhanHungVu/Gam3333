@@ -16,10 +16,13 @@ MonoBehaviour:
   partName: Golem Head
   icon: {fileID: 21300000, guid: 42366cfac4209464db4c78e676a2d973, type: 3}
   abilityIcon: {fileID: 21300000, guid: dc1aa31bb8e8b7e44a6ca4254a0178d9, type: 3}
+  ability: 2
   description: 
   partType: 0
   subtype: 0
   stats:
+  - type: 18
+    value: 5
   - type: 0
     value: 50
   - type: 15

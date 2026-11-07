@@ -16418,6 +16418,7 @@ MonoBehaviour:
   weaponImpacts: 1
   maximumTrails: 64
   dustColor: {r: 0.63, g: 0.58, b: 0.48, a: 0.65}
+  hurtVfx: {fileID: 3518098091515318511, guid: cf57e8e851d1b874da3ceabb70dfd3d7, type: 3}
   visualRecoil: 1
   recoilVisual: {fileID: 0}
   recoilDistance: 0.22
@@ -16458,6 +16459,9 @@ MonoBehaviour:
   cannonFireClip: {fileID: 0}
   cannonImpactClip: {fileID: 0}
   multiKillClip: {fileID: 0}
+  BigRockHit1: {fileID: 8300000, guid: c9981ce701a499d489f873c0e389fca7, type: 3}
+  BigRockHit2: {fileID: 8300000, guid: 13420056f6528694d9a545fccea4958f, type: 3}
+  BigRockHit3: {fileID: 8300000, guid: f259d1def6b125941a232d7468bdc98f, type: 3}
   audioVolume: 0.5
 --- !u!143 &2151410870433537973
 CharacterController:
@@ -16600,7 +16604,7 @@ MonoBehaviour:
     m_Bits: 4294967295
   screenPadding: 0.04
   targetSwitchRadius: 0.025
-  autoAimRadius: 0.18
+  autoAimRadius: 0.4
   gameplayCamera: {fileID: 0}
   switchFlickDistance: 80
   switchGestureWindow: 0.2
