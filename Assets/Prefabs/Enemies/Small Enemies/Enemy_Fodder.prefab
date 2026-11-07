@@ -97,6 +97,10 @@ MonoBehaviour:
   deathEffect: 1
   hitFlashDuration: 0.08
   hitColor: {r: 2, g: 1.3, b: 0.6, a: 1}
+  BigRockHit1: {fileID: 8300000, guid: c9981ce701a499d489f873c0e389fca7, type: 3}
+  BigRockHit2: {fileID: 8300000, guid: 13420056f6528694d9a545fccea4958f, type: 3}
+  BigRockHit3: {fileID: 8300000, guid: f259d1def6b125941a232d7468bdc98f, type: 3}
+  hitAudioVolume: 0.5
 --- !u!114 &5188024513263690022
 MonoBehaviour:
   m_ObjectHideFlags: 0

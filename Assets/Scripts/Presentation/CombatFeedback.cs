@@ -73,6 +73,13 @@ public sealed class CombatFeedback : MonoBehaviour
     [SerializeField] AudioClip cannonFireClip;
     [SerializeField] AudioClip cannonImpactClip;
     [SerializeField] AudioClip multiKillClip;
+    [Header("Hurt Audio")]
+    [Tooltip("BigRockHit1: one of the three is picked at random when the mech is hurt.")]
+    public AudioClip BigRockHit1;
+    [Tooltip("BigRockHit2: one of the three is picked at random when the mech is hurt.")]
+    public AudioClip BigRockHit2;
+    [Tooltip("BigRockHit3: one of the three is picked at random when the mech is hurt.")]
+    public AudioClip BigRockHit3;
     [SerializeField, Range(0, 1)] float audioVolume = 0.5f;
 
     CombatHealth health;
@@ -270,9 +277,29 @@ public sealed class CombatFeedback : MonoBehaviour
     {
         // Hurt VFX: a fresh copy is spawned on the mech, played, then cleared.
         if (presentationEnabled) PlayHurtVfx();
+        if (presentationEnabled) PlayRockHit();
         if (presentationEnabled && damageCameraImpulse && EmitImpulse(transform.position, Vector3.down,
             damageImpulseStrength, damageImpulseDuration)) DamageImpulseCount++;
         if (presentationEnabled && hitStop) CombatHitStop.Request(transform,damageHitStop,this);
+    }
+
+    // One of BigRockHit1..3 at random, re-pitched up to a quarter either way so repeated hits do not
+    // sound identical. Only clips that are actually assigned take part in the pick.
+    public void PlayRockHit()
+    {
+        var clip = PickRockHit();
+        if (clip == null) return;
+        PlayAudio(clip, transform.position, false, Random.Range(.75f, 1.25f));
+    }
+
+    AudioClip PickRockHit()
+    {
+        int count = (BigRockHit1 != null ? 1 : 0) + (BigRockHit2 != null ? 1 : 0) + (BigRockHit3 != null ? 1 : 0);
+        if (count == 0) return null;
+        int pick = Random.Range(0, count);
+        if (BigRockHit1 != null && pick-- == 0) return BigRockHit1;
+        if (BigRockHit2 != null && pick-- == 0) return BigRockHit2;
+        return BigRockHit3;
     }
 
     // Spawns the hurt VFX on the mech and plays every particle system in it. Each hit gets its own
@@ -426,7 +453,7 @@ public sealed class CombatFeedback : MonoBehaviour
     void UpdateImpulseGain()
     { if (impulseListener != null) impulseListener.Gain = presentationEnabled && cameraImpulse ? 1 : 0; }
 
-    void PlayAudio(AudioClip clip, Vector3 position, bool ui)
+    void PlayAudio(AudioClip clip, Vector3 position, bool ui, float pitch = 1f)
     {
         if (clip == null) return;
         int index = nextVoice++ % voices.Length;
@@ -444,6 +471,7 @@ public sealed class CombatFeedback : MonoBehaviour
         voice.transform.position = position;
         voice.clip = clip;
         voice.volume = audioVolume;
+        voice.pitch = pitch;
         voice.spatialBlend = ui ? 0 : 0.8f;
         voice.Play();
     }

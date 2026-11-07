@@ -9,7 +9,17 @@ public sealed class EnemyCombatFeedback : MonoBehaviour
     [SerializeField] bool deathEffect = true;
     [SerializeField, Range(0.02f, 0.3f)] float hitFlashDuration = 0.08f;
     [SerializeField, ColorUsage(false, true)] Color hitColor = new Color(2, 1.3f, 0.6f);
+    [Header("Hurt Audio")]
+    [Tooltip("BigRockHit1: one of the three is picked at random when this enemy is hurt.")]
+    public AudioClip BigRockHit1;
+    [Tooltip("BigRockHit2: one of the three is picked at random when this enemy is hurt.")]
+    public AudioClip BigRockHit2;
+    [Tooltip("BigRockHit3: one of the three is picked at random when this enemy is hurt.")]
+    public AudioClip BigRockHit3;
+    [Tooltip("Volume of the hurt sounds, on top of the clip's own level.")]
+    [SerializeField, Range(0f, 1f)] float hitAudioVolume = 0.5f;
     CombatHealth health;
+    AudioSource voice;
     Renderer[] renderers;
     MaterialPropertyBlock[] original;
     MaterialPropertyBlock[] flash;
@@ -45,6 +55,9 @@ public sealed class EnemyCombatFeedback : MonoBehaviour
     void OnDamaged(float amount)
     {
         var receiver = Feedback;
+        // Audio first: it is damage feedback, not part of the hit-flash tint, so a disabled flash does
+        // not silence it. The master presentation switch still does.
+        if (receiver == null || receiver.VisualsEnabled) PlayRockHit();
         if (!hitFlash || receiver == null || !receiver.HitFeedbackEnabled) return;
         for (int i = 0; i < renderers.Length; i++)
         {
@@ -57,6 +70,35 @@ public sealed class EnemyCombatFeedback : MonoBehaviour
         }
         flashing = true;
         flashRemaining = hitFlashDuration;
+    }
+
+    // One of BigRockHit1..3 at random, re-pitched up to a quarter either way so repeated hits on the
+    // same enemy do not sound identical. Only clips that are actually assigned take part in the pick.
+    void PlayRockHit()
+    {
+        var clip = PickRockHit();
+        if (clip == null || !isActiveAndEnabled) return;
+        if (voice == null)
+        {
+            voice = gameObject.AddComponent<AudioSource>();
+            voice.playOnAwake = false;
+            voice.loop = false;
+            voice.spatialBlend = 1f;                       // enemies are placed in the world
+            voice.rolloffMode = AudioRolloffMode.Linear;
+            voice.maxDistance = 40f;
+        }
+        voice.pitch = Random.Range(.75f, 1.25f);
+        voice.PlayOneShot(clip, hitAudioVolume);
+    }
+
+    AudioClip PickRockHit()
+    {
+        int count = (BigRockHit1 != null ? 1 : 0) + (BigRockHit2 != null ? 1 : 0) + (BigRockHit3 != null ? 1 : 0);
+        if (count == 0) return null;
+        int pick = Random.Range(0, count);
+        if (BigRockHit1 != null && pick-- == 0) return BigRockHit1;
+        if (BigRockHit2 != null && pick-- == 0) return BigRockHit2;
+        return BigRockHit3;
     }
 
     void OnDied()

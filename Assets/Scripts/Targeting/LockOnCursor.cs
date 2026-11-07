@@ -22,8 +22,19 @@ public class LockOnCursor : MonoBehaviour
     [SerializeField] Sprite lockOnSprite;
     [Tooltip("Sprite used while the player holds camera lock-on (F).")]
     [SerializeField] Sprite camLockOnSprite;
+    [Header("Cursor Sounds")]
+    [Tooltip("StoneHit1: plays when the cursor changes to the free cursor sprite.")]
+    public AudioClip StoneHit1;
+    [Tooltip("StoneHit2: plays when the cursor changes to the lock-on sprite.")]
+    public AudioClip StoneHit2;
+    [Tooltip("StoneHit3: plays when the cursor changes to the camera lock-on sprite.")]
+    public AudioClip StoneHit3;
+    [Tooltip("Seconds before another cursor sound may play. The sprite still changes immediately.")]
+    [SerializeField, Min(0f)] float stoneCooldown = 1.5f;
 
     CanvasGroup cursorVisibility;
+    AudioSource stoneVoice;
+    float nextStoneTime;
     bool reportedMissingCamera;
 
     public Sprite CurrentSprite => cursorImage != null ? cursorImage.sprite : null;
@@ -108,12 +119,32 @@ public class LockOnCursor : MonoBehaviour
     }
 
     // Camera lock-on outranks the automatic lock so pressing F always reads as the camera reticle.
-    // Only the sprite is swapped, so the image's colour and size stay as the designer set them.
+    // Only the sprite is swapped, so the image's colour and size stay as the designer set them, and a
+    // stone hit plays for the sprite the cursor moves to: free, lock-on or camera lock-on.
     void ApplyCursorSprite()
     {
         if (cursorImage == null) return;
         Sprite wanted = IsCamLock ? camLockOnSprite : IsLockedOn ? lockOnSprite : freeCursorSprite;
-        if (wanted != null && cursorImage.sprite != wanted) cursorImage.sprite = wanted;
+        if (wanted == null || cursorImage.sprite == wanted) return;
+        cursorImage.sprite = wanted;
+        PlayStone(wanted == camLockOnSprite ? StoneHit3 : wanted == lockOnSprite ? StoneHit2 : StoneHit1);
+    }
+
+    // One 2D voice on the cursor, so the hit does not depend on where the gameplay camera sits.
+    // Sounds are rate-limited to one per stoneCooldown; the sprite itself still changes on every swap.
+    void PlayStone(AudioClip clip)
+    {
+        if (clip == null) return;
+        if (Time.unscaledTime < nextStoneTime) return;
+        nextStoneTime = Time.unscaledTime + stoneCooldown;
+        if (stoneVoice == null)
+        {
+            stoneVoice = gameObject.AddComponent<AudioSource>();
+            stoneVoice.playOnAwake = false;
+            stoneVoice.loop = false;
+            stoneVoice.spatialBlend = 0f;
+        }
+        stoneVoice.PlayOneShot(clip);
     }
 
     // The cursor draws in screen space, so it needs the scene's gameplay camera. It finds the Main

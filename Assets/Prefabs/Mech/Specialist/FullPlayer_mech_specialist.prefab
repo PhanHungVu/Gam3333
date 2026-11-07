@@ -20906,6 +20906,9 @@ MonoBehaviour:
   cannonFireClip: {fileID: 0}
   cannonImpactClip: {fileID: 0}
   multiKillClip: {fileID: 0}
+  BigRockHit1: {fileID: 8300000, guid: c9981ce701a499d489f873c0e389fca7, type: 3}
+  BigRockHit2: {fileID: 8300000, guid: 13420056f6528694d9a545fccea4958f, type: 3}
+  BigRockHit3: {fileID: 8300000, guid: f259d1def6b125941a232d7468bdc98f, type: 3}
   audioVolume: 0.5
 --- !u!143 &4543004682980854188
 CharacterController:
@@ -21048,7 +21051,7 @@ MonoBehaviour:
     m_Bits: 4294967295
   screenPadding: 0.04
   targetSwitchRadius: 0.025
-  autoAimRadius: 0.18
+  autoAimRadius: 0.4
   gameplayCamera: {fileID: 0}
   switchFlickDistance: 80
   switchGestureWindow: 0.2
