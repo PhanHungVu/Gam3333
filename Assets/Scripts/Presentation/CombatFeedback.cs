@@ -19,9 +19,6 @@ public sealed class CombatFeedback : MonoBehaviour
     [SerializeField, Range(4, 128)] int maximumTrails = 64;
     [SerializeField] Color dustColor = new Color(.63f, .58f, .48f, .65f);
     [Header("Cannon Fire")]
-    [SerializeField] bool muzzleFlash = true;
-    [SerializeField, Min(0.04f)] float muzzleDuration = 0.1f;
-    [SerializeField, Min(0.1f)] float muzzleSize = 1.8f;
     [SerializeField] bool visualRecoil = true;
     [Tooltip("A mesh-only child, separate from the root that boost presentation rotates.")]
     [SerializeField] Transform recoilVisual;
@@ -207,13 +204,10 @@ public sealed class CombatFeedback : MonoBehaviour
         if (!presentationEnabled || shot == null) return;
         var settings = Settings(shot.Source);
         bool heavy = shot.Subtype == PartSubtype.Splash;
-        float size = settings != null ? settings.muzzleSize : heavy ? muzzleSize : .35f;
-        float duration = settings != null ? settings.muzzleDuration : heavy ? muzzleDuration : .1f;
         Color color = settings != null ? settings.color : heavy ? explosionColor : new Color(1, .8f, .4f);
-        if (muzzleFlash && (settings == null || settings.muzzleFlash))
-            PlayEffect(CombatFeedbackEffect.Kind.Muzzle, muzzle, size, duration, color, true, false, false);
-        if (settings == null || settings.muzzleSmoke)
-            PlayEffect(CombatFeedbackEffect.Kind.Smoke, muzzle, size, .65f, new Color(.6f, .58f, .52f, .4f), false, false, false);
+        // The weapon owns its muzzle effect now: every particle system under its "weapon fire vfx"
+        // object plays, and a weapon without one plays nothing.
+        if (settings != null) settings.PlayWeaponFireVfx();
         if (projectileTrails && shot.IsLive && (settings == null || settings.projectileTrail)) PlayTrail(shot, settings, color);
         if (shooter != transform) return;
         if (firingCameraImpulse && EmitImpulse(muzzle, -shot.Direction,

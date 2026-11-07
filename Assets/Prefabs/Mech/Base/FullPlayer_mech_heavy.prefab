@@ -5260,10 +5260,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   color: {r: 1, g: 0.9, b: 0.3, a: 1}
-  muzzleFlash: 1
-  muzzleSmoke: 1
-  muzzleSize: 0.5
-  muzzleDuration: 0.08
+  weaponFireVfx: {fileID: 0}
   projectileTrail: 1
   trailWidth: 0.065
   trailLifetime: 0.18
@@ -16804,10 +16801,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   color: {r: 1, g: 0.5, b: 0.15, a: 1}
-  muzzleFlash: 1
-  muzzleSmoke: 1
-  muzzleSize: 1.2
-  muzzleDuration: 0.12
+  weaponFireVfx: {fileID: 0}
   projectileTrail: 1
   trailWidth: 0.16
   trailLifetime: 0.35
@@ -17109,10 +17103,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   color: {r: 0.3, g: 0.9, b: 1, a: 1}
-  muzzleFlash: 0
-  muzzleSmoke: 0
-  muzzleSize: 0.35
-  muzzleDuration: 0.08
+  weaponFireVfx: {fileID: 0}
   projectileTrail: 1
   trailWidth: 0.12
   trailLifetime: 0.3
@@ -32138,10 +32129,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponVisualSettings
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   color: {r: 0.4, g: 0.85, b: 1, a: 0.95}
-  muzzleFlash: 0
-  muzzleSmoke: 0
-  muzzleSize: 0.35
-  muzzleDuration: 0.08
+  weaponFireVfx: {fileID: 0}
   projectileTrail: 0
   trailWidth: 0.45
   trailLifetime: 0.26
