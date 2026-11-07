@@ -20865,9 +20865,7 @@ MonoBehaviour:
   weaponImpacts: 1
   maximumTrails: 64
   dustColor: {r: 0.63, g: 0.58, b: 0.48, a: 0.65}
-  muzzleFlash: 1
-  muzzleDuration: 0.1
-  muzzleSize: 1.8
+  hurtVfx: {fileID: 3518098091515318511, guid: cf57e8e851d1b874da3ceabb70dfd3d7, type: 3}
   visualRecoil: 1
   recoilVisual: {fileID: 0}
   recoilDistance: 0.22
@@ -21346,7 +21344,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 862294e424784fb9a1c0c29161cfaa68, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::QuickDashFeedback
   dustPrefab: {fileID: 6270878625780173689, guid: 4882e9b1a6776ee4b91ef74d8d3778d3, type: 3}
   dustPoolSize: 12
@@ -50844,15 +50842,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7645209126774095248, guid: 508fdbec07f43b140b2fada88e0091d7, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.00000008940695
+      value: 0.0000001490116
       objectReference: {fileID: 0}
     - target: {fileID: 7645209126774095248, guid: 508fdbec07f43b140b2fada88e0091d7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.00000023841858
+      value: -0.00000071525574
       objectReference: {fileID: 0}
     - target: {fileID: 7645209126774095248, guid: 508fdbec07f43b140b2fada88e0091d7, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 3.7740924
+      value: 3.774093
       objectReference: {fileID: 0}
     - target: {fileID: 7645209126774095248, guid: 508fdbec07f43b140b2fada88e0091d7, type: 3}
       propertyPath: m_LocalRotation.x

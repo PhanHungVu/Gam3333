@@ -18,6 +18,10 @@ public sealed class CombatFeedback : MonoBehaviour
     [SerializeField] bool weaponImpacts = true;
     [SerializeField, Range(4, 128)] int maximumTrails = 64;
     [SerializeField] Color dustColor = new Color(.63f, .58f, .48f, .65f);
+    [Header("Hurt VFX")]
+    [Tooltip("Hurt VFX: object whose particle systems all play when this mech takes damage. " +
+             "Left empty, nothing plays.")]
+    public GameObject hurtVfx;
     [Header("Cannon Fire")]
     [SerializeField] bool visualRecoil = true;
     [Tooltip("A mesh-only child, separate from the root that boost presentation rotates.")]
@@ -263,9 +267,29 @@ public sealed class CombatFeedback : MonoBehaviour
     }
     void OnDamaged(float amount)
     {
+        // Hurt VFX: every particle system under the assigned object plays on the damage frame.
+        if (presentationEnabled) PlayAllParticleSystems(hurtVfx);
         if (presentationEnabled && damageCameraImpulse && EmitImpulse(transform.position, Vector3.down,
             damageImpulseStrength, damageImpulseDuration)) DamageImpulseCount++;
         if (presentationEnabled && hitStop) CombatHitStop.Request(transform,damageHitStop,this);
+    }
+
+    // Plays every particle system inside a GameObject, children included, waking any that were left
+    // switched off in the prefab. Nothing here moves, rotates or scales anything.
+    public static void PlayAllParticleSystems(GameObject holder)
+    {
+        if (holder == null) return;
+        if (!holder.activeSelf) holder.SetActive(true);
+        var systems = holder.GetComponentsInChildren<ParticleSystem>(true);
+        for (int i = 0; i < systems.Length; i++)
+        {
+            var system = systems[i];
+            if (system == null) continue;
+            if (!system.gameObject.activeSelf) system.gameObject.SetActive(true);
+            // Clear first, so a second hit restarts the puff instead of stacking on the last one.
+            system.Clear(true);
+            system.Play(true);
+        }
     }
     void OnConfirmedHit(Transform owner,CombatHealth victim,CombatHitKind kind)
     {
