@@ -69,8 +69,9 @@ public static class CombatFeedbackChecks
         Physics.SyncTransforms();
         targeting.ResumeTargeting();
         var shot = combat.TryAttack(PartCategory.ShoulderL).Projectile;
-        check(shot != null && feedback.ActiveEffects == 2 && body.localPosition != Vector3.zero,
-            "Cannon fire produces a pooled muzzle flash, smoke and immediate visual recoil");
+        // Firing particles are now weapon-owned. This synthetic weapon has no assigned fire VFX.
+        check(shot != null && feedback.ActiveEffects == 0 && body.localPosition != Vector3.zero,
+            "An unconfigured cannon fires with immediate recoil and no automatic procedural muzzle effects");
         check(player.transform.position == origin && player.transform.rotation == Quaternion.identity
             && visual.localRotation == Quaternion.Euler(4, 0, 3),
             "Recoil changes neither gameplay root nor boost lean transform");
@@ -84,7 +85,7 @@ public static class CombatFeedbackChecks
             "Presentation never delays gameplay death or leaves enemy colliders active");
         Call(targeting, "LateUpdate");
         check(targeting.CurrentTarget == null && !a.ApplyDamage(10), "Dead targets cannot be selected or damaged again");
-        check(feedback.ActiveEffects == 8, "Three death effects survive alongside muzzle, dust, explosion and smoke visuals within the pool cap");
+        check(feedback.ActiveEffects == 6, "Three death effects survive alongside impact dust, explosion and smoke within the pool cap");
         var pool = (GameObject)Get(feedback, "poolRoot");
         check(pool.transform.parent == null && pool.GetComponentsInChildren<Collider>(true).Length == 0,
             "Pooled presentation is detached from enemies and has no interaction colliders");
@@ -104,7 +105,7 @@ public static class CombatFeedbackChecks
         }
         finally { CinemachineCore.CurrentTimeOverride = previousTimeOverride; }
         Call(feedback, "Tick", 0.2f);
-        check(feedback.ActiveEffects == 7, "Death, impact and smoke effects remain visible after muzzle flash expires");
+        check(feedback.ActiveEffects == 6, "Death, impact and explosion smoke effects remain visible during their authored lifetimes");
         Call(feedback, "Tick", 1.1f);
         check(feedback.ActiveEffects == 0 && body.localPosition == Vector3.zero && body.localRotation == Quaternion.identity,
             "Effects return to the pool and recoil returns exactly to rest");
