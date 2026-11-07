@@ -15,6 +15,7 @@ MonoBehaviour:
   type: 3
   spawnInterval: 0.8
   timerReset: 100
+  clearedTimerReset: 10
   resourceTotal: 50
   pausesRoaming: 1
   maxConcurrentEnemies: 32

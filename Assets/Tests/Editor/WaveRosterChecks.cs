@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 using System.Linq;
 
 // Per-wave rosters, the leash rule and refunds: plain logic behind the escort wave staying near the payload.
@@ -25,5 +26,19 @@ public static class WaveRosterChecks
         bool refunded = cycle.Resource == 12;
         cycle.Refund(100);
         check(refunded && cycle.Resource == 20, "A culled enemy's cost goes back to its wave, never above the total");
+
+        var refill = new WaveCycle(0.8f, 100f, 10);
+        refill.ShortenRefill(10f);
+        bool ignoredWhileSpawning = !refill.Refilling && refill.ResetRemaining == 0f;
+        refill.Spent(10); refill.OutOfResource();
+        bool fullWait = refill.Refilling && refill.ResetRemaining == 100f;
+        refill.ShortenRefill(10f);
+        bool shortened = Mathf.Approximately(refill.ResetRemaining, 10f);
+        refill.ShortenRefill(50f);
+        check(ignoredWhileSpawning && fullWait && shortened && Mathf.Approximately(refill.ResetRemaining, 10f),
+            "Clearing a wave early cuts its refill wait to the cleared reset, never lengthens it, and only applies while refilling");
+        var escort = UnityEditor.AssetDatabase.LoadAssetAtPath<WaveData>("Assets/LevelCatalogue/WaveData_Escort.asset");
+        check(escort != null && escort.clearedTimerReset > 0f && escort.clearedTimerReset < escort.timerReset,
+            "The escort wave comes back sooner when its enemies are all cleared");
     }
 }

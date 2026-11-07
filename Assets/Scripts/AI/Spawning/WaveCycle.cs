@@ -68,6 +68,13 @@ public sealed class WaveCycle
         ResetRemaining = TimerReset;
     }
 
+    // While refilling, shortens the wait to at most this many seconds (e.g. the wave's enemies were all
+    // cleared early). Never lengthens it, and does nothing outside a refill.
+    public void ShortenRefill(float seconds)
+    {
+        if (Refilling) ResetRemaining = Math.Min(ResetRemaining, Math.Max(0f, seconds));
+    }
+
     // Weighted pick among the entries the resource can still pay for; -1 when none can be afforded.
     // random01 is a number from 0 up to (not including) 1.
     public static int Pick(IReadOnlyList<int> costs, IReadOnlyList<float> weights, int resource, float random01)
