@@ -1162,12 +1162,13 @@ public static class MechFoundationChecks
         Check(!motor.IsGrounded && motor.State == MechMovementController.MovementState.Airborne,
             "Jump transitions to airborne");
         Step(motor, view, boost: true);
-        Check(started == 1, "Airborne boost remains unavailable in the current rules");
+        Check(started == 2 && motor.IsQuickBoosting && motor.Velocity.y > 0,
+            "Airborne biped boost starts without cancelling upward jump motion");
         for (int i = 0; i < 100; i++) Step(motor, view);
         Check(landed == priorLandings + 1 && impact > 0, "Landing emits one impact-speed event");
         Step(motor, view, Vector2.right, boost: true);
         motor.enabled = false;
-        Check(ended == 2 && !motor.IsQuickBoosting && motor.Velocity == Vector3.zero,
+        Check(ended == 3 && !motor.IsQuickBoosting && motor.Velocity == Vector3.zero,
             "Disabling cancels boost and resets motion");
         motor.enabled = true;
         Step(motor, view);

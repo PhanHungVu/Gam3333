@@ -50,9 +50,10 @@ public static class GameplaySceneMaintenanceChecks
                 var waves = all.Select(t => t.GetComponent<ZooEnemyWaves>()).First(w => w != null);
                 var fields = new SerializedObject(waves);
                 var roster = fields.FindProperty("roster").objectReferenceValue as WaveData;
-                Check(roster != null && roster.enemies.Length == 9 && roster.enemies.All(e => e.prefab != null && (path == "ZooScene" || e.weight > 0))
+                int count = path == "ZooScene" ? 10 : 9; // Zoo adds Fodder without changing mission/training rosters.
+                Check(roster != null && roster.enemies.Length == count && roster.enemies.All(e => e.prefab != null && (path == "ZooScene" || e.weight > 0))
                     && fields.FindProperty("smallSpawnPoint").objectReferenceValue != null && fields.FindProperty("eliteSpawnPoint").objectReferenceValue != null,
-                    path + " retains both spawn locations and the current nine-enemy training roster");
+                    path + " retains both spawn locations and its " + count + "-entry roster");
             }
         }
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);

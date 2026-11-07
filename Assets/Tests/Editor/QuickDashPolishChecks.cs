@@ -230,7 +230,22 @@ public static class QuickDashPolishChecks
             Check(debug.TrySwap(0), "Biped module returns through the existing equipment path");
             motor.enabled = false; cc.enabled = false; player.transform.position = new Vector3(0, 8, 0); cc.enabled = true; motor.enabled = true; cc.Move(Vector3.zero);
             dust = feedback.DustBurstCount; motor.Tick(new MechLocomotionInput { quickBoost = true }, heading, .02f);
-            Check(!motor.IsQuickBoosting && feedback.DustBurstCount == dust, "Biped airborne restriction still rejects the dash and all its effects");
+            Check(motor.IsQuickBoosting && feedback.DustBurstCount == dust, "Biped accepts an airborne dash without floating ground dust");
+            foreach (int fps in new[] { 30, 60, 120 })
+            foreach (int order in new[] { 0, 1, 2 })
+            {
+                Reset(player, new Vector3(0, 4, 0)); float dt = 1f / fps;
+                if (order == 1) motor.Tick(new MechLocomotionInput { jump = true, move = Vector2.up }, heading, dt);
+                if (order == 2) motor.Tick(new MechLocomotionInput { quickBoost = true, move = Vector2.up }, heading, dt);
+                float height = player.transform.position.y;
+                motor.Tick(new MechLocomotionInput { jump = order != 1, quickBoost = order != 2, move = Vector2.up }, heading, dt);
+                Check(motor.IsQuickBoosting && motor.AnimationData.VerticalSpeed > 0 && player.transform.position.y > height,
+                    variant + " combines jump/dash at " + fps + " FPS in order " + order + " (0=simultaneous, 1=jump-first, 2=dash-first)");
+                float cooldown = motor.QuickBoostCooldownRemaining;
+                motor.Tick(new MechLocomotionInput { jump = true, quickBoost = true, move = Vector2.up }, heading, dt);
+                Check(motor.QuickBoostCooldownRemaining < cooldown && motor.AnimationData.VerticalSpeed < Mathf.Sqrt(75) + .01f,
+                    "Airborne repeat cannot restart dash cooldown or add another jump");
+            }
             Check(debug.TrySwap(3), "Tank module remains equippable"); Reset(player, new Vector3(0, 4, 0));
             Vector3 forward = player.transform.forward; motor.Tick(new MechLocomotionInput { quickBoost = true, move = Vector2.left }, heading, .02f);
             Check(Vector3.Dot(Get<Vector3>(motor, "quickBoostDirection"), forward) > .99f, "Tank preserves its forward-only dash rule");

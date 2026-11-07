@@ -157,7 +157,7 @@ public class MechMovementController : MonoBehaviour
         ? Mathf.Clamp01(1f - quickBoostTimer / (quickBoostActiveDuration > 0 ? quickBoostActiveDuration : ActiveQuickBoostDuration)) : 0f;
     // Includes the active boost: this is time until another boost may start.
     public float QuickBoostCooldownRemaining => quickBoostRecoveryTimer;
-    public bool CanQuickBoost => isActiveAndEnabled && (CurrentModule != null ? CurrentModule.CanQuickBoost(IsGrounded) : IsGrounded)
+    public bool CanQuickBoost => isActiveAndEnabled && (CurrentModule == null || CurrentModule.CanQuickBoost(IsGrounded))
         && !IsQuickBoosting && quickBoostRecoveryTimer <= 0f;
     public bool IsAssaultBoosting => assaultBoostActive;
     public bool IsAutoRunning { get; private set; }
