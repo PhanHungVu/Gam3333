@@ -40,6 +40,7 @@ public sealed class SubLevelGenerator : MonoBehaviour
     [SerializeField] float walkablePercent;
     [SerializeField] int missionChunksPlaced;
     [SerializeField] bool escortRouteComplete;
+    [SerializeField] int borderTreesPlaced;
     [SerializeField] int roadsBuilt;
     [SerializeField] int roadsCarved;
     [SerializeField] bool allConnected;
@@ -50,6 +51,7 @@ public sealed class SubLevelGenerator : MonoBehaviour
     const string ChunksName = "Generated Chunks";
     const string DecorName = "Generated Decor";
     const string EscortName = "Generated Escort";
+    const string BorderName = "Generated Border";
     const string ObstacleTag = "Obstacle";
     TerrainMap map;
     List<ChunkPlacement> placements = new List<ChunkPlacement>();
@@ -99,7 +101,8 @@ public sealed class SubLevelGenerator : MonoBehaviour
     bool IsWallAt(Vector3 world)
     {
         Vector3 local = transform.InverseTransformPoint(world);
-        return map.WallAt(local.x, local.z);
+        // Cliffs, plus the tree border (so nothing spawns in it and enemies never path into it).
+        return map.WallAt(local.x, local.z) || BorderPlanner.IsBorderWall(map, local.x, local.z, settings.borderWidth);
     }
 
     float GroundAt(Vector3 world)
@@ -186,6 +189,7 @@ public sealed class SubLevelGenerator : MonoBehaviour
             }
 
         PlaceDecor(footprints);
+        PlaceBorder();
         PlaceEscort();
         ShareTerrainWithPathing();
     }
@@ -217,6 +221,48 @@ public sealed class SubLevelGenerator : MonoBehaviour
             }
             outpostPieces++;
         }
+    }
+
+    // The tree border round the map edge (on top of everything else, which is placed exactly as without it),
+    // plus invisible walls at the edge so nothing slips through gaps.
+    void PlaceBorder()
+    {
+        var root = Rebuild(BorderName).transform;
+        borderTreesPlaced = 0;
+        if (settings.borderWidth <= 0f) return;
+        if (settings.borderWidth >= settings.edgeMargin)
+            Debug.LogWarning($"SubLevelGenerator: Border Width ({settings.borderWidth} m) should stay below Edge Margin ({settings.edgeMargin} m) so chunks never crowd the border.", this);
+        if (settings.borderTrees != null && settings.borderTrees.Length > 0)
+            foreach (var item in BorderPlanner.Plan(map, seed, settings.ToBorderSettings()))
+            {
+                var prefab = settings.borderTrees[item.Prefab] != null ? settings.borderTrees[item.Prefab].prefab : null;
+                if (prefab == null) continue;
+                var tree = Instantiate(prefab, transform.TransformPoint(new Vector3(item.X, item.Height, item.Z)),
+                    transform.rotation * Quaternion.Euler(0f, item.Yaw, 0f), root);
+                tree.transform.localScale = prefab.transform.localScale * item.Scale;
+                foreach (var part in tree.GetComponentsInChildren<Transform>(true))
+                {
+                    if (part.GetComponent<Collider>() != null) part.gameObject.tag = ObstacleTag; // solid for enemy pathing
+                    if (!Application.isPlaying) part.gameObject.hideFlags = HideFlags.DontSave;
+                }
+                borderTreesPlaced++;
+            }
+        if (!settings.borderWalls) return;
+        float w = map.Cols * map.CellSize, d = map.Rows * map.CellSize, cx = map.MinX + w * 0.5f, cz = map.MinZ + d * 0.5f;
+        const float thickness = 2f, height = 400f, centreY = 100f;
+        AddWall(root, "Border Wall W", new Vector3(map.MinX - thickness * 0.5f, centreY, cz), new Vector3(thickness, height, d + thickness * 2f));
+        AddWall(root, "Border Wall E", new Vector3(map.MinX + w + thickness * 0.5f, centreY, cz), new Vector3(thickness, height, d + thickness * 2f));
+        AddWall(root, "Border Wall S", new Vector3(cx, centreY, map.MinZ - thickness * 0.5f), new Vector3(w + thickness * 2f, height, thickness));
+        AddWall(root, "Border Wall N", new Vector3(cx, centreY, map.MinZ + d + thickness * 0.5f), new Vector3(w + thickness * 2f, height, thickness));
+    }
+
+    void AddWall(Transform root, string name, Vector3 localCentre, Vector3 size)
+    {
+        var wall = new GameObject(name);
+        wall.transform.SetParent(root, false);
+        wall.transform.localPosition = localCentre;
+        wall.AddComponent<BoxCollider>().size = size;
+        if (!Application.isPlaying) wall.hideFlags = HideFlags.DontSave;
     }
 
     // The escort payload at the first checkpoint of a chain route (only when the settings name one).

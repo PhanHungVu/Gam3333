@@ -6,7 +6,7 @@ using UnityEngine;
 // failure or completion; enemies already spawned stay until killed. With no spawn points in the chunk,
 // a Chunk Ring Spawner is made so enemies come from just outside the edge. Counts as a mission objective.
 [DisallowMultipleComponent]
-public sealed class KOTH_Zone : HoldZone, IMissionObjective
+public sealed class KOTH_Zone : HoldZone, IMissionObjective, IMissionStatus
 {
     [Tooltip("Wave the scene's Spawn Director runs while the hold is under way (e.g. WaveData_KOTH).")]
     [SerializeField] WaveData wave;
@@ -61,4 +61,13 @@ public sealed class KOTH_Zone : HoldZone, IMissionObjective
         if ((current == HoldZoneState.Failed || current == HoldZoneState.Complete) && director != null)
             director.StopWave(this);
     }
+
+    // The HUD's line under the objectives count while this hill is being fought over.
+    public bool ShowStatus => State == HoldZoneState.Holding || State == HoldZoneState.Warning || State == HoldZoneState.Failed;
+    public string Status => State switch
+    {
+        HoldZoneState.Warning => $"Get back to the hill! {GraceRemaining:0.0}s",
+        HoldZoneState.Failed => "Hill lost: re-enter to restart",
+        _ => $"Holding the hill: {TimeRemaining:0.0}s left",
+    };
 }

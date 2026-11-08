@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 // Escort payload rules: advance with the player, stop when contested, roll back to the last checkpoint at most.
 public static class EscortPayloadChecks
@@ -33,6 +34,11 @@ public static class EscortPayloadChecks
         fromCheckpoint.Step(100f, false, true, 3f, 1.5f);
         check(fromCheckpoint.Distance == 40f && fromCheckpoint.CheckpointCount == 2,
             "The escort starts at the first checkpoint, never rolls back behind it, and counts only the checkpoints after it");
+
+        float greenHeal = EscortPayload.AdvancingHeal(EscortState.Advancing, 1000f, 2f, 1f);
+        check(Mathf.Approximately(greenHeal, 20f) && EscortPayload.AdvancingHeal(EscortState.Contested, 1000f, 2f, 1f) == 0f
+            && EscortPayload.AdvancingHeal(EscortState.Retreating, 1000f, 2f, 1f) == 0f && EscortPayload.AdvancingHeal(EscortState.Idle, 1000f, 2f, 1f) == 0f,
+            "The payload heals only while it moves with no enemies near (green ring), by its % of max health per second");
 
         var cycle = new WaveCycle(0.5f, 10f, 100);
         cycle.ScaleTotal(1.5f);

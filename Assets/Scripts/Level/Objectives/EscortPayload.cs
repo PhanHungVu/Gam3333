@@ -19,6 +19,8 @@ public sealed class EscortPayload : MonoBehaviour, IMissionObjective, IMissionSt
     [Tooltip("The player (or enemies) must be within this many metres to move or stop it.")]
     [SerializeField, Min(0.5f)] float radius = 12f;
     [Min(1f)] [SerializeField] float maxHealth = 500f;
+    [Tooltip("While it moves with no enemies near (green ring), it heals this % of its max health per second. 0 = off.")]
+    [SerializeField, Min(0f)] float advancingHeal = 2f;
     [Tooltip("Seconds after being destroyed before it returns at the last checkpoint.")]
     [SerializeField, Min(0f)] float respawnDelay = 5f;
     [Tooltip("How high it floats above the route.")]
@@ -187,6 +189,8 @@ public sealed class EscortPayload : MonoBehaviour, IMissionObjective, IMissionSt
             if (director != null) director.ScaleWave(this, 1f + waveIncreasePerCheckpoint * rules.CheckpointsPassed);
         }
         if (rules.Arrived) StopWave();
+        float heal = AdvancingHeal(rules.State, body.MaximumHealth, advancingHeal, Time.deltaTime);
+        if (heal > 0f) body.Heal(heal);
         Place();
         DrawGuide();
         DrawRing();
@@ -224,6 +228,10 @@ public sealed class EscortPayload : MonoBehaviour, IMissionObjective, IMissionSt
             guide.SetPosition(i, space.TransformPoint(new Vector3(x, y + 0.3f, z)));
         }
     }
+
+    // How much the payload heals this frame: only while advancing (green ring: player near, no enemies).
+    public static float AdvancingHeal(EscortState state, float maximumHealth, float percentPerSecond, float deltaTime) =>
+        state == EscortState.Advancing ? Mathf.Max(0f, maximumHealth) * Mathf.Max(0f, percentPerSecond) / 100f * Mathf.Max(0f, deltaTime) : 0f;
 
     // The push radius on the ground around the payload, coloured by what it's doing.
     void DrawRing()

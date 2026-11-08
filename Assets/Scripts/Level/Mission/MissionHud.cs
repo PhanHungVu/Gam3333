@@ -27,7 +27,7 @@ public sealed class MissionHud : MonoBehaviour
         var rect = text.GetComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 1f);
         rect.anchoredPosition = new Vector2(0, -20);
-        rect.sizeDelta = new Vector2(700, 60);
+        rect.sizeDelta = new Vector2(700, 90);
         label = text.GetComponent<Text>();
         label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         label.fontSize = 24;
@@ -55,10 +55,12 @@ public sealed class MissionHud : MonoBehaviour
                     _ => "Extract open: get to the extraction point",
                 };
             default:
-                // An objective in progress that describes itself (the escort, a camp being fought) shows its own status.
+                // The objectives count, with the objective in progress (a hill being held, the escort, a camp)
+                // describing itself on the line underneath.
+                string count = $"Objectives {tracker.ObjectivesComplete} / {tracker.ObjectivesTotal}";
                 foreach (var objective in MissionObjectives.All)
-                    if (objective is IMissionStatus status && status.ShowStatus) return status.Status;
-                return $"Objectives {tracker.ObjectivesComplete} / {tracker.ObjectivesTotal}";
+                    if (objective is IMissionStatus status && status.ShowStatus) return count + "\n" + status.Status;
+                return count;
         }
     }
 }
