@@ -14,6 +14,12 @@ public interface IMissionStatus
     string Status { get; }
 }
 
+// Typed countdown meaning for objective feedback: hold success or a return-to-zone warning.
+public interface IMissionCountdown
+{
+    bool TryGetCountdown(out float seconds, out bool zeroMeansSuccess);
+}
+
 // Every mission objective currently in the scene. Objectives add themselves when enabled and remove
 // themselves when disabled, so the mission tracker never needs to know what kinds there are.
 public static class MissionObjectives

@@ -61,7 +61,7 @@ public sealed class EliminationRules
 // left. Leaving starts the flashing countdown; running out fails the camp and resets it. Cleared camps count
 // towards the mission. Put it on a child of the chunk, with a HoldZoneVisual for the outline.
 [DisallowMultipleComponent]
-public sealed class EliminationZone : MonoBehaviour, IMissionObjective, IMissionStatus, IZoneDisplay
+public sealed class EliminationZone : MonoBehaviour, IMissionObjective, IMissionStatus, IZoneDisplay, IMissionCountdown
 {
     [Tooltip("Spawn cost of camp enemies to kill to clear it (small enemies cost 5, elites 10).")]
     [SerializeField, Min(1)] int totalResource = 500;
@@ -93,6 +93,12 @@ public sealed class EliminationZone : MonoBehaviour, IMissionObjective, IMission
     public bool IsComplete => State == HoldZoneState.Complete;
     public EliminationRules Rules => rules;
     public bool ShowStatus => State == HoldZoneState.Holding || State == HoldZoneState.Warning || State == HoldZoneState.Failed;
+    public bool TryGetCountdown(out float seconds, out bool zeroMeansSuccess)
+    {
+        seconds = rules != null ? Mathf.Max(0, rules.GraceRemaining) : 0;
+        zeroMeansSuccess = false;
+        return State == HoldZoneState.Warning;
+    }
     public string Status => State switch
     {
         HoldZoneState.Warning => $"Get back to the camp! {rules.GraceRemaining:0.0}s",

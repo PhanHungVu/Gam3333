@@ -15,3 +15,11 @@ The pre-mission heavy torso entry displays **Heavy Torso (Demo Only)** and descr
 Validation is implemented in `Tests/Editor/GameplaySceneMaintenanceChecks.cs`: scene loading, missing references, both player variants with/without authored UI, unique HUD instances, actual map startup and enemy spawning. Automated results are kept under `.quest-review/Results/UpdatedBranchHudRepair`.
 
 On 2026-11-06, **50 checks passed** in isolated Unity 6000.5.8f1 (exit 0), with no C# diagnostics or runtime exceptions. Eight gameplay scenes opened without missing prefab/script instances or stamina HUDs. Both player variants passed all three UI startup cases. Actual KOTHTest, EscortTest, ZooScene and JhMapScene startup produced one complete HUD bound to the player; JhMapScene also spawned a current Behavior Graph enemy. This was automated headless verification, without a manual visual playthrough or player build.
+
+## Objective feedback tuning
+
+The objective-feedback component and its countdown connections were restored in this checkout. `MissionHudFeedback` attaches to the existing QuestTooltip objective text and legacy mission status text. Completing an objective/checkpoint glows green. The last five seconds of a successful hold/extraction glow green; leaving a KOTH, extraction or elimination zone gives a **yellow** return/grace warning.
+
+Countdown shake is reduced from 10 to **2 UI pixels per axis (80% less travel)**, with slower oscillation. The scale pulse is reduced from 22% to **4%**. Only the objective text animates; its backing/header stay in place. The effect restores the authored position, scale and color when the countdown ends. `TooltipDialogue` uses the same active hold/grace clock as the effect. Tune `shakePixels` and `pulseScale` on `MissionHudFeedback`.
+
+The existing isolated HUD review passed all **10 checks**, including reduced motion bounds, yellow grace warnings, green successful countdowns, actual KOTH exit/re-entry clocks, completion feedback and restoration of TMP materials/label pose. Results: `.quest-review/ReadabilityProject/mission-hud-gentle-yellow.log`.

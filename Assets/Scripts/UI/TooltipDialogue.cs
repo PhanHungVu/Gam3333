@@ -158,10 +158,10 @@ public sealed class TooltipDialogue : MonoBehaviour
             if (objective == null) continue;
             if (objective.IsComplete) { snapshot.done++; continue; }
             snapshot.active++;
-            // The hold in progress is the timer the player cares about.
-            if (objective is HoldZone zone && (zone.State == HoldZoneState.Holding || zone.State == HoldZoneState.Warning))
-                snapshot.timer = Mathf.Max(snapshot.timer, Mathf.Max(zone.TimeRemaining, zone.GraceRemaining));
         }
+        // Copy and feedback show the same active hold/grace clock.
+        var feedback = MissionHudFeedbackState.Capture(tracker);
+        if (feedback.HasCountdown) snapshot.timer = feedback.Seconds;
         return snapshot;
     }
 

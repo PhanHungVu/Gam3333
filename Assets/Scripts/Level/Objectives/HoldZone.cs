@@ -69,7 +69,7 @@ public sealed class HoldZoneRules
 // A zone the player must stand inside for a set time: the chunk's footprint (box or circle, from
 // ChunkDefinition), timed by HoldZoneRules. KOTH_Zone and ExtractZone build on it. A closed zone (IsOpen
 // false) does nothing until opened. Put it on a child of the chunk. Visuals listen to State.
-public abstract class HoldZone : MonoBehaviour, IZoneDisplay
+public abstract class HoldZone : MonoBehaviour, IZoneDisplay, IMissionCountdown
 {
     [Tooltip("Seconds to hold inside the chunk.")]
     [FormerlySerializedAs("surviveSeconds")]
@@ -96,6 +96,12 @@ public abstract class HoldZone : MonoBehaviour, IZoneDisplay
     public ChunkDefinition Chunk => chunk;
     // Whether the zone is active. Closed zones neither time nor show.
     public virtual bool IsOpen => true;
+    public bool TryGetCountdown(out float seconds, out bool zeroMeansSuccess)
+    {
+        zeroMeansSuccess = State == HoldZoneState.Holding;
+        seconds = zeroMeansSuccess ? TimeRemaining : GraceRemaining;
+        return IsOpen && (State == HoldZoneState.Holding || State == HoldZoneState.Warning);
+    }
 
     public event Action<HoldZoneState> StateChanged;
     public event Action Completed;

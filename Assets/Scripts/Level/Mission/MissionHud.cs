@@ -34,6 +34,7 @@ public sealed class MissionHud : MonoBehaviour
         label.alignment = TextAnchor.UpperCenter;
         label.raycastTarget = false;
         text.GetComponent<Shadow>().effectDistance = new Vector2(1, -1);
+        MissionHudFeedback.Attach(label);
     }
 
     void LateUpdate() => label.text = Describe(tracker);
@@ -58,6 +59,9 @@ public sealed class MissionHud : MonoBehaviour
                 // An objective in progress that describes itself (the escort, a camp being fought) shows its own status.
                 foreach (var objective in MissionObjectives.All)
                     if (objective is IMissionStatus status && status.ShowStatus) return status.Status;
+                var feedback = MissionHudFeedbackState.Capture(tracker);
+                if (feedback.HasCountdown)
+                    return $"Objectives {tracker.ObjectivesComplete} / {tracker.ObjectivesTotal}    {(feedback.ZeroMeansSuccess ? "Hold" : "Return")}: {feedback.Seconds:0.0}s";
                 return $"Objectives {tracker.ObjectivesComplete} / {tracker.ObjectivesTotal}";
         }
     }

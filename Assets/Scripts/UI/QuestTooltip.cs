@@ -29,6 +29,7 @@ public sealed class QuestTooltip : MonoBehaviour
     void Awake()
     {
         if (group == null) group = GetComponent<CanvasGroup>();
+        MissionHudFeedback.Attach(subtext);
     }
 
     // The quest the player is in: its type in the header, its current objective underneath.
