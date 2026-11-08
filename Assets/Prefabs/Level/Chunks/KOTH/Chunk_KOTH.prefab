@@ -108,6 +108,10 @@ MonoBehaviour:
       weight: 0.5
     min: 3
     max: 6
+  camp:
+    pieces: []
+    min: 0
+    max: 0
   spacing: 6
   laneClearance: 2
   minScale: 0.9
@@ -158,7 +162,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 443b2f303e3ec424abfeb74a25a80230, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Survival_Zone
-  holdSeconds: 60
+  holdSeconds: 20
   graceSeconds: 5
   failedSeconds: 2
   state: 0
