@@ -14,6 +14,14 @@ public interface IMissionStatus
     string Status { get; }
 }
 
+// An objective made of several steps that each count as an objective on the HUD (e.g. the escort's
+// checkpoints: "Objectives 1 / 3"). Display only; the mission still finishes when IsComplete.
+public interface IMissionProgress
+{
+    int StepsDone { get; }
+    int StepsTotal { get; }
+}
+
 // Every mission objective currently in the scene. Objectives add themselves when enabled and remove
 // themselves when disabled, so the mission tracker never needs to know what kinds there are.
 public static class MissionObjectives

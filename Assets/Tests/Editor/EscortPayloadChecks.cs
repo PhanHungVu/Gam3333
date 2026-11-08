@@ -1,9 +1,18 @@
 using System;
+using System.Linq;
 using UnityEngine;
 
 // Escort payload rules: advance with the player, stop when contested, roll back to the last checkpoint at most.
 public static class EscortPayloadChecks
 {
+    sealed class FakeObjective : IMissionObjective { public bool IsComplete { get; set; } }
+    sealed class FakeSteps : IMissionObjective, IMissionProgress
+    {
+        public bool IsComplete => StepsDone >= StepsTotal;
+        public int StepsDone { get; set; }
+        public int StepsTotal { get; set; }
+    }
+
     public static void Run(Action<bool, string> check)
     {
         var rules = new EscortRules(0f, 100f, new[] { 30f, 60f, 100f });
@@ -39,6 +48,15 @@ public static class EscortPayloadChecks
         check(Mathf.Approximately(greenHeal, 20f) && EscortPayload.AdvancingHeal(EscortState.Contested, 1000f, 2f, 1f) == 0f
             && EscortPayload.AdvancingHeal(EscortState.Retreating, 1000f, 2f, 1f) == 0f && EscortPayload.AdvancingHeal(EscortState.Idle, 1000f, 2f, 1f) == 0f,
             "The payload heals only while it moves with no enemies near (green ring), by its % of max health per second");
+
+        var steps = new FakeSteps { StepsDone = 1, StepsTotal = 3 };
+        var open = new FakeObjective(); var done = new FakeObjective { IsComplete = true };
+        MissionHud.CountObjectives(out int doneBefore, out int totalBefore);
+        MissionObjectives.Register(steps); MissionObjectives.Register(open); MissionObjectives.Register(done);
+        MissionHud.CountObjectives(out int shownDone, out int shownTotal);
+        MissionObjectives.Unregister(steps); MissionObjectives.Unregister(open); MissionObjectives.Unregister(done);
+        check(shownDone - doneBefore == 2 && shownTotal - totalBefore == 5,
+            "The HUD counts each escort checkpoint as an objective, and other objectives once each");
 
         var cycle = new WaveCycle(0.5f, 10f, 100);
         cycle.ScaleTotal(1.5f);

@@ -38,6 +38,17 @@ public sealed class MissionHud : MonoBehaviour
 
     void LateUpdate() => label.text = Describe(tracker);
 
+    // Each objective counts once, except ones made of steps (the escort's checkpoints), which count each step.
+    public static void CountObjectives(out int done, out int total)
+    {
+        done = 0; total = 0;
+        foreach (var objective in MissionObjectives.All)
+        {
+            if (objective is IMissionProgress steps && steps.StepsTotal > 0) { done += steps.StepsDone; total += steps.StepsTotal; }
+            else { total++; if (objective.IsComplete) done++; }
+        }
+    }
+
     public static string Describe(MissionTracker tracker)
     {
         switch (tracker.State)
@@ -57,7 +68,8 @@ public sealed class MissionHud : MonoBehaviour
             default:
                 // The objectives count, with the objective in progress (a hill being held, the escort, a camp)
                 // describing itself on the line underneath.
-                string count = $"Objectives {tracker.ObjectivesComplete} / {tracker.ObjectivesTotal}";
+                CountObjectives(out int done, out int total);
+                string count = $"Objectives {done} / {total}";
                 foreach (var objective in MissionObjectives.All)
                     if (objective is IMissionStatus status && status.ShowStatus) return count + "\n" + status.Status;
                 return count;

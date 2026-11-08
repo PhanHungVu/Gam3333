@@ -16,6 +16,7 @@ public static class MechLocomotionChecks
         var view = new GameObject("Locomotion Check View");
         var player = Object.Instantiate(prefab, new Vector3(30000, 1.6f, 0), Quaternion.identity);
         var motor = player.GetComponent<MechMovementController>();
+        TestMech.DisableAutoRun(motor);
         // Ordinary walking speed comes from the legs and part Speed stats, so tuning them never breaks these checks.
         float walk = motor.WalkSpeed;
         var equipment = player.GetComponent<EquipManager>();
@@ -179,6 +180,7 @@ public static class MechLocomotionChecks
         var view = new GameObject("Boost braking view");
         var player = Object.Instantiate(prefab, new Vector3(90000f, 1.6f, 0f), Quaternion.identity);
         var motor = player.GetComponent<MechMovementController>();
+        TestMech.DisableAutoRun(motor);
         // Ordinary walking speed comes from the legs and part Speed stats, so tuning them never breaks these checks.
         float walk = motor.WalkSpeed;
         TestMech.StopPlayerInput(motor);
