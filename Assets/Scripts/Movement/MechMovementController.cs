@@ -16,9 +16,11 @@ public class MechMovementController : MonoBehaviour
     [Tooltip("Read-only: the walking speed right now, after legs and part Speed modifiers.")]
     [SerializeField] float currentWalkSpeed;
     MechStats stats;
-    [SerializeField] float sprintSpeed = 12f;
     [Header("Automatic Run")]
-    [SerializeField, Min(0f)] float autoRunDelay = 5f;
+    [Tooltip("Seconds of uninterrupted walking without attacking or taking damage before running starts.")]
+    [SerializeField, Min(0f)] float autoRunDelay = 3f;
+    [Tooltip("Running speed relative to the final walking speed, including equipped parts' speed modifiers.")]
+    [SerializeField, Min(1f)] float autoRunSpeedMultiplier = 2f;
     [SerializeField] float acceleration = 20f;
     [SerializeField] float deceleration = 32f;
     [SerializeField] float boostAcceleration = 28f;
@@ -130,7 +132,7 @@ public class MechMovementController : MonoBehaviour
         {
             var defaults = new MechLocomotionSettings
             {
-                moveSpeed = moveSpeed, sprintSpeed = sprintSpeed, acceleration = acceleration,
+                moveSpeed = moveSpeed, sprintSpeed = moveSpeed * autoRunSpeedMultiplier, acceleration = acceleration,
                 deceleration = deceleration, boostAcceleration = boostAcceleration,
                 rotationSharpness = rotationSharpness, gravity = gravity, jumpHeight = jumpHeight
             };
@@ -140,7 +142,8 @@ public class MechMovementController : MonoBehaviour
     }
 
     // Walking speed from the equipped parts (MechStats): the legs' Speed in m/s, or this Move Speed
-    // when the legs have none, times every other part's Speed percentage. Sprint scales the same way.
+    // when the legs have none, times every other part's Speed percentage. Automatic
+    // running uses the final walking speed, regardless of legacy module boost speeds.
     MechLocomotionSettings ApplyPartSpeed(MechLocomotionSettings settings)
     {
         if (stats == null) stats = GetComponent<MechStats>();
@@ -148,16 +151,16 @@ public class MechMovementController : MonoBehaviour
         {
             float baseSpeed = stats.BaseSpeed > 0f ? stats.BaseSpeed : settings.moveSpeed;
             float target = baseSpeed * stats.SpeedMultiplier;
-            float scale = settings.moveSpeed > 0f ? target / settings.moveSpeed : 1f;
             settings.moveSpeed = target;
-            settings.sprintSpeed *= scale;
         }
+        settings.sprintSpeed = settings.moveSpeed * autoRunSpeedMultiplier;
         currentWalkSpeed = settings.moveSpeed;
         return settings;
     }
 
     // The walking speed the mech moves at right now, after legs and part modifiers.
     public float WalkSpeed => Settings.moveSpeed;
+    public float RunSpeed => Settings.sprintSpeed;
 
     public MovementState State { get; private set; } = MovementState.Airborne;
     public Vector3 Velocity { get; private set; }
@@ -541,7 +544,7 @@ public class MechMovementController : MonoBehaviour
     {
         autoRunDelay = Mathf.Max(0f, autoRunDelay);
         moveSpeed = Mathf.Max(0f, moveSpeed);
-        sprintSpeed = Mathf.Max(0f, sprintSpeed);
+        autoRunSpeedMultiplier = Mathf.Max(1f, autoRunSpeedMultiplier);
         acceleration = Mathf.Max(0f, acceleration);
         deceleration = Mathf.Max(0f, deceleration);
         boostStopDeceleration = Mathf.Max(0f, boostStopDeceleration);

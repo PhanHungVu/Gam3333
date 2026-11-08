@@ -16497,8 +16497,8 @@ MonoBehaviour:
   energy: {fileID: 6057257043024523587}
   moveSpeed: 10
   currentWalkSpeed: 0
-  sprintSpeed: 12
-  autoRunDelay: 5
+  autoRunDelay: 3
+  autoRunSpeedMultiplier: 2
   acceleration: 20
   deceleration: 32
   boostAcceleration: 28

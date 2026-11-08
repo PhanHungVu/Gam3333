@@ -1,6 +1,6 @@
 # Modular locomotion and body animation
 
-**Current controls:** the table below records an earlier prototype. Use [Player controls](../Combat/ControlScheme.md) for the current bindings: F camera lock, contextual 1/2 swaps, Shift dodge, Space leg movement, Ctrl torso-ability request and automatic running after five uninterrupted seconds. Movement no longer uses energy. Development leg swaps now use F1–F4, preserving number keys for real pickups.
+**Current controls:** the table below records an earlier prototype. Use [Player controls](../Combat/ControlScheme.md) for the current bindings: F camera lock, contextual 1/2 swaps, Shift dodge, Space leg movement, Ctrl torso-ability request and automatic running after three uninterrupted seconds at twice walking speed. Movement no longer uses energy. Development leg swaps now use F1–F4, preserving number keys for real pickups.
 
 Open **A33** or **Merge Test** and enter Play mode. Both use `FullPlayer_mech_base.prefab`, which now includes the locomotion equipment bridge and a development debug panel. The older `Prefabs/Mech.prefab` keeps its original standalone movement. See [merge recovery](MergeRecovery.md) for the restored animation wiring and retained teammate changes.
 
