@@ -21226,7 +21226,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MeleeBoxPreview
   material: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
-  showMeleeBox: 1
+  showMeleeBox: 0
 --- !u!114 &2652594956017318926
 MonoBehaviour:
   m_ObjectHideFlags: 0
