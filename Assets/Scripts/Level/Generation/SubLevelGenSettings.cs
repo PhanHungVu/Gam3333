@@ -143,9 +143,28 @@ public sealed class SubLevelGenSettings : ScriptableObject
     [Tooltip("Chain routes only: the payload placed at the start of the route (e.g. Payload). Leave empty for other missions.")]
     public EscortPayload escortPayload;
 
+    [Header("Border")]
+    [Tooltip("Metres of tall trees inward from each map edge; the playable area shrinks by this much on every side. Keep it below Edge Margin so chunks never crowd it. 0 = no border.")]
+    [Min(0f)] public float borderWidth = 16f;
+    [Tooltip("Metres between border trees (smaller = denser).")]
+    [Min(0.5f)] public float borderSpacing = 4f;
+    [Tooltip("The trees the border is made of (e.g. tree-high), with how often each is picked.")]
+    public DecorPrefab[] borderTrees = new DecorPrefab[0];
+    [Tooltip("Border trees are scaled between these (taller than normal decor).")]
+    [Min(0.1f)] public float borderScaleMin = 1.6f;
+    [Min(0.1f)] public float borderScaleMax = 2.2f;
+    [Tooltip("Invisible walls along the map edge, so nothing slips through gaps between border trees.")]
+    public bool borderWalls = true;
+
     [Header("Decor")]
     [Tooltip("Things scattered over the map after roads, one group per kind (e.g. Trees). Each group has its own rules.")]
     public DecorGroup[] decorGroups = new DecorGroup[0];
+
+    public BorderSettings ToBorderSettings() => new BorderSettings
+    {
+        width = borderWidth, spacing = borderSpacing, minScale = borderScaleMin, maxScale = Mathf.Max(borderScaleMin, borderScaleMax),
+        weights = borderTrees != null && borderTrees.Length > 0 ? System.Array.ConvertAll(borderTrees, t => t != null && t.prefab != null ? t.weight : 0f) : new float[0],
+    };
 
     public RoadSettings ToRoadSettings() => new RoadSettings
     {

@@ -47,6 +47,16 @@ MonoBehaviour:
   roadCliffCost: 10
   roadSmoothing: 3
   escortPayload: {fileID: 456191105611842391, guid: 6d61a57407e9fb2469011afab2c89506, type: 3}
+  borderWidth: 16
+  borderSpacing: 4
+  borderTrees:
+  - prefab: {fileID: 2598977150594171762, guid: 182152baecb3f304a83d39d0f0306314, type: 3}
+    weight: 1
+  - prefab: {fileID: 8758049249749649652, guid: 46ec93bee1b04294f9a9b5b2697c50e6, type: 3}
+    weight: 0.5
+  borderScaleMin: 1.6
+  borderScaleMax: 2.2
+  borderWalls: 1
   decorGroups:
   - name: Trees
     prefabs:
