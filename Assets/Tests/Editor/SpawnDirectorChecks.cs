@@ -52,7 +52,9 @@ public static class SpawnDirectorChecks
 
             check(director.RunWave(data, points, owner) && director.IsRunning(owner), "An outside script can start a wave on its spawn points");
             check(!director.RunWave(data, points, pointA), "Only one wave runs at a time");
-            director.Tick(0f); director.Tick(0.5f);
+            director.Tick(0f);
+            check(director.TotalSpawned == 0, "Zero elapsed time cannot spawn an enemy while gameplay is paused");
+            director.Tick(0.01f); director.Tick(0.5f);
             check(director.TotalSpawned == 2 && director.ResourceLeft == 0, "The wave spawns until its resource is spent");
             director.Tick(0.5f); director.Tick(0.5f);
             check(director.TotalSpawned == 2, "Nothing spawns while the wave waits to refill");
@@ -94,6 +96,8 @@ public static class SpawnDirectorChecks
 
             data.resourceTotal = 50; // room for several roaming spawns
             roamDirector.Tick(0f);
+            check(roamDirector.TotalSpawned == 0, "Paused roaming does not create an initial enemy");
+            roamDirector.Tick(0.01f);
             GameObject roamed = null;
             foreach (var clone in Object.FindObjectsByType<EnemySpawnCost>())
                 if (clone.gameObject != template && clone.transform.position.x > site.x - 100f) roamed = clone.gameObject;
@@ -101,7 +105,7 @@ public static class SpawnDirectorChecks
             check(roamDirector.TotalSpawned == 1 && Mathf.Abs(fromPlayer - 20f) < 0.01f,
                 "Roaming spawns enemies on a circle Radius away from the player");
             check(roamDirector.RunWave(data, new[] { points[0] }, owner), "An objective wave can start while roaming");
-            roamDirector.Tick(0f);
+            roamDirector.Tick(0.01f);
             check(roamDirector.RoamingPaused && roamDirector.IsRunning(owner) && roamDirector.TotalSpawned == 2,
                 "An objective wave pauses roaming and spawns at its own points");
             roamDirector.StopWave(owner);

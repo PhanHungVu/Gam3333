@@ -51,6 +51,7 @@ public sealed class MissionTracker : MonoBehaviour
 
     void Update()
     {
+        if (Time.deltaTime <= 0f) return;
         objectivesTotal = ObjectivesTotal;
         objectivesComplete = ObjectivesComplete;
         // Wait a frame for the generated objectives to register before judging "all complete".

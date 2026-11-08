@@ -10,17 +10,20 @@ namespace Lithomachia.EnemyBehavior
     public abstract class EnemyGraphAction : Action
     {
         [NonSerialized] protected EnemyGraphController Controller;
+        [NonSerialized] bool began;
         protected sealed override Status OnStart()
         {
             Controller = GameObject.GetComponent<EnemyGraphController>();
             if (Controller == null || !Controller.IsReady) return Status.Failure;
-            Begin(); return Step();
+            began = false; return Step();
         }
         protected sealed override Status OnUpdate() => Step();
         Status Step()
         {
             if (Controller == null || !Controller.IsReady) return Status.Failure;
-            return Time.deltaTime <= 0 || CombatHitStop.IsFrozen(Controller.transform) ? Status.Running : Tick();
+            if (Time.deltaTime <= 0 || CombatHitStop.IsFrozen(Controller.transform)) return Status.Running;
+            if (!began) { began = true; Begin(); }
+            return Tick();
         }
         protected virtual void Begin() { }
         protected abstract Status Tick();

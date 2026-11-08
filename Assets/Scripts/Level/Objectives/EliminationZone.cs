@@ -113,6 +113,7 @@ public sealed class EliminationZone : MonoBehaviour, IMissionObjective, IMission
 
     void Update()
     {
+        if (Time.deltaTime <= 0f) return;
         if (rules.State != HoldZoneState.Complete)
         {
             FindPlayerIfNeeded();
