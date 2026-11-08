@@ -6,7 +6,7 @@ using System;
 // The one place that reads the player's devices. Each frame it turns input into actions for the
 // other systems: movement (move, jump, boosts), the camera (look), targeting (lock-on, switching),
 // the part system (1/2 swap left/right, V cycles the highlighted part) and combat (attack
-// with the socket's part). It also owns the cursor rule: Esc frees the mouse, a click captures it,
+// with the socket's part). Escape opens the mission pause menu; clicks capture the cursor during gameplay,
 // and gameplay input only flows while it is captured and the game is not paused.
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(-200)]
@@ -21,6 +21,8 @@ public sealed class MechPlayerInput : MonoBehaviour
     public event Action<PartCategory, Part> AbilityRequested;
     // Batch Unity cannot capture a native cursor; tests set this to run the real input path.
     public bool AssumeCursorCaptured { get; set; }
+    public MissionPauseMenu PauseMenu { get; private set; }
+    public void BindPauseMenu(MissionPauseMenu menu) => PauseMenu = menu;
 
     InputActionAsset runtimeInputActions;
     InputAction move, jump, quickBoost, look, lockOn, reload, headAbility, torsoAbility;
@@ -105,7 +107,13 @@ public sealed class MechPlayerInput : MonoBehaviour
         {
             attacksArmed = false; cameraControl?.SetLookInput(Vector2.zero); SetCursorLocked(false); return;
         }
-        // Cursor rule: Esc frees the mouse, a click captures it again.
+        // Handle Escape before gameplay and swallow the resume frame so a UI
+        // click/key cannot also attack, dodge or use an ability.
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame && PauseMenu != null && PauseMenu.Toggle())
+        { SuspendGameplayInput(); return; }
+        if (MissionPauseMenu.BlocksGameplay)
+        { SuspendGameplayInput(); return; }
+        // Older/custom HUDs without the pause prefab retain cursor release.
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) SetCursorLocked(false);
         else if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame
             && (locomotionDebug == null || !locomotionDebug.PointerOverToggle)) SetCursorLocked(true);
@@ -168,9 +176,17 @@ public sealed class MechPlayerInput : MonoBehaviour
     public void RequestTorsoAbility() => RequestAbility(PartCategory.Torso, torsoAbilityRequested);
     public void RequestLegAbility() => RequestAbility(PartCategory.Legs, legAbilityRequested);
 
+    void SuspendGameplayInput()
+    {
+        attacksArmed = false;
+        movement?.ClearHitStopInputBuffer();
+        cameraControl?.SetLookInput(Vector2.zero);
+        targeting?.CancelLockButtonInput();
+    }
+
     void RequestAbility(PartCategory socket, UnityEvent<Part> callback)
     {
-        if (!isActiveAndEnabled || Time.timeScale <= 0f || MissionOutcomeController.BlocksGameplay(gameObject.scene)
+        if (!isActiveAndEnabled || Time.timeScale <= 0f || MissionPauseMenu.BlocksGameplay || MissionOutcomeController.BlocksGameplay(gameObject.scene)
             || CombatHitStop.BlocksNewActions(transform)) return;
         var part = parts != null ? parts.GetEquipped(socket) : null;
         if (part == null || part.Stats == null || !part.isActiveAndEnabled || !part.isEquipped) return;

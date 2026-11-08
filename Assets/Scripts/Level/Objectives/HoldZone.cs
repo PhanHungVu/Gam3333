@@ -109,6 +109,7 @@ public abstract class HoldZone : MonoBehaviour, IZoneDisplay
 
     protected virtual void Update()
     {
+        if (Time.deltaTime <= 0f) return;
         if (IsOpen && rules.State != HoldZoneState.Complete)
         {
             FindPlayerIfNeeded();

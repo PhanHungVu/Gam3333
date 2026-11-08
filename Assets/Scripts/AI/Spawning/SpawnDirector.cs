@@ -143,6 +143,7 @@ public sealed class SpawnDirector : MonoBehaviour, IWaveAnchor
 
     public void Tick(float deltaTime)
     {
+        if (deltaTime <= 0f) return;
         bool roamingNow = RoamingActive();
         // An objective wave and roaming can run side by side when the objective wave doesn't pause roaming.
         if (objective != null && objective.cycle.Tick(deltaTime)) TrySpawn(objective);

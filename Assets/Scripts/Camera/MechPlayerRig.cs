@@ -61,6 +61,12 @@ public sealed class MechPlayerRig : MonoBehaviour
                 }
         }
         if (cursor != null) cursor.Bind(GetComponent<MechTargetLockController>(), GameplayCamera);
+        var cursorCanvas = cursor != null ? cursor.GetComponentInParent<Canvas>() : null;
+        if (cursorCanvas != null)
+        {
+            var pause = cursorCanvas.rootCanvas.GetComponentInChildren<MissionPauseMenu>(true);
+            if (pause != null) pause.Bind(GetComponent<MechPlayerInput>());
+        }
         if (combatHudPrefab != null && FindAnyObjectByType<MechWeaponsHud>() == null && cursor != null)
         {
             var canvas = cursor.GetComponentInParent<Canvas>();
