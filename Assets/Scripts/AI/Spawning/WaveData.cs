@@ -24,7 +24,7 @@ public sealed class WaveData : ScriptableObject
     [Min(0.01f)] public float spawnInterval = 0.5f;
     [Tooltip("Seconds to wait after the resource runs out before it refills.")]
     [Min(0f)] public float timerReset = 120f;
-    [Tooltip("If every enemy this wave spawned is gone (killed or removed) during its Timer Reset, the wait drops to this many seconds. 0 = off (always the full Timer Reset).")]
+    [Tooltip("If every enemy this wave spawned is gone (killed or removed) during its Timer Reset, the next wave comes this many seconds after that. 0 = off (always the full Timer Reset).")]
     [Min(0f)] public float clearedTimerReset;
     [Tooltip("Resource at full; each enemy spawned spends its Spawn Cost from it.")]
     [Min(1)] public int resourceTotal = 50;

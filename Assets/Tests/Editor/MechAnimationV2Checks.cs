@@ -15,6 +15,7 @@ public static class MechAnimationV2Checks
         floor.transform.localScale = new Vector3(500, 1, 500);
         var view = new GameObject("V2 animation check view");
         var motor = player.GetComponent<MechMovementController>();
+        TestMech.DisableAutoRun(motor);
         float walk = motor.WalkSpeed; // the mech's walking speed (legs x part modifiers)
         var equipment = player.GetComponent<EquipManager>();
         var swap = player.GetComponent<MechLocomotionDebug>();
@@ -155,6 +156,7 @@ public static class MechAnimationV2Checks
         bool quick = false, bool assault = false, bool jump = false)
     {
         var motor = player.GetComponent<MechMovementController>();
+        TestMech.DisableAutoRun(motor);
         var equipment = player.GetComponent<EquipManager>();
         for (int i = 0; i < count; i++)
         {

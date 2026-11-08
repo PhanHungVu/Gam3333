@@ -15,6 +15,7 @@ public static class MechAnimatedLegChecks
         floor.transform.localScale = new Vector3(300, 1, 300);
         var view = new GameObject("Animated Legs Check View");
         var motor = player.GetComponent<MechMovementController>();
+        TestMech.DisableAutoRun(motor);
         float walk = motor.WalkSpeed; // the mech's walking speed (legs x part modifiers)
         var equipment = player.GetComponent<EquipManager>();
         var debug = player.GetComponent<MechLocomotionDebug>();

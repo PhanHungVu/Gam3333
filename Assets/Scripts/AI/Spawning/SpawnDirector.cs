@@ -183,12 +183,12 @@ public sealed class SpawnDirector : MonoBehaviour, IWaveAnchor
 
     static bool Alive(GameObject member) => member != null && member.activeInHierarchy;
 
-    // A wave whose enemies are all gone while it refills gets its wait cut to Cleared Timer Reset.
+    // A wave whose enemies are all gone while it refills: the next one comes Cleared Timer Reset from now.
     void ShortenIfCleared(ActiveWave active)
     {
         if (active == null || active.data.clearedTimerReset <= 0f || !active.cycle.Refilling) return;
         active.roster.Prune(Alive);
-        if (active.roster.Count == 0) active.cycle.ShortenRefill(active.data.clearedTimerReset);
+        if (active.roster.Count == 0) active.cycle.ClearedRefill(active.data.clearedTimerReset);
     }
 
     // Removes a wave's members that strayed beyond its Leash Distance from its owner's anchor, refunding

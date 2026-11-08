@@ -66,13 +66,19 @@ public sealed class WaveCycle
     {
         Refilling = true;
         ResetRemaining = TimerReset;
+        ClearedThisRefill = false;
     }
 
-    // While refilling, shortens the wait to at most this many seconds (e.g. the wave's enemies were all
-    // cleared early). Never lengthens it, and does nothing outside a refill.
-    public void ShortenRefill(float seconds)
+    // True once the current refill has been restarted by ClearedRefill.
+    public bool ClearedThisRefill { get; private set; }
+
+    // The wave's enemies were all cleared during its refill: the wait restarts at this many seconds from
+    // now. Once per refill (so it doesn't keep resetting while you wait); does nothing outside a refill.
+    public void ClearedRefill(float seconds)
     {
-        if (Refilling) ResetRemaining = Math.Min(ResetRemaining, Math.Max(0f, seconds));
+        if (!Refilling || ClearedThisRefill) return;
+        ResetRemaining = Math.Max(0f, seconds);
+        ClearedThisRefill = true;
     }
 
     // Weighted pick among the entries the resource can still pay for; -1 when none can be afforded.

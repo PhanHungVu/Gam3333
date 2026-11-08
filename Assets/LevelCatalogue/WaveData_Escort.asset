@@ -19,7 +19,7 @@ MonoBehaviour:
   resourceTotal: 50
   pausesRoaming: 1
   maxConcurrentEnemies: 32
-  leashDistance: 70
+  leashDistance: 50
   enemies:
   - prefab: {fileID: 7844480342519530753, guid: 0eb4de5951752aa42ad7d74223260186, type: 3}
     weight: 14.17
