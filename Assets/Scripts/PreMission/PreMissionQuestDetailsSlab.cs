@@ -12,6 +12,10 @@ public sealed class PreMissionQuestDetailsSlab : MonoBehaviour
     [SerializeField] Animator animator;
     [SerializeField] Transform animatedSlab;
     [SerializeField] AnimationClip fallClip;
+    [Header("Briefing arrival audio")]
+    [SerializeField] AudioSource appearanceAudio;
+    [SerializeField] AudioClip appearanceSound;
+    [SerializeField, Range(0f, 1f)] float appearanceVolume = 1f;
     [SerializeField] TMP_Text titleText, questTypeText, descriptionText;
     [SerializeField] PreMissionQuestSlabAction acceptAction, declineAction;
     [Tooltip("The former briefing area in normalized camera coordinates.")]
@@ -55,8 +59,14 @@ public sealed class PreMissionQuestDetailsSlab : MonoBehaviour
     }
     public IEnumerator Enter()
     {
+        bool appearing = !shown;
         SetInteractive(false); shown = true; SetVisible(true); RefreshPlacement();
         ResetButtons(); Play("questDescSlabAnimFall", 0);
+        if (appearing && appearanceAudio != null && appearanceSound != null)
+        {
+            appearanceAudio.Stop();
+            appearanceAudio.PlayOneShot(appearanceSound, appearanceVolume);
+        }
         float elapsed = 0, duration = Mathf.Max(.01f, fallClip.length);
         while (elapsed < duration && !ReducedMotion)
         {
@@ -167,6 +177,7 @@ public sealed class PreMissionQuestDetailsSlab : MonoBehaviour
     void OnDisable()
     {
         if (!Application.isPlaying) return;
+        if (appearanceAudio != null) appearanceAudio.Stop();
         if (animator != null && acceptAction != null && declineAction != null && animatedSlab != null) Hide();
         if (flow != null && flow.isActiveAndEnabled && flow.Session != null) flow.RecoverPresentation();
     }
