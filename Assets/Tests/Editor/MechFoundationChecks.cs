@@ -117,6 +117,7 @@ public static class MechFoundationChecks
             Section("QuestLaunchChecks", () => QuestLaunchChecks.Run(Check));
             Section("AbilityChecks", () => AbilityChecks.Run(Check));
             Section("SpecialistMechChecks", () => SpecialistMechChecks.Run(Check));
+            Section("BorderChecks", () => BorderChecks.Run(Check));
             Section("OutpostChecks", () => OutpostChecks.Run(Check));
             Section("SpeedChecks", () => SpeedChecks.Run(Check));
             Section("MechProjectileModelChecks", () => MechProjectileModelChecks.Run(Check));
