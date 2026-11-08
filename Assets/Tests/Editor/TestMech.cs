@@ -17,7 +17,24 @@ public static class TestMech
     public const string BoltPath = "Assets/Prefabs/Combat/Projectiles/CrossbowBolt.prefab";
     public const string AxePath = "Assets/Prefabs/Combat/Projectiles/ThrowingAxe.prefab";
     public static readonly string[] WeaponSounds = { "StoneSword_attack", "ThrowingAxe_attack", "Cannon_attack", "Crossbow_attack", "Mace_attack", "CrossbowArm_attack" };
-    public static AudioClip Sound(string name) => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/SFX/" + name + ".wav");
+    // Walking and hovering checks measure plain movement; automatic running (2x after a few seconds of
+    // moving) has its own checks (AutomaticRunChecks), so these switch it off on their test mech.
+    public static void DisableAutoRun(MechMovementController motor)
+    {
+        var field = typeof(MechMovementController).GetField("autoRunDelay", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        if (motor != null && field != null) field.SetValue(motor, 1e6f);
+    }
+
+    // A sound by its file name, wherever it lives (sound folders get reorganised; names stay).
+    public static AudioClip Sound(string name)
+    {
+        foreach (var guid in AssetDatabase.FindAssets(name + " t:AudioClip"))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            if (System.IO.Path.GetFileNameWithoutExtension(path) == name) return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+        }
+        return null;
+    }
 
     static readonly FieldInfo ReadyAtField =
         typeof(Part).GetField("<ReadyAt>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);

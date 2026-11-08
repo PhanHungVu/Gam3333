@@ -10,7 +10,7 @@ using UnityEngine;
 // completes the escort (a mission objective). Structure: this root (always on) with a child Body that has the
 // collider, renderer and CombatHealth. The generator places it at the first checkpoint.
 [DisallowMultipleComponent]
-public sealed class EscortPayload : MonoBehaviour, IMissionObjective, IMissionStatus, IWaveAnchor
+public sealed class EscortPayload : MonoBehaviour, IMissionObjective, IMissionStatus, IWaveAnchor, IMissionProgress
 {
     [Tooltip("Metres per second while the player pushes it.")]
     [SerializeField, Min(0f)] float speed = 3f;
@@ -70,21 +70,23 @@ public sealed class EscortPayload : MonoBehaviour, IMissionObjective, IMissionSt
     public event Action<int> CheckpointReached; // the number of checkpoints passed so far
 
     public bool ShowStatus => rules != null && !rules.Arrived;
+    // Each checkpoint counts as an objective on the HUD ("Objectives 1 / 3").
+    public int StepsDone => rules != null ? rules.CheckpointsPassed : 0;
+    public int StepsTotal => rules != null ? rules.CheckpointCount : 0;
     public string Status
     {
         get
         {
             if (rules == null) return "Escort";
-            if (respawnAt >= 0f) return $"Payload destroyed: back at the last checkpoint in {Mathf.Max(0f, respawnAt - Time.time):0.0}s";
-            if (!waveStarted && rules.State == EscortState.Idle) return "Reach the payload at the first checkpoint";
-            int total = rules.CheckpointCount;
-            string where = $"Checkpoint {Mathf.Min(rules.CheckpointsPassed + 1, total)} / {total}";
+            if (respawnAt >= 0f) return $"Payload destroyed: back at the last objective in {Mathf.Max(0f, respawnAt - Time.time):0.0}s";
+            if (!waveStarted && rules.State == EscortState.Idle) return "Reach the payload at the start";
+            // The objectives count above shows which checkpoint is next; this line says what the payload is doing.
             return rules.State switch
             {
-                EscortState.Advancing => $"Escorting: {where}",
-                EscortState.Contested => $"Payload contested: {where}",
-                EscortState.Retreating => $"Payload being pushed back! {where}",
-                _ => $"Stay near the payload to move it: {where}",
+                EscortState.Advancing => "Escorting the payload",
+                EscortState.Contested => "Payload contested",
+                EscortState.Retreating => "Payload being pushed back!",
+                _ => "Stay near the payload to move it",
             };
         }
     }
