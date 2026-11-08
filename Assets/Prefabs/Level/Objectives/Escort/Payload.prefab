@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EscortPayload
   speed: 3
-  reverseSpeed: 1.5
+  reverseSpeed: 2.5
   radius: 12
   maxHealth: 1000
   respawnDelay: 5
@@ -57,7 +57,7 @@ MonoBehaviour:
   contestedColor: {r: 1, g: 0.55, b: 0.1, a: 1}
   retreatingColor: {r: 1, g: 0.2, b: 0.15, a: 1}
   escortWave: {fileID: 11400000, guid: b38975f20791cf746b23cabdcb1cfb7e, type: 2}
-  spawnRingRadius: 40
+  spawnRingRadius: 20
   flowFieldRadius: 60
   waveIncreasePerCheckpoint: 0.25
   state: 0
