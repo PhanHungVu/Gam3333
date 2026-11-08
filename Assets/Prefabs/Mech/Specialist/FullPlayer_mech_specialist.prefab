@@ -21250,7 +21250,6 @@ MonoBehaviour:
   legAbilityRequested:
     m_PersistentCalls:
       m_Calls: []
-  useBuiltInLegMovement: 1
 --- !u!114 &5004220365804538166
 MonoBehaviour:
   m_ObjectHideFlags: 0

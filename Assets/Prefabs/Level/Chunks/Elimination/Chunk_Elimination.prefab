@@ -186,7 +186,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f65c84d4546bbc741bc8c6b2f712d6c3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EliminationZone
-  totalResource: 500
+  totalResource: 200
   graceSeconds: 5
   failedSeconds: 2
   wave: {fileID: 11400000, guid: c68e66163ff603245940282a4a038006, type: 2}

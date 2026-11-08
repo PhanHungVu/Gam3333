@@ -17,7 +17,6 @@ public static class GameplaySceneMaintenance
     public const string CombatHudPath = "Assets/Prefabs/UI/Combat HUD/CombatHUD.prefab";
     public const string TrainingWavePath = "Assets/LevelCatalogue/WaveData_Training.asset";
     public static readonly string[] PlayerPaths = {
-        "Assets/Prefabs/Mech/Base/FullPlayer_mech_golem.prefab",
         "Assets/Prefabs/Mech/Base/FullPlayer_mech_heavy.prefab",
         "Assets/Prefabs/Mech/Specialist/FullPlayer_mech_specialist.prefab"
     };

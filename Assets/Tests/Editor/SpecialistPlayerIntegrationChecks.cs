@@ -39,7 +39,6 @@ public static class SpecialistPlayerIntegrationChecks
                 GameplaySceneMaintenance.CombatHudPath, "Assets/Anim/Locomotion/Biped_Fast.controller", "Assets/Anim/Specialist/Cannon_Specialist.asset" }).ToArray();
         var protectedHashes = protectedPaths.Select(Hash).ToArray();
         string sockets = SocketSignature(AssetDatabase.LoadAssetAtPath<GameObject>(SpecialistPlayerIntegrationSetup.PlayerPath));
-        string rootIds = RootIds(AssetDatabase.LoadAssetAtPath<GameObject>(SpecialistPlayerIntegrationSetup.LegacyPlayerPath));
         var crossbowShape = CrossbowShape();
         SpecialistPlayerIntegrationSetup.Apply();
         Check(protectedPaths.Select(Hash).SequenceEqual(protectedHashes), "Heavy demo, model imports, weapon/part stats, unrelated weapon prefabs, mission waves, cannon audio and shared HUD layout are unchanged");
@@ -47,9 +46,7 @@ public static class SpecialistPlayerIntegrationChecks
         Check(crossbowShape.Length == normalizedShape.Length && crossbowShape.Zip(normalizedShape, Vector3.Distance).All(d => d < .001f),
             "Normalizing the crossbow rig preserves its neutral mesh geometry and size");
         Check(SocketSignature(AssetDatabase.LoadAssetAtPath<GameObject>(SpecialistPlayerIntegrationSetup.PlayerPath)) == sockets, "The teammate's Specialist socket parents, positions, rotations and scales are preserved");
-        Check(SocketSignature(AssetDatabase.LoadAssetAtPath<GameObject>(SpecialistPlayerIntegrationSetup.LegacyPlayerPath)) == sockets, "Regular golem receives the same complete authored socket assembly");
-        Check(RootIds(AssetDatabase.LoadAssetAtPath<GameObject>(SpecialistPlayerIntegrationSetup.LegacyPlayerPath)) == rootIds, "Regular golem keeps its root/component file IDs for existing scene references");
-        var edited = new[] { SpecialistPlayerIntegrationSetup.PlayerPath, SpecialistPlayerIntegrationSetup.LegacyPlayerPath, "Assets/Scenes/ZooScene.unity", "Assets/Anim/Specialist/Blaster_Specialist.asset",
+        var edited = new[] { SpecialistPlayerIntegrationSetup.PlayerPath, "Assets/Scenes/ZooScene.unity", "Assets/Anim/Specialist/Blaster_Specialist.asset",
             SpecialistPlayerIntegrationSetup.SmallCrossbowPath, SpecialistPlayerIntegrationSetup.LargeCrossbowPath, SpecialistPlayerIntegrationSetup.RigidCrossbowMeshPath, "Assets/Prefabs/Mech/Base/Parts/shoulder_cannon.prefab" };
         var after = edited.Select(Hash).ToArray(); SpecialistPlayerIntegrationSetup.Apply();
         Check(edited.Select(Hash).SequenceEqual(after), "Reapplying the integration is idempotent");
@@ -111,7 +108,7 @@ public static class SpecialistPlayerIntegrationChecks
     {
         Application.runInBackground = true; Time.captureFramerate = 60;
         if (Keyboard.current == null) InputSystem.AddDevice<Keyboard>(); if (Mouse.current == null) InputSystem.AddDevice<Mouse>();
-        foreach (string path in new[] { SpecialistPlayerIntegrationSetup.PlayerPath, SpecialistPlayerIntegrationSetup.LegacyPlayerPath })
+        foreach (string path in new[] { SpecialistPlayerIntegrationSetup.PlayerPath })
         {
             var floor = GameObject.CreatePrimitive(PrimitiveType.Cube); floor.transform.position = Vector3.down * .25f; floor.transform.localScale = Vector3.one * 400; floor.transform.localScale = new Vector3(400, .5f, 400);
             var light = new GameObject("Review light").AddComponent<Light>(); light.type = LightType.Directional; light.transform.rotation = Quaternion.Euler(45, -30, 0);
