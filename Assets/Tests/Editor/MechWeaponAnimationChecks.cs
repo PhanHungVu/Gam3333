@@ -105,7 +105,8 @@ public static class MechWeaponAnimationChecks
             check(combat.TryAttack(PartCategory.ArmL).Started && sword.CurrentPose == MechWeaponAnimator.PoseState.Fire,
                 "Existing melee starts Sword Fire on admission rather than on delayed damage");
             sword.Tick(0.2f);
-            CheckPose(sword, sets.weapons.Single(e => e.target == sword.Animations), reference, 0.2f, check);
+            CheckPose(sword, sets.weapons.Single(e => e.target == sword.Animations), reference,
+                sword.NormalizedTime * sword.Animations.fire.length, check);
             var cannon = equipment.GetEquipped(PartCategory.ShoulderL).GetComponent<MechWeaponAnimator>();
             cannon.PlayAttack(3f); cannon.Tick(0.3f);
             var pose = cannon.CurrentPose; var charge = player.GetComponent<MechEnergyController>().Current;
@@ -135,7 +136,8 @@ public static class MechWeaponAnimationChecks
                 check(driver.CurrentPose == MechWeaponAnimator.PoseState.Fire && projectiles == (name == "arm_crossbow" ? 1 : 0),
                     name + " plays Fire with its configured projectile or melee behavior");
                 driver.Tick(0.1f);
-                CheckPose(driver, sets.weapons.Single(e => e.target == driver.Animations), reference, 0.1f, check);
+                CheckPose(driver, sets.weapons.Single(e => e.target == driver.Animations), reference,
+                    driver.NormalizedTime * driver.Animations.fire.length, check);
                 if (driver.Animations.reload != null)
                 {
                     driver.Tick(0.3f);

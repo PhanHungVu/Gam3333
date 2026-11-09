@@ -65,10 +65,11 @@ public static class MechEnemyCombatChecks
                 && health.CurrentHealth == before, "Mace starts its windup animation without instant damage");
             check(mace.Weapon.GetComponentInChildren<AudioSource>().clip == TestMech.Sound("Mace_attack"),
                 "Enemy mace windup plays the authored mace attack sound");
-            Step(mace, 0.2f);
+            float maceRelease = mace.AttackDuration * new SerializedObject(mace).FindProperty("releaseFrame").floatValue;
+            Step(mace, maceRelease * .5f);
             check(health.CurrentHealth == before && mace.Weapon.NormalizedTime > 0f,
                 "Mace damage waits for its configured animation release frame");
-            Step(mace, 0.25f);
+            Step(mace, maceRelease * .5f + .01f);
             check(Mathf.Abs(health.CurrentHealth - (before - maceHit)) < 0.002f && mace.Releases == 1,
                 "Mace release damages player exactly once; before=" + before + "; after=" + health.CurrentHealth
                 + "; hit=" + maceHit + "; releases=" + mace.Releases + "; distance=" + Vector3.Distance(mace.transform.position, player.transform.position));
@@ -78,11 +79,11 @@ public static class MechEnemyCombatChecks
             Step(mace, 2f);
             check(mace.TryAttack() && mace.Weapon != first, "Dual mace enemy alternates its equipped arms");
             player.transform.position += Vector3.right * 10f; Physics.SyncTransforms();
-            Step(mace, 0.8f);
+            Step(mace, mace.AttackDuration + .01f);
             check(Mathf.Abs(health.CurrentHealth - (before - maceHit)) < 0.002f, "Player can dodge a mace swing during windup");
             player.transform.position -= Vector3.right * 10f; Physics.SyncTransforms(); Step(mace, 2f);
             check(mace.TryAttack(), "Mace can start another admitted swing after cooldown");
-            wall = Wall(player, 1f); Step(mace, 0.8f);
+            wall = Wall(player, 1f); Step(mace, mace.AttackDuration + .01f);
             check(Mathf.Abs(health.CurrentHealth - (before - maceHit)) < 0.002f, "Wall appearing during windup blocks melee damage");
             Step(mace, 2f);
             check(!mace.TryAttack(), "Mace does not begin attacks through walls");
@@ -91,7 +92,7 @@ public static class MechEnemyCombatChecks
             var ally = GameObject.CreatePrimitive(PrimitiveType.Cube);
             ally.transform.position = player.transform.position - Vector3.forward * 1f;
             var allyHealth = ally.AddComponent<CombatHealth>(); allyHealth.Team = CombatTeam.Enemy; Physics.SyncTransforms();
-            Step(mace, 0.8f);
+            Step(mace, mace.AttackDuration + .01f);
             check(Mathf.Abs(health.CurrentHealth - (before - 2f * maceHit)) < 0.002f && allyHealth.CurrentHealth == allyHealth.MaximumHealth,
                 "Another enemy in between neither blocks the mace swing nor takes damage");
             Object.DestroyImmediate(ally); Physics.SyncTransforms(); before -= maceHit;
@@ -162,7 +163,7 @@ public static class MechEnemyCombatChecks
             before = health.CurrentHealth;
             check(dual.TryAttack() && arms.All(w => w.CurrentPose == MechWeaponAnimator.PoseState.Fire),
                 "Independent weapons start every ready weapon at once");
-            Step(dual, 0.45f);
+            Step(dual, dual.AttackDuration * new SerializedObject(dual).FindProperty("releaseFrame").floatValue + .01f);
             check(Mathf.Abs(health.CurrentHealth - (before - firstHit - secondHit)) < 0.002f && dual.Releases == 2,
                 "Each independent weapon lands its own hit with its own damage");
             check(!dual.TryAttack(), "Independent weapons each wait out their own cooldown");

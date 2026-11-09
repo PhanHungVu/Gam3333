@@ -59,6 +59,15 @@ public sealed class EnemyFodderAnimation : MonoBehaviour
         var local = transform.InverseTransformDirection(agent.Velocity) / Mathf.Max(.1f, agent.MaxSpeed);
         animator.SetFloat(MoveX, Mathf.Clamp(local.x, -1, 1), .08f, Time.deltaTime);
         animator.SetFloat(MoveZ, Mathf.Clamp(local.z, -1, 1), .08f, Time.deltaTime);
+        // The shared Fodder body has cannon poses but no authored melee body clip.
+        // Melee rigs keep their own swing; spinner keeps its existing spin/hop.
+        // Neither should make the body pretend to charge or fire a cannon.
+        if (attack.Weapons.Count == 0 || attack.CurrentAttackIsMelee)
+        {
+            observedReleases = attack.Releases; observedWindup = false;
+            if (CurrentPose != Pose.Locomotion && (CurrentPose < Pose.HitFront || poseAge >= hitSeconds)) Play(Pose.Locomotion);
+            return;
+        }
         bool windup = attack.isActiveAndEnabled && attack.IsTelegraphing;
         if (attack.Releases != observedReleases)
         { observedReleases = attack.Releases; Play(Pose.Fire); }

@@ -9,7 +9,7 @@ public sealed class EnemyWeapon
     public MechWeaponAnimator weapon;
     [Tooltip("Multiplies the part's Damage.")]
     [Min(0f)] public float damageMultiplier = 1f;
-    [Tooltip("Multiplies the part's Cooldown/Reload - higher means slower attacks.")]
+    [Tooltip("Multiplies the part's attack interval. Melee fills this time with its swing; higher means slower attacks.")]
     [Min(0.01f)] public float cooldownMultiplier = 1f;
     [Tooltip("Multiplies the part's Projectile Speed, so shots can be dodged.")]
     [Min(0.01f)] public float projectileSpeedMultiplier = 1f;
@@ -21,7 +21,8 @@ public sealed class EnemyWeapon
 // never reload: they attack once per 1 / Fire Rate (x Cooldown Multiplier) with unlimited ammo.
 // Enemies never run out of ammo. Each weapon only attacks when the target is within its reach
 // (melee: its hit box; ranged: as far as its shot still does damage).
-// Taking turns (default): one weapon attacks at a time, then the enemy waits that weapon's cooldown.
+// Taking turns (default): one weapon attacks at a time. Melee fills its interval with the swing;
+// ranged weapons can finish firing before their interval expires.
 // Independent Weapons: every weapon runs on its own timer and fires whenever it is ready.
 [RequireComponent(typeof(EnemyAgent), typeof(CombatHealth))]
 [DisallowMultipleComponent]
@@ -36,7 +37,7 @@ public sealed class EnemyAttack : MonoBehaviour
         public CombatHealth target;
         public Vector3 aim;
         public Quaternion strikeRotation;
-        public float age, remaining;
+        public float age, remaining, duration;
         public bool attacking, released;
         public void Clear() { attacking = released = false; target = null; }
     }
@@ -52,10 +53,21 @@ public sealed class EnemyAttack : MonoBehaviour
     [SerializeField] bool respectAttackRangeAtRelease;
     [SerializeField, Range(0, 20)] float aimSpreadDegrees;
     public bool IsTelegraphing => PendingLane() != null;
-    public float AttackDuration => fireDuration;
+    public float AttackDuration => IsAttacking ? ActiveDuration() : DurationOf(Weapon);
     public Vector3 CommittedAim => PendingLane() != null ? PendingLane().aim : transform.position + transform.forward;
-    public float TelegraphProgress => PendingLane() != null ? Mathf.Clamp01(PendingLane().age / Mathf.Max(0.01f, fireDuration * releaseFrame)) : 0;
+    public float TelegraphProgress => PendingLane() != null ? Mathf.Clamp01(PendingLane().age / Mathf.Max(0.01f, PendingLane().duration * releaseFrame)) : 0;
     public bool CurrentAttackIsMelee => forceOverheadMelee || (PartOf(Weapon) != null && PartOf(Weapon).Stats.subtype == PartSubtype.Melee);
+    float DurationOf(MechWeaponAnimator weapon)
+    {
+        var part = PartOf(weapon);
+        return forceOverheadMelee || HasStats(part) && part.Stats.subtype == PartSubtype.Melee ? CooldownOf(weapon) : fireDuration;
+    }
+    float ActiveDuration()
+    {
+        if (!independentWeapons) return turnLane.duration;
+        foreach (var lane in weaponLanes) if (lane.attacking && lane.entry.weapon == Weapon) return lane.duration;
+        return DurationOf(Weapon);
+    }
     Lane PendingLane()
     {
         if (!independentWeapons) return turnLane.attacking && !turnLane.released ? turnLane : null;
@@ -263,7 +275,7 @@ public sealed class EnemyAttack : MonoBehaviour
         // A lost/dead target cancels the pending hit. A launched shot continues travelling.
         if (lane.target == null || !lane.target.isActiveAndEnabled || lane.target.IsDead) { lane.Clear(); return; }
         lane.age += deltaTime;
-        if (!lane.released && lane.age >= fireDuration * releaseFrame)
+        if (!lane.released && lane.age >= lane.duration * releaseFrame)
         {
             lane.released = true;
             Releases++;
@@ -276,7 +288,7 @@ public sealed class EnemyAttack : MonoBehaviour
             }
             else if (subtype == PartSubtype.Projectile || subtype == PartSubtype.Splash) FireRanged(part, lane);
         }
-        if (lane.age >= fireDuration) lane.Clear();
+        if (lane.age >= lane.duration) lane.Clear();
     }
 
     // Taking turns: starts the next weapon in order that can reach the target. Independent: starts
@@ -321,7 +333,8 @@ public sealed class EnemyAttack : MonoBehaviour
         // Melee only cares about walls; ranged also won't shoot into the back of another body.
         if (!ClearPath(target, AimPoint(target), melee)) return false;
         float cooldown = CooldownOf(weapon);
-        if (!weapon.PlayAttack(cooldown, fireDuration)) return false;
+        float duration = melee ? cooldown : fireDuration;
+        if (!weapon.PlayAttack(cooldown, duration)) return false;
         activeWeapon = weapon;
         lane.entry = entry;
         lane.target = target;
@@ -338,6 +351,7 @@ public sealed class EnemyAttack : MonoBehaviour
         }
         lane.strikeRotation = transform.rotation; // Melee strikes where the swing began, so side-steps dodge it.
         lane.age = stationaryAge = 0f;
+        lane.duration = duration;
         lane.remaining = cooldown;
         lane.attacking = true; lane.released = false;
         return true;

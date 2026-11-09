@@ -78,7 +78,7 @@ public static class FodderModelSetup
         }
         EditorUtility.SetDirty(controller);
     }
-    static void ConfigureFodder(GameObject root)
+    internal static void ConfigureFodder(GameObject root)
     {
         root.transform.position = Vector3.zero;
         var animator = root.GetComponentsInChildren<Animator>(true).Single(a => a.name == "ENEMY_Fodder");
@@ -98,11 +98,12 @@ public static class FodderModelSetup
         var target = new SerializedObject(root.GetComponent<MechTargetable>()); var aim = root.transform.Find("Aim"); aim.localPosition = bodyBounds.center + Vector3.up * bodyBounds.extents.y * .25f;
         target.FindProperty("aimPoint").objectReferenceValue = aim; target.ApplyModifiedPropertiesWithoutUndo();
         var motion = new SerializedObject(root.GetComponent<EnemyAnimation>()); motion.FindProperty("animator").objectReferenceValue = animator;
+        foreach (string name in new[] { "poses", "body", "head" }) motion.FindProperty(name).objectReferenceValue = null;
         motion.FindProperty("referenceSpeed").floatValue = root.GetComponent<EnemyAgent>().MaxSpeed; motion.ApplyModifiedPropertiesWithoutUndo();
         var presentation = root.GetComponent<EnemyFodderAnimation>() ?? root.AddComponent<EnemyFodderAnimation>();
         var fields = new SerializedObject(presentation); fields.FindProperty("animator").objectReferenceValue = animator; fields.ApplyModifiedPropertiesWithoutUndo();
     }
-    static Bounds BodyBounds(GameObject root)
+    internal static Bounds BodyBounds(GameObject root)
     {
         bool found = false; Bounds bounds = default;
         foreach (var filter in root.GetComponentsInChildren<MeshFilter>(true))

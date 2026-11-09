@@ -30,6 +30,8 @@ public sealed class MechWeaponAnimator : MonoBehaviour
     public MechWeaponAnimationSet Animations => animations;
     public Transform Placement => placement;
     public PoseState CurrentPose { get; private set; }
+    public bool MeleeSwingPlaying => CanAnimate && part.Stats != null && part.Stats.subtype == PartSubtype.Melee
+        && CurrentPose == PoseState.Fire;
     public float PreviewCooldownRemaining => Mathf.Max(0f, previewReadyAt - Time.time);
     public bool CanAnimate => isActiveAndEnabled && part != null && part.isEquipped
         && (part.EquippedBy != null && part.EquippedBy.isActiveAndEnabled
@@ -157,11 +159,18 @@ public sealed class MechWeaponAnimator : MonoBehaviour
         cooldown = Mathf.Max(0.01f, cooldown);
         float authoredFire = Mathf.Max(0.01f, animations.fire.length);
         float authoredReload = animations.reload != null ? Mathf.Max(0.01f, animations.reload.length) : 0f;
-        // Keep fire at its authored speed when possible. Fit shorter cooldowns,
-        // then stretch the reload pose to the remaining actual gameplay interval.
-        fireDuration = Mathf.Min(authoredFire, cooldown * authoredFire / (authoredFire + authoredReload));
-        if (requestedFireDuration > 0f) fireDuration = Mathf.Min(requestedFireDuration, cooldown);
-        reloadDuration = authoredReload > 0f ? cooldown - fireDuration : 0f;
+        // A melee interval is the complete swing, including its authored return.
+        // Slower/faster Fire Rate changes playback speed instead of adding idle recovery.
+        bool melee = part.Stats != null && part.Stats.subtype == PartSubtype.Melee;
+        if (melee) { fireDuration = cooldown; reloadDuration = 0f; }
+        else
+        {
+            // Ranged weapons retain their existing fire/reload timing. An enemy's
+            // overhead axe can explicitly request the full interval as its swing.
+            fireDuration = Mathf.Min(authoredFire, cooldown * authoredFire / (authoredFire + authoredReload));
+            if (requestedFireDuration > 0f) fireDuration = Mathf.Min(requestedFireDuration, cooldown);
+            reloadDuration = authoredReload > 0f ? cooldown - fireDuration : 0f;
+        }
         age = 0f;
         clips[1].SetTime(0f);
         ChangePose(PoseState.Fire);

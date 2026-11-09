@@ -19,6 +19,10 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
     [SerializeField, Min(0.1f)] float rockRadius = 0.6f;
     [SerializeField, Min(1)] float pullSpeed = 8;
     [SerializeField, Min(0.1f)] float maximumPullDuration = 2;
+    [Header("Throw-and-pull body contact")]
+    [Tooltip("Half-width of the damaging path swept by the enemy during its pull. Each target is hit once per pull.")]
+    [SerializeField, Min(0.1f)] float pullContactRadius = 1.1f;
+    [SerializeField, Min(0.1f)] float pullContactHalfHeight = 1.4f;
     [Header("Orbiting rock")]
     [Tooltip("How long the thrown rock rests on the floor before lifting into its orbit. Does not affect the throw-and-pull variant.")]
     [SerializeField, Min(0)] float orbitGroundPauseDuration = 1.2f;
@@ -43,6 +47,8 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
     float windupLift;
     float orbitAngle, orbitVerticalOffset;
     readonly HashSet<CombatHealth> orbitVictims = new HashSet<CombatHealth>();
+    readonly HashSet<CombatHealth> pullVictims = new HashSet<CombatHealth>();
+    Vector3 previousPullPosition;
     public RopeBehavior Behavior => behavior;
     public float OrbitRadius => orbitRadius;
     public int OrbitsStarted { get; private set; }
@@ -51,6 +57,7 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
         ? agent.Target != null && agent.DistanceToTarget <= agent.AttackRange + 0.5f : base.TargetInReach;
     public Vector3 LandedPosition => destination;
     public int Impacts { get; private set; }
+    public int PullContacts { get; private set; }
     Vector3 Hand => ropeAnchor != null ? ropeAnchor.position : transform.position + transform.rotation * handOffset;
     Vector3 HeldPosition => Hand + transform.rotation * heldRockOffset;
     Vector3 LandingMarker => destination + Vector3.down * (rockRadius - 0.06f);
@@ -93,6 +100,7 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
         if (rock == null || !base.BeginWindup()) return false;
         destination = committedTarget; destination.y = Ground(destination); impactApplied = cancelled = false;
         orbitVictims.Clear();
+        pullVictims.Clear();
         if (behavior == RopeBehavior.Orbit)
         {
             var direction = Steering.Flat(committedTarget - transform.position).normalized;
@@ -238,13 +246,23 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
         transform.rotation = Quaternion.RotateTowards(transform.rotation, wanted, orbitBodyTurnSpeed * Mathf.Max(0, dt));
     }
     void BeginRecovery() { CurrentStage = Stage.Recovery; age = 0; recoverStart = airbornePosition; marker.Hide(); }
-    public override void BeginPull() { if (behavior != RopeBehavior.Orbit) { CurrentStage = Stage.Pull; age = 0; } }
+    public override void BeginPull()
+    {
+        if (behavior == RopeBehavior.Orbit) return;
+        CurrentStage = Stage.Pull; age = 0;
+        previousPullPosition = transform.position; pullVictims.Clear();
+    }
     public override bool TickPull(float dt)
     {
         if (behavior == RopeBehavior.Orbit) return true;
         age += dt; DrawRope(); Vector3 to = Steering.Flat(destination - transform.position);
         if (to.magnitude <= 2.01f || age >= maximumPullDuration || age > dt && agent.LastMotionBlocked)
-        { agent.SetMovementIntent(EnemyMovementIntent.Hold, dt); CurrentStage = Stage.Recovery; age = 0; recoverStart = rock.position; return true; }
+        {
+            // End a directed pull with zero directed velocity. An ordinary Hold
+            // brakes over several frames and can drift past the rock's clearance.
+            agent.StopDirectedMovement();
+            CurrentStage = Stage.Recovery; age = 0; recoverStart = rock.position; return true;
+        }
         agent.SetDirectedMovement(to, Mathf.Min(pullSpeed, Mathf.Max(0, to.magnitude - 2) / Mathf.Max(0.001f, dt))); return false;
     }
     public override bool Recover(float dt)
@@ -256,6 +274,13 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
     void ResetRock() { windupLift = 0; if (rock != null) { rock.gameObject.SetActive(true); rock.position = HeldPosition; } DrawRope(); }
     void LateUpdate()
     {
+        // Match ordinary EnemyAttack's target-loss cancellation even if the
+        // graph is between recovery nodes. Never leave a live pull/contact behind.
+        if (CurrentStage != Stage.Idle && agent.Target == null) Cancel();
+        // The graph requests movement before EnemyAgent's motor runs. Sweep the
+        // actual final body displacement here, never a predicted path through a wall.
+        if (CurrentStage == Stage.Pull && behavior == RopeBehavior.ThrowAndPull
+            && Time.deltaTime > 0 && !CombatHitStop.IsFrozen(transform)) ResolvePullContact();
         // Keep the landed rock fixed while the existing motor pulls the actor;
         // parenting is retained so death/disable cleanup cannot leak an object.
         if (rock != null)
@@ -279,10 +304,29 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
         }
         DrawRope();
     }
+    void ResolvePullContact()
+    {
+        var position = transform.position;
+        var travel = position - previousPullPosition;
+        var flat = Steering.Flat(travel);
+        if (flat.sqrMagnitude > .000001f)
+        {
+            Physics.SyncTransforms();
+            var rotation = Quaternion.LookRotation(flat.normalized);
+            var origin = previousPullPosition + Vector3.up * .7f;
+            var result = blast.ResolveBox((previousPullPosition + position) * .5f + Vector3.up * .7f,
+                new Vector3(Mathf.Max(pullContactRadius, agent.BodyRadius), pullContactHalfHeight + Mathf.Abs(travel.y) * .5f,
+                    flat.magnitude * .5f + pullContactRadius), rotation, damage, transform, ~0, origin, pullVictims);
+            PullContacts += result.Hits;
+            if (result.Hits > 0) ImpactSound();
+        }
+        previousPullPosition = position;
+    }
     void DrawRope()
     {
         if (rope == null || rock == null) return;
-        rope.enabled = isActiveAndEnabled && !cancelled && rock.gameObject.activeInHierarchy;
+        rope.enabled = isActiveAndEnabled && !cancelled && rock.gameObject.activeInHierarchy
+            && agent != null && agent.Target != null;
         var hand = Hand; var end = rock.position;
         // Attach to the near surface of the centered rock, with slack until the pull tensions it.
         var towardHand = hand - end;
@@ -298,6 +342,6 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
             rope.SetPosition(i, point);
         }
     }
-    public override void Cancel() { base.Cancel(); cancelled = true; orbitVictims.Clear(); ResetRock(); if (rope != null) rope.enabled = false; }
+    public override void Cancel() { base.Cancel(); cancelled = true; orbitVictims.Clear(); pullVictims.Clear(); ResetRock(); if (rope != null) rope.enabled = false; }
     void OnDestroy() { if (ropeMaterial != null) Destroy(ropeMaterial); }
 }

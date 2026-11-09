@@ -16,9 +16,15 @@ public static partial class EnemyBehaviorChecks
         if (!Application.isBatchMode || !Path.GetFullPath(root).StartsWith(Path.GetFullPath(Path.GetTempPath()), StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Disposable project only.");
         EnemyRosterSetup.UpgradeAssets(); EnemyRosterSetup.UpgradeAssets();
+        SessionState.SetBool(Pending + ".PullOnly", false);
         SessionState.SetBool(Pending + ".Arena", false); SessionState.SetBool(Pending + ".Rope", true);
         GraphicsSettings.defaultRenderPipeline = AssetDatabase.LoadAssetAtPath<RenderPipelineAsset>("Assets/Settings/PC_RPAsset.asset"); QualitySettings.renderPipeline = null;
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene); SessionState.SetBool(Pending, true); EditorApplication.EnterPlaymode();
+    }
+    public static void RunPullOnlyBatch()
+    {
+        RunRopeBatch();
+        SessionState.SetBool(Pending + ".PullOnly", true);
     }
     static Transform RopePart(EnemyRopeAttack attack, string name) => (Transform)new SerializedObject(attack).FindProperty(name).objectReferenceValue;
     static Vector3 HeldRock(EnemyRopeAttack attack) => RopePart(attack, "ropeAnchor").position
@@ -81,13 +87,14 @@ public static partial class EnemyBehaviorChecks
             "The rock stays fixed as the elite pulls along the taut tether instead of tracking a moved player"); Capture("rope-pull", actor);
         yield return Until(() => attack.CurrentStage == EnemyGraphAttack.Stage.Recovery, 4, "Rope recovery missing");
         Check(Steering.Flat(actor.transform.position - landed).magnitude >= 1.98f && Steering.Flat(actor.transform.position - landed).magnitude < 2.2f,
-            "Pull stops at its two-unit clearance without overshooting the rock");
+            "Pull stops at its two-unit clearance without overshooting the rock; distance=" + Steering.Flat(actor.transform.position - landed).magnitude);
         yield return Frames(52); Check(Vector3.Distance(RopePart(attack, "rock").position, HeldRock(attack)) < .005f && TetherAttached(attack),
             "Recovery returns the rock to its attached held position"); Capture("rope-recovered", actor);
         player.SetActive(false); yield return Frames(5);
         Check(attack.CurrentStage == EnemyGraphAttack.Stage.Idle && !RopeLine(attack).enabled
             && Vector3.Distance(RopePart(attack, "rock").position, HeldRock(attack)) < .005f,
-            "Losing the target during recovery cancels the abandoned rope instead of leaving it stretched out");
+            "Losing the target during recovery cancels the abandoned rope instead of leaving it stretched out; stage=" + attack.CurrentStage
+                + "; visible=" + RopeLine(attack).enabled + "; held gap=" + Vector3.Distance(RopePart(attack, "rock").position, HeldRock(attack)));
         player.SetActive(true); yield return Remove(actor);
 
         foreach (var stage in new[] { EnemyGraphAttack.Stage.Windup, EnemyGraphAttack.Stage.Attack, EnemyGraphAttack.Stage.Pull, EnemyGraphAttack.Stage.Recovery })
@@ -147,6 +154,6 @@ public static partial class EnemyBehaviorChecks
         Check(Vector3.Distance(attack.LandedPosition, launch) < 1,
             "A rock already overlapping scenery stops at its launch point instead of jumping to world origin: " + attack.LandedPosition);
         yield return Remove(actor); Object.Destroy(obstruction); yield return Frames(2);
-        yield return OrbitCases();
+        if (!SessionState.GetBool(Pending + ".PullOnly", false)) yield return OrbitCases();
     }
 }

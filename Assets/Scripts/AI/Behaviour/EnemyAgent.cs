@@ -292,6 +292,15 @@ public sealed class EnemyAgent : MonoBehaviour
         GoalDirection = directedVelocity.normalized; FaceTarget = false; InAttackRange = false;
     }
 
+    // A completed special must not carry its directed velocity into the next
+    // graph node's ordinary braking Hold, even when both nodes run this frame.
+    public void StopDirectedMovement()
+    {
+        if (!externalDecisions) return;
+        velocity = directedVelocity = Vector3.zero;
+        SetMovementIntent(EnemyMovementIntent.Hold, 0);
+    }
+
     // Local positioning uses the ordinary force integration, separation, avoidance,
     // collision and ground following. It is deliberately not a Directed charge.
     public void SetPositionGoal(Vector3 goal, float dt, float stopRadius = 0.15f)

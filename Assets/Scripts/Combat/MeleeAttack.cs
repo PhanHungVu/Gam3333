@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// A melee swing from a Melee part: damage and cooldown from the part's stats, the shared hit box
+// A melee swing from a Melee part: damage and swing duration from the part's stats, the shared hit box
 // from MechCombat (its reach scaled by the part's Range), reach assist toward a just-out-of-reach
 // locked enemy, and the short melee camera hold. The mech's body never moves or turns.
 public sealed class MeleeAttack
@@ -28,6 +28,10 @@ public sealed class MeleeAttack
     public bool TryStart(Part part, PartCategory socket)
     {
         if (Pending || part.ReadyAt > Time.time) return false;
+        // Hitstop freezes the visual swing while the wall clock still advances.
+        // Do not cut that swing off with held attack input when time resumes.
+        var animation = part.GetComponent<MechWeaponAnimator>();
+        if (animation != null && animation.MeleeSwingPlaying) return false;
         activePart = part;
         activeSocket = socket;
         strikeDamage = Mathf.Max(0f, part.Stats.GetStat(StatType.Damage)) * combat.DamageModifiers.Total;

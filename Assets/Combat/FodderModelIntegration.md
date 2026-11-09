@@ -4,7 +4,9 @@ The imported enemy is `Models/Specialist/ENEMY_Fodder.fbx`. The teammate's teste
 
 ## Replacement and compatibility
 
-Both `Enemy_Fodder.prefab` and the legacy **`Enemy_crossbow.prefab`** now use this Fodder body/cannon setup. The legacy asset name/path remain for compatibility. Its GUID, root GameObject fileID and all 16 existing root component IDs are preserved. Existing Roaming, KOTH, Escort, Elimination, Training, Zoo and controlled-encounter references therefore resolve the replacement automatically. Wave data, spawn counts, weights and the Crossbow AI role are unchanged. Elite crossbow enemies, melee enemies and the player are not replaced.
+Both `Enemy_Fodder.prefab` and the legacy **`Enemy_crossbow.prefab`** use this Fodder body/cannon setup. The legacy asset name/path remain for compatibility. Its GUID, root GameObject fileID and all 16 existing root component IDs are preserved. Existing Roaming, KOTH, Escort, Elimination, Training, Zoo and controlled-encounter references therefore resolve the replacement automatically. Wave data, spawn counts, weights and the Crossbow AI role are unchanged. Elite crossbow enemies and the player are not replaced.
+
+The small sword, mace, hammer, throwing-axe and spinner variants now use the same body too. Sword/mace/hammer/axe keep both original weapon Parts and their independent visual rigs; their original world sizes are preserved and dedicated holders mount them above the Fodder body. Hammer retains the current mace model. The spinner uses the Fodder body with its existing spin/hop presentation. No cannon is added to these melee/special variants. All root prefab IDs, existing root component IDs, AI roles, tuning and loot tables are preserved; waves and scene references continue to use the same assets.
 
 The Fodder remains a small ranged enemy with the demo's 80 HP, movement speed 5, range 8, minimum preferred distance 5, cost 2, 1-second attack and 70% release point. Its carried weapon is the demo's Specialist cannon, rather than the former two crossbow arms. This also means the replacement uses the demo cannon's splash shot and cannon drop. The normal player crossbow weapons/projectiles remain available and unchanged.
 
@@ -19,6 +21,8 @@ The Fodder remains a small ranged enemy with the demo's 80 HP, movement speed 5,
 
 `EnemyFodderAnimation` is presentation only. Existing `EnemyAnimation` and `EnemyAgent` retain locomotion/movement ownership. Root motion remains disabled; no model scale is modified at runtime. Cancelling a pending attack returns the charging pose to locomotion. Hitstop freezes presentation, and pooling resets it without replaying the previous shot. Hit reactions do not impose gameplay stun or ragdoll physics.
 
+The imported body has no authored melee body attack clip. Melee variants therefore keep locomotion and directional hit reactions while their weapon rigs play the existing swing. They do not play the cannon charge/fire body poses. Spinner rotation and hopping still affect only `VisualMech`.
+
 The imported body and cannon use the teammate's grey materials and attachment transforms. A fixed root hurtbox is fitted to the actual body geometry rather than inheriting the visual holder's offsets; the body is aligned to the floor and the targeting marker sits in the body. The cannon remains attached to its authored shoulder bone. Shared player weapon assets, audio assets, model files and FBX import settings are unchanged.
 
 ## Melee and loot compatibility
@@ -28,6 +32,8 @@ Both prefabs were tested with this branch's upright melee shove. Living enemies 
 ## Authoring and verification
 
 `Tools > Mech > Enemies > Connect Zoo Fodder Model and Animations` rebuilds the controller and updates the two existing prefabs through `FodderModelSetup`. It retains the legacy root IDs and remaps root/component, Animator, weapon, aim and Behavior Graph Self references into the replacement hierarchy. Rerun this tool after changing the canonical Zoo Fodder setup or regenerating the old enemy roster. No automatic asset mutation runs when scripts compile.
+
+`Tools > Mech > Enemies > Use Fodder Body For All Small Enemies` applies the body replacement to the other five variants through `SmallEnemyFodderSetup`. It refits their body hurtbox and aim point and reconnects locomotion/spinner presentation. Repeated use retains the existing weapon mounts, avoiding duplicates or resetting manual mount adjustments. It does not rebuild graphs, rebalance enemies or change mission wave lists.
 
 Isolated Unity 6000.5.8f1 validation: **54 focused model/runtime checks and 997 core gameplay checks passed**, exit 0. The old enemy combat regression now expects the actual Fodder cannon's audio, splash projectile and direct-plus-splash damage instead of the retired enemy crossbow loadout. Focused checks cover both prefabs, preserved legacy references across six wave lists, rig/weapon ownership, grounded hurtboxes/aim points, strafing, telegraph/fire synchronization, all hit directions, pooling, live graphs, melee push, killing launch and cannon loot. Idle, strafing, charging and firing captures were inspected. Logs/captures are archived under `.quest-review/Results/FodderModelIntegration`.
 
