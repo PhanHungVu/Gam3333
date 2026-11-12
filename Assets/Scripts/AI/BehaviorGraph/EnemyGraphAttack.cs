@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 // Execution contract for bespoke attacks. Graph nodes explicitly order windup,
 // execution, movement and recovery. Damage stays in the shared CombatBlast rules.
@@ -11,7 +12,10 @@ public abstract class EnemyGraphAttack : MonoBehaviour
     [SerializeField, Min(0.1f)] protected float recoveryDuration = 0.8f;
     [SerializeField, Min(0)] protected float damage = 18;
     [Header("Optional authored audio (empty by default)")]
-    [SerializeField] AudioClip windupSound, impactSound;
+    [FormerlySerializedAs("windupSound")]
+    [Tooltip("Plays when the special attack becomes active, after its silent warning phase.")]
+    [SerializeField] AudioClip attackSound;
+    [SerializeField] AudioClip impactSound;
     protected EnemyAgent agent;
     protected EnemyThreatMarker marker;
     protected readonly CombatBlast blast = new CombatBlast();
@@ -31,10 +35,15 @@ public abstract class EnemyGraphAttack : MonoBehaviour
     {
         if (CooldownRemaining > 0 || !TargetInReach) return false;
         committedTarget = agent.TargetPosition; age = 0; CurrentStage = Stage.Windup; readyAt = Time.time + cooldown;
-        Play(windupSound); return true;
+        return true;
     }
     public abstract bool TickWindup(float dt);
     public abstract void BeginAttack();
+    protected void BeginActiveAttack()
+    {
+        CurrentStage = Stage.Attack; age = 0;
+        Play(attackSound);
+    }
     public abstract bool TickAttack(float dt);
     public virtual void BeginPull() { }
     public virtual bool TickPull(float dt) => true;

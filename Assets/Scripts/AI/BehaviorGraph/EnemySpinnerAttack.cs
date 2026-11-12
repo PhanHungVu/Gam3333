@@ -72,7 +72,7 @@ public sealed class EnemySpinnerAttack : EnemyGraphAttack
         marker.Lane(transform.position, transform.position + direction * chargeSpeed * chargeDuration, contactRadius * 2, t);
         return age >= windupDuration;
     }
-    public override void BeginAttack() { chargeVictims.Clear(); CurrentStage = Stage.Attack; age = 0; previous = transform.position; marker.Hide(); }
+    public override void BeginAttack() { chargeVictims.Clear(); BeginActiveAttack(); previous = transform.position; marker.Hide(); }
     void Knockback(CombatHealth victim)
     {
         if (victim == null || victim.IsDead || !victim.TryGetComponent<MechMovementController>(out var movement)) return;

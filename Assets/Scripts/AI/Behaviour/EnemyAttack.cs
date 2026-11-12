@@ -413,6 +413,9 @@ public sealed class EnemyAttack : MonoBehaviour
     // CombatBlast. Walls block it (see ClearPath); other bodies don't, and teams stop it hurting other enemies.
     void StrikeMelee(Part part, Lane lane)
     {
+        // This is the active strike, after release-time range/wall checks. A
+        // legitimate swing may miss; a cancelled/blocked windup never plays it.
+        lane.entry.weapon.PlayAttackSound();
         Vector3 scale = MeleeAttack.BoxScale(transform.lossyScale, part, MetresPerGolem);
         Vector3 center = transform.position + lane.strikeRotation * Vector3.Scale(meleeCenter, scale);
         blast.ResolveBox(center, Vector3.Scale(meleeSize, scale) * 0.5f, lane.strikeRotation, DamageOf(lane.entry.weapon),
@@ -427,7 +430,8 @@ public sealed class EnemyAttack : MonoBehaviour
         var stats = part.Stats;
         // Full damage all the way; the shot flies its weapon's Range, or at least twice the enemy's Attack Range.
         float range = Mathf.Max(Mathf.Max(0.01f, stats.GetStat(StatType.Range) * MetresPerGolem), agent.AttackRange * 2f);
-        RangedAttack.Fire(part, transform, position, lane.aim, transform.forward, range,
+        var projectile = RangedAttack.Fire(part, transform, position, lane.aim, transform.forward, range,
             hitLayers, projectileMaterial, null, lane.entry.damageMultiplier, lane.entry.projectileSpeedMultiplier);
+        if (projectile != null) lane.entry.weapon.PlayAttackSound();
     }
 }

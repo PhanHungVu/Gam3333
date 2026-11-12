@@ -69,6 +69,13 @@ public static class PickupHighlightChecks
         var actor = Equipment("Pickup test owner"); actor.transform.position = Vector3.right * 15;
         var prefab = Resources.Load<PickupHighlight>(PickupHighlight.ResourceName);
         Check(prefab != null, "The reusable prefab is available to runtime drops through Resources");
+        var tuning = new SerializedObject(prefab);
+        Check(tuning.FindProperty("outlineWidth").floatValue == 3.5f && tuning.FindProperty("sparkleSize").floatValue == .95f
+            && tuning.FindProperty("minimumSparklePixels").floatValue == 28, "Saved pickup prefab has the thicker outline and larger world/screen-space glint");
+        var enemyPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PickupHighlightSetup.EnemyPrefabPath);
+        Check(enemyPrefab != null && PrefabUtility.GetPrefabAssetType(enemyPrefab) == PrefabAssetType.Variant
+            && enemyPrefab.GetComponentsInChildren<Collider>(true).Length == 0, "Enemy gold glint reuses the highlight as a collision-free prefab variant");
+        DropPlanChecks();
         foreach (string path in new[] {
             SpecialistPlayerIntegrationSetup.CannonPath, SpecialistPlayerIntegrationSetup.SmallCrossbowPath, SpecialistPlayerIntegrationSetup.LargeCrossbowPath,
             "Assets/Prefabs/Mech/Base/Parts/arm_sword.prefab", "Assets/Prefabs/Mech/Base/Parts/arm_mace.prefab", "Assets/Prefabs/Mech/Base/Parts/arm_throwingaxe.prefab",
@@ -121,6 +128,12 @@ public static class PickupHighlightChecks
         yield return Frames();
         Check(prop.GetComponent<Part>() == null && effectOnProp.Target == prop.transform && effectOnProp.IsVisible && effectOnProp.OutlineCount == 1,
             "Dragging the prefab under a non-Part prop automatically outlines that parent");
+        var effectFields = new SerializedObject(effectOnProp); effectFields.FindProperty("drawOutline").boolValue = false; effectFields.ApplyModifiedPropertiesWithoutUndo();
+        yield return Frames();
+        Check(effectOnProp.IsVisible && effectOnProp.OutlineCount == 0, "Live Draw Outline tuning removes only the outline while retaining the glint");
+        effectFields.Update(); effectFields.FindProperty("drawOutline").boolValue = true; effectFields.ApplyModifiedPropertiesWithoutUndo();
+        yield return Frames();
+        Check(effectOnProp.IsVisible && effectOnProp.OutlineCount == 1, "Re-enabling outline tuning restores one shell without duplicates");
         var sparkleFields = new SerializedObject(effectOnProp).FindProperty("sparkles");
         for (int i = 0; i < sparkleFields.arraySize; i++) ((MeshRenderer)sparkleFields.GetArrayElementAtIndex(i).objectReferenceValue).enabled = false;
         var outlinePixels = Capture(camera, "outline-only");
@@ -150,6 +163,14 @@ public static class PickupHighlightChecks
         fields.FindProperty("partPrefabs").GetArrayElementAtIndex(0).objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>(SpecialistPlayerIntegrationSetup.CannonPath).GetComponent<Part>();
         fields.FindProperty("dropChancePercent").floatValue = 100;
         fields.FindProperty("popVelocity").floatValue = 0; fields.ApplyModifiedPropertiesWithoutUndo();
+        yield return Frames();
+        var carrierGlint = enemy.GetComponentInChildren<PickupHighlight>(true);
+        Check(dropper.WillDropPart && dropper.PlannedDrop.data == carried.data && carrierGlint != null && carrierGlint.IsVisible
+            && carrierGlint.OutlineCount == 0 && carrierGlint.Target == enemy.transform, "A live guaranteed loot carrier shows the sparkle-only marker on its own meshes");
+        var star = carrierGlint.GetComponentsInChildren<MeshRenderer>().First(r => r.enabled);
+        var block = new MaterialPropertyBlock(); star.GetPropertyBlock(block); var gold = block.GetColor("_Color");
+        Check(gold.r > gold.g && gold.g > gold.b && gold.a > 0, "Carrier marker uses its gold tint without changing the shared white pickup material");
+        Capture(camera, "gold-loot-carrier");
         health.ApplyDamage(health.MaximumHealth);
         yield return Frames();
         var loot = Object.FindObjectsByType<Part>().Single(p => !p.isEquipped);
@@ -157,10 +178,108 @@ public static class PickupHighlightChecks
         var corpse = Object.FindAnyObjectByType<CombatRagdoll>();
         Check(corpse != null && corpse.GetComponentInChildren<PickupHighlight>(true) == null
             && loot.GetComponentInChildren<PickupHighlight>().IsVisible, "Death leaves an unmarked corpse and a separately highlighted loose drop");
+        Check(corpse.GetComponentsInChildren<Renderer>(true).All(r => r.sharedMaterials.All(m => m == null || m.shader.name != "Lithomachia/Pickup Star")),
+            "The gold carrier star is hidden before corpse renderers are copied");
         yield return Frames(20); Capture(camera, "corpse-and-highlighted-drop");
         foreach (string shader in new[] { "Lithomachia/Pickup Star", "Lithomachia/Pickup Outline" })
             Check(!ShaderUtil.ShaderHasError(Shader.Find(shader)), shader + " compiles without errors");
         Object.Destroy(enemy.gameObject);
+        foreach (var corpseToClear in Object.FindObjectsByType<CombatRagdoll>()) Object.Destroy(corpseToClear.gameObject);
+        foreach (var loosePart in Object.FindObjectsByType<Part>()) if (!loosePart.isEquipped) Object.Destroy(loosePart.gameObject);
+        yield return Frames();
+        yield return RealCarrierChecks(camera);
+    }
+    static EnemyPartDrop PlannedEnemy(float chance, Part[] parts)
+    {
+        var root = new GameObject("Controlled drop plan"); root.SetActive(false);
+        root.AddComponent<CombatHealth>(); var drop = root.AddComponent<EnemyPartDrop>();
+        var fields = new SerializedObject(drop); fields.FindProperty("dropChancePercent").floatValue = chance;
+        fields.FindProperty("showDropMarker").boolValue = false;
+        var list = fields.FindProperty("partPrefabs"); list.arraySize = parts.Length;
+        for (int i = 0; i < parts.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = parts[i];
+        fields.ApplyModifiedPropertiesWithoutUndo(); root.SetActive(true); return drop;
+    }
+    static void DropPlanChecks()
+    {
+        var parts = new[] { "sword", "mace" }.Select(n => AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mech/Base/Parts/arm_" + n + ".prefab").GetComponent<Part>()).ToArray();
+        int promised = 0, empty = 0;
+        for (int seed = 0; seed < 24; seed++)
+        {
+            UnityEngine.Random.InitState(seed);
+            bool passes = UnityEngine.Random.value * 100 < 30;
+            Part expected = passes ? parts[UnityEngine.Random.Range(0, parts.Length)] : null;
+            UnityEngine.Random.InitState(seed);
+            var drop = PlannedEnemy(30, parts);
+            Check(drop.WillDropPart == passes && drop.PlannedDrop == expected, "Spawn plan preserves the configured chance and item selection, seed " + seed);
+            var random = UnityEngine.Random.state;
+            for (int read = 0; read < 20; read++)
+                if (drop.WillDropPart != passes || drop.PlannedDrop != expected) throw new Exception("Drop promise changed between marker reads.");
+            Check(UnityEngine.Random.state.Equals(random) && drop.PlannedDrop == expected, "Repeated marker reads never reroll loot, seed " + seed);
+            int contrarySeed = 0;
+            while (contrarySeed < 1000)
+            {
+                UnityEngine.Random.InitState(contrarySeed);
+                if ((UnityEngine.Random.value * 100 < 30) != passes) break;
+                contrarySeed++;
+            }
+            UnityEngine.Random.InitState(contrarySeed);
+            drop.GetComponent<CombatHealth>().ApplyDamage(1000);
+            Check(passes ? drop.LastDrop != null && drop.LastDrop.data == expected.data : drop.LastDrop == null,
+                "Death honors the visible promise even when combat changed RNG, seed " + seed);
+            if (passes) promised++; else empty++;
+            var loot = drop.LastDrop;
+            Check(drop.ResolveDeathDrop() == loot && !drop.WillDropPart, "Death callbacks are idempotent and cannot keep a live carrier marker, seed " + seed);
+            if (loot != null) Object.DestroyImmediate(loot.gameObject);
+            Object.DestroyImmediate(drop.gameObject);
+        }
+        Check(promised > 0 && empty > 0, "Seeded plan fixtures exercise both carriers and ordinary enemies");
+        foreach (var setting in new[] { (0f, parts), (100f, new Part[0]), (100f, new Part[] { null }) })
+        {
+            var drop = PlannedEnemy(setting.Item1, setting.Item2);
+            Check(!drop.WillDropPart && drop.PlannedDrop == null, "Zero chance/empty/null loot cannot advertise a promised drop");
+            drop.GetComponent<CombatHealth>().ApplyDamage(1000);
+            Check(drop.LastDrop == null, "Invalid or disabled loot plans remain empty on death");
+            Object.DestroyImmediate(drop.gameObject);
+        }
+    }
+    static IEnumerator RealCarrierChecks(Camera camera)
+    {
+        var gate = new GameObject("Real Fodder loot review"); gate.SetActive(false);
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(FodderModelSetup.FodderPath);
+        var marked = Object.Instantiate(prefab, gate.transform); var normal = Object.Instantiate(prefab, gate.transform);
+        marked.transform.position = new Vector3(-1.5f, 1, 0); normal.transform.position = new Vector3(1.5f, 1, 0);
+        foreach (var root in new[] { marked, normal })
+        {
+            root.GetComponent<EnemyGraphController>().enabled = false;
+            root.GetComponent<Unity.Behavior.BehaviorGraphAgent>().enabled = false;
+            root.GetComponent<EnemyAgent>().enabled = false; root.GetComponent<EnemyAttack>().enabled = false;
+            var fields = new SerializedObject(root.GetComponent<EnemyPartDrop>());
+            fields.FindProperty("dropChancePercent").floatValue = root == marked ? 100 : 0; fields.ApplyModifiedPropertiesWithoutUndo();
+        }
+        camera.transform.position = new Vector3(0, 3.3f, -8); camera.transform.LookAt(new Vector3(0, 1.4f, 0));
+        gate.SetActive(true); yield return Frames(5);
+        var drop = marked.GetComponent<EnemyPartDrop>(); var marker = marked.GetComponentInChildren<PickupHighlight>(true);
+        Check(drop.WillDropPart && marker != null && marker.IsVisible && marker.OutlineCount == 0,
+            "Actual new Fodder body automatically shows its guaranteed-drop gold star without outlining the enemy");
+        Check(!normal.GetComponent<EnemyPartDrop>().WillDropPart && normal.GetComponentInChildren<PickupHighlight>(true) == null,
+            "Ordinary Fodder enemies create no misleading loot marker");
+        Capture(camera, "fodder-gold-carrier-and-normal");
+        marked.SetActive(false);
+        Check(!marker.gameObject.activeSelf && !marker.IsVisible, "Disabling a carrier hides the reused marker immediately");
+        marked.GetComponent<CombatHealth>().SetMaximum(100, true); marked.SetActive(true); yield return Frames(3);
+        Check(marked.GetComponentsInChildren<PickupHighlight>(true).Length == 1 && marker.IsVisible && drop.WillDropPart,
+            "A pooled life gets a fresh loot plan and reuses one marker");
+        var planned = drop.PlannedDrop; marked.GetComponent<CombatHealth>().ApplyDamage(1000); yield return Frames();
+        Check(drop.LastDrop != null && drop.LastDrop.data == planned.data && !marker.IsVisible,
+            "The real carrier drops its promised equipped weapon and clears the star");
+        foreach (var corpse in Object.FindObjectsByType<CombatRagdoll>())
+        {
+            Check(corpse.GetComponentsInChildren<Renderer>(true).All(r => r.sharedMaterials.All(m => m == null || m.shader.name != "Lithomachia/Pickup Star")),
+                "Real Fodder corpses never inherit the live gold marker");
+            Object.Destroy(corpse.gameObject);
+        }
+        Object.Destroy(gate); foreach (var part in Object.FindObjectsByType<Part>()) if (!part.isEquipped) Object.Destroy(part.gameObject);
+        yield return Frames();
     }
     static EquipManager Equipment(string name)
     {

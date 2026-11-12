@@ -12,16 +12,18 @@ public sealed class PickupHighlight : MonoBehaviour
     [SerializeField] Material outlineMaterial;
     [SerializeField] MeshRenderer[] sparkles;
     [Header("Outline")]
-    [SerializeField, Range(.5f, 4)] float outlineWidth = 1.5f;
+    [SerializeField] bool drawOutline = true;
+    [SerializeField, Range(.5f, 8)] float outlineWidth = 3.5f;
     [SerializeField] Color outlineColor = new Color(1, 1, 1, .32f);
-    [Header("White star glint")]
-    [SerializeField, Min(.05f)] float sparkleSize = .55f;
+    [Header("Star glint")]
+    [SerializeField] Color sparkleColor = Color.white;
+    [SerializeField, Min(.05f)] float sparkleSize = .95f;
     [SerializeField, Min(0)] float heightAboveObject = .12f;
     [SerializeField, Min(.25f)] float pulsePeriod = 2.2f;
-    [SerializeField, Range(0, 4)] float brightness = 1.8f;
+    [SerializeField, Range(0, 4)] float brightness = 2.2f;
     [Header("Visibility")]
     [SerializeField, Min(1)] float maximumDistance = 65;
-    [SerializeField, Range(0, 32)] float minimumSparklePixels = 18;
+    [SerializeField, Range(0, 48)] float minimumSparklePixels = 28;
     [Tooltip("Optional camera for distance fading. Billboards face each rendering camera automatically.")]
     [SerializeField] Camera viewCamera;
 
@@ -35,10 +37,13 @@ public sealed class PickupHighlight : MonoBehaviour
     static readonly int SizeId = Shader.PropertyToID("_Size"), BrightnessId = Shader.PropertyToID("_Brightness");
     static PickupHighlight template;
     Transform builtTarget;
-    bool built;
+    bool built, builtOutlineEnabled;
     float phase;
     public Transform Target => target;
-    public int OutlineCount => outlines.Count;
+    public int OutlineCount
+    {
+        get { int count = 0; foreach (var outline in outlines) if (outline.copy != null) count++; return count; }
+    }
     public bool IsVisible { get; private set; }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -79,8 +84,8 @@ public sealed class PickupHighlight : MonoBehaviour
     {
         if (!Application.isPlaying) return;
         ClearOutlines();
-        built = true; builtTarget = target;
-        if (target == null || outlineMaterial == null) return;
+        built = true; builtTarget = target; builtOutlineEnabled = drawOutline;
+        if (target == null) return;
         foreach (var source in target.GetComponentsInChildren<Renderer>(true))
         {
             if (!source.enabled || source.shadowCastingMode == ShadowCastingMode.ShadowsOnly
@@ -90,6 +95,10 @@ public sealed class PickupHighlight : MonoBehaviour
             if (source is SkinnedMeshRenderer skin) mesh = skin.sharedMesh;
             else if (source is MeshRenderer && source.TryGetComponent<MeshFilter>(out var filter)) mesh = filter.sharedMesh;
             if (mesh == null || mesh.subMeshCount == 0) continue;
+            // Sparkle-only markers still follow the target's mesh bounds, without
+            // adding an outline draw call for every mesh on a living enemy.
+            if (!drawOutline || outlineMaterial == null)
+            { outlines.Add(new Outline { source = source }); continue; }
             var proxy = new GameObject("Pickup Outline (visual only)") { layer = source.gameObject.layer, hideFlags = HideFlags.DontSave };
             proxy.transform.SetParent(source.transform, false);
             Renderer copy;
@@ -117,7 +126,7 @@ public sealed class PickupHighlight : MonoBehaviour
 
     void LateUpdate()
     {
-        if (builtTarget != target) RebuildOutline();
+        if (builtTarget != target || builtOutlineEnabled != drawOutline) RebuildOutline();
         if (viewCamera == null || !viewCamera.isActiveAndEnabled) viewCamera = Camera.main;
         if (viewCamera == null || target != null && !target.gameObject.activeInHierarchy) { Hide(); return; }
 
@@ -162,7 +171,8 @@ public sealed class PickupHighlight : MonoBehaviour
             sparkle.transform.position = center + (i == 0 ? Vector3.zero : viewCamera.transform.right * size * .32f + Vector3.up * size * .25f);
             sparkle.bounds = new Bounds(sparkle.transform.position, Vector3.one * size);
             properties.Clear();
-            properties.SetColor(ColorId, new Color(1, 1, 1, fade * (.16f + .84f * pulse)));
+            var color = sparkleColor; color.a *= fade * (.16f + .84f * pulse);
+            properties.SetColor(ColorId, color);
             properties.SetFloat(SizeId, size * (i == 0 ? 1 : .45f) * (.7f + .3f * pulse));
             properties.SetFloat(BrightnessId, brightness);
             sparkle.SetPropertyBlock(properties);

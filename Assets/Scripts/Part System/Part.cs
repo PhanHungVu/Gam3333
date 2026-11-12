@@ -50,8 +50,57 @@ public class Part : MonoBehaviour
     // What this part is, read from its data (the single source of truth). Parts have no side:
     // which arm/shoulder socket it uses is decided when it is equipped.
     public PartType partType => data != null ? data.partType : default;
-    // This part's stats. Systems read stats only through here, so per-part stat rolls can plug in later.
-    public PartData Stats => data;
+    // data remains the shared definition/identity. Only this physical item's
+    // numeric stats are rolled, so all existing gameplay/UI readers share one view.
+    public PartData Stats => HasRolledStats ? rolledStats : data;
+    public bool HasRolledStats => rolledStats != null && preparedFrom == data;
+    public int StatRollSeed => HasRolledStats ? statRollSeed : 0;
+    PartData rolledStats, preparedFrom;
+    bool statsPrepared;
+    int statRollSeed;
+
+    // A fresh world pickup rolls before ordinary interaction. Starting loadouts
+    // and carried enemy weapons are fixed by their existing attachment lifecycle.
+    void Start()
+    {
+        if (!isEquipped && EquippedBy == null && GetComponentInParent<CombatHealth>() == null) RollLootStats();
+        else PrepareFixedStats();
+    }
+
+    bool CanRollLootStats => Application.isPlaying && data != null && !(statsPrepared && preparedFrom == data)
+        && !isEquipped && EquippedBy == null && GetComponentInParent<CombatHealth>() == null;
+
+    public bool RollLootStats()
+    {
+        // Do not consume combat RNG for an item which already has its values.
+        return CanRollLootStats && RollLootStats(Random.Range(1, int.MaxValue));
+    }
+
+    // Seeded entry point for loot spawners or a future save system. Never rerolls
+    // an existing item, replenishes ammunition, or changes its shared definition.
+    public bool RollLootStats(int seed)
+    {
+        if (!CanRollLootStats) return false;
+        ReleaseRolledStats();
+        preparedFrom = data; statsPrepared = true; statRollSeed = seed;
+        rolledStats = PartStatRoll.Create(data, seed);
+        return rolledStats != null;
+    }
+
+    void PrepareFixedStats()
+    {
+        if (statsPrepared && preparedFrom == data) return;
+        ReleaseRolledStats();
+        preparedFrom = data; statsPrepared = true; statRollSeed = 0;
+    }
+
+    void ReleaseRolledStats()
+    {
+        if (rolledStats == null) return;
+        if (Application.isPlaying) Destroy(rolledStats); else DestroyImmediate(rolledStats);
+        rolledStats = null;
+    }
+    void OnDestroy() => ReleaseRolledStats();
     // Slot this part currently occupies; null while it is loose.
     public PartCategory? Slot { get; internal set; }
     public bool isStartingPart = true;
@@ -156,6 +205,9 @@ public class Part : MonoBehaviour
     }
     internal void SetEquippedPhysics(bool equipped)
     {
+        // Includes starting-loadout and immediate scripted grants. Already rolled
+        // loot retains its private values through every equip/drop cycle.
+        if (equipped) PrepareFixedStats();
         CachePhysics();
         int looseLayer = LayerMask.NameToLayer(LoosePhysicsLayerName);
         for (int i = 0; i < colliders.Length; i++)

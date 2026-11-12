@@ -1,7 +1,7 @@
 using UnityEngine;
 
-// Rolls a drop chance when this enemy dies and, on success, spawns one loose part the player can
-// pick up, chosen at random from Part Prefabs. Listens to CombatHealth.Died the same way
+// Plans one drop per life before combat, shows its marker, then spawns the promised loose part
+// on death. Listens to CombatHealth.Died the same way
 // EnemyCombatFeedback does, so the combat scripts don't need any changes.
 // Right-click the component -> "Fill From Carried Weapons" to fill the list with one entry per
 // equipped weapon part on this enemy (editor only - a running game can't trace a part back to its
@@ -16,6 +16,11 @@ public sealed class EnemyPartDrop : MonoBehaviour
     [Tooltip("Chance that this enemy drops anything at all when it dies.")]
     [SerializeField, Range(0f, 100f)] float dropChancePercent = 30f;
 
+    [Header("Loot carrier glint")]
+    [SerializeField] bool showDropMarker = true;
+    [Tooltip("Optional override; otherwise uses VFX/Pickups/Resources/EnemyDropHighlight.prefab.")]
+    [SerializeField] PickupHighlight dropMarkerPrefab;
+
     [Header("Spawn feel")]
     [Tooltip("Height above the enemy's pivot where the part appears.")]
     [SerializeField] float spawnHeight = 1f;
@@ -24,14 +29,76 @@ public sealed class EnemyPartDrop : MonoBehaviour
 
     CombatHealth health;
     bool deathResolved;
+    bool planPrepared;
+    float plannedChance;
+    Part[] plannedEntries = new Part[0];
+    Part plannedPart;
+    PickupHighlight dropMarker;
+    static PickupHighlight markerTemplate;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetMarkerCache() => markerTemplate = null;
 
     public int PartCount => partPrefabs != null ? partPrefabs.Length : 0;
     public Part LastDrop { get; private set; }
     public Part DroppedCarriedPart { get; private set; }
+    public Part PlannedDrop
+    {
+        get { if (isActiveAndEnabled && !deathResolved) PrepareDropPlan(); return plannedPart; }
+    }
+    public bool WillDropPart
+    {
+        get
+        {
+            if (!isActiveAndEnabled || deathResolved || health == null || health.IsDead) return false;
+            PrepareDropPlan();
+            return plannedPart != null;
+        }
+    }
 
     void Awake() => health = GetComponent<CombatHealth>();
-    void OnEnable() { deathResolved = false; LastDrop = DroppedCarriedPart = null; health.Died += OnDied; }
-    void OnDisable() => health.Died -= OnDied;
+    void OnEnable()
+    {
+        deathResolved = planPrepared = false; LastDrop = DroppedCarriedPart = null;
+        health.Died += OnDied;
+        PrepareDropPlan(); RefreshMarker();
+    }
+    void OnDisable() { health.Died -= OnDied; HideMarker(); }
+    void LateUpdate() => RefreshMarker();
+
+    void PrepareDropPlan()
+    {
+        if (deathResolved) return;
+        int count = partPrefabs != null ? partPrefabs.Length : 0;
+        bool unchanged = planPrepared && plannedChance == dropChancePercent && plannedEntries.Length == count;
+        for (int i = 0; unchanged && i < count; i++) unchanged = plannedEntries[i] == partPrefabs[i];
+        if (unchanged) return;
+
+        // Inspector/configuration edits deliberately refresh the plan. Ordinary
+        // frames, damage and visibility changes never reroll a carrier's promise.
+        plannedChance = dropChancePercent; planPrepared = true; plannedPart = null;
+        plannedEntries = count > 0 ? (Part[])partPrefabs.Clone() : new Part[0];
+        if (count == 0 || dropChancePercent <= 0 || float.IsNaN(dropChancePercent)) return;
+        float roll = Random.value * 100f;
+        if (dropChancePercent < 100f && roll >= dropChancePercent) return;
+        plannedPart = partPrefabs[Random.Range(0, count)];
+    }
+
+    void RefreshMarker()
+    {
+        if (!showDropMarker || !WillDropPart) { HideMarker(); return; }
+        if (dropMarker == null)
+        {
+            if (markerTemplate == null) markerTemplate = Resources.Load<PickupHighlight>("EnemyDropHighlight");
+            var prefab = dropMarkerPrefab != null ? dropMarkerPrefab : markerTemplate;
+            if (prefab == null) return;
+            dropMarker = Instantiate(prefab, transform, false);
+            dropMarker.name = "Enemy Loot Glint"; dropMarker.Bind(transform);
+        }
+        if (!dropMarker.gameObject.activeSelf) dropMarker.gameObject.SetActive(true);
+    }
+
+    void HideMarker() { if (dropMarker != null) dropMarker.gameObject.SetActive(false); }
 
     void OnDied() => ResolveDeathDrop();
 
@@ -39,11 +106,10 @@ public sealed class EnemyPartDrop : MonoBehaviour
     public Part ResolveDeathDrop()
     {
         if (deathResolved || !isActiveAndEnabled || health == null || !health.IsDead) return LastDrop;
+        PrepareDropPlan();
         deathResolved = true;
-        if (partPrefabs == null || partPrefabs.Length == 0) return null;
-        float roll = Random.value * 100f;
-        if (dropChancePercent <= 0 || (dropChancePercent < 100f && roll >= dropChancePercent)) return null;
-        Part partPrefab = partPrefabs[Random.Range(0, partPrefabs.Length)];
+        HideMarker(); // Hide before the death snapshot can copy its renderers.
+        Part partPrefab = plannedPart;
         if (partPrefab == null) return null;
 
         Vector3 position = transform.position + Vector3.up * spawnHeight;
@@ -52,6 +118,9 @@ public sealed class EnemyPartDrop : MonoBehaviour
         // No parent on purpose: CombatHealth deactivates this enemy right after Died,
         // and a child would vanish with it.
         LastDrop = Instantiate(partPrefab, position, rotation);
+        // Roll before a pickup can equip the new item in this same frame.
+        // The carried weapon/loot definition stays unchanged for AI and corpse matching.
+        LastDrop.RollLootStats();
         foreach (var carried in GetComponentsInChildren<Part>(true))
         {
             if (!carried.isEquipped || carried.Stats == null || partPrefab.Stats == null) continue;

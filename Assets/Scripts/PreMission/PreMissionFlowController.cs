@@ -120,7 +120,10 @@ public sealed class PreMissionFlowController : MonoBehaviour
         if (displayedVersion != Session.Progression.Version && !IsTransitioning && !IsPosting
             && (Session.View == PreMissionView.Board || (Session.SelectedOfferId != null && Session.Progression.FindOffer(Session.SelectedOfferId) == null)))
             SynchronizeBoard();
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) Back();
+        var keyboard = Keyboard.current;
+        // Keyboard-only shortcut; the retired skip button remains hidden.
+        if (keyboard != null && keyboard.spaceKey.wasPressedThisFrame) SkipPosting();
+        if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame) Back();
     }
 
     public void SkipPosting()

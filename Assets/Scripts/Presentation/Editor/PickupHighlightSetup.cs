@@ -9,6 +9,7 @@ public static class PickupHighlightSetup
 {
     public const string Folder = "Assets/VFX/Pickups";
     public const string PrefabPath = Folder + "/Resources/PickupHighlight.prefab";
+    public const string EnemyPrefabPath = Folder + "/Resources/EnemyDropHighlight.prefab";
     public const string OutlinePath = Folder + "/Pickup Outline.mat";
     public const string StarPath = Folder + "/Pickup Star.mat";
     [MenuItem("Tools/Mech/Presentation/Create Pickup Highlight Prefab")]
@@ -41,6 +42,24 @@ public static class PickupHighlightSetup
                 }
                 fields.ApplyModifiedPropertiesWithoutUndo();
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+        if (AssetDatabase.LoadAssetAtPath<GameObject>(EnemyPrefabPath) == null)
+        {
+            // A prefab variant keeps the same reusable star meshes/materials and
+            // inherits future pickup-size tuning, with gold sparkles and no outline.
+            var root = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath));
+            try
+            {
+                root.name = "EnemyDropHighlight";
+                var effect = root.GetComponent<PickupHighlight>();
+                var fields = new SerializedObject(effect);
+                fields.FindProperty("drawOutline").boolValue = false;
+                fields.FindProperty("sparkleColor").colorValue = new Color(1, .66f, .12f, 1);
+                fields.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.RecordPrefabInstancePropertyModifications(effect);
+                PrefabUtility.SaveAsPrefabAsset(root, EnemyPrefabPath);
             }
             finally { Object.DestroyImmediate(root); }
         }

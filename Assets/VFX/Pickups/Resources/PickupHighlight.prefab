@@ -231,12 +231,14 @@ MonoBehaviour:
   sparkles:
   - {fileID: 2894932612986625910}
   - {fileID: 859111076202173187}
-  outlineWidth: 1.5
+  drawOutline: 1
+  outlineWidth: 3.5
   outlineColor: {r: 1, g: 1, b: 1, a: 0.32}
-  sparkleSize: 0.55
+  sparkleColor: {r: 1, g: 1, b: 1, a: 1}
+  sparkleSize: 0.95
   heightAboveObject: 0.12
   pulsePeriod: 2.2
-  brightness: 1.8
+  brightness: 2.2
   maximumDistance: 65
-  minimumSparklePixels: 18
+  minimumSparklePixels: 28
   viewCamera: {fileID: 0}

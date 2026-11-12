@@ -30,6 +30,7 @@ public sealed class MechWeaponAnimator : MonoBehaviour
     public MechWeaponAnimationSet Animations => animations;
     public Transform Placement => placement;
     public PoseState CurrentPose { get; private set; }
+    public int AttackSoundsPlayed { get; private set; }
     public bool MeleeSwingPlaying => CanAnimate && part.Stats != null && part.Stats.subtype == PartSubtype.Melee
         && CurrentPose == PoseState.Fire;
     public float PreviewCooldownRemaining => Mathf.Max(0f, previewReadyAt - Time.time);
@@ -175,13 +176,16 @@ public sealed class MechWeaponAnimator : MonoBehaviour
         clips[1].SetTime(0f);
         ChangePose(PoseState.Fire);
         Tick(0f);
-        PlayAttackSound();
+        // Player attacks start here on their actual shot/hit admission. Enemies
+        // start with a telegraph; EnemyAttack releases their sound with damage.
+        if (enemyOwner == null) PlayAttackSound();
+        else if (attackAudio != null) attackAudio.Stop();
         return true;
     }
 
-    void PlayAttackSound()
+    internal void PlayAttackSound()
     {
-        if (animations.attackSound == null || animations.attackVolume <= 0f) return;
+        if (!CanAnimate || animations == null || animations.attackSound == null || animations.attackVolume <= 0f) return;
         if (attackAudio == null)
         {
             var audioObject = new GameObject("Weapon Attack Audio");
@@ -200,12 +204,13 @@ public sealed class MechWeaponAnimator : MonoBehaviour
         attackAudio.volume = animations.attackVolume;
         attackAudio.spatialBlend = owner != null ? 0.35f : 1f;
         attackAudio.Play();
+        AttackSoundsPlayed++;
     }
 
     public bool TryAnimationOnlyAttack()
     {
         if (animations == null || !animations.animationOnly || PreviewCooldownRemaining > 0f) return false;
-        float cooldown = part != null && part.data != null ? Mathf.Max(0.01f, part.data.ShotInterval) : 1f;
+        float cooldown = part != null && part.Stats != null ? Mathf.Max(0.01f, part.Stats.ShotInterval) : 1f;
         if (!PlayAttack(cooldown)) return false;
         previewReadyAt = Time.time + cooldown;
         return true;

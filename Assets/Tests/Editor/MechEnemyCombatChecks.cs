@@ -63,13 +63,15 @@ public static class MechEnemyCombatChecks
             float before = health.CurrentHealth;
             check(mace.TryAttack() && mace.Weapon.CurrentPose == MechWeaponAnimator.PoseState.Fire
                 && health.CurrentHealth == before, "Mace starts its windup animation without instant damage");
-            check(mace.Weapon.GetComponentInChildren<AudioSource>().clip == TestMech.Sound("Mace_attack"),
-                "Enemy mace windup plays the authored mace attack sound");
+            check(mace.Weapon.AttackSoundsPlayed == 0,
+                "Enemy mace windup does not play its attack sound");
             float maceRelease = mace.AttackDuration * new SerializedObject(mace).FindProperty("releaseFrame").floatValue;
             Step(mace, maceRelease * .5f);
             check(health.CurrentHealth == before && mace.Weapon.NormalizedTime > 0f,
                 "Mace damage waits for its configured animation release frame");
             Step(mace, maceRelease * .5f + .01f);
+            check(mace.Weapon.AttackSoundsPlayed == 1 && mace.Weapon.GetComponentInChildren<AudioSource>().clip == TestMech.Sound("Mace_attack"),
+                "Enemy mace release plays the authored attack sound with its active hit");
             check(Mathf.Abs(health.CurrentHealth - (before - maceHit)) < 0.002f && mace.Releases == 1,
                 "Mace release damages player exactly once; before=" + before + "; after=" + health.CurrentHealth
                 + "; hit=" + maceHit + "; releases=" + mace.Releases + "; distance=" + Vector3.Distance(mace.transform.position, player.transform.position));
@@ -105,14 +107,15 @@ public static class MechEnemyCombatChecks
             before = health.CurrentHealth;
             check(crossbow.TryAttack() && crossbow.Weapon.CurrentPose == MechWeaponAnimator.PoseState.Fire,
                 "Fodder replacement starts its equipped cannon Fire animation");
-            check(crossbow.GetComponent<EnemyFodderAnimation>() != null
-                && crossbow.Weapon.GetComponentInChildren<AudioSource>().clip == crossbow.Weapon.Animations.attackSound,
-                "Fodder windup plays the tested Zoo cannon's authored sound");
+            check(crossbow.GetComponent<EnemyFodderAnimation>() != null && crossbow.Weapon.AttackSoundsPlayed == 0,
+                "Fodder cannon windup stays silent");
             float crossbowRelease = crossbow.AttackDuration * new SerializedObject(crossbow).FindProperty("releaseFrame").floatValue;
             Step(crossbow, crossbowRelease * .5f);
             check(!Object.FindObjectsByType<MechProjectile>().Any(FromEnemy),
                 "Crossbow projectile waits for its release frame");
             Step(crossbow, crossbowRelease * .5f + .01f); var bolt = Bolt();
+            check(crossbow.Weapon.AttackSoundsPlayed == 1 && crossbow.Weapon.GetComponentInChildren<AudioSource>().clip == crossbow.Weapon.Animations.attackSound,
+                "Fodder cannon plays its authored sound when the projectile launches");
             check(bolt.IsLive && health.CurrentHealth == before, "Crossbow releases a travelling projectile rather than instant ranged damage");
             var cannon = crossbow.Weapon.GetComponent<Part>().Stats;
             check(cannon.partId == "backweaponA3" && bolt.Subtype == PartSubtype.Splash

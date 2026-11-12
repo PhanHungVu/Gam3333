@@ -119,7 +119,7 @@ public sealed class EnemyRopeAttack : EnemyGraphAttack
         ShowWarning(age / windupDuration); DrawRope(); return age >= windupDuration;
     }
     public override void BeginAttack()
-    { CurrentStage = Stage.Attack; age = 0; start = previous = airbornePosition = rock.position; }
+    { BeginActiveAttack(); start = previous = airbornePosition = rock.position; }
     public override bool TickAttack(float dt)
     {
         if (CurrentStage == Stage.Recovery || CurrentStage == Stage.Idle) return true;
