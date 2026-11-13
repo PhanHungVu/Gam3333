@@ -14,7 +14,7 @@ public sealed class EnemyPartDrop : MonoBehaviour
     [Tooltip("Loose part prefabs; one is picked at random. Current cannon: Mech/Specialist/shoulder_cannon_specialist. Each Part must have Is Equipped unchecked.")]
     [SerializeField] Part[] partPrefabs = new Part[0];
     [Tooltip("Chance that this enemy drops anything at all when it dies.")]
-    [SerializeField, Range(0f, 100f)] float dropChancePercent = 30f;
+    [SerializeField, Range(0f, 100f)] float dropChancePercent = 5f;
 
     [Header("Loot carrier glint")]
     [SerializeField] bool showDropMarker = true;

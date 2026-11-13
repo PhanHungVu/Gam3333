@@ -373,7 +373,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyPartDrop
   partPrefabs:
   - {fileID: 3288396653387323531, guid: bfae1198b74b3a34bac4d78905397b95, type: 3}
-  dropChancePercent: 25
+  dropChancePercent: 5
   spawnHeight: 1
   popVelocity: 3
 --- !u!114 &6570533436864181111
