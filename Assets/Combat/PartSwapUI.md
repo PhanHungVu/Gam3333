@@ -1,5 +1,7 @@
 # Compact world-space part swap UI
 
+Accuracy is now an active head stat and appears in the compact basic/comparison readouts. See [Head Accuracy and the aiming circle](AccuracySpread.md); historical notes below that call Accuracy inactive are superseded by this integration.
+
 The shared `Prefabs/Mech/Base/FullPlayer_mech_base.prefab` owns one `PartSwapWorldHudPresenter`, using `Prefabs/UI/PartSwapWorldUI.prefab`. The panel follows the existing selected dropped part. It has no buttons, raycaster, colliders or device reads. Gameplay detection and equipment validation remain in `PickupDetector` and `EquipManager`.
 
 ## Controls

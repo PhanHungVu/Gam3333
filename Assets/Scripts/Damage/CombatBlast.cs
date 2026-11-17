@@ -56,46 +56,62 @@ public sealed class CombatBlast
     // from wallOrigin (the attacker) to each target.
     public DamageResult ResolveBox(Vector3 center, Vector3 halfExtents, Quaternion rotation, float damage,
         Transform owner, LayerMask layers, Vector3 wallOrigin, ISet<CombatHealth> hitHistory = null, Part source = null,
-        Action<CombatHealth> acceptedHit = null)
+        Action<CombatHealth> acceptedHit = null, Action<CombatHealth, float> confirmedDamage = null)
     {
         layers &= CombatRagdoll.QueryMask;
         damaged.Clear();
         int hits = 0, kills = 0, count;
-        CombatTeam attacker = CombatTeams.Of(owner);
-        var playerMelee = source != null && source.Stats != null && source.Stats.subtype == PartSubtype.Melee && owner != null
-            ? owner.GetComponent<MechCombat>() : null;
         while ((count = Physics.OverlapBoxNonAlloc(center, halfExtents, overlaps, rotation, layers,
             QueryTriggerInteraction.Ignore)) == overlaps.Length)
             Array.Resize(ref overlaps, overlaps.Length * 2);
         for (int i = 0; i < count; i++)
         {
-            Collider candidate = overlaps[i];
-            if (IsOwner(candidate, owner)) continue;
-            var health = candidate.GetComponentInParent<CombatHealth>();
-            if (health == null || damaged.Contains(health) || hitHistory != null && hitHistory.Contains(health)
-                || Blocked(wallOrigin, candidate, owner, layers)) continue;
-            var point = ClosestPoint(candidate, wallOrigin);
-            var normal = wallOrigin - point;
-            Vector3 push = default, launch = default;
-            bool hasPush = playerMelee != null && playerMelee.TryMeleePush(health, rotation * Vector3.forward, out push, out launch);
-            var death = hasPush ? health.GetComponent<CombatDeathRagdoll>() : null;
-            // Death callbacks run inside ApplyDamage. Scope the upright launch to this hit only,
-            // including rejected damage, rather than leaving a flag for an unrelated later death.
-            if (death != null) death.BeginMeleeLaunch(launch);
-            bool applied;
-            try { applied = Apply(health, damage, attacker, ref hits, ref kills, owner, source!=null ? CombatHitKind.Melee : CombatHitKind.Blast, wallOrigin); }
-            finally { if (death != null) death.EndMeleeLaunch(); }
-            if (applied)
-            {
-                if (hasPush) playerMelee.PushSurvivingEnemy(health, push);
-                hitHistory?.Add(health);
-                acceptedHit?.Invoke(health);
-                if (source != null) CombatVisualEvents.ReportMelee(source, owner, point, normal.sqrMagnitude > .0001f ? normal.normalized : Vector3.up);
-            }
+            MeleeHit(overlaps[i], rotation, damage, owner, layers, wallOrigin, hitHistory, source, acceptedHit, confirmedDamage, ref hits, ref kills);
         }
         Array.Clear(overlaps, 0, count);
         damaged.Clear();
         return new DamageResult(hits, kills);
+    }
+
+    // Secondary melee AoE shares walls, teams, hit history and push rules with the
+    // direct box. The same target cannot receive both components of one strike.
+    public DamageResult ResolveMeleeSphere(Vector3 center, float radius, Quaternion rotation, float damage,
+        Transform owner, LayerMask layers, Vector3 wallOrigin, ISet<CombatHealth> hitHistory, Part source,
+        Action<CombatHealth, float> confirmedDamage = null)
+    {
+        layers &= CombatRagdoll.QueryMask; damaged.Clear();
+        int hits = 0, kills = 0, count;
+        while ((count = Physics.OverlapSphereNonAlloc(center, radius, overlaps, layers, QueryTriggerInteraction.Ignore)) == overlaps.Length)
+            Array.Resize(ref overlaps, overlaps.Length * 2);
+        for (int i = 0; i < count; i++)
+            MeleeHit(overlaps[i], rotation, damage, owner, layers, wallOrigin, hitHistory, source, null, confirmedDamage, ref hits, ref kills);
+        Array.Clear(overlaps, 0, count); damaged.Clear();
+        return new DamageResult(hits, kills);
+    }
+
+    void MeleeHit(Collider candidate, Quaternion rotation, float damage, Transform owner, LayerMask layers, Vector3 wallOrigin,
+        ISet<CombatHealth> hitHistory, Part source, Action<CombatHealth> acceptedHit, Action<CombatHealth, float> confirmedDamage, ref int hits, ref int kills)
+    {
+        if (IsOwner(candidate, owner)) return;
+        var health = candidate.GetComponentInParent<CombatHealth>();
+        if (health == null || damaged.Contains(health) || hitHistory != null && hitHistory.Contains(health)
+            || Blocked(wallOrigin, candidate, owner, layers)) return;
+        var point = ClosestPoint(candidate, wallOrigin); var normal = wallOrigin - point;
+        var playerMelee = source != null && source.Stats != null && source.Stats.subtype == PartSubtype.Melee && owner != null
+            ? owner.GetComponent<MechCombat>() : null;
+        Vector3 push = default, launch = default;
+        bool hasPush = playerMelee != null && playerMelee.TryMeleePush(health, rotation * Vector3.forward, out push, out launch);
+        var death = hasPush ? health.GetComponent<CombatDeathRagdoll>() : null;
+        float before = health.CurrentHealth;
+        if (death != null) death.BeginMeleeLaunch(launch);
+        bool applied;
+        try { applied = Apply(health, damage, CombatTeams.Of(owner), ref hits, ref kills, owner, source != null ? CombatHitKind.Melee : CombatHitKind.Blast, wallOrigin); }
+        finally { if (death != null) death.EndMeleeLaunch(); }
+        if (!applied) return;
+        if (hasPush) playerMelee.PushSurvivingEnemy(health, push);
+        hitHistory?.Add(health); acceptedHit?.Invoke(health);
+        confirmedDamage?.Invoke(health, Mathf.Max(0, before - health.CurrentHealth));
+        if (source != null) CombatVisualEvents.ReportMelee(source, owner, point, normal.sqrMagnitude > .0001f ? normal.normalized : Vector3.up);
     }
 
     // A filled horizontal circle with a bounded height, for ground-area attacks.

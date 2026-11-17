@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 // One result per resolved impact, emitted only after all gameplay damage is applied.
@@ -11,16 +12,18 @@ public readonly struct MechProjectileImpact
     public readonly Vector3 Direction;
     public readonly Vector3 ContactPoint, Normal;
     public readonly Transform Owner;
+    public readonly Collider HitCollider;
     public readonly float Radius;
     public readonly int Hits, Kills;
     public MechProjectileImpact(Part source, PartSubtype subtype, Vector3 position, float radius, int hits, int kills,
-        Vector3 direction = default, Vector3? contactPoint = null, Vector3 normal = default, Transform owner = null)
+        Vector3 direction = default, Vector3? contactPoint = null, Vector3 normal = default, Transform owner = null, Collider hitCollider = null)
     {
         Source = source; Subtype = subtype; Position = position; Radius = radius; Hits = hits; Kills = kills;
         Direction = direction;
         ContactPoint = contactPoint ?? position;
         Normal = normal.sqrMagnitude > .0001f ? normal.normalized : direction.sqrMagnitude > .0001f ? -direction.normalized : Vector3.up;
         Owner = owner;
+        HitCollider = hitCollider;
     }
 }
 
@@ -35,6 +38,9 @@ public class MechProjectile : MonoBehaviour
     float travelled, explosionRadius, splashDamage;
     LayerMask collisionLayers;
     bool live;
+    bool piercing;
+    int maximumPiercedTargets;
+    HashSet<CombatHealth> piercedTargets;
     RaycastHit[] hits = new RaycastHit[16];
     Collider[] overlaps = new Collider[16];
     readonly CombatBlast blast = new CombatBlast();
@@ -76,6 +82,17 @@ public class MechProjectile : MonoBehaviour
         splashDamage = Mathf.Max(0f, splash);
     }
 
+    public void ConfigurePiercing(bool enabled, int maximumTargets = 0)
+    {
+        piercing = enabled;
+        maximumPiercedTargets = Mathf.Max(0, maximumTargets);
+        if (!enabled) return;
+        if (piercedTargets == null) piercedTargets = new HashSet<CombatHealth>();
+        piercedTargets.Clear();
+        // Piercing is direct-only, including if a stale splash field exists on an item.
+        explosionRadius = splashDamage = 0;
+    }
+
     public void Launch(Transform shooter, Vector3 shotDirection, float shotSpeed, float shotDamage,
         float shotRadius, float range, LayerMask layers, Vector3 muzzle)
     {
@@ -111,12 +128,42 @@ public class MechProjectile : MonoBehaviour
 
     bool IsOwner(Collider candidate) => owner != null && candidate.transform.IsChildOf(owner);
 
+    bool IgnorePiercingContact(Collider candidate)
+        => candidate == null || IsOwner(candidate) || candidate.GetComponentInParent<CombatHealth>(true) is CombatHealth health && piercedTargets.Contains(health);
+
+    bool CanPierce(Collider candidate)
+    {
+        // A preceding contact may kill/deactivate a compound root during this
+        // same sweep. Resolve inactive parents too, so its other colliders still
+        // map to the already-hit root instead of becoming scenery blockers.
+        var health = candidate.GetComponentInParent<CombatHealth>(true);
+        return health != null && health.isActiveAndEnabled && !health.IsDead
+            && health.Team != CombatTeam.Neutral && CombatTeams.CanDamage(OwnerTeam, health.Team);
+    }
+
     bool CheckOverlap()
     {
         int count;
         while ((count = Physics.OverlapSphereNonAlloc(transform.position, radius, overlaps,
             collisionLayers, QueryTriggerInteraction.Ignore)) == overlaps.Length)
             Array.Resize(ref overlaps, overlaps.Length * 2);
+        if (piercing)
+        {
+            // A muzzle inside scenery must not shoot through it. Give simultaneous
+            // blocking overlaps priority before resolving damageable targets.
+            for (int pass = 0; pass < 2 && live; pass++)
+                for (int i = 0; i < count && live; i++)
+                {
+                    var candidate = overlaps[i];
+                    if (IgnorePiercingContact(candidate) || CanPierce(candidate) != (pass == 1)) continue;
+                    Vector3 piercingPoint = candidate is MeshCollider piercingMesh && !piercingMesh.convex
+                        ? candidate.bounds.ClosestPoint(transform.position) : candidate.ClosestPoint(transform.position);
+                    Vector3 piercingNormal = transform.position - piercingPoint;
+                    Impact(candidate, piercingPoint, piercingNormal.sqrMagnitude > .0001f ? piercingNormal.normalized : -direction);
+                }
+            Array.Clear(overlaps, 0, count);
+            return !live;
+        }
         Collider closest = null;
         float closestDistance = float.MaxValue;
         for (int i = 0; i < count; i++)
@@ -141,6 +188,33 @@ public class MechProjectile : MonoBehaviour
         while ((count = Physics.SphereCastNonAlloc(transform.position, radius, displacement / distance,
             hits, distance, collisionLayers, QueryTriggerInteraction.Ignore)) == hits.Length)
             Array.Resize(ref hits, hits.Length * 2);
+        if (piercing)
+        {
+            // NonAlloc casts are unordered. Process near-to-far so a wall stops
+            // the bolt before any enemy behind it, even within one fast step.
+            for (int i = 1; i < count; i++)
+            {
+                var next = hits[i]; int j = i - 1;
+                while (j >= 0 && hits[j].distance > next.distance) { hits[j + 1] = hits[j]; j--; }
+                hits[j + 1] = next;
+            }
+            Vector3 start = transform.position;
+            for (int i = 0; i < count; i++)
+            {
+                if (IgnorePiercingContact(hits[i].collider)) continue;
+                transform.position = start + displacement.normalized * hits[i].distance;
+                Impact(hits[i].collider, hits[i].point, hits[i].normal);
+                if (!live)
+                {
+                    if (countTravel) travelled += hits[i].distance;
+                    Array.Clear(hits, 0, count);
+                    return true;
+                }
+            }
+            transform.position = start; // caller advances/counts the full clear step once
+            Array.Clear(hits, 0, count);
+            return false;
+        }
         int nearest = -1;
         float nearestDistance = float.MaxValue;
         for (int i = 0; i < count; i++)
@@ -161,17 +235,23 @@ public class MechProjectile : MonoBehaviour
         if (!live) return;
         Vector3 impactPoint = transform.position;
         float impactDamage = damage;
-        // Mark spent first: callbacks and compound colliders cannot cause repeat damage.
-        Finish();
+        bool passesThrough = piercing && CanPierce(collider);
+        if (passesThrough)
+        {
+            // Remember the health root before callbacks; compound colliders and
+            // later frames can never apply this projectile's damage twice.
+            if (!piercedTargets.Add(collider.GetComponentInParent<CombatHealth>(true))) return;
+        }
+        if (!passesThrough || maximumPiercedTargets > 0 && piercedTargets.Count >= maximumPiercedTargets) Finish();
         // Teams decide who takes damage (CombatBlast skips the shooter's own team).
         // The incoming trajectory remains meaningful even if the shooter has moved or died.
         var result = blast.Resolve(impactPoint, explosionRadius, impactDamage, splashDamage, owner, collisionLayers, collider,
             impactPoint - direction);
         var impact = new MechProjectileImpact(Source, Subtype, impactPoint, explosionRadius,
-            result.Hits, result.Kills, direction, contactPoint, normal, owner);
+            result.Hits, result.Kills, direction, contactPoint, normal, owner, collider);
         ImpactResolved?.Invoke(impact);
         CombatVisualEvents.ReportProjectile(impact);
-        ImpactResolved = null;
+        if (!live) ImpactResolved = null;
     }
 
     void Finish()

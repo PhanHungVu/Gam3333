@@ -18,14 +18,16 @@ MonoBehaviour:
   abilityIcon: {fileID: 0}
   description: single shot long range, precision
   partType: 4
-  subtype: 2
+  subtype: 1
+  piercingProjectile: 1
+  maximumPiercedTargets: 0
   stats:
   - type: 1
     value: -5
   - type: 2
-    value: 100
+    value: 180
   - type: 14
-    value: 10
+    value: 0
   - type: 4
     value: 30
   - type: 3
@@ -33,11 +35,11 @@ MonoBehaviour:
   - type: 13
     value: 1
   - type: 5
-    value: 4
+    value: 2.5
   - type: 6
     value: 20
   - type: 12
-    value: 0.5
+    value: 0
   - type: 10
     value: 160
   - type: 11

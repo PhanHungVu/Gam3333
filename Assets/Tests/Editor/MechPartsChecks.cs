@@ -19,7 +19,8 @@ public static class MechPartsChecks
             "Merged player creates/binds the existing Cinemachine camera before gameplay initialization");
         for(int i=0;i<=6;i++) check(equipment.GetEquipped((PartCategory)i)!=null,"Starting part registered: "+(PartCategory)i);
         check(combat.SubtypeOf(PartCategory.ArmL)==PartSubtype.Melee && combat.SubtypeOf(PartCategory.ArmR)==PartSubtype.Projectile
-            && combat.SubtypeOf(PartCategory.ShoulderL)==PartSubtype.Splash && combat.SubtypeOf(PartCategory.ShoulderR)==PartSubtype.Splash,"All four existing weapon assets drive equipped combat");
+            && combat.SubtypeOf(PartCategory.ShoulderL)==PartSubtype.Splash && combat.SubtypeOf(PartCategory.ShoulderR)==PartSubtype.Projectile
+            && combat.GetPart(PartCategory.ShoulderR).Stats.piercingProjectile,"Existing loadout uses melee, axe, splash cannon and piercing Large Crossbow data");
         var cannonStats=combat.GetPart(PartCategory.ShoulderL).Stats;
         int cannonAmmo=(int)cannonStats.GetStat(StatType.Ammo);
         check(cannonStats.GetStat(StatType.Damage)>0 && cannonStats.GetStat(StatType.SplashRadius)>0 && cannonStats.GetStat(StatType.SplashDamage)>0

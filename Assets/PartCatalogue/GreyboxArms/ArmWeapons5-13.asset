@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf4340064e9f407ea9e52ed3ba3c7d68, type: 3}
+  m_Name: ArmWeapons5-13
+  m_EditorClassIdentifier: Assembly-CSharp::GreyboxArmWeaponCatalogue
+  weapons:
+  - {fileID: 8728107767307821175, guid: 2fc77009da50865498e0847398da6154, type: 3}
+  - {fileID: 3584211653985899049, guid: eb824d1c5491fab4f8f5fbf2adbc0fc4, type: 3}
+  - {fileID: 1820765555203368223, guid: 27c3e3d9f509fba428215e21cd8a163f, type: 3}
+  - {fileID: 1507177189562205158, guid: 3a75eb5640bb4d344a9ee9a1427b6f2b, type: 3}
+  - {fileID: 1758912339860574357, guid: 8b5d22ce296171343a4eaf1bb1c4d8ff, type: 3}
+  - {fileID: 6383141123767418578, guid: f93d8c33c7779024f8d3d7b7cef27121, type: 3}
+  - {fileID: 5544546557004875932, guid: 67d394e9080e8a6459d6ac4c11fd5e04, type: 3}
+  - {fileID: 8049221376892536032, guid: 98dbc327ea56a0d4b868d38d114f5e13, type: 3}
+  - {fileID: 2400493137276297290, guid: 1e262700761e15b4fa806719b1de233d, type: 3}

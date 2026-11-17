@@ -5,7 +5,8 @@ using UnityEditor;
 #endif
 
 // Weapon stats: Damage per hit; Ammo = total shots; MagSize = shots before a reload (0 = never reloads);
-// FireRate = shots or swings per second; Reload = seconds to refill the magazine; Range in golem lengths;
+// FireRate = shots or swings per second; Reload = seconds to refill the magazine; Range in golem lengths
+// (projectile travel limit and close-range accuracy reference; there is no separate EffectiveRange stat);
 // SplashRadius and SplashDamage for Splash weapons.
 // Each stat keeps a fixed number, because part assets store the number: never renumber one, and give
 // a new stat the next unused number. Retired, don't reuse: 7 Single Shot, 8 Auto Aim, 9 Max Range Multiplier.
@@ -15,7 +16,7 @@ public enum StatType
     Damage = 2, MagSize = 3, Ammo = 4, Reload = 5, Range = 6,
     ProjectileSpeed = 10, ProjectileSize = 11, SplashRadius = 12,
     FireRate = 13, SplashDamage = 14,
-    // Accuracy (heads, not used yet). Ability Cooldown and Ability Duration in seconds, and Ability Power
+    // Accuracy: head precision from 0 to 100%; 100 removes ranged shot spread. Ability Cooldown and Ability Duration in seconds, and Ability Power
     // (what the ability does, e.g. 50 = +50% damage for Damage Amp): each head, torso and legs for its own ability.
     Accuracy = 15, AbilityCooldown = 16, AbilityDuration = 17, AbilityPower = 18
 }
@@ -45,6 +46,8 @@ public class PartData : ScriptableObject
     [TextArea] public string description;
     [Tooltip("What this part is. Decides which sockets it fits; the socket decides the side.")]
     public PartType partType;
+    [Tooltip("Keep this part in its own socket type even when a test rules config allows mixed types.")]
+    public bool restrictToPartType;
     [Tooltip("How the part attacks.")]
     public PartSubtype subtype;
     [Tooltip("The part's own picture (e.g. Sprites/PartIcons): shown for weapons in the weapons HUD, and wherever a part is shown.")]
@@ -59,6 +62,10 @@ public class PartData : ScriptableObject
     [Header("Combat (Range stat is in golem lengths; metres per golem is in MechRulesConfig)")]
     [Tooltip("Optional projectile prefab. Contains visual meshes and MechProjectile, with no physics colliders.")]
     public GameObject projectilePrefab;
+    [Tooltip("Normal shots pass through damageable opponents once each. Solid scenery and friendly bodies still stop them.")]
+    public bool piercingProjectile;
+    [Tooltip("Maximum distinct targets per piercing shot; 0 means unlimited within its normal range.")]
+    [Min(0)] public int maximumPiercedTargets;
     [Tooltip("Projectile colour (the plain sphere used when no projectile prefab is set, and its trail).")]
     public Color projectileColor = Color.white;
 

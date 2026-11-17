@@ -87,6 +87,14 @@ public class Part : MonoBehaviour
         return rolledStats != null;
     }
 
+    // Test/custom-grant spawners may preserve exact authored balance before the
+    // item's first Start. Never changes an already prepared item or its ammo.
+    public bool KeepAuthoredStats()
+    {
+        if (!CanRollLootStats) return false;
+        PrepareFixedStats(); return true;
+    }
+
     void PrepareFixedStats()
     {
         if (statsPrepared && preparedFrom == data) return;

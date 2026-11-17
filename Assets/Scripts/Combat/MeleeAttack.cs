@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 // A melee swing from a Melee part: damage and swing duration from the part's stats, the shared hit box
 // from MechCombat (its reach scaled by the part's Range), reach assist toward a just-out-of-reach
@@ -11,6 +12,11 @@ public sealed class MeleeAttack
     PartCategory activeSocket;
     float strikeDamage, cooldownTimer, flashTimer, approachTime, approachDistance;
     MechTargetable assistedTarget;
+    GreyboxArmWeapon prototype;
+    readonly HashSet<CombatHealth> strikeVictims = new HashSet<CombatHealth>();
+    float sequenceAge;
+    int remainingPunches;
+    public bool SequenceActive => remainingPunches > 0;
 
     public bool Pending { get; private set; }
     public float Extension { get; private set; }
@@ -27,13 +33,17 @@ public sealed class MeleeAttack
 
     public bool TryStart(Part part, PartCategory socket)
     {
-        if (Pending || part.ReadyAt > Time.time) return false;
+        if (Pending || SequenceActive || part.ReadyAt > Time.time) return false;
         // Hitstop freezes the visual swing while the wall clock still advances.
         // Do not cut that swing off with held attack input when time resumes.
         var animation = part.GetComponent<MechWeaponAnimator>();
         if (animation != null && animation.MeleeSwingPlaying) return false;
         activePart = part;
+        prototype = part.GetComponent<GreyboxArmWeapon>();
+        if (prototype != null && !prototype.isActiveAndEnabled) prototype = null;
         activeSocket = socket;
+        sequenceAge = 0;
+        remainingPunches = prototype != null ? prototype.MeleeHits - 1 : 0;
         strikeDamage = Mathf.Max(0f, part.Stats.GetStat(StatType.Damage)) * combat.DamageModifiers.Total;
         cooldownTimer = Mathf.Max(0.01f, part.Stats.ShotInterval);
         part.Consume(cooldownTimer, false);
@@ -61,6 +71,16 @@ public sealed class MeleeAttack
 
     public void Tick(float deltaTime)
     {
+        if (SequenceActive && deltaTime > 0f)
+        {
+            if (activePart == null || combat.GetMeleePart(activeSocket) != activePart || prototype == null || !prototype.isActiveAndEnabled)
+            { Cancel(); return; }
+            sequenceAge += deltaTime;
+            float spacing = prototype.PunchInterval(activePart);
+            while (remainingPunches > 0 && sequenceAge >= spacing)
+            { sequenceAge -= spacing; remainingPunches--; Resolve(); }
+            return;
+        }
         if (!Pending || deltaTime <= 0f) return;
         var movement = combat.Movement;
         if (assistedTarget == null || !assistedTarget.isActiveAndEnabled
@@ -81,28 +101,86 @@ public sealed class MeleeAttack
     public void Cancel()
     {
         activePart = null;
+        prototype = null; remainingPunches = 0; sequenceAge = 0;
         Pending = false;
         Extension = CameraTimer = flashTimer = 0f;
     }
 
     // Box geometry, also read by the melee box preview.
     public Vector3 BoxCenter(float extension, Quaternion rotation) => owner.position
-        + rotation * (Vector3.Scale(combat.MeleeCenter, AbsScale()) + Vector3.forward * extension);
-    public Vector3 BoxSize => Vector3.Scale(combat.MeleeSize, AbsScale());
+        + rotation * (prototype != null && activePart != null
+            ? new Vector3(0, .5f, BoxSize.z * .5f + extension)
+            : Vector3.Scale(combat.MeleeCenter, AbsScale()) + Vector3.forward * extension);
+    public Vector3 BoxSize => prototype != null && activePart != null
+        ? prototype.MeleeSize(activePart, combat.MetresPerGolem) : Vector3.Scale(combat.MeleeSize, AbsScale());
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    // Captured from the actual queries, not reconstructed from the Range stat.
+    public readonly struct HitboxSnapshot
+    {
+        public readonly Vector3 Center, Size, SplashCenter;
+        public readonly Quaternion Rotation;
+        public readonly float SplashRadius;
+        public HitboxSnapshot(Vector3 center, Vector3 size, Quaternion rotation, Vector3 splashCenter, float splashRadius)
+        { Center = center; Size = size; Rotation = rotation; SplashCenter = splashCenter; SplashRadius = splashRadius; }
+    }
+    public event System.Action<HitboxSnapshot> HitboxesResolved;
+
+    public HitboxSnapshot PreviewHitboxes(Part part, Quaternion rotation)
+    {
+        var config = part != null ? part.GetComponent<GreyboxArmWeapon>() : null;
+        if (config != null && !config.isActiveAndEnabled) config = null;
+        Vector3 size = config != null ? config.MeleeSize(part, combat.MetresPerGolem)
+            : Vector3.Scale(combat.MeleeSize, BoxScale(owner.lossyScale, part, combat.MetresPerGolem));
+        Vector3 center = owner.position + rotation * (config != null ? new Vector3(0, .5f, size.z * .5f)
+            : Vector3.Scale(combat.MeleeCenter, BoxScale(owner.lossyScale, part, combat.MetresPerGolem)));
+        float radius = config != null && part.Stats != null ? part.Stats.GetStat(StatType.SplashRadius) : 0;
+        return new HitboxSnapshot(center, size, rotation, center + rotation * Vector3.forward * (size.z * .5f), radius);
+    }
+#endif
 
     void Resolve()
     {
         flashTimer = 0.15f;
-        var result = combat.Blast.ResolveBox(BoxCenter(Extension, StrikeRotation), BoxSize * 0.5f, StrikeRotation, strikeDamage,
-            owner, combat.HitLayers, combat.MeleeWallOrigin, source: activePart);
+        strikeVictims.Clear();
+        Vector3 directCenter = BoxCenter(Extension, StrikeRotation), directSize = BoxSize;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Vector3 splashCenter = default; float splashRadius = 0;
+#endif
+        var result = combat.Blast.ResolveBox(directCenter, directSize * 0.5f, StrikeRotation, strikeDamage,
+            owner, combat.HitLayers, combat.MeleeWallOrigin, prototype != null ? strikeVictims : null, source: activePart,
+            confirmedDamage: prototype != null && prototype.weapon == GreyboxArmWeapon.Weapon.Scythe ? Lifesteal : null);
+        if (prototype != null && activePart.Stats.GetStat(StatType.SplashRadius) > 0)
+        {
+            Vector3 impact = BoxCenter(Extension, StrikeRotation) + StrikeRotation * Vector3.forward * (BoxSize.z * .5f);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            splashCenter = impact; splashRadius = activePart.Stats.GetStat(StatType.SplashRadius);
+#endif
+            var splash = combat.Blast.ResolveMeleeSphere(impact, activePart.Stats.GetStat(StatType.SplashRadius), StrikeRotation,
+                Mathf.Max(0, activePart.Stats.GetStat(StatType.SplashDamage)) * combat.DamageModifiers.Total, owner, combat.HitLayers,
+                combat.MeleeWallOrigin, strikeVictims, activePart, prototype.weapon == GreyboxArmWeapon.Weapon.Scythe ? Lifesteal : null);
+            result = new DamageResult(result.Hits + splash.Hits, result.Kills + splash.Kills);
+        }
         Pending = false;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        HitboxesResolved?.Invoke(new HitboxSnapshot(directCenter, directSize, StrikeRotation, splashCenter, splashRadius));
+#endif
         combat.RaiseMeleePerformed(result.Hits);
+    }
+
+    void Lifesteal(CombatHealth victim, float actualDamage)
+    {
+        if (prototype == null || victim.Team != CombatTeam.Enemy || actualDamage <= 0) return;
+        var health = owner.GetComponent<CombatHealth>();
+        if (health != null) health.Heal(actualDamage * Mathf.Clamp01(prototype.lifesteal));
     }
 
     // Reach assistance translates only the attack box. It never steers or teleports the movement
     // root, and never changes target or direction after the swing starts.
     float FindApproach()
     {
+        // These greyboxes use their exact stat reach; there is no authored lunge.
+        if (prototype != null) return 0;
         var targeting = combat.Targeting;
         var movement = combat.Movement;
         assistedTarget = targeting != null && !targeting.IsFreeAim ? targeting.CurrentTarget : null;

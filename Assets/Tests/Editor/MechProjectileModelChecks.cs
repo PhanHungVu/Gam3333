@@ -70,6 +70,9 @@ public static class MechProjectileModelChecks
         {
             var equipment = player.GetComponent<EquipManager>();
             var combat = player.GetComponent<MechCombat>(); TestMech.StopPlayerInput(combat); combat.BindCamera(view);
+            // This checks authored models and exact damage, independently of the
+            // head's now-active random spread (covered by AccuracySpreadChecks).
+            typeof(MechCombat).GetField("maximumSpreadAngle", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(combat, 0f);
             foreach (var slot in new[] { PartCategory.ShoulderR, PartCategory.ArmR })
             {
                 var part = player.GetComponent<MechCombat>().GetPart(slot);
@@ -77,7 +80,7 @@ public static class MechProjectileModelChecks
                 view.transform.SetPositionAndRotation(muzzle, Quaternion.identity);
                 var target = GameObject.CreatePrimitive(PrimitiveType.Cube); cleanup.Add(target);
                 target.transform.position = muzzle + Vector3.forward * 6f;
-                var health = target.AddComponent<CombatHealth>(); Physics.SyncTransforms();
+                var health = target.AddComponent<CombatHealth>(); health.Team = CombatTeam.Enemy; health.SetMaximum(1000, true); Physics.SyncTransforms();
                 var shot = combat.TryAttack(slot).Projectile;
                 Model(shot, slot == PartCategory.ShoulderR ? "CrossbowBoltMesh" : "ThrowingAxeMesh", check);
                 check(Vector3.Distance(shot.transform.position, muzzle) < 0.001f && Vector3.Dot(shot.transform.forward, shot.Direction) > 0.999f,
@@ -90,8 +93,8 @@ public static class MechProjectileModelChecks
                     ? Quaternion.Angle(rotation, visual.localRotation) > 1f : Quaternion.Angle(rotation, visual.localRotation) < 0.01f),
                     slot + " has the correct bolt/spinning-axe flight without homing");
                 Fly(shot, 0.1f);
-                check(!shot.IsLive && health.CurrentHealth == health.MaximumHealth - combat.GetPart(slot).Stats.GetStat(StatType.Damage),
-                    slot + " model projectile still applies existing damage once");
+                check(shot.IsLive == combat.GetPart(slot).Stats.piercingProjectile && health.CurrentHealth == health.MaximumHealth - combat.GetPart(slot).Stats.GetStat(StatType.Damage),
+                    slot + " model projectile applies direct damage once and keeps flying only when configured to pierce");
                 float after = health.CurrentHealth; Fly(shot, 0.1f);
                 check(health.CurrentHealth == after, slot + " spent projectile cannot damage twice");
                 Object.DestroyImmediate(shot.gameObject); Object.DestroyImmediate(target);

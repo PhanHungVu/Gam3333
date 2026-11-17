@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad4a868c28c93014cbb933c5f410180b, type: 3}
+  m_Name: PartData_Arm_Hook
+  m_EditorClassIdentifier: Assembly-CSharp::PartData
+  partId: armPrototype6
+  partName: Hook
+  description: Greybox arm weapon 6. Exact design stats; placeholder cube and sphere
+    visuals.
+  partType: 1
+  restrictToPartType: 1
+  subtype: 1
+  icon: {fileID: -82484376459570960, guid: 0957277e5f0fd704d953baf1e4c5a290, type: 2}
+  abilityIcon: {fileID: 0}
+  ability: 0
+  abilityVfx: {fileID: 0}
+  stats:
+  - type: 2
+    value: 30
+  - type: 14
+    value: 0
+  - type: 4
+    value: 30
+  - type: 3
+    value: 1
+  - type: 13
+    value: 0.2
+  - type: 5
+    value: 0.7
+  - type: 6
+    value: 8
+  - type: 12
+    value: 0
+  - type: 1
+    value: -3
+  - type: 10
+    value: 60
+  - type: 11
+    value: 0.15
+  projectilePrefab: {fileID: 0}
+  projectileColor: {r: 0.75, g: 0.65, b: 0.45, a: 1}

@@ -22,6 +22,12 @@ public class MechCombat : MonoBehaviour
     [Header("Aiming")]
     [SerializeField] Camera gameplayCamera;
     [SerializeField] LayerMask hitLayers = ~0;
+    [Tooltip("Crosshair reference half-angle at 0% head Accuracy. Shots use a smaller inner fraction of this circle.")]
+    [SerializeField, Range(0f, 45f)] float maximumSpreadAngle = 10f;
+    [Tooltip("Maximum shot-spread radius relative to the crosshair circle. Closer aim points tighten it further using the weapon's Range.")]
+    [SerializeField, Range(0f, 1f)] float shotSpreadRadiusFraction = .25f;
+    [Tooltip("Minigun exception: half the original crosshair-radius spread at maximum range, tightening up close too.")]
+    [SerializeField, Range(0f, 1f)] float minigunSpreadRadiusFraction = .5f;
     [Tooltip("Muzzle used when a part has no muzzle of its own.")]
     [SerializeField] Vector3 muzzleOffset = new Vector3(0.65f, 0.5f, 0.65f);
     [Tooltip("Material for the plain projectile sphere, used when a part has no projectile model.")]
@@ -64,6 +70,46 @@ public class MechCombat : MonoBehaviour
     // Muzzle of the part that attacked last (effects play here).
     public Vector3 MuzzlePosition => MuzzleOf(lastAttacker);
     public float MetresPerGolem => parts != null && parts.rulesConfig != null ? parts.rulesConfig.metresPerGolem : 4f;
+    public float AccuracyPercent => AccuracySpread.Percent(GetPart(PartCategory.Head)?.Stats);
+    public float HeadSpreadHalfAngle => AccuracySpread.HalfAngle(AccuracyPercent, maximumSpreadAngle);
+    public float SpreadHalfAngle
+    {
+        get
+        {
+            float angle = HeadSpreadHalfAngle;
+            foreach (var slot in Sockets)
+            {
+                var part = GetPart(slot);
+                if (part != null && IsRanged(part)) angle = Mathf.Max(angle, SpreadAngleOf(part));
+            }
+            return angle;
+        }
+    }
+    public float SpreadAngleOf(Part part)
+    {
+        var prototype = part != null ? part.GetComponent<GreyboxArmWeapon>() : null;
+        float extra = prototype != null && prototype.isActiveAndEnabled ? prototype.ExtraSpread : 0;
+        float head = HeadSpreadHalfAngle;
+        return extra > 0 ? Mathf.Min(45, Mathf.Atan(Mathf.Tan(head * Mathf.Deg2Rad) + Mathf.Tan(extra * Mathf.Deg2Rad)) * Mathf.Rad2Deg) : head;
+    }
+    public float SpreadRadiusPixels(Camera camera) => AccuracySpread.ScreenRadius(camera, SpreadHalfAngle);
+    public float RangeMetresOf(Part part) => part != null && part.Stats != null
+        ? Mathf.Max(.01f, part.Stats.GetStat(StatType.Range) * MetresPerGolem) : .01f;
+    public float ShotRadiusFractionOf(Part part)
+    {
+        var prototype = part != null ? part.GetComponent<GreyboxArmWeapon>() : null;
+        return Mathf.Clamp01(prototype != null && prototype.isActiveAndEnabled && prototype.weapon == GreyboxArmWeapon.Weapon.Minigun
+            ? minigunSpreadRadiusFraction : shotSpreadRadiusFraction);
+    }
+    public float ShotSpreadAngleOf(Part part, Vector3 aimPoint, bool hasAimContact = true)
+    {
+        // Range is the existing projectile travel limit, also used as the
+        // accuracy reference. Empty-space aiming has no nearby contact to tighten.
+        float distance = hasAimContact ? AccuracySpread.DistanceFactor(Vector3.Distance(MuzzleOf(part), aimPoint), RangeMetresOf(part)) : 1f;
+        var prototype = part != null ? part.GetComponent<GreyboxArmWeapon>() : null;
+        bool shotgun = prototype != null && prototype.isActiveAndEnabled && prototype.weapon == GreyboxArmWeapon.Weapon.Shotgun;
+        return AccuracySpread.ScaleRadius(shotgun ? HeadSpreadHalfAngle : SpreadAngleOf(part), ShotRadiusFractionOf(part) * distance);
+    }
 
     // Settings read by MeleeAttack.
     internal LayerMask HitLayers => hitLayers;
@@ -150,15 +196,34 @@ public class MechCombat : MonoBehaviour
         if (part.ReadyAt > Time.time || part.RemainingAmmo <= 0) return null;
         if (gameplayCamera == null) gameplayCamera = Camera.main;
         if (gameplayCamera == null) return null;
-        var stats = part.Stats;
         // Full damage up to Range (golems), where the shot disappears.
-        float range = Mathf.Max(0.01f, stats.GetStat(StatType.Range) * MetresPerGolem);
+        float range = RangeMetresOf(part);
         Vector3 muzzle = MuzzleOf(part);
-        Vector3 aimPoint = AimSolver.AimPoint(targeting, gameplayCamera, transform, range, hitLayers);
-        var projectile = RangedAttack.Fire(part, transform, muzzle, aimPoint, gameplayCamera.transform.forward,
-            range, hitLayers, combatMaterial, ForwardProjectileImpact, DamageModifiers.Total);
+        Vector3 center = AimSolver.AimPoint(targeting, gameplayCamera, transform, range, hitLayers, out bool hasAimContact);
+        var prototype = part.GetComponent<GreyboxArmWeapon>();
+        if (prototype != null && !prototype.isActiveAndEnabled) prototype = null;
+        int count = prototype != null ? prototype.ProjectileCount : 1;
+        MechProjectile projectile = null;
+        float shotAngle = ShotSpreadAngleOf(part, center, hasAimContact);
+        bool shotgun = prototype != null && prototype.weapon == GreyboxArmWeapon.Weapon.Shotgun;
+        Vector3 attackCenter = shotgun ? AccuracySpread.RandomAimPoint(gameplayCamera, center, shotAngle) : center;
+        // One accepted attack/round, many ordinary projectiles for a shotgun. Each
+        // pellet has a share of the total Damage and an independent spread sample.
+        for (int i = 0; i < count; i++)
+        {
+            Vector3 aimPoint = shotgun
+                ? muzzle + AccuracySpread.RandomConeDirection(attackCenter - muzzle, prototype.ExtraSpread) * range
+                : AccuracySpread.RandomAimPoint(gameplayCamera, center, shotAngle);
+            var shot = RangedAttack.Fire(part, transform, muzzle, aimPoint, gameplayCamera.transform.forward,
+                range, hitLayers, combatMaterial, impact =>
+                {
+                    ForwardProjectileImpact(impact);
+                    if (prototype != null) prototype.OnImpact(this, impact);
+                }, DamageModifiers.Total / count, consumeRound: i == 0);
+            if (projectile == null) projectile = shot;
+            ShotFired?.Invoke(shot);
+        }
         lastAttacker = part;
-        ShotFired?.Invoke(projectile);
         WeaponAttackStarted?.Invoke(part);
         return projectile;
     }

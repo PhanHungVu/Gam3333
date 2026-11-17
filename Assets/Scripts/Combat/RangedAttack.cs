@@ -8,12 +8,12 @@ public static class RangedAttack
 {
     public static MechProjectile Fire(Part part, Transform owner, Vector3 muzzle, Vector3 aimPoint, Vector3 fallbackDirection,
         float range, LayerMask layers, Material fallbackMaterial,
-        Action<MechProjectileImpact> onImpact, float damageMultiplier = 1f, float speedMultiplier = 1f)
+        Action<MechProjectileImpact> onImpact, float damageMultiplier = 1f, float speedMultiplier = 1f, bool consumeRound = true)
     {
         var stats = part.Stats;
         Vector3 direction = (aimPoint - muzzle).normalized;
         if (direction.sqrMagnitude < 0.001f) direction = fallbackDirection;
-        part.Consume(stats.ShotInterval, true, stats.GetStat(StatType.Reload), stats.MagazineSize);
+        if (consumeRound) part.Consume(stats.ShotInterval, true, stats.GetStat(StatType.Reload), stats.MagazineSize);
         float size = Mathf.Max(0.01f, stats.GetStat(StatType.ProjectileSize));
         var projectile = MechProjectile.Create(stats.projectilePrefab, stats.partName + " Projectile",
             new Vector3(owner.position.x, muzzle.y, owner.position.z), size, fallbackMaterial, stats.projectileColor);
@@ -25,6 +25,7 @@ public static class RangedAttack
         float splash = splashes ? Mathf.Max(0f, stats.GetStat(StatType.SplashRadius)) : 0f;
         float splashDamage = splashes ? Mathf.Max(0f, stats.GetStat(StatType.SplashDamage) * Mathf.Max(0f, damageMultiplier)) : 0f;
         projectile.ConfigureSplash(splash, splashDamage);
+        projectile.ConfigurePiercing(stats.piercingProjectile, stats.maximumPiercedTargets);
         projectile.Launch(owner, direction, stats.GetStat(StatType.ProjectileSpeed) * Mathf.Max(0.01f, speedMultiplier),
             Mathf.Max(0f, stats.GetStat(StatType.Damage) * Mathf.Max(0f, damageMultiplier)),
             size, range, layers, muzzle);

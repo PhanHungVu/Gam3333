@@ -16382,6 +16382,9 @@ MonoBehaviour:
   hitLayers:
     serializedVersion: 2
     m_Bits: 4294967295
+  maximumSpreadAngle: 10
+  shotSpreadRadiusFraction: 0.25
+  minigunSpreadRadiusFraction: 0.5
   muzzleOffset: {x: 0.65, y: 0.5, z: 0.65}
   combatMaterial: {fileID: 2100000, guid: fc5a0c43e9ca4e3983d08f532cc784ef, type: 2}
   meleeCenter: {x: 0, y: 0, z: 2.75}

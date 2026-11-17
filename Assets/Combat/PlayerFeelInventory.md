@@ -1,5 +1,7 @@
 # Player movement and weapon inventory
 
+Update: head Accuracy now drives ranged shot spread and the aiming-circle size. See [Head Accuracy and the aiming circle](AccuracySpread.md). The unused-Accuracy notes in this earlier audit are historical.
+
 This is the **2026-11-02 snapshot**. The later [control revision](ControlScheme.md) replaces manual assault-boost input with torso-ability requests, adds automatic running/manual reload, changes camera lock to F and retires movement energy costs. Refer to that document for current controls.
 
 Audit: 2026-11-02. Based on current runtime code, `InputSystem_Actions.inputactions`, `FullPlayer_mech_base.prefab`, its equipped part data, locomotion prefabs and the fallback `Main Camera.prefab`. A scene can override those prefab settings or use its own camera. This describes implemented behavior, rather than promises from older planning documents.

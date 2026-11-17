@@ -93,6 +93,23 @@ public class MechMovementController : MonoBehaviour
         NotifyCombatAction(); return true;
     }
     public void ClearExternalMotion() { externalVelocity = Vector3.zero; externalRemaining = 0; }
+    Vector3 hookDestination;
+    float hookSpeed, hookStopDistance, hookRemaining;
+    Part hookSource;
+    public bool IsHookPulling => hookRemaining > 0;
+    // Hook requests displacement through this motor's existing capsule. It never
+    // writes the transform directly or bypasses dash, hitstop or wall collisions.
+    public bool BeginHookPull(Vector3 destination, float speed, float stoppingDistance, float timeout, Part source)
+    {
+        if (!isActiveAndEnabled || !characterController.enabled || IsQuickBoosting || health != null && health.IsDead
+            || !Finite(destination.x) || !Finite(destination.y) || !Finite(destination.z) || !Finite(speed) || speed <= 0
+            || !Finite(stoppingDistance) || !Finite(timeout) || timeout <= 0 || source == null || !source.isEquipped
+            || source.EquippedBy == null || source.EquippedBy.transform != transform) return false;
+        hookDestination = destination; hookSpeed = speed; hookStopDistance = Mathf.Max(.1f, stoppingDistance);
+        hookRemaining = timeout; hookSource = source; planarVelocity = Vector3.zero; verticalVelocity = 0;
+        NotifyCombatAction(); return true;
+    }
+    public void CancelHookPull() { hookRemaining = 0; hookSource = null; }
     static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
     Vector3 quickBoostDirection;
     float verticalVelocity;
@@ -230,6 +247,7 @@ public class MechMovementController : MonoBehaviour
         planarVelocity = Vector3.zero;
         ClearHitStopInputBuffer();
         ClearExternalMotion();
+        CancelHookPull();
         verticalVelocity = 0f;
         Velocity = MoveDirection = FacingDirection = Vector3.zero;
         hasGroundSample = false;
@@ -262,6 +280,8 @@ public class MechMovementController : MonoBehaviour
         input.quickBoost |= hitStopDash; input.jump |= hitStopJump; ClearHitStopInputBuffer();
 
         input.move = Vector2.ClampMagnitude(input.move, 1f);
+        if (IsHookPulling && (input.quickBoost || IsKnockedBack || hookSource == null || !hookSource.isActiveAndEnabled
+            || !hookSource.isEquipped || hookSource.EquippedBy == null || hookSource.EquippedBy.transform != transform)) CancelHookPull();
         MechLocomotionSettings settings = Settings;
         if (requestedJumpHeight > 0f)
         {
@@ -273,7 +293,7 @@ public class MechMovementController : MonoBehaviour
         float previousYaw = transform.eulerAngles.y;
         Vector3 movementDirection = GetCameraRelativeDirection(input.move, cameraTransform);
         MoveDirection = movementDirection;
-        bool walking = !IsKnockedBack && movementDirection.sqrMagnitude > .001f && CanAssaultBoostHere()
+        bool walking = !IsKnockedBack && !IsHookPulling && movementDirection.sqrMagnitude > .001f && CanAssaultBoostHere()
             && !IsQuickBoosting && !assaultBoostActive && !input.quickBoost && !input.assaultBoost;
         bool wasRunning = IsAutoRunning;
         if (!walking || Vector3.ProjectOnPlane(Velocity, Vector3.up).sqrMagnitude < .01f)
@@ -312,8 +332,19 @@ public class MechMovementController : MonoBehaviour
         Vector3 externalStep = externalVelocity * (impulseStep * impulseWeight);
         externalRemaining = Mathf.Max(0, externalRemaining - deltaTime);
         Vector3 previousPosition = transform.position;
-        CollisionFlags collisions = characterController.Move(planarStep + Vector3.up * (verticalVelocity * deltaTime) + externalStep);
+        bool pulling = IsHookPulling;
+        Vector3 displacement = planarStep + Vector3.up * (verticalVelocity * deltaTime) + externalStep;
+        if (pulling)
+        {
+            Vector3 delta = hookDestination - transform.position;
+            displacement = delta.normalized * Mathf.Min(hookSpeed * deltaTime, Mathf.Max(0, delta.magnitude - hookStopDistance));
+            hookRemaining = Mathf.Max(0, hookRemaining - deltaTime);
+            planarVelocity = Vector3.zero; verticalVelocity = 0;
+        }
+        CollisionFlags collisions = characterController.Move(displacement);
         Velocity = (transform.position - previousPosition) / deltaTime;
+        if (pulling && (Vector3.Distance(transform.position, hookDestination) <= hookStopDistance + .03f
+            || collisions != CollisionFlags.None && (transform.position - previousPosition).sqrMagnitude < displacement.sqrMagnitude * .05f)) CancelHookPull();
         float landingSpeed = Mathf.Max(0f, -verticalVelocity);
         if ((collisions & CollisionFlags.Above) != 0 && verticalVelocity > 0f)
             verticalVelocity = 0f;

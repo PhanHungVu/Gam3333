@@ -9,7 +9,7 @@ public static class PartSwapDisplay
 {
     // Basic incoming values above; only changed values per destination below.
     static readonly StatType[] order={StatType.Damage,StatType.FireRate,StatType.MoveSpeed,
-        StatType.Health,StatType.Range,StatType.Ammo,StatType.MagSize,StatType.SplashRadius};
+        StatType.Health,StatType.Accuracy,StatType.Range,StatType.Ammo,StatType.MagSize,StatType.SplashRadius};
     public static string Name(Part part) => part==null ? "Empty" :
         part.Stats!=null && !string.IsNullOrWhiteSpace(part.Stats.partName) ? part.Stats.partName : part.name;
     public static string SocketName(PartCategory slot) => slot switch {
@@ -42,7 +42,7 @@ public static class PartSwapDisplay
         return true;
     }
     static string Number(float value)=>value.ToString(value!=0 && Mathf.Abs(value)<0.01f ? "0.##e+0" : "0.##",CultureInfo.InvariantCulture);
-    static string Unit(StatType type)=>type==StatType.FireRate ? "/s" : "";
+    static string Unit(StatType type)=>type==StatType.FireRate ? "/s" : type==StatType.Accuracy ? "%" : "";
     public static int BasicStats(Part incoming,out string text)
     {
         var data=incoming!=null ? incoming.Stats : null; var result=new StringBuilder(); int count=0;

@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad4a868c28c93014cbb933c5f410180b, type: 3}
+  m_Name: PartData_Arm_Supersword
+  m_EditorClassIdentifier: Assembly-CSharp::PartData
+  partId: armPrototype10
+  partName: Supersword
+  description: Greybox arm weapon 10. Exact design stats; placeholder cube and sphere
+    visuals.
+  partType: 1
+  restrictToPartType: 1
+  subtype: 3
+  icon: {fileID: -6369993257854149871, guid: ac80ef3d7ff6994498a26265f96f49a2, type: 2}
+  abilityIcon: {fileID: 0}
+  ability: 0
+  abilityVfx: {fileID: 0}
+  stats:
+  - type: 2
+    value: 250
+  - type: 14
+    value: 250
+  - type: 13
+    value: 0.35
+  - type: 6
+    value: 2.5
+  - type: 12
+    value: 2.5
+  - type: 1
+    value: -7
+  projectilePrefab: {fileID: 0}
+  projectileColor: {r: 0.45, g: 0.65, b: 0.75, a: 1}

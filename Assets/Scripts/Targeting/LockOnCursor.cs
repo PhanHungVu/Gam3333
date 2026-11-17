@@ -22,6 +22,11 @@ public class LockOnCursor : MonoBehaviour
     [SerializeField] Sprite lockOnSprite;
     [Tooltip("Sprite used while the player holds camera lock-on (F).")]
     [SerializeField] Sprite camLockOnSprite;
+    [Header("Accuracy spread")]
+    [Tooltip("Diameter of the painted circle as a fraction of its sprite rectangle. The supplied cursor sprites paint a 136px circle inside a 256px image.")]
+    [SerializeField, Range(.01f, 1f)] float circleArtFraction = .53125f;
+    [Tooltip("Small aiming marker retained at perfect accuracy. Actual shot spread still reaches zero.")]
+    [SerializeField, Min(1f)] float minimumCirclePixels = 12f;
     [Header("Cursor Sounds")]
     [Tooltip("StoneHit1: plays when the cursor changes to the free cursor sprite.")]
     public AudioClip StoneHit1;
@@ -36,6 +41,7 @@ public class LockOnCursor : MonoBehaviour
     AudioSource stoneVoice;
     float nextStoneTime;
     bool reportedMissingCamera;
+    MechCombat combat;
 
     public Sprite CurrentSprite => cursorImage != null ? cursorImage.sprite : null;
     // F-held camera lock, then an automatically acquired enemy, then the plain cursor.
@@ -46,6 +52,7 @@ public class LockOnCursor : MonoBehaviour
     public void Bind(MechTargetLockController controller, Camera viewCamera)
     {
         targetLockController = controller;
+        combat = controller != null ? controller.GetComponent<MechCombat>() : null;
         gameplayCamera = viewCamera;
         ApplyCursorSprite();
     }
@@ -58,6 +65,7 @@ public class LockOnCursor : MonoBehaviour
             canvas = cursorRect.GetComponentInParent<Canvas>();
         if (targetLockController == null)
             targetLockController = FindAnyObjectByType<MechTargetLockController>();
+        combat = targetLockController != null ? targetLockController.GetComponent<MechCombat>() : null;
         if (gameplayCamera == null) gameplayCamera = FindMainCamera();
         if (cursorImage == null && cursorRect != null)
             cursorImage = cursorRect.GetComponent<Image>();
@@ -116,10 +124,26 @@ public class LockOnCursor : MonoBehaviour
         {
             cursorRect.position = screenPosition;
         }
+        UpdateSpreadCircle(canvasCamera);
+    }
+
+    void UpdateSpreadCircle(Camera canvasCamera)
+    {
+        if (combat == null || !combat.isActiveAndEnabled || cursorImage == null) return;
+        var art = cursorImage.rectTransform;
+        // Convert pixels to the image's own units, including CanvasScaler and any
+        // nested transform scale. Resizing the image never scales objective markers.
+        Vector2 origin = RectTransformUtility.WorldToScreenPoint(canvasCamera, art.TransformPoint(Vector3.zero));
+        float xPixels = Vector2.Distance(origin, RectTransformUtility.WorldToScreenPoint(canvasCamera, art.TransformPoint(Vector3.right)));
+        float yPixels = Vector2.Distance(origin, RectTransformUtility.WorldToScreenPoint(canvasCamera, art.TransformPoint(Vector3.up)));
+        if (xPixels < .0001f || yPixels < .0001f) return;
+        float diameter = Mathf.Max(minimumCirclePixels, combat.SpreadRadiusPixels(gameplayCamera) * 2f) / Mathf.Max(.01f, circleArtFraction);
+        art.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, diameter / xPixels);
+        art.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, diameter / yPixels);
     }
 
     // Camera lock-on outranks the automatic lock so pressing F always reads as the camera reticle.
-    // Only the sprite is swapped, so the image's colour and size stay as the designer set them, and a
+    // Only the sprite is swapped here; Accuracy sizes the circle separately, and a
     // stone hit plays for the sprite the cursor moves to: free, lock-on or camera lock-on.
     void ApplyCursorSprite()
     {

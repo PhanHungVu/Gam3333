@@ -1,76 +1,127 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
-// Debug presentation: draws the melee hit box and its ground footprint from MechCombat's melee
-// geometry. Never changes gameplay.
+// Development-only Game-view geometry. Reuses the existing player component and
+// displays snapshots of the exact physics queries; never performs a damage query.
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(301)]
 [RequireComponent(typeof(MechCombat))]
 public sealed class MeleeBoxPreview : MonoBehaviour
 {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     [SerializeField] Material material;
-    [SerializeField] bool showMeleeBox = true;
-    static readonly int[] BoxCorners = { 0, 1, 3, 2, 0, 4, 5, 1, 5, 7, 3, 7, 6, 2, 6, 4 };
-    static readonly int[] GroundCorners = { 0, 1, 5, 4, 0 };
+    [InspectorName("Show Melee Hitboxes")]
+    [SerializeField] bool showMeleeBox;
+    [SerializeField] bool showSplashHitboxes = true;
+    [SerializeField] bool showHitboxesOnlyDuringAttacks = true;
+    [Tooltip("Briefly retains each instantaneous damage query so it is visible between frames.")]
+    [SerializeField, Range(.03f, .5f)] float displaySeconds = .15f;
+
+    sealed class View
+    {
+        public Transform Direct, Splash;
+        public MeleeAttack.HitboxSnapshot Snapshot;
+        public float Until;
+    }
     MechCombat combat;
-    CharacterController capsule;
-    LineRenderer box, ground;
+    MeleeAttack subscribed;
+    GameObject root;
+    Material directMaterial, splashMaterial;
+    readonly View[] strikes = new View[3];
+    readonly View[] idle = new View[2];
+    int next;
 
-    void Awake()
+    void Awake() => combat = GetComponent<MechCombat>();
+    void OnEnable() => Bind();
+    void Bind()
     {
-        combat = GetComponent<MechCombat>();
-        capsule = GetComponent<CharacterController>();
-        if (material == null) return;
-        box = Line("Melee Hitbox Preview", 0.05f);
-        box.positionCount = BoxCorners.Length;
-        ground = Line("Melee Ground Reach", 0.055f);
-        ground.positionCount = GroundCorners.Length;
+        if (combat == null) combat = GetComponent<MechCombat>();
+        if (combat.Melee == subscribed) return;
+        if (subscribed != null) subscribed.HitboxesResolved -= Record;
+        subscribed = combat.Melee;
+        if (subscribed != null) subscribed.HitboxesResolved += Record;
+    }
+    void Record(MeleeAttack.HitboxSnapshot snapshot)
+    {
+        if (!showMeleeBox) return;
+        EnsureViews();
+        var view = strikes[next]; next = (next + 1) % strikes.Length;
+        view.Snapshot = snapshot; view.Until = Time.unscaledTime + displaySeconds;
+        Draw(view, true);
     }
 
-    LineRenderer Line(string name, float width)
+    Material DebugMaterial(Color color)
     {
-        var line = new GameObject(name).AddComponent<LineRenderer>();
-        line.transform.SetParent(transform, false);
-        line.useWorldSpace = true;
-        line.sharedMaterial = material;
-        line.startWidth = line.endWidth = width;
-        line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        line.receiveShadows = false;
-        return line;
+        var shader = material != null ? material.shader : Shader.Find("Universal Render Pipeline/Unlit");
+        if (shader == null) shader = Shader.Find("Sprites/Default");
+        var result = new Material(shader) { name = "Melee Debug Transparent", hideFlags = HideFlags.DontSave, renderQueue = (int)RenderQueue.Transparent };
+        result.SetColor("_BaseColor", color); result.SetColor("_Color", color);
+        result.SetFloat("_Surface", 1); result.SetFloat("_Blend", 0); result.SetFloat("_ZWrite", 0);
+        result.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha); result.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+        result.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        result.SetOverrideTag("RenderType", "Transparent");
+        return result;
     }
-
-    void OnDisable()
+    void EnsureViews()
     {
-        if (box != null) box.enabled = false;
-        if (ground != null) ground.enabled = false;
+        if (root != null) return;
+        root = new GameObject(name + " - Melee Hitbox Debug") { hideFlags = HideFlags.DontSave };
+        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(root, gameObject.scene);
+        directMaterial = DebugMaterial(new Color(1, .06f, .04f, .22f));
+        splashMaterial = DebugMaterial(new Color(1, .4f, .02f, .16f));
+        for (int i = 0; i < strikes.Length; i++) strikes[i] = CreateView("Strike " + (i + 1));
+        for (int i = 0; i < idle.Length; i++) idle[i] = CreateView("Idle " + (i + 1));
     }
-
+    View CreateView(string label) => new View
+    {
+        Direct = Shape(label + " Direct", PrimitiveType.Cube, directMaterial),
+        Splash = Shape(label + " Splash", PrimitiveType.Sphere, splashMaterial)
+    };
+    Transform Shape(string label, PrimitiveType type, Material shared)
+    {
+        var shape = GameObject.CreatePrimitive(type); shape.name = label;
+        shape.transform.SetParent(root.transform, false);
+        var collider = shape.GetComponent<Collider>(); collider.enabled = false; Destroy(collider);
+        var renderer = shape.GetComponent<Renderer>(); renderer.sharedMaterial = shared;
+        renderer.shadowCastingMode = ShadowCastingMode.Off; renderer.receiveShadows = false;
+        shape.SetActive(false); return shape.transform;
+    }
+    void Draw(View view, bool visible)
+    {
+        view.Direct.gameObject.SetActive(visible);
+        view.Splash.gameObject.SetActive(visible && showSplashHitboxes && view.Snapshot.SplashRadius > 0);
+        if (!visible) return;
+        view.Direct.SetPositionAndRotation(view.Snapshot.Center, view.Snapshot.Rotation);
+        view.Direct.localScale = view.Snapshot.Size;
+        view.Splash.SetPositionAndRotation(view.Snapshot.SplashCenter, Quaternion.identity);
+        view.Splash.localScale = Vector3.one * view.Snapshot.SplashRadius * 2;
+    }
     void LateUpdate()
     {
-        if (box == null) return;
-        var melee = combat.Melee;
-        bool visible = showMeleeBox && melee != null && combat.isActiveAndEnabled && combat.HasMelee;
-        box.enabled = ground.enabled = visible;
-        if (!visible) return;
-        Quaternion rotation = melee.Pending || melee.Flashing ? melee.StrikeRotation : transform.rotation;
-        Vector3 center = melee.BoxCenter(melee.Extension, rotation);
-        Vector3 size = melee.BoxSize;
-        // Walk every edge of the box, retracing only the edges needed to connect them.
-        for (int i = 0; i < BoxCorners.Length; i++)
+        Bind();
+        if (!showMeleeBox || combat == null || !combat.isActiveAndEnabled)
+        { if (root != null) root.SetActive(false); return; }
+        EnsureViews(); root.SetActive(true);
+        for (int i = 0; i < strikes.Length; i++) Draw(strikes[i], strikes[i].Until > Time.unscaledTime);
+        for (int i = 0; i < idle.Length; i++)
         {
-            int c = BoxCorners[i];
-            var corner = new Vector3((c & 1) == 0 ? -0.5f : 0.5f, (c & 2) == 0 ? -0.5f : 0.5f, (c & 4) == 0 ? -0.5f : 0.5f);
-            box.SetPosition(i, center + rotation * Vector3.Scale(corner, size));
-        }
-        box.startColor = box.endColor = melee.Flashing ? new Color(1f, 0.9f, 0.25f)
-            : melee.Pending ? new Color(1f, 0.55f, 0.15f) : new Color(0.2f, 0.8f, 1f, 0.7f);
-        ground.startColor = ground.endColor = box.startColor;
-        float groundY = capsule != null ? capsule.bounds.min.y + 0.04f : transform.position.y - 1.46f;
-        for (int i = 0; i < GroundCorners.Length; i++)
-        {
-            int c = GroundCorners[i];
-            Vector3 point = center + rotation * Vector3.Scale(new Vector3((c & 1) == 0 ? -0.5f : 0.5f, 0f, (c & 4) == 0 ? -0.5f : 0.5f), size);
-            point.y = groundY;
-            ground.SetPosition(i, point);
+            var part = combat.GetMeleePart(i == 0 ? PartCategory.ArmL : PartCategory.ArmR);
+            bool visible = !showHitboxesOnlyDuringAttacks && part != null;
+            if (visible) idle[i].Snapshot = combat.Melee.PreviewHitboxes(part, transform.rotation);
+            Draw(idle[i], visible);
         }
     }
+    void OnDisable()
+    {
+        if (subscribed != null) subscribed.HitboxesResolved -= Record;
+        subscribed = null;
+        if (root != null) root.SetActive(false);
+    }
+    void OnDestroy()
+    {
+        if (root != null) Destroy(root);
+        if (directMaterial != null) Destroy(directMaterial);
+        if (splashMaterial != null) Destroy(splashMaterial);
+    }
+#endif
 }
