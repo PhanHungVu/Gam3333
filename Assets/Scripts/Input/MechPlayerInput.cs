@@ -153,8 +153,8 @@ public sealed class MechPlayerInput : MonoBehaviour
         {
             Attack(leftArm, PartCategory.ArmL, repeatWhileHeld: true);
             Attack(rightArm, PartCategory.ArmR, repeatWhileHeld: true);
-            Attack(leftShoulder, PartCategory.ShoulderL);
-            Attack(rightShoulder, PartCategory.ShoulderR);
+            Attack(leftShoulder, PartCategory.ShoulderL, combat.RepeatsWhileHeld(PartCategory.ShoulderL));
+            Attack(rightShoulder, PartCategory.ShoulderR, combat.RepeatsWhileHeld(PartCategory.ShoulderR));
         }
         // Attacks run first so a successful attack cancels running before this
         // frame's movement, including when the attack came from another caller.

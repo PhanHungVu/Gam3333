@@ -27,8 +27,8 @@ public enum PartAbility { None = 0, DamageAmp = 1, Heal = 2, Jump = 3 }
 
 // How a part attacks, which decides how its damage is checked. None for parts that don't attack
 // (head, legs, torso). Melee: a hit box. Projectile: a shot that hits what it touches. Splash: a shot
-// that also damages everything within its Splash Radius.
-public enum PartSubtype { None, Projectile, Splash, Melee }
+// that also damages everything within its Splash Radius. Special: a part-owned action such as blocking.
+public enum PartSubtype { None, Projectile, Splash, Melee, Special }
 
 
 [System.Serializable]

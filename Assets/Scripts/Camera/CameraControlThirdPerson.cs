@@ -32,6 +32,8 @@ public class CameraControlThirdPerson : MonoBehaviour
     [SerializeField, Range(0f, 1f)] float lockOnVerticalSensitivity = 0.25f;
     [Tooltip("How quickly the camera moves behind the mech when following a locked enemy.")]
     [SerializeField, Min(0.01f)] float hardLockOrbitResponse = 0.12f;
+    [Tooltip("Rotation damping in seconds when entering camera lock or following a new enemy. Applies to flick switches and automatic replacement after death too.")]
+    [SerializeField, Min(0.01f)] float hardLockRotationDamping = .35f;
     [Tooltip("Base targeting pitch. Hard lock raises the view for nearby low targets; soft lock keeps the player's manual framing.")]
     [SerializeField, Range(5f, 60f)] float hardLockPitch = 20f;
     [Tooltip("Shared height above the player root for both lock modes.")]
@@ -117,6 +119,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     float currentLockHeight;
     float lockPitchAdjustment;
     float meleeFraming;
+    float lockFraming;
     bool wasTargeting;
     CinemachineImpulseListener combatImpulseListener;
 
@@ -155,7 +158,7 @@ public class CameraControlThirdPerson : MonoBehaviour
         cameraYaw = player.eulerAngles.y;
         cameraPitch = initialPitch;
         wasHardLocked = wasTargeting = false;
-        currentLateralOffset = meleeFraming = 0;
+        currentLateralOffset = meleeFraming = lockFraming = 0;
         cinemachineCamera.PreviousStateIsValid = false;
         obstacleResolver.Configure(player, avoidObstacles);
     }
@@ -215,6 +218,10 @@ public class CameraControlThirdPerson : MonoBehaviour
         if (target == null || cameraTarget == null)
             return;
 
+        // Damage can kill the selected enemy after targeting's Update. Reacquire
+        // before framing so there is no intermediate free-camera frame.
+        if (targetingController != null && targetingController.IsHardLockMode && !targetingController.IsHardLocked)
+            targetingController.RefreshHardLockTarget();
         UpdateCameraTargetRotation();
         UpdateMovementFeedback(Time.deltaTime);
         ApplySettings();
@@ -272,13 +279,16 @@ public class CameraControlThirdPerson : MonoBehaviour
         thirdPersonFollow.Damping = Vector3.Lerp(normalProfile.damping, quickBoostFollowDamping, quickFollowWeight);
         thirdPersonFollow.ShoulderOffset = ShoulderOffset();
         rotationComposer.TargetOffset = targetingActive ? Vector3.zero : normalProfile.targetOffset;
-        // Center on the manual aim focus in soft lock, or the enemy in hard lock.
-        // The only visible cursor remains the existing UI cursor.
-        rotationComposer.Damping = targetingActive ? Vector2.zero : rotationDamping;
+        // Cinemachine preserves the rendered orientation and damps toward the new
+        // aim point. Zero damping would bypass the already-smoothed follow orbit.
+        bool hardMode = targetingController != null && targetingController.IsHardLockMode;
+        rotationComposer.Damping = hardMode ? Vector2.one * hardLockRotationDamping : rotationDamping;
         rotationComposer.CenterOnActivate = true;
 
         ScreenComposerSettings composition = rotationComposer.Composition;
-        composition.ScreenPosition = targetingActive ? Vector2.zero : screenPosition;
+        // Cinemachine applies screen-position changes without damping, so blend
+        // this small framing offset as well as the enemy-facing rotation.
+        composition.ScreenPosition = Vector2.Lerp(screenPosition, Vector2.zero, lockFraming);
         composition.DeadZone = new ScreenComposerSettings.DeadZoneSettings
         {
             Enabled = !targetingActive,
@@ -286,7 +296,9 @@ public class CameraControlThirdPerson : MonoBehaviour
         };
         composition.HardLimits = new ScreenComposerSettings.HardLimitSettings
         {
-            Enabled = true,
+            // Hard bounds forcibly recenter without damping. Let a new locked
+            // target enter the screen naturally, including after the last death.
+            Enabled = !hardMode,
             Size = normalProfile.hardLimitSize,
             Offset = Vector2.zero
         };
@@ -324,6 +336,7 @@ public class CameraControlThirdPerson : MonoBehaviour
         Vector3 direction = enemy != null ? enemy.AimPosition - target.position : Vector3.zero;
         float planarDistance = new Vector2(direction.x, direction.z).magnitude;
         float response = 1f - Mathf.Exp(-deltaTime / Mathf.Max(0.01f, hardLockOrbitResponse));
+        lockFraming = Mathf.Lerp(lockFraming, targetingActive ? 1f : 0f, response);
         bool closeMelee = hardLocked && enemy != null && combatController != null && combatController.MeleeCameraActive
             && planarDistance <= meleeFramingRange && Mathf.Abs(direction.y) <= 2.5f;
         meleeFraming = Mathf.Lerp(meleeFraming, closeMelee ? 1f : 0f,
@@ -362,15 +375,17 @@ public class CameraControlThirdPerson : MonoBehaviour
                 desiredPitch = Mathf.Max(desiredPitch, clearancePitch);
             }
             desiredPitch = Mathf.Clamp(desiredPitch + meleePitchOffset * meleeFraming, 5f, 80f);
-            // Never enter targeting from a low free-aim angle that hides the ground.
-            if (!wasTargeting) cameraPitch = Mathf.Max(cameraPitch, hardLockPitch - lockOnVerticalRange);
             cameraPitch = Mathf.LerpAngle(cameraPitch, desiredPitch, response);
             currentLockHeight = Mathf.Lerp(currentLockHeight, hardLockHeight, response);
         }
         else
         {
-            cameraPitch = Mathf.Clamp(cameraPitch - lookInput.y * lookSensitivity,
+            float manualPitch = Mathf.Clamp(cameraPitch - lookInput.y * lookSensitivity,
                 normalProfile.minimumPitch, normalProfile.maximumPitch);
+            // A close hard lock may have raised pitch beyond manual limits.
+            // Losing its target must ease back rather than clamp in one frame.
+            cameraPitch = cameraPitch < normalProfile.minimumPitch || cameraPitch > normalProfile.maximumPitch
+                ? Mathf.LerpAngle(cameraPitch, manualPitch, response) : manualPitch;
             currentLockHeight = Mathf.Lerp(currentLockHeight, 0f, response);
         }
         wasHardLocked = hardMode;
@@ -432,6 +447,7 @@ public class CameraControlThirdPerson : MonoBehaviour
     {
         lookSensitivity = Mathf.Max(0f, lookSensitivity);
         hardLockPitch = Mathf.Clamp(hardLockPitch, 5f, 60f);
+        hardLockRotationDamping = Mathf.Max(.01f, hardLockRotationDamping);
         softLockAimDistance = Mathf.Max(1f, softLockAimDistance);
         lockOnVerticalRange = Mathf.Clamp(lockOnVerticalRange, 0f, Mathf.Min(5f, hardLockPitch - 1f));
         lockOnVerticalSensitivity = Mathf.Clamp01(lockOnVerticalSensitivity);

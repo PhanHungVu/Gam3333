@@ -6,6 +6,8 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class MechTargetLockController : MonoBehaviour
 {
+    public enum LockMode { NoLockOn, FreeCameraLockOn, CameraLockOn }
+
     [SerializeField] float lockRange = 60f;
     [SerializeField] LayerMask targetLayers = ~0;
     [SerializeField, Range(0f, 0.49f)] float screenPadding = 0.04f;
@@ -30,6 +32,8 @@ public class MechTargetLockController : MonoBehaviour
     bool hardLockEnabled;
     bool targetingEnabled;
     bool rememberedHardLock;
+    bool enabledOnce;
+    LockMode disabledMode;
     bool switchLatched;
     Vector2 switchTravel;
     float gestureTime;
@@ -42,6 +46,8 @@ public class MechTargetLockController : MonoBehaviour
     public bool IsFreeCamera => !IsHardLockMode;
     public bool IsHardLockMode => isActiveAndEnabled && targetingEnabled && hardLockEnabled;
     public bool IsHardLocked => isActiveAndEnabled && targetingEnabled && hardLockEnabled && IsTargetInRange(currentTarget);
+    public LockMode Mode => !targetingEnabled ? LockMode.NoLockOn
+        : hardLockEnabled ? LockMode.CameraLockOn : LockMode.FreeCameraLockOn;
     public event Action<MechTargetable, MechTargetable> TargetChanged;
     public event Action<bool> HardLockChanged;
 
@@ -64,12 +70,28 @@ public class MechTargetLockController : MonoBehaviour
         SetHardLock(rememberedHardLock);
     }
 
-    // F toggles camera lock immediately on press. Weapon auto-aim stays enabled
-    // in both camera modes; no hold gesture changes aim mode.
+    // One press advances one mode. Holding/releasing never advances the cycle.
+    // No lock disables weapon auto-aim as well as camera tracking.
     public void ProcessLockButton(bool pressed, bool held, bool released, float deltaTime)
     {
         if (!isActiveAndEnabled || deltaTime <= 0f) return;
-        if (pressed) ToggleHardLock();
+        if (pressed) CycleLockMode();
+    }
+
+    public void CycleLockMode() => SetLockMode((LockMode)(((int)Mode + 1) % 3));
+
+    public void SetLockMode(LockMode mode)
+    {
+        if ((int)mode < 0 || (int)mode > (int)LockMode.CameraLockOn) throw new ArgumentOutOfRangeException(nameof(mode));
+        if (mode == LockMode.NoLockOn) { EnterFreeAim(); return; }
+        if (!isActiveAndEnabled) return;
+        targetingEnabled = true;
+        SetHardLock(mode == LockMode.CameraLockOn);
+        if (gameplayCamera == null) gameplayCamera = Camera.main;
+        // Explicitly entering free-camera mode ignores the remembered hard mode.
+        // Entering camera lock retains the current visible auto-aim selection.
+        if (!hardLockEnabled || gameplayCamera == null || !IsValidTarget(currentTarget, gameplayCamera))
+            SelectTarget(gameplayCamera);
     }
 
     public void CancelLockButtonInput()
@@ -175,10 +197,15 @@ public class MechTargetLockController : MonoBehaviour
 
     void OnDisable()
     {
+        disabledMode = Mode;
         CancelLockButtonInput();
         EnterFreeAim();
     }
-    void OnEnable() => ResumeTargeting();
+    void OnEnable()
+    {
+        if (enabledOnce) SetLockMode(disabledMode);
+        else { enabledOnce = true; ResumeTargeting(); }
+    }
 
     // Hard lock re-targets at the start of the frame, before the camera frames it.
     void Update()

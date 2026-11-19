@@ -147,7 +147,7 @@ public class Part : MonoBehaviour
     // One shot or swing: the next is allowed after interval (1 / Fire Rate). A shot also uses a round;
     // when that empties the magazine and ammo remains, the reload starts by itself, and the next shot
     // waits for both the interval and the reload. A magazine of 0 never reloads.
-    internal void Consume(float interval, bool ammunition, float reload = 0f, int magazine = 0)
+    internal void Consume(float interval, bool ammunition, float reload = 0f, int magazine = 0, int rounds = 1)
     {
         RecordCompletedWeaponCooldown();
         WeaponCooldownCycle++;
@@ -155,8 +155,11 @@ public class Part : MonoBehaviour
         readyStartedAt = Time.time;
         ReadyAt = Time.time + interval;
         if (!ammunition) return;
-        RemainingAmmo = Mathf.Max(0, RemainingAmmo - 1);
-        MagazineRounds = Mathf.Max(0, MagazineRounds - 1);
+        // A salvo is one admitted action/cooldown cycle, spending several loaded
+        // rounds atomically. Ordinary shots and multi-projectile Arms still use one.
+        int spent = Mathf.Max(1, rounds);
+        RemainingAmmo = Mathf.Max(0, RemainingAmmo - spent);
+        MagazineRounds = Mathf.Max(0, MagazineRounds - spent);
         if (RemainingAmmo <= 0) { reloadEndsAt = 0f; return; } // empty: nothing left to reload
         if (MagazineRounds > 0) return;
         MagazineRounds = magazine > 0 ? Mathf.Min(magazine, RemainingAmmo) : RemainingAmmo;

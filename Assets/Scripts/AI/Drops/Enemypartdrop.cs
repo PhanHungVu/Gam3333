@@ -40,6 +40,8 @@ public sealed class EnemyPartDrop : MonoBehaviour
     static void ResetMarkerCache() => markerTemplate = null;
 
     public int PartCount => partPrefabs != null ? partPrefabs.Length : 0;
+    // Observing the configured chance must not prepare/reroll the promised drop.
+    public float DropChancePercent => dropChancePercent;
     public Part LastDrop { get; private set; }
     public Part DroppedCarriedPart { get; private set; }
     public Part PlannedDrop

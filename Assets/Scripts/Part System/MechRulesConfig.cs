@@ -9,6 +9,10 @@ public class MechRulesConfig : ScriptableObject
 
     public bool CanEquip(Socket socket, Part part)
     {
+        // Mixed body-part testing must never cross the Arm/Shoulder weapon families.
+        var socketType = PartSlots.TypeOf(socket.socketType);
+        if (part.partType == PartType.Arm && socketType == PartType.Shoulder
+            || part.partType == PartType.Shoulder && socketType == PartType.Arm) return false;
         return (allowMixedTypes && (part.Stats == null || !part.Stats.restrictToPartType)) || PartSlots.Fits(socket.socketType, part.partType);
     }
 }

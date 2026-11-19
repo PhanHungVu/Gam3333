@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad4a868c28c93014cbb933c5f410180b, type: 3}
+  m_Name: PartData_Shoulder_FishingLine
+  m_EditorClassIdentifier: Assembly-CSharp::PartData
+  partId: shoulderPrototype5
+  partName: Fishing Line
+  description: Greybox shoulder weapon 5.
+  partType: 4
+  restrictToPartType: 1
+  subtype: 1
+  icon: {fileID: -7182554092123730411, guid: 70493f3e565c5fc46866b743e1516d36, type: 2}
+  abilityIcon: {fileID: 0}
+  ability: 0
+  abilityVfx: {fileID: 0}
+  stats:
+  - type: 2
+    value: 10
+  - type: 14
+    value: 0
+  - type: 4
+    value: 50
+  - type: 3
+    value: 10
+  - type: 13
+    value: 0.7
+  - type: 5
+    value: 2
+  - type: 6
+    value: 7
+  - type: 12
+    value: 0
+  - type: 1
+    value: -2
+  - type: 10
+    value: 120
+  - type: 11
+    value: 0.025
+  projectilePrefab: {fileID: 0}
+  piercingProjectile: 0
+  maximumPiercedTargets: 0
+  projectileColor: {r: 0.5428571, g: 0.8, b: 0.44, a: 1}

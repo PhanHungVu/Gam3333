@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abeaed5cc8b54c6e93b64132fe51253e, type: 3}
+  m_Name: ShoulderWeapons1-9
+  m_EditorClassIdentifier: Assembly-CSharp::GreyboxShoulderWeaponCatalogue
+  weapons:
+  - {fileID: 5583169396773374467, guid: 99dd9886178d57942a9be3244ae47544, type: 3}
+  - {fileID: 6278533138074108201, guid: 9df8b747d81b96b4f805b63180e88e0a, type: 3}
+  - {fileID: 4078276939238419809, guid: 2c32383e299f04b4ab38afe0d502798c, type: 3}
+  - {fileID: 415018024364921264, guid: 608a8e72554cc784bab09bc5f750f242, type: 3}
+  - {fileID: 4391119852232772404, guid: 58a92704b966bef4088b0aaadb7b0f0f, type: 3}
+  - {fileID: 3517588546373959061, guid: 473da30852e43da469b3366fb8dffc67, type: 3}
+  - {fileID: 5659567326347370869, guid: fef98a707dd491f4c8b5ef3189b298b5, type: 3}
+  - {fileID: 2053989437713145501, guid: 5bf22d130b0ea7f4ea6819d0a0690c9b, type: 3}
+  - {fileID: 6650324794589591792, guid: 04bde5ef54654f140b0370e5f70ea4ea, type: 3}

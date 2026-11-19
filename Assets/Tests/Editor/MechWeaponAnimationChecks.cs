@@ -87,7 +87,7 @@ public static class MechWeaponAnimationChecks
                     driver.Tick(0.3f);
                     check(driver.CurrentPose == MechWeaponAnimator.PoseState.Reload, slot + " enters its authored Reload clip");
                 }
-                driver.Tick(4f);
+                driver.Tick(Mathf.Max(part.CooldownDuration, part.Stats.ShotInterval) + .1f);
                 check(driver.CurrentPose == MechWeaponAnimator.PoseState.Neutral, slot + " returns to Neutral after the action");
             }
             var axe = equipment.GetEquipped(PartCategory.ArmR).GetComponent<MechWeaponAnimator>();

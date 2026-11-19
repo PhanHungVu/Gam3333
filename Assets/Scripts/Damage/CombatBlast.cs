@@ -114,6 +114,56 @@ public sealed class CombatBlast
         if (source != null) CombatVisualEvents.ReportMelee(source, owner, point, normal.sqrMagnitude > .0001f ? normal.normalized : Vector3.up);
     }
 
+    // A swept horizontal ring band. The center stays safe unless a body actually
+    // intersects the band; history spans sectors and compound colliders.
+    public DamageResult ResolveMeleeRing(Vector3 center, float outerRadius, float thickness, float halfHeight,
+        float startDegrees, float sweptDegrees, float damage, Transform owner, LayerMask layers, ISet<CombatHealth> hitHistory, Part source)
+    {
+        layers &= CombatRagdoll.QueryMask; damaged.Clear(); int hits = 0, kills = 0, count;
+        float inner = Mathf.Max(0, outerRadius - thickness), middle = (inner + outerRadius) * .5f;
+        while ((count = Physics.OverlapBoxNonAlloc(center, new Vector3(outerRadius, halfHeight, outerRadius), overlaps,
+            Quaternion.identity, layers, QueryTriggerInteraction.Ignore)) == overlaps.Length) Array.Resize(ref overlaps, overlaps.Length * 2);
+        for (int i = 0; i < count; i++)
+        {
+            var candidate = overlaps[i]; if (IsOwner(candidate, owner)) continue;
+            Vector3 radial = Vector3.ProjectOnPlane(candidate.bounds.center - center, Vector3.up);
+            if (radial.sqrMagnitude < .0001f) radial = Vector3.forward;
+            Vector3 contact = ClosestPoint(candidate, center + radial.normalized * middle) - center;
+            float radiusSquared = contact.x * contact.x + contact.z * contact.z;
+            if (Mathf.Abs(contact.y) > halfHeight || radiusSquared < inner * inner || radiusSquared > outerRadius * outerRadius) continue;
+            float bearing = Mathf.Atan2(contact.x, contact.z) * Mathf.Rad2Deg;
+            if (sweptDegrees < 360 && Mathf.Repeat(bearing - startDegrees, 360) > sweptDegrees + .01f) continue;
+            var tangent = new Vector3(radial.z, 0, -radial.x).normalized;
+            MeleeHit(candidate, Quaternion.LookRotation(tangent), damage, owner, layers, center, hitHistory, source, null, null, ref hits, ref kills);
+        }
+        Array.Clear(overlaps, 0, count); damaged.Clear(); return new DamageResult(hits, kills);
+    }
+
+    // Shared non-alloc target acquisition for target-directed attacks. No state,
+    // health, ammo or RNG changes; props/friendlies/dead bodies are not targets.
+    public Collider FindEnemy(Vector3 origin, float range, Transform owner, LayerMask layers,
+        CombatHealth preferred = null, ISet<CombatHealth> excluded = null, bool requireCenterWithinRange = false)
+    {
+        layers &= CombatRagdoll.QueryMask; int count;
+        while ((count = Physics.OverlapSphereNonAlloc(origin, range, overlaps, layers, QueryTriggerInteraction.Ignore)) == overlaps.Length)
+            Array.Resize(ref overlaps, overlaps.Length * 2);
+        Collider best = null; float nearest = float.MaxValue;
+        for (int i = 0; i < count; i++)
+        {
+            var candidate = overlaps[i]; if (IsOwner(candidate, owner)) continue;
+            var health = candidate.GetComponentInParent<CombatHealth>();
+            if (health == null || !health.isActiveAndEnabled || health.IsDead || health.Team == CombatTeam.Neutral
+                || !CombatTeams.CanDamage(CombatTeams.Of(owner), health.Team) || excluded != null && excluded.Contains(health)
+                || Blocked(origin, candidate, owner, layers)) continue;
+            float distance = (requireCenterWithinRange ? candidate.bounds.center - origin : ClosestPoint(candidate, origin) - origin).sqrMagnitude;
+            if (requireCenterWithinRange && distance > range * range) continue;
+            if (health == preferred) distance = -1;
+            if (distance >= nearest) continue;
+            nearest = distance; best = candidate;
+        }
+        Array.Clear(overlaps, 0, count); return best;
+    }
+
     // A filled horizontal circle with a bounded height, for ground-area attacks.
     // The box is only a broad phase; its corners must not extend the circular warning.
     public DamageResult ResolveCylinder(Vector3 center, float radius, float halfHeight, float damage,

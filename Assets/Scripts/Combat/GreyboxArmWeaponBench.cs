@@ -6,16 +6,21 @@ using UnityEngine.InputSystem;
 public sealed class GreyboxArmWeaponBench : MonoBehaviour
 {
     public GreyboxArmWeaponCatalogue catalogue;
+    public GreyboxShoulderWeaponCatalogue shoulderCatalogue;
+    public bool shoulderMode;
     public EquipManager player;
     [Range(0, 8)] public int selected;
     public bool keyboardShortcuts = true;
     readonly List<Part> created = new List<Part>();
-    public Part Selected => catalogue != null && catalogue.weapons != null && selected >= 0 && selected < catalogue.weapons.Length ? catalogue.weapons[selected] : null;
+    readonly List<CombatHealth> shoulderTestTargets = new List<CombatHealth>();
+    public IReadOnlyList<CombatHealth> ShoulderTestTargets => shoulderTestTargets;
+    public Part[] CurrentWeapons => shoulderMode ? shoulderCatalogue != null ? shoulderCatalogue.weapons : null : catalogue != null ? catalogue.weapons : null;
+    public Part Selected => CurrentWeapons != null && selected >= 0 && selected < CurrentWeapons.Length ? CurrentWeapons[selected] : null;
     public void Select(int index)
     {
-        if (catalogue == null || catalogue.weapons == null || catalogue.weapons.Length == 0) return;
-        selected = (index % catalogue.weapons.Length + catalogue.weapons.Length) % catalogue.weapons.Length;
-        if (Selected != null) Debug.Log("Greybox arm " + (selected + 5) + ": " + Selected.data.partName + " | , left | . right | \\ spawn", this);
+        if (CurrentWeapons == null || CurrentWeapons.Length == 0) return;
+        selected = (index % CurrentWeapons.Length + CurrentWeapons.Length) % CurrentWeapons.Length;
+        if (Selected != null) Debug.Log((shoulderMode ? "Shoulder " : "Arm ") + (selected + (shoulderMode ? 1 : 5)) + ": " + Selected.data.partName + " | , left | . right | \\ spawn", this);
     }
     bool FindPlayer()
     {
@@ -42,14 +47,14 @@ public sealed class GreyboxArmWeaponBench : MonoBehaviour
     }
     public bool Equip(PartCategory slot)
     {
-        if (slot != PartCategory.ArmL && slot != PartCategory.ArmR) return false;
+        if (shoulderMode ? slot != PartCategory.ShoulderL && slot != PartCategory.ShoulderR : slot != PartCategory.ArmL && slot != PartCategory.ArmR) return false;
         var part = SpawnSelected();
         if (part == null) return false;
         if (player.TryEquip(part, slot)) return true;
         created.Remove(part); Destroy(part.gameObject); return false;
     }
-    [ContextMenu("Equip Selected Left Arm (,)")] public void EquipLeft() => Equip(PartCategory.ArmL);
-    [ContextMenu("Equip Selected Right Arm (.)")] public void EquipRight() => Equip(PartCategory.ArmR);
+    [ContextMenu("Equip Selected Left (,)")] public void EquipLeft() => Equip(shoulderMode ? PartCategory.ShoulderL : PartCategory.ArmL);
+    [ContextMenu("Equip Selected Right (.)")] public void EquipRight() => Equip(shoulderMode ? PartCategory.ShoulderR : PartCategory.ArmR);
     [ContextMenu("Spawn Selected Pickup (Backslash)")] void SpawnPickup() => SpawnSelected();
     [ContextMenu("Clear Loose Bench Weapons")]
     public void ClearLooseWeapons()
@@ -61,5 +66,45 @@ public sealed class GreyboxArmWeaponBench : MonoBehaviour
             if (part != null) Destroy(part.gameObject);
             created.RemoveAt(i);
         }
+    }
+    // Development-only static opponents for repeatable balance comparisons.
+    // Production enemy AI, waves and loot tables are not involved.
+    public void SpawnShoulderTargets(int count)
+    {
+        if (!Application.isPlaying || !shoulderMode || !FindPlayer() || Selected == null || count != 1 && count != 5 && count != 15) return;
+        ClearShoulderTargets();
+        var prototype = Selected.GetComponent<GreyboxShoulderWeapon>();
+        bool ring = prototype != null && prototype.weapon == GreyboxShoulderWeapon.Weapon.GiantRock;
+        var forward = Vector3.ProjectOnPlane(player.transform.forward, Vector3.up).normalized;
+        if (forward.sqrMagnitude < .001f) forward = Vector3.forward;
+        var right = Vector3.Cross(Vector3.up, forward);
+        int columns = count == 5 ? 3 : 5;
+        float spacing = count == 5 ? 1.8f : 5f;
+        float ringRadius = ring ? player.GetComponent<MechCombat>().RangeMetresOf(Selected) * prototype.ringRangeScale
+            - Selected.Stats.GetStat(StatType.SplashRadius) * prototype.ringThicknessScale * .5f : 0;
+        for (int i = 0; i < count; i++)
+        {
+            bool centerControl = ring && count > 1 && i == count - 1;
+            Vector3 offset = count == 1 ? forward * 18
+                : forward * (18 + i / columns * spacing) + right * ((i % columns - (columns - 1) * .5f) * spacing);
+            if (ring)
+            {
+                float angle = i * Mathf.PI * 2 / (count == 1 ? 1 : count - 1);
+                offset = centerControl ? forward * 8 : (forward * Mathf.Cos(angle) + right * Mathf.Sin(angle)) * ringRadius;
+            }
+            var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cube.name = centerControl ? "Shoulder test - safe ring center" : "Shoulder test target " + (i + 1);
+            cube.transform.position = player.transform.position + offset + Vector3.up;
+            cube.transform.localScale = count == 1 ? new Vector3(4, 4, 4) : new Vector3(1.2f, 3, 1.2f);
+            var health = cube.AddComponent<CombatHealth>(); health.Team = CombatTeam.Enemy; health.SetMaximum(10000, true);
+            cube.AddComponent<MechTargetable>(); shoulderTestTargets.Add(health);
+        }
+        Physics.SyncTransforms();
+    }
+    [ContextMenu("Clear Shoulder Test Targets")]
+    public void ClearShoulderTargets()
+    {
+        foreach (var health in shoulderTestTargets) if (health != null) { health.gameObject.SetActive(false); Destroy(health.gameObject); }
+        shoulderTestTargets.Clear();
     }
 }

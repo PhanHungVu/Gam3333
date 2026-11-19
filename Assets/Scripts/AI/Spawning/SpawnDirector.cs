@@ -63,6 +63,29 @@ public sealed class SpawnDirector : MonoBehaviour, IWaveAnchor
     public bool RoamingPaused => roamingPaused;
     public int TotalSpawned => totalSpawned;
     public int TotalLeashed => totalLeashed;
+
+    [System.Serializable]
+    public struct WaveStatus
+    {
+        public WaveData data;
+        public int resourceRemaining, resourceBudget, concurrentEnemyLimit, objectiveCostLimit;
+        public float spawnInterval, refillSecondsRemaining;
+        public bool refilling, roamingPaused;
+    }
+    // Side-effect-free observation. CurrentWave/ResourceLeft may initialize a
+    // roaming cycle through RoamingActive(); a monitoring manager must not do so.
+    public WaveStatus InspectCurrentWave()
+    {
+        var active = objective ?? (roamingPaused ? null : roaming);
+        if (active == null) return new WaveStatus { objectiveCostLimit = -1, roamingPaused = roamingPaused };
+        return new WaveStatus
+        {
+            data = active.data, resourceRemaining = active.cycle.Resource, resourceBudget = active.cycle.ResourceTotal,
+            concurrentEnemyLimit = active.data.maxConcurrentEnemies, objectiveCostLimit = active.budget,
+            spawnInterval = active.cycle.SpawnInterval, refillSecondsRemaining = active.cycle.ResetRemaining,
+            refilling = active.cycle.Refilling, roamingPaused = roamingPaused
+        };
+    }
     // The roaming wave's anchor: the player its spawner follows (used only if the roaming wave has a leash).
     public Vector3 WaveAnchor => roamingSpawner != null && roamingSpawner.Target != null ? roamingSpawner.Target.position : transform.position;
 

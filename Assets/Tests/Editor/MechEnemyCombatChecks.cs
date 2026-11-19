@@ -131,7 +131,9 @@ public static class MechEnemyCombatChecks
             Step(crossbow, crossbow.CooldownRemaining + .01f); check(crossbow.TryAttack(), "Crossbow can fire again after reload cooldown");
             Step(crossbow, crossbowRelease + .01f); bolt = Bolt(); before = health.CurrentHealth;
             var friendly = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            friendly.transform.position = player.transform.position - Vector3.forward * 4f;
+            // Test interception outside the shared Cannon's enlarged splash radius.
+            // A friendly body blocks the projectile, but does not block its explosion.
+            friendly.transform.position = player.transform.position - Vector3.forward * 6f;
             friendly.transform.localScale = new Vector3(4f, 4f, 1f);
             var friendlyHealth = friendly.AddComponent<CombatHealth>(); friendlyHealth.Team = CombatTeam.Enemy; Physics.SyncTransforms();
             Fly(bolt, 1f);

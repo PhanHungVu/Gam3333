@@ -41,6 +41,9 @@ public class MechProjectile : MonoBehaviour
     bool piercing;
     int maximumPiercedTargets;
     HashSet<CombatHealth> piercedTargets;
+    bool arcing;
+    Vector3 arcTarget, arcVelocity;
+    float arcGravity, arcMinimumFlight, arcRemaining;
     RaycastHit[] hits = new RaycastHit[16];
     Collider[] overlaps = new Collider[16];
     readonly CombatBlast blast = new CombatBlast();
@@ -93,6 +96,11 @@ public class MechProjectile : MonoBehaviour
         explosionRadius = splashDamage = 0;
     }
 
+    // Optional artillery mode on the existing projectile, preserving the same
+    // swept collision, splash, teams, feedback and finish lifecycle.
+    public void ConfigureArc(Vector3 target, float gravity = 25, float minimumFlight = .55f)
+    { arcing = true; arcTarget = target; arcGravity = Mathf.Max(.1f, gravity); arcMinimumFlight = Mathf.Max(.05f, minimumFlight); }
+
     public void Launch(Transform shooter, Vector3 shotDirection, float shotSpeed, float shotDamage,
         float shotRadius, float range, LayerMask layers, Vector3 muzzle)
     {
@@ -106,6 +114,15 @@ public class MechProjectile : MonoBehaviour
         remainingDistance = Mathf.Max(0f, range);
         travelled = 0f;
         collisionLayers = layers & CombatRagdoll.QueryMask;
+        if (arcing)
+        {
+            Vector3 delta = arcTarget - muzzle, planar = Vector3.ProjectOnPlane(delta, Vector3.up);
+            // Mortar Range is horizontal acquisition/reach, not the longer arc's path length.
+            if (planar.magnitude > range) { planar = planar.normalized * range; arcTarget = muzzle + planar + Vector3.up * delta.y; }
+            arcRemaining = Mathf.Max(arcMinimumFlight, planar.magnitude / speed);
+            arcVelocity = planar / arcRemaining + Vector3.up * ((arcTarget.y - muzzle.y) / arcRemaining + .5f * arcGravity * arcRemaining);
+            direction = arcVelocity.normalized; transform.rotation = Quaternion.LookRotation(direction);
+        }
         live = true;
         // Validate the path from the player's center to the muzzle as well. A muzzle
         // extending through a wall must not spawn a shot on the other side.
@@ -118,12 +135,30 @@ public class MechProjectile : MonoBehaviour
     {
         if (!live || deltaTime <= 0f) return;
         if (visual != null) visual.Rotate(angularVelocity * deltaTime, Space.Self);
+        if (arcing) { StepArc(deltaTime); return; }
         float distance = Mathf.Min(speed * deltaTime, remainingDistance);
         if (CheckOverlap() || Sweep(direction * distance)) return;
         transform.position += direction * distance;
         travelled += distance;
         remainingDistance -= distance;
         if (remainingDistance <= 0f) Finish();
+    }
+
+    void StepArc(float deltaTime)
+    {
+        while (live && deltaTime > 0 && arcRemaining > 0)
+        {
+            float dt = Mathf.Min(deltaTime, 1f / 60, arcRemaining);
+            Vector3 acceleration = Vector3.down * arcGravity;
+            Vector3 displacement = arcVelocity * dt + .5f * acceleration * dt * dt;
+            if (CheckOverlap() || Sweep(displacement)) return;
+            transform.position += displacement; arcVelocity += acceleration * dt;
+            direction = arcVelocity.normalized; transform.rotation = Quaternion.LookRotation(direction);
+            deltaTime -= dt; arcRemaining = Mathf.Max(0, arcRemaining - dt);
+        }
+        // Arrival is an area detonation if the shell did not strike a body or
+        // world collider first; normal straight projectiles keep range-expiry behavior.
+        if (live && arcRemaining <= 0) Impact(null, transform.position, Vector3.up);
     }
 
     bool IsOwner(Collider candidate) => owner != null && candidate.transform.IsChildOf(owner);

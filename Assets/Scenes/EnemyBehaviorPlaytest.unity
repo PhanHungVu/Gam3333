@@ -944,6 +944,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::GreyboxArmWeaponBench
   catalogue: {fileID: 11400000, guid: b754b3d32e2b2014580808d2f2f48faf, type: 2}
+  shoulderCatalogue: {fileID: 11400000, guid: 617a42895bda7cd4385bb292f313c6b8, type: 2}
   player: {fileID: 0}
   selected: 0
   keyboardShortcuts: 1

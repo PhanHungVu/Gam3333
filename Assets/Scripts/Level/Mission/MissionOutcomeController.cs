@@ -51,6 +51,7 @@ public sealed class MissionOutcomeController : MonoBehaviour
         var existing = Find(gameObject.scene);
         if (existing != null && existing != this) { enabled = false; return; }
         scenes[gameObject.scene] = this;
+        LevelManager.Ensure(gameObject.scene);
     }
     public bool RegisterParticipant(string id, CombatHealth health, bool locallyControlled = false)
     {

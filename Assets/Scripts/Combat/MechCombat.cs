@@ -12,6 +12,7 @@ public readonly struct AttackResult
 // The mech's combat brain. TryAttack(socket) attacks with whatever part is mounted in that socket,
 // choosing the attack from the part's subtype: Projectile and Splash parts fire (RangedAttack),
 // Melee parts swing (MeleeAttack), and arm parts with no weapon play an animation-only attack.
+// Primitive Shoulder specials share admission, but provide their own block/ring/targeted query.
 // Every stat comes from the part's data; ammo and reload live on the part. Presentation listens to
 // the events below and never changes gameplay.
 [DisallowMultipleComponent]
@@ -159,6 +160,11 @@ public class MechCombat : MonoBehaviour
         return part != null && part.Stats.subtype == PartSubtype.Melee ? part : null;
     }
     static bool IsRanged(Part part) => part.Stats.subtype == PartSubtype.Projectile || part.Stats.subtype == PartSubtype.Splash;
+    public bool RepeatsWhileHeld(PartCategory socket)
+    {
+        var part = GetPart(socket); var shoulder = part != null ? part.GetComponent<GreyboxShoulderWeapon>() : null;
+        return shoulder != null && shoulder.isActiveAndEnabled && shoulder.weapon == GreyboxShoulderWeapon.Weapon.TeslaCoil;
+    }
 
     // ---- Attacking ----
 
@@ -167,7 +173,9 @@ public class MechCombat : MonoBehaviour
         if (!isActiveAndEnabled || CombatHitStop.BlocksNewActions(transform)) return default;
         var part = GetPart(socket);
         AttackResult result;
-        if (part != null && IsRanged(part)) { var shot = Fire(part); result = new AttackResult(shot != null, shot); }
+        var shoulder = part != null ? part.GetComponent<GreyboxShoulderWeapon>() : null;
+        if (shoulder != null && shoulder.isActiveAndEnabled && shoulder.HandlesAttack) result = new AttackResult(shoulder.TryAttack(this), null);
+        else if (part != null && IsRanged(part)) { var shot = Fire(part); result = new AttackResult(shot != null, shot); }
         else if (part != null && part.Stats.subtype == PartSubtype.Melee) result = new AttackResult(melee.TryStart(part, socket), null);
         // No weapon: an arm's animation-only attack.
         else
@@ -202,24 +210,29 @@ public class MechCombat : MonoBehaviour
         Vector3 center = AimSolver.AimPoint(targeting, gameplayCamera, transform, range, hitLayers, out bool hasAimContact);
         var prototype = part.GetComponent<GreyboxArmWeapon>();
         if (prototype != null && !prototype.isActiveAndEnabled) prototype = null;
-        int count = prototype != null ? prototype.ProjectileCount : 1;
+        var shoulder = part.GetComponent<GreyboxShoulderWeapon>();
+        bool salvo = shoulder != null && shoulder.isActiveAndEnabled && shoulder.weapon == GreyboxShoulderWeapon.Weapon.Katyusha;
+        int count = salvo ? Mathf.Min(part.RemainingAmmo, part.MagazineRounds) : prototype != null ? prototype.ProjectileCount : 1;
+        if (count <= 0) return null;
         MechProjectile projectile = null;
         float shotAngle = ShotSpreadAngleOf(part, center, hasAimContact);
         bool shotgun = prototype != null && prototype.weapon == GreyboxArmWeapon.Weapon.Shotgun;
-        Vector3 attackCenter = shotgun ? AccuracySpread.RandomAimPoint(gameplayCamera, center, shotAngle) : center;
-        // One accepted attack/round, many ordinary projectiles for a shotgun. Each
-        // pellet has a share of the total Damage and an independent spread sample.
+        Vector3 attackCenter = shotgun || salvo ? AccuracySpread.RandomAimPoint(gameplayCamera, center, shotAngle) : center;
+        // One admitted action: Arm multi-projectile attacks split one round's
+        // damage as before; a Shoulder salvo spends its magazine at full damage
+        // per rocket. Only the first projectile performs the atomic ammo/cooldown update.
         for (int i = 0; i < count; i++)
         {
-            Vector3 aimPoint = shotgun
+            Vector3 launch = salvo ? shoulder.SalvoMuzzle(muzzle, attackCenter, i, count) : muzzle;
+            Vector3 aimPoint = salvo ? launch + shoulder.SalvoAimPoint(muzzle, attackCenter, i, count) - muzzle : shotgun
                 ? muzzle + AccuracySpread.RandomConeDirection(attackCenter - muzzle, prototype.ExtraSpread) * range
                 : AccuracySpread.RandomAimPoint(gameplayCamera, center, shotAngle);
-            var shot = RangedAttack.Fire(part, transform, muzzle, aimPoint, gameplayCamera.transform.forward,
+            var shot = RangedAttack.Fire(part, transform, launch, aimPoint, gameplayCamera.transform.forward,
                 range, hitLayers, combatMaterial, impact =>
                 {
                     ForwardProjectileImpact(impact);
                     if (prototype != null) prototype.OnImpact(this, impact);
-                }, DamageModifiers.Total / count, consumeRound: i == 0);
+                }, DamageModifiers.Total / (salvo ? 1 : count), consumeRound: i == 0, ammunitionCost: salvo ? count : 1);
             if (projectile == null) projectile = shot;
             ShotFired?.Invoke(shot);
         }

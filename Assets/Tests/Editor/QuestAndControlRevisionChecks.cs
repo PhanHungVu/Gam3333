@@ -184,7 +184,9 @@ public static class QuestAndControlRevisionChecks
         yield return Keys(Key.F); yield return Delay(1.3f);
         Check(targeting.IsHardLocked && !targeting.IsFreeAim, "F locks immediately and holding it does not enter the old free-aim mode"); yield return Keys();
         yield return Keys(Key.F); yield return Keys();
-        Check(targeting.IsFreeCamera && targeting.CurrentTarget == enemy && !targeting.IsFreeAim, "Second F press frees the camera while retaining automatic weapon aim");
+        Check(targeting.IsFreeCamera && targeting.CurrentTarget == null && targeting.IsFreeAim, "Second F press enters no-lock mode and clears automatic weapon aim");
+        yield return Keys(Key.F); yield return Keys();
+        Check(targeting.IsFreeCamera && targeting.CurrentTarget == enemy && !targeting.IsFreeAim, "Third F press restores free-camera automatic weapon aim");
         yield return MouseButtons(false, false, true); yield return MouseButtons(false, false);
         Check(targeting.IsFreeCamera, "MMB has no gameplay lock-on action while manual aiming is deferred");
         dummy.transform.position = new Vector3(15, 1, 20); Physics.SyncTransforms(); yield return Frames(3);

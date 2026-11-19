@@ -1,5 +1,13 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
+
+// Optional defensive admission check. Blocking prevents HP loss and damage/death
+// events; ordinary actors have no blockers and retain their existing behavior.
+public interface ICombatDamageBlocker
+{
+    bool BlocksDamage(float amount, Vector3? sourcePosition);
+}
 
 // Shared by the player and enemies: one health pool for the whole body. Takes damage,
 // reports it, and handles death. Maximum health can be set from outside (MechStats on the player).
@@ -22,6 +30,9 @@ public class CombatHealth : MonoBehaviour
     public event Action<bool> AvailabilityChanged;
     // Includes damage, capacity changes and explicit refills; presentation reads the final values.
     public event Action Changed;
+    readonly List<ICombatDamageBlocker> blockers = new List<ICombatDamageBlocker>();
+    public void AddDamageBlocker(ICombatDamageBlocker blocker) { if (blocker != null && !blockers.Contains(blocker)) blockers.Add(blocker); }
+    public void RemoveDamageBlocker(ICombatDamageBlocker blocker) => blockers.Remove(blocker);
 
     void Awake() => CurrentHealth = maximumHealth;
     void OnEnable() { CombatRagdoll.IgnoreActorCollisions(gameObject); AvailabilityChanged?.Invoke(true); }
@@ -41,6 +52,7 @@ public class CombatHealth : MonoBehaviour
     public bool ApplyDamage(float amount, Vector3? sourcePosition)
     {
         if (!isActiveAndEnabled || IsDead || amount <= 0f || float.IsNaN(amount) || float.IsInfinity(amount)) return false;
+        foreach (var blocker in blockers) if (blocker.BlocksDamage(amount, sourcePosition)) return false;
         float applied = Mathf.Min(CurrentHealth, amount);
         CurrentHealth -= applied;
         Damaged?.Invoke(applied);

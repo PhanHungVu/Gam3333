@@ -5,9 +5,9 @@ The gameplay controls are defined in the **Player** map of `InputSystem_Actions.
 | Input | Action |
 | --- | --- |
 | WASD | Camera-relative movement |
-| Q / E | Fire the left / right shoulder part |
+| Q / E | Activate the left / right Shoulder; press once for a Katyusha salvo, hold for rapid Tesla pulses |
 | Hold LMB / RMB | Repeatedly attack with the left / right arm when its cooldown and ammunition allow |
-| F | Toggle camera lock immediately on press |
+| F | Cycle no lock-on -> free-camera lock-on -> camera-lock lock-on |
 | R | Reload equipped ranged weapons with partially empty magazines and reserve ammunition |
 | Shift | Dodge using the existing Quick Boost movement and cooldown |
 | Tab | Request the equipped head's ability |
@@ -26,7 +26,19 @@ Players start with **free camera and automatic weapon aim**. Moving the mouse ro
 
 Automatic aim looks for a visible-screen target inside **60 world units** and a circle around screen center with radius **0.18 times the smaller screen dimension**. Tune **Lock Range** and **Auto Aim Radius** on `MechTargetLockController`. Crossing the center ray or inner switching tolerance can select another enemy; valid selections remain stable until they leave the acquisition area or become unavailable. Actual projectile collision still blocks shots at terrain.
 
-F immediately toggles the camera's hard-lock mode. Holding F no longer switches to the old aim-without-assistance mode, and releasing F does not toggle a second time. Switching back to free camera keeps automatic weapon aim enabled. Hard-lock switching gestures, target-loss recovery and camera obstacle filtering remain available. `EnterFreeAim()` remains an explicit API for future manual aiming; F does not call it.
+F advances exactly once per press through three modes:
+
+| Mode | Weapon aim | Camera |
+| --- | --- | --- |
+| No lock-on | Screen-center aiming; no selected target or automatic enemy acquisition | Manual mouse orbit |
+| Free-camera lock-on | Existing automatic enemy selection/aim | Manual mouse orbit; the selected enemy does not steer the camera |
+| Camera-lock lock-on | Aim at the selected enemy | Camera smoothly follows that enemy; existing mouse-flick target switching remains available |
+
+The starting mode remains **free-camera lock-on**. Its first F press enters camera lock, the next enters no lock, and the next returns to free-camera lock-on. Holding/releasing F never advances the mode. A hard-locked enemy dying, becoming disabled or leaving range can select a replacement without changing the chosen mode. With no available enemy, camera-lock mode remains armed for a later target. No-lock mode never reacquires by itself. Disabling/re-enabling the targeting controller preserves the selected mode.
+
+`MechTargetLockController.Mode` exposes the current `LockMode` enum. `CycleLockMode()` uses the same three-state cycle as F, and `SetLockMode(...)` selects one explicitly. Existing `EnterFreeAim()`, `ResumeTargeting()` and the explicit soft/hard `ToggleHardLock()` helper remain compatible with scripted callers; normal F input uses the three-state cycle.
+
+The shared `CameraControlThirdPerson` uses **Hard Lock Rotation Damping**, default **0.35 seconds**, for entering camera lock, flick switching and automatic replacement after death. Cinemachine interpolates from its rendered orientation instead of instantly pointing at the new target. Hard-lock screen bounds no longer bypass that damping, and entering lock no longer forces an immediate minimum-pitch jump. The existing **Hard Lock Orbit Response** still eases the follow orbit and the screen-position offset blends as well. Losing a close target eases any elevated pitch back toward manual limits, and camera framing can reacquire an enemy killed after targeting's Update before displaying a free-camera frame. These component changes apply to all gameplay scenes using the shared player camera, including cameras created by `MechPlayerRig`; no HUD or scene-specific camera controller is added.
 
 **MMB first-person/manual crosshair aiming is deferred until after M2.** MMB no longer activates gameplay lock-on. No reticle or HUD artwork is added or removed here.
 
@@ -71,6 +83,8 @@ These functions dispatch the same Inspector/C# events and leave the actual effec
 Requests fire once per press and only when the corresponding part is equipped. An unhandled request does nothing. Space continues to drive the locomotion module's existing jump / held hover lift. Turn off **Use Built In Leg Movement** when a future legs ability supplies its own movement to avoid triggering both implementations. No new ability cooldown is consumed by an unhandled callback.
 
 ## Verification
+
+The three-mode follow-up passed **24 real-frame checks** in `MechLockModeChecks.RunBatch`, using the existing Heavy player prefab, actual F input events and its live Cinemachine camera/brain. Coverage includes the full mode cycle, held/released F, no-lock acquisition suppression, controller re-enabling, free-camera independence, camera-lock entry, directional flick switching, same-frame death replacement, the last enemy disappearing, a later arrival and pause. Unlike a forced camera reset, these checks use normal positive frame times. The camera took roughly **3-8 degrees in the first rendered frame** of tested **18-35 degree turns**, then converged to within **0.05 degrees** of the target. First/settled D3D11 captures were visually reviewed. The existing foundation suite also passed **1,012 checks**, including close-target camera stability, framing, movement and combat. Logs are `.quest-review/ReadabilityProject/camera-three-modes-final.log` and `camera-three-modes-foundation.log`. No player build was run.
 
 The development-only locomotion panel starts hidden. Press **backquote (`)** or click the **Locomotion Debug** button in the top-left to toggle it. The mouse button is available when the cursor is free; Escape now opens the mission pause menu. F8 remains available for the enemy encounter test shortcut. The obsolete Movement Controls text has been removed from the shared cursor prefab and A33.
 
