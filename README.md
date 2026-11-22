@@ -15,6 +15,90 @@ Lithomachia is a third-person golem horde shooter developed by **Team Medium-Wel
 | Enemies and encounters | Small and elite enemies use Unity Behavior graphs, navigation, and horde coordination. The playtest arena includes repeatable encounter presets and a weapon bench. |
 | Presentation | Universal Render Pipeline, Cinemachine camera, a combat HUD, hit feedback, and menu, mission, and weapon audio. |
 
+# chuuniby's Contributions to Gam3333
+
+**Contributor:** chuuniby (Phan Hung Vu)
+**Commits:** 89 (including merges), from **2026-09-07 to 2026-11-19**
+**Main branches:** `Hung-GreyBox`, `meow-meow-test`, plus regular merges with `David`, `main`, and `Nelson-Asset-merge`
+
+chuuniby set up the Unity project and built much of the core gameplay: the mech's camera, movement and combat, the part and ability system, animation, the enemy AI, the pre-mission quest UI, the HUD, and game-feel polish. Most features come with an editor setup script (`*Setup.cs`) and editor tests (`Assets/Tests/Editor/*Checks.cs`).
+
+---
+
+## 1. Project foundation (Sep 7–15)
+- Created the initial Unity project and added **Cinemachine**. Removed Unity Version Control so the team could use Git.
+- Third-person camera (`CameraControlThirdPerson.cs`), tuned over several commits.
+- Mech movement and lock-on targeting: `MechMovementController`, `MechTargetLockController`, `MechTargetable`, `LockOnCursor`, `AutoMoveTarget`.
+- Energy and boost: `MechEnergyController`, `MechEnergyHud`, `MechBoostPresentation`.
+- Basic prefabs.
+
+## 2. Combat system and weapons (Sep 17–19)
+- Core combat: `MechCombatController`, `MechProjectile`, `CombatHealth`.
+- "The 4 weapon things": `MechWeaponStats`, `MechWeaponHud`, `MechInputActions`.
+- First combat-feel pass: `CombatFeedback`, `CombatFeedbackEffect`, `EnemyCombatFeedback`.
+- Part abilities: `MechPartAbility`, `MechAbilityDriver`, `MechAbilityContext`, `AbilityPhysics`, plus specific abilities such as `BloomMissileAbility`, `CannonSpiralBarrage`, `ResonancePulseAbility`, `ZigzagBarrageAbility` and `CombatBlast`.
+- `MechPlayerRig` and `MechEquipmentCombat` to connect equipped parts to combat.
+- Fixed part pickup when parts are dropped.
+
+## 3. Models, VFX and animation (Sep 22 – Oct 4)
+- Added **GLB model support** and brought in new models.
+- Golem joint glow VFX and particle emitter (`GolemJointGlow`, `GolemJointEffectFactory`).
+- **Locomotion and animation system:** `LocomotionModule` with `Biped`, `Hover` and `Tank` variants, `MechLegAnimator`, `MechUpperBodyAnimation`, `MechAnimationPoseSource`, `MechPartPoseReceiver`, `MechEquipmentLocomotion`.
+- Animation import tools: `MechBipedAnimationImport`, `MechWeaponAnimationImport`, `MechWeaponAnimator`, `MechWeaponAnimationSet`.
+- Enemy animation and attacks: `EnemyAnimation`, `EnemyAttack`.
+- **SFX:** `MechMovementAudio`.
+- Projectile models, fixed muzzle position, removed sprinting, and fixed camera clipping (`MechCameraCollisionSetup`).
+- **HP bar / health HUD:** `MechHealthHud`.
+- Visual preview of a part before pickup (`PartModelPreview`).
+- Fixed UI scaling across resolutions.
+- Handled several merge recoveries between branches.
+
+## 4. Pre-mission / quest selection UI (Oct 25 – Nov 4)
+A full quest board shown before each mission, in the `Assets/Scripts/PreMission/` folder:
+- Flow and data: `PreMissionFlowController`, `QuestDefinition`, `QuestBoardCatalogue`, `QuestSelectionSession`, `MissionStartHook`.
+- Quest progression: `QuestProgressionRuntime`, `QuestProgressionSession`, `PreMissionProgressTrack`, `PreMissionObjectiveResultBridge`.
+- Presentation: paper and notice layout, a stone board with physical motion (`PreMissionStoneBoard`, `PreMissionStoneMotion`, `QuestStoneView`), mission miniatures, board terrain, a tabletop shockwave, contact shadows, and impact feedback.
+- Cinematic camera transitions and animation polish for mission select and quest details (`PreMissionQuestDetailsSlab`).
+- Starter torso preview (`StarterTorsoPreview`), portrait slabs, readable labels, and mission logos.
+
+## 5. Part swap UI (Oct 30)
+- In-world part swap display: `PartSwapDisplay`, `PartSwapWorldView`, `PartSwapWorldHudPresenter`.
+
+## 6. Enemy AI (Oct 30 – Nov 9)
+- **Behavior Graph enemies:** `EnemyGraphController`, `EnemyGraphActions`, `EnemyGraphAttack`, special actions, rope attack, spinner attack, hop presentation, threat markers, and weapon telegraphs.
+- **Horde coordination:** `EnemyHordeCoordinator`, `EnemyHordePressure`, `EnemyMeleeAttackPool`, `EnemyRangedPositioning`, `EnemySpecialCoordinator`, `EnemyLocalPositionQuery`.
+- Encounter presets and a playtest arena (`EnemyEncounterPreset`, `EnemyBehaviorPlaytest`, roster setup).
+- Zoo enemy waves (`ZooEnemyWaves`), enemy orbit fix, escort aggro.
+- New cannon enemy model, fixed melee enemy model, fodder enemy animation, melee reaction and push physics.
+- Camera obstacle handling (`MechCameraObstacles`).
+
+## 7. Game feel, HUD and VFX (Nov 5–12)
+- **Hit stop**, ragdoll death, projectile trails, combat visual events, and a player damage vignette.
+- **Mission results screen** and mission outcome (`MissionResultsView`, `MissionOutcomeController`, `MissionParticipant`).
+- Ability cooldowns with a HUD cooldown sweep, and an "ability ready" flash effect inspired by Risk of Rain 2.
+- **Directional damage indicator** HUD (`DirectionalDamageHud`, `CombatDamageInfo`).
+- Ground dust VFX when dashing (`QuickDashFeedback`).
+- Pickup highlight and shine effect (`PickupHighlight`).
+- **Remote part retrieval** with combat bonuses: axe barrage, piercing bolt, speed buff, bonus cooldowns, and retrieval feedback.
+- Mission HUD feedback.
+- **Pause menu** on Esc (`MissionPauseMenu`).
+- **Main menu audio** and button sounds, plus level and quest audio.
+- 2x walking speed (automatic run).
+- Fixed enemy attack audio, random part stat rolls (`PartStatRoll`), and a **5% part drop rate**.
+
+## 8. Weapons and level management (Nov 17–19)
+- **Arm weapons:** `GreyboxArmWeapon`, `GreyboxArmWeaponCatalogue`, a weapon test bench (`GreyboxArmWeaponBench`), and accuracy spread (`AccuracySpread`). Added weapon balance tests.
+- **Shoulder weapons:** `GreyboxShoulderWeapon`, `GreyboxShoulderWeaponCatalogue`.
+- **Camera switch options** and lock modes in `CameraControlThirdPerson` and `MechTargetLockController`.
+- **LevelManager** with a custom editor (`LevelManager`, `LevelManagerEditor`).
+- Updates to the spawn director, enemy part drops, and `PartData` / `MechRulesConfig`.
+
+---
+
+## Testing and tooling
+chuuniby wrote a large set of **editor test scripts** in `Assets/Tests/Editor/`, covering locomotion, animation, combat, abilities, enemies, quest UI, HUD, audio, weapons and level management. Most features also have an editor setup script, so a scene can be rebuilt or reconfigured without manual work.
+
+
 ## Requirements
 
 - A Windows x64 development machine.
